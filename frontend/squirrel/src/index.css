@@ -1,0 +1,247 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Light theme tokens: warm neutral surfaces with the same orange accent. */
+    --primary: 28 99% 50%;
+    --primary-2: 18 98% 46%;
+    --primary-foreground: 0 0% 100%;
+    --primary-gradient: linear-gradient(90deg,#FE7701 0%,#E84702 100%);
+
+    --foreground: 20 18% 14%;
+    --foreground-hover: 24 80% 35%;
+
+    --background: 36 29% 97%;
+    --card: 0 0% 100%;
+    --card-foreground: 20 18% 14%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 20 18% 14%;
+    --secondary: 30 20% 94%;
+    --secondary-foreground: 20 18% 14%;
+    --muted: 30 18% 95%;
+    --muted-foreground: 20 7% 42%;
+    --accent: 43 96% 56%;
+    --accent-foreground: 222 47% 11%;
+    --destructive: 0 62% 30%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 28 15% 85%;
+    --input: 28 15% 85%;
+    --ring: 234 89% 63%;
+    --radius: 0.75rem;
+    --sidebar-background: 30 20% 98%;
+    --sidebar-foreground: 20 12% 24%;
+    --sidebar-primary: 234 89% 63%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 28 100% 96%;
+    --sidebar-accent-foreground: 24 80% 35%;
+    --sidebar-border: 28 15% 86%;
+    --sidebar-ring: 234 89% 63%;
+
+    --neutral-white: oklch(100% 0 0);
+    --neutral-50: oklch(98.5% 0 0);
+    --neutral-100: oklch(96.9% 0 0);
+    --neutral-200: oklch(92.2% 0 0);
+    --neutral-300: oklch(87.1% 0 0);
+    --neutral-400: oklch(70.9% 0 0);
+    --neutral-500: oklch(55.6% 0 0);
+    --neutral-600: oklch(44.6% 0 0);
+    --neutral-700: oklch(37.1% 0 0);
+    --neutral-800: oklch(27.4% 0 0);
+    --neutral-850: oklch(23.8% 0 0);
+    --neutral-900: oklch(21.1% 0 0);
+    --neutral-950: oklch(14.1% 0 0);
+
+    --surface-1: var(--neutral-850);
+    --surface-2: var(--neutral-800);
+    --surface-3: var(--neutral-700);
+    --surface-4: var(--neutral-600);
+    --surface-cell: var(--surface-1);
+    --background-base: color-mix(in oklch, var(--neutral-850), var(--neutral-900));
+    --background-main: var(--neutral-900);
+    --label-primary: var(--neutral-50);
+    --label-secondary: var(--neutral-400);
+    --label-tertiary: var(--neutral-500);
+    --label-muted: var(--neutral-600);
+    --label-inverted: var(--neutral-950);
+    --border-subtle: oklch(100% 0 0 / 6%);
+    --border-default: oklch(100% 0 0 / 12%);
+    --border-strong: oklch(100% 0 0 / 26%);
+    --shadow-xs: 0 1px 2px oklch(0% 0 0 / 8%);
+    --shadow-sm: 0 2px 4px oklch(0% 0 0 / 12%);
+    --shadow-md: 0 4px 8px -2px oklch(0% 0 0 / 20%);
+    --shadow-lg: 0 2px 4px -1px oklch(0% 0 0 / 15%), 0 14px 28px -6px oklch(0% 0 0 / 25%);
+    --shadow-xl: 0 4px 8px -2px oklch(0% 0 0 / 15%), 0 20px 32px -8px oklch(0% 0 0 / 30%);
+    --shadow-ring-xs: 0 0 0 1px oklch(100% 0 0 / 10%), 0 1px 2px oklch(0% 0 0 / 8%);
+    --shadow-ring-sm: 0 0 0 1px oklch(100% 0 0 / 10%), 0 2px 4px oklch(0% 0 0 / 12%);
+    --shadow-ring-md: 0 0 0 1px oklch(100% 0 0 / 10%), 0 4px 8px -2px oklch(0% 0 0 / 20%);
+    --shadow-ring-lg: 0 0 0 1px oklch(100% 0 0 / 10%), 0 2px 4px -1px oklch(0% 0 0 / 15%), 0 14px 28px -6px oklch(0% 0 0 / 25%);
+    --shadow-ring-xl: 0 0 0 1px oklch(100% 0 0 / 10%), 0 4px 8px -2px oklch(0% 0 0 / 15%), 0 20px 32px -8px oklch(0% 0 0 / 30%);
+  }
+
+  .light {
+    --primary: 28 99% 50%;
+    --primary-2: 18 98% 46%;
+    --primary-foreground: 0 0% 100%;
+    --primary-gradient: linear-gradient(90deg,#FE7701 0%,#E84702 100%);
+    --foreground: 20 18% 14%;
+    --foreground-hover: 24 80% 35%;
+    --background: 36 29% 97%;
+    --card: 0 0% 100%;
+    --card-foreground: 20 18% 14%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 20 18% 14%;
+    --secondary: 30 20% 94%;
+    --secondary-foreground: 20 18% 14%;
+    --muted: 30 18% 95%;
+    --muted-foreground: 20 7% 42%;
+    --accent: 43 96% 56%;
+    --accent-foreground: 222 47% 11%;
+    --destructive: 0 62% 30%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 28 15% 85%;
+    --input: 28 15% 85%;
+    --ring: 234 89% 63%;
+    --sidebar-background: 30 20% 98%;
+    --sidebar-foreground: 20 12% 24%;
+    --sidebar-primary: 234 89% 63%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 28 100% 96%;
+    --sidebar-accent-foreground: 24 80% 35%;
+    --sidebar-border: 28 15% 86%;
+    --sidebar-ring: 234 89% 63%;
+  }
+
+  .dark {
+    /* Dark background: #202020 => HSL(0 0% 12.5%) */
+    --background: 0 0% 10.2%;
+    /* In dark mode, keep the orange gradient but slightly darker variants */
+    --primary: 28 99% 36%;
+    --primary-2: 18 98% 30%;
+    --primary-foreground: 0 0% 100%;
+    --primary-gradient: linear-gradient(90deg,#FE7701 0%,#E84702 100%);
+    --foreground: 249 7% 61%;
+    --foreground-hover: 162 100% 98%;
+
+    --card: 0 0% 12%;
+    --card-foreground: 249 7% 61%;
+    --popover: 222 47% 11%;
+    --popover-foreground: 220 14% 96%;
+    --secondary: 222 47% 15%;
+    --secondary-foreground: 220 14% 96%;
+    --muted: 222 47% 15%;
+    --muted-foreground: 220 9% 60%;
+    --accent: 43 96% 56%;
+    --accent-foreground: 222 47% 11%;
+    --destructive: 0 62% 30%;
+    --destructive-foreground: 220 14% 96%;
+    --border: 222 47% 18%;
+    --input: 222 47% 18%;
+    --ring: 234 89% 67%;
+    --sidebar-background: color-mix(in oklch, var(--neutral-850), var(--neutral-900));
+    --sidebar-foreground: 220 9% 60%;
+    --sidebar-primary: 234 89% 67%;
+    --sidebar-primary-foreground: 222 47% 11%;
+    --sidebar-accent: 234 30% 20%;
+    --sidebar-accent-foreground: 234 89% 67%;
+    --sidebar-border: linear-gradient(90deg,#FE7701 0%,#E84702 100%);
+    --sidebar-ring: 234 89% 67%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    font-family: 'Inter', sans-serif;
+  }
+}
+
+@layer utilities {
+  .scrollbar-thin {
+    scrollbar-width: thin;
+  }
+  
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  
+  .scrollbar-thin::-webkit-scrollbar-track {
+    @apply bg-transparent;
+  }
+  
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    @apply bg-border rounded-full;
+  }
+  
+  .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+    @apply bg-muted-foreground/30;
+  }
+
+  /* Gradient background utility for primary theme */
+  .bg-primary-gradient {
+    background-image: var(--primary-gradient);
+  }
+
+  /* Utility to apply hover text color using the theme token */
+  .hover-text:hover {
+    color: hsl(var(--foreground-hover));
+  }
+}
+
+/* Gantt chart specific styles */
+.gantt-bar {
+  @apply transition-all duration-200 ease-out;
+}
+
+.gantt-bar:hover {
+  filter: brightness(1.1);
+  transform: scaleY(1.1);
+}
+
+.dependency-path {
+  @apply stroke-[2] fill-none;
+  stroke: hsl(var(--dependency-line));
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.dependency-arrow {
+  fill: hsl(var(--dependency-line));
+}
+
+/* Animation for chat messages */
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.chat-message {
+  animation: slideIn 0.3s ease-out;
+}
+
+@keyframes pulse-subtle {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+.animate-pulse-subtle {
+  animation: pulse-subtle 2s ease-in-out infinite;
+}
