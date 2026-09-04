@@ -11,8 +11,7 @@ RUN apt-get update && \
 COPY requirements.txt .
 
 # Install Python dependencies
-RUN --mount=type=ssh,id=default \
-    pip install --default-timeout=1000 --retries 5 -r requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy application
 COPY . .
