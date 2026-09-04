@@ -34,20 +34,6 @@ import pandas as pd
 from loguru import logger
 
 # scikit-learn
-from sklearn.linear_model import LogisticRegression, Ridge, Lasso
-from sklearn.ensemble import (
-    RandomForestClassifier,
-    RandomForestRegressor,
-    GradientBoostingClassifier,
-    GradientBoostingRegressor,
-    ExtraTreesClassifier,
-    ExtraTreesRegressor,
-    AdaBoostClassifier,
-    AdaBoostRegressor
-)
-from sklearn.svm import SVC, SVR
-from sklearn.neighbors import KNeighborsClassifier, KNeighborsRegressor
-from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
 from sklearn.model_selection import cross_validate, StratifiedKFold, KFold
 from sklearn.metrics import (
     accuracy_score,
@@ -60,16 +46,43 @@ from sklearn.metrics import (
 
 # Optional heavy boosters (graceful fallback if not installed)
 try:
-    from xgboost import XGBClassifier, XGBRegressor
-    _HAS_XGB = True
+    from squirrel.models.classification import XGBClassifierModel, XGBRegressorModel
+    _HAS_XGB = XGBClassifierModel is not None and XGBRegressorModel is not None
 except ImportError:
     _HAS_XGB = False
 
 try:
-    from lightgbm import LGBMClassifier, LGBMRegressor
-    _HAS_LGBM = True
+    from squirrel.models.classification import LGBMClassifierModel, LGBMRegressorModel
+    _HAS_LGBM = LGBMClassifierModel is not None and LGBMRegressorModel is not None
 except ImportError:
     _HAS_LGBM = False
+
+from squirrel.models.classification import (
+    AdaBoostClassifierModel,
+    AdaBoostRegressorModel,
+    DecisionTreeClassifierModel,
+    DecisionTreeRegressorModel,
+    ExtraTreesClassifierModel,
+    ExtraTreesRegressorModel,
+    GradientBoostingClassifierModel,
+    GradientBoostingRegressorModel,
+    KNeighborsClassifierModel,
+    KNeighborsRegressorModel,
+    LassoModel,
+    LogisticRegressionModel,
+    RandomForestClassifierModel,
+    RandomForestRegressorModel,
+    RidgeModel,
+    SVCModel,
+    SVRModel,
+)
+try:
+    from squirrel.models.time_series import BiLSTMPredictor, LSTMAttentionPredictor
+    _HAS_TENSORFLOW = True
+except ImportError:
+    BiLSTMPredictor = None
+    LSTMAttentionPredictor = None
+    _HAS_TENSORFLOW = False
 
 # Abstract Base Class
 from squirrel.modules.agents.abstract import IAgent
@@ -78,7 +91,7 @@ from squirrel.modules.providers import Provider
 # Prompt generator
 from squirrel.modules.prompts.builder.TabularDataPromptGenerator import (
     ModelBuilderPromptGenerator,
-    ModelBuilderPromptType,
+    ModelBuilderPromptType
 )
 
 
@@ -96,21 +109,21 @@ def _build_model_registry() -> dict[str, dict]:
     registry: dict[str, dict] = {
         # ── Linear / regularised ──────────────────────────────────────────────
         "logistic_regression": {
-            "cls": LogisticRegression,
+            "cls": LogisticRegressionModel,
             "task": "classification",
             "description": "L2-regularised linear classifier; strong baseline for linearly separable data.",
             "required_params": [],
             "optional_params": {"C": 1.0, "max_iter": 1000, "solver": "lbfgs", "class_weight": None},
         },
         "ridge": {
-            "cls": Ridge,
+            "cls": RidgeModel,
             "task": "regression",
             "description": "L2-regularised linear regressor; efficient and interpretable baseline.",
             "required_params": [],
             "optional_params": {"alpha": 1.0},
         },
         "lasso": {
-            "cls": Lasso,
+            "cls": LassoModel,
             "task": "regression",
             "description": "L1-regularised linear regressor; performs implicit feature selection.",
             "required_params": [],
@@ -118,56 +131,56 @@ def _build_model_registry() -> dict[str, dict]:
         },
         # ── Tree ensembles ────────────────────────────────────────────────────
         "random_forest_classifier": {
-            "cls": RandomForestClassifier,
+            "cls": RandomForestClassifierModel,
             "task": "classification",
             "description": "Bagged decision-tree ensemble; robust to noisy features.",
             "required_params": [],
             "optional_params": {"n_estimators": 200, "max_depth": None, "class_weight": None, "random_state": 42},
         },
         "random_forest_regressor": {
-            "cls": RandomForestRegressor,
+            "cls": RandomForestRegressorModel,
             "task": "regression",
             "description": "Bagged decision-tree ensemble for regression.",
             "required_params": [],
             "optional_params": {"n_estimators": 200, "max_depth": None, "random_state": 42},
         },
         "gradient_boosting_classifier": {
-            "cls": GradientBoostingClassifier,
+            "cls": GradientBoostingClassifierModel,
             "task": "classification",
             "description": "Stage-wise boosted trees; excellent accuracy on medium-sized tabular data.",
             "required_params": [],
             "optional_params": {"n_estimators": 200, "learning_rate": 0.1, "max_depth": 4, "random_state": 42},
         },
         "gradient_boosting_regressor": {
-            "cls": GradientBoostingRegressor,
+            "cls": GradientBoostingRegressorModel,
             "task": "regression",
             "description": "Stage-wise boosted trees for regression.",
             "required_params": [],
             "optional_params": {"n_estimators": 200, "learning_rate": 0.1, "max_depth": 4, "random_state": 42},
         },
         "extra_trees_classifier": {
-            "cls": ExtraTreesClassifier,
+            "cls": ExtraTreesClassifierModel,
             "task": "classification",
             "description": "Extremely randomised trees; faster than RF with comparable accuracy.",
             "required_params": [],
             "optional_params": {"n_estimators": 200, "random_state": 42},
         },
         "extra_trees_regressor": {
-            "cls": ExtraTreesRegressor,
+            "cls": ExtraTreesRegressorModel,
             "task": "regression",
             "description": "Extremely randomised trees for regression.",
             "required_params": [],
             "optional_params": {"n_estimators": 200, "random_state": 42},
         },
         "adaboost_classifier": {
-            "cls": AdaBoostClassifier,
+            "cls": AdaBoostClassifierModel,
             "task": "classification",
             "description": "Adaptive boosting of weak classifiers; effective on clean, balanced data.",
             "required_params": [],
             "optional_params": {"n_estimators": 100, "learning_rate": 1.0, "random_state": 42},
         },
         "adaboost_regressor": {
-            "cls": AdaBoostRegressor,
+            "cls": AdaBoostRegressorModel,
             "task": "regression",
             "description": "Adaptive boosting for regression.",
             "required_params": [],
@@ -175,14 +188,14 @@ def _build_model_registry() -> dict[str, dict]:
         },
         # ── Single-tree ───────────────────────────────────────────────────────
         "decision_tree_classifier": {
-            "cls": DecisionTreeClassifier,
+            "cls": DecisionTreeClassifierModel,
             "task": "classification",
             "description": "Single decision tree; highly interpretable but prone to overfitting.",
             "required_params": [],
             "optional_params": {"max_depth": 6, "random_state": 42},
         },
         "decision_tree_regressor": {
-            "cls": DecisionTreeRegressor,
+            "cls": DecisionTreeRegressorModel,
             "task": "regression",
             "description": "Single decision tree for regression.",
             "required_params": [],
@@ -190,14 +203,14 @@ def _build_model_registry() -> dict[str, dict]:
         },
         # ── SVM ───────────────────────────────────────────────────────────────
         "svc": {
-            "cls": SVC,
+            "cls": SVCModel,
             "task": "classification",
             "description": "Support-vector classifier; effective in high-dimensional spaces.",
             "required_params": [],
             "optional_params": {"C": 1.0, "kernel": "rbf", "probability": True},
         },
         "svr": {
-            "cls": SVR,
+            "cls": SVRModel,
             "task": "regression",
             "description": "Support-vector regressor.",
             "required_params": [],
@@ -205,14 +218,14 @@ def _build_model_registry() -> dict[str, dict]:
         },
         # ── KNN ───────────────────────────────────────────────────────────────
         "knn_classifier": {
-            "cls": KNeighborsClassifier,
+            "cls": KNeighborsClassifierModel,
             "task": "classification",
             "description": "k-nearest-neighbours classifier; non-parametric, no training phase.",
             "required_params": [],
             "optional_params": {"n_neighbors": 5},
         },
         "knn_regressor": {
-            "cls": KNeighborsRegressor,
+            "cls": KNeighborsRegressorModel,
             "task": "regression",
             "description": "k-nearest-neighbours regressor.",
             "required_params": [],
@@ -223,7 +236,7 @@ def _build_model_registry() -> dict[str, dict]:
     # ── Optional heavy boosters ───────────────────────────────────────────────
     if _HAS_XGB:
         registry["xgb_classifier"] = {
-            "cls": XGBClassifier,
+            "cls": XGBClassifierModel,
             "task": "classification",
             "description": "XGBoost gradient-boosted trees; state-of-the-art on tabular data.",
             "required_params": [],
@@ -231,11 +244,11 @@ def _build_model_registry() -> dict[str, dict]:
                 "n_estimators": 300, "learning_rate": 0.05, "max_depth": 6,
                 "subsample": 0.8, "colsample_bytree": 0.8,
                 "use_label_encoder": False, "eval_metric": "logloss",
-                "random_state": 42,
+                "random_state": 42
             },
         }
         registry["xgb_regressor"] = {
-            "cls": XGBRegressor,
+            "cls": XGBRegressorModel,
             "task": "regression",
             "description": "XGBoost gradient-boosted trees for regression.",
             "required_params": [],
@@ -247,7 +260,7 @@ def _build_model_registry() -> dict[str, dict]:
 
     if _HAS_LGBM:
         registry["lgbm_classifier"] = {
-            "cls": LGBMClassifier,
+            "cls": LGBMClassifierModel,
             "task": "classification",
             "description": "LightGBM gradient-boosted trees; fast and memory-efficient.",
             "required_params": [],
@@ -257,7 +270,7 @@ def _build_model_registry() -> dict[str, dict]:
             },
         }
         registry["lgbm_regressor"] = {
-            "cls": LGBMRegressor,
+            "cls": LGBMRegressorModel,
             "task": "regression",
             "description": "LightGBM gradient-boosted trees for regression.",
             "required_params": [],
@@ -265,6 +278,24 @@ def _build_model_registry() -> dict[str, dict]:
                 "n_estimators": 300, "learning_rate": 0.05, "num_leaves": 63,
                 "random_state": 42, "verbose": -1,
             },
+        }
+
+    if _HAS_TENSORFLOW:
+        registry["bilstm"] = {
+            "cls": BiLSTMPredictor,
+            "task": "regression",
+            "sequential": True,
+            "description": "Bidirectional LSTM for ordered numeric observations and multi-step forecasting.",
+            "required_params": [],
+            "optional_params": {"window_size": 30, "difference_order": 1},
+        }
+        registry["lstm_attention"] = {
+            "cls": LSTMAttentionPredictor,
+            "task": "regression",
+            "sequential": True,
+            "description": "LSTM with attention for ordered numeric observations and multi-step forecasting.",
+            "required_params": [],
+            "optional_params": {"lstm_units": 64, "window_size": 30, "difference_order": 1},
         }
 
     return registry
@@ -290,12 +321,15 @@ def build_model_catalog() -> list[dict]:
             "description":     meta["description"],
             "required_params": meta["required_params"],
             "optional_params": list(meta["optional_params"].keys()),
+            "sequential":      meta.get("sequential", False),
         })
     return catalog
 
 
 def build_action_catalog() -> list[dict]:
-    """Return the catalog of post-fit actions the agent understands."""
+    """
+    Return the catalog of post-fit actions the agent understands.
+    """
     return [
         {
             "action_key":  "cv_evaluate",
@@ -424,6 +458,28 @@ class TabularDataModelBuilderAgent(IAgent):
         """
         dataset_profile = self._dataset_profile(data)
 
+        # Infer task type up front from the target column dtype so the model
+        # catalog sent to the planner can be filtered to relevant models only.
+        # Previously every registered model (16+ with XGBoost/LightGBM
+        # installed, roughly half classification and half regression) was sent
+        # regardless of task, which was pure waste — this halves the catalog
+        # in the common case and is a major contributor to prompt size.
+        inferred_task: str | None = None
+        if self.target_column in data.columns:
+            try:
+                inferred_task = self._infer_task_type(data[self.target_column])
+            except Exception:
+                inferred_task = None
+
+        full_model_catalog = build_model_catalog()
+        model_catalog = (
+            [m for m in full_model_catalog if m["task"] in (inferred_task, "both")]
+            if inferred_task else full_model_catalog
+        )
+        is_sequential = self._is_sequential_data(data, preprocessing_summary or {})
+        if not is_sequential:
+            model_catalog = [m for m in model_catalog if not m.get("sequential", False)]
+
         system_prompt = self.prompt_generator.generate_system_prompt(
             prompt_type=ModelBuilderPromptType.GENERATE_PLAN,
         )
@@ -434,7 +490,7 @@ class TabularDataModelBuilderAgent(IAgent):
             ),
             dataset_profile=dataset_profile,
             preprocessing_summary=preprocessing_summary or {},
-            model_catalog=build_model_catalog(),
+            model_catalog=model_catalog,
             action_catalog=build_action_catalog(),
         )
 
@@ -447,7 +503,15 @@ class TabularDataModelBuilderAgent(IAgent):
             },
             strict=False,
             provider_order=[Provider.GROQ, Provider.GEMINI],
-            preference_model_names=["llama-3.3-70b-versatile", "models/gemini-2.5-pro"],
+            preference_model_names=[
+                # GROQ
+                "openai/gpt-oss-20b",
+                "openai/gpt-oss-120b",
+                "meta-llama/llama-4-scout-17b-16e-instruct",
+                # GEMINI
+                "models/gemini-3.8-flash",
+                "models/gemini-2.5-flash"
+            ]
         )
 
         if response is None:
@@ -457,6 +521,10 @@ class TabularDataModelBuilderAgent(IAgent):
         if "error" in plan_obj:
             return self._error_json("plan", plan_obj.get("error", "Unknown error parsing plan."))
 
+        # NOTE: _validate_and_repair_plan / _regenerate_step still validate
+        # against the FULL _MODEL_REGISTRY (unfiltered), so a wrong-task model
+        # key is correctly flagged as invalid rather than silently accepted —
+        # filtering only shrinks what's shown to the planner, not what's valid.
         plan_obj = self._validate_and_repair_plan(plan_obj, dataset_profile)
         return json.dumps(plan_obj, indent=2)
 
@@ -498,6 +566,7 @@ class TabularDataModelBuilderAgent(IAgent):
         X = data.drop(columns=[self.target_column])
         y = data[self.target_column]
         task_type = self._infer_task_type(y)
+        is_sequential = self._is_sequential_data(data)
 
         # Defensively drop any non-numeric columns (e.g. datetime, object,
         # category) that survived preprocessing. sklearn/xgboost/lightgbm
@@ -518,7 +587,9 @@ class TabularDataModelBuilderAgent(IAgent):
         executed_steps: list[dict[str, Any]] = []
 
         for step in plan_obj.get("steps", []):
-            step_result, fitted_model = self._run_step(step, X, y, task_type)
+            step_result, fitted_model = self._run_step(
+                step, X, y, task_type, is_sequential=is_sequential
+            )
             executed_steps.append(step_result)
             if fitted_model is not None:
                 model_key = step.get("model_key", step.get("name", f"model_{len(fitted_models)}"))
@@ -532,6 +603,7 @@ class TabularDataModelBuilderAgent(IAgent):
             "n_features":    int(X.shape[1]),
             "n_samples":     int(X.shape[0]),
             "dropped_non_numeric_columns": non_numeric_cols,
+            "is_sequential": is_sequential,
             "dataset_profile": self._dataset_profile(data),
             "steps":         executed_steps,
         }
@@ -584,7 +656,15 @@ class TabularDataModelBuilderAgent(IAgent):
             },
             strict=False,
             provider_order=[Provider.GROQ, Provider.GEMINI],
-            preference_model_names=["llama-3.3-70b-versatile", "models/gemini-2.5-pro"],
+            preference_model_names=[
+                # GROQ
+                "openai/gpt-oss-20b",
+                "openai/gpt-oss-120b",
+                "meta-llama/llama-4-scout-17b-16e-instruct",
+                # GEMINI
+                "models/gemini-3.8-flash",
+                "models/gemini-2.5-flash"
+            ]
         )
 
         if response is None:
@@ -703,7 +783,15 @@ class TabularDataModelBuilderAgent(IAgent):
             },
             strict=False,
             provider_order=[Provider.GROQ, Provider.GEMINI],
-            preference_model_names=["llama-3.3-70b-versatile", "models/gemini-2.5-pro"],
+            preference_model_names=[
+                # GROQ
+                "openai/gpt-oss-20b",
+                "openai/gpt-oss-120b",
+                "meta-llama/llama-4-scout-17b-16e-instruct",
+                # GEMINI
+                "models/gemini-3.8-flash",
+                "models/gemini-2.5-flash"
+            ]
         )
 
     # ── Step execution ────────────────────────────────────────────────────────
@@ -714,6 +802,7 @@ class TabularDataModelBuilderAgent(IAgent):
         X: pd.DataFrame,
         y: pd.Series,
         task_type: str,
+        is_sequential: bool = False,
     ) -> tuple[dict[str, Any], Any]:
         """
         Execute a single plan step.
@@ -742,6 +831,11 @@ class TabularDataModelBuilderAgent(IAgent):
 
         meta = _MODEL_REGISTRY[model_key]
 
+        if meta.get("sequential") and not is_sequential:
+            msg = f"Model '{model_key}' requires sequential data."
+            logger.warning(msg)
+            return {**base, "status": "skipped", "error": msg}, None
+
         # ── Verify task compatibility ─────────────────────────────────────────
         model_task = meta["task"]
         if model_task != "both" and task_type != model_task:
@@ -763,7 +857,10 @@ class TabularDataModelBuilderAgent(IAgent):
 
         # ── Fit ───────────────────────────────────────────────────────────────
         try:
-            estimator.fit(X, y)
+            if meta.get("sequential"):
+                self._fit_time_series_model(estimator, y)
+            else:
+                estimator.fit(X, y)
         except Exception as exc:
             logger.exception("Failed to fit %s: %s", model_key, exc)
             return {**base, "status": "failed", "error": f"Fit error: {exc}"}, None
@@ -790,6 +887,23 @@ class TabularDataModelBuilderAgent(IAgent):
             "status":   "completed",
             "actions":  action_results,
         }, estimator
+
+    @staticmethod
+    def _fit_time_series_model(estimator: Any, target: pd.Series) -> None:
+        """Fit a sequence predictor on the target in its existing row order."""
+        values = pd.to_numeric(target, errors="raise").to_numpy(dtype=float)
+        if len(values) <= estimator.window_size + estimator.difference_order:
+            raise ValueError(
+                "Sequential data must contain more rows than window_size + difference_order."
+            )
+
+        differences = np.diff(values, n=estimator.difference_order)
+        scaled = estimator.scaler.fit_transform(differences.reshape(-1, 1)).flatten()
+        X_diff, y_diff = estimator.prepare_data(scaled)
+        train_size = int(len(X_diff) * 0.8)
+        if train_size == 0 or train_size == len(X_diff):
+            raise ValueError("Sequential data does not provide both training and validation rows.")
+        estimator.fit(X_diff[:train_size], y_diff[:train_size], X_diff[train_size:], y_diff[train_size:])
 
     # ── Actions ───────────────────────────────────────────────────────────────
 
@@ -987,6 +1101,27 @@ class TabularDataModelBuilderAgent(IAgent):
         if pd.api.types.is_integer_dtype(y) and y.nunique() <= 20:
             return "classification"
         return "regression"
+
+    @staticmethod
+    def _is_sequential_data(
+        data: pd.DataFrame,
+        preprocessing_summary: dict | None = None,
+    ) -> bool:
+        """Identify ordered data using datetime columns or preprocessing metadata."""
+        summary = preprocessing_summary or {}
+        datetime_columns = summary.get("datetime_columns") or summary.get("temporal_columns")
+        if datetime_columns:
+            return True
+
+        for column in data.columns:
+            series = data[column]
+            if pd.api.types.is_datetime64_any_dtype(series):
+                return series.is_monotonic_increasing and series.is_unique
+            if any(token in str(column).lower() for token in ("date", "time", "timestamp")):
+                parsed = pd.to_datetime(series, errors="coerce")
+                if parsed.notna().all() and parsed.is_monotonic_increasing and parsed.is_unique:
+                    return True
+        return False
 
     @staticmethod
     def _dataset_profile(data: pd.DataFrame) -> dict[str, Any]:

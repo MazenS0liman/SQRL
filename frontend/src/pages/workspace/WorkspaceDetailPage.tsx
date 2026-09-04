@@ -17,6 +17,9 @@ import {
   Trophy,
   Database,
   FileWarning,
+  Wand2,
+  Upload,
+  Copy,
 } from "lucide-react";
 import type {
   BuildResponse,
@@ -27,6 +30,7 @@ import type {
   DataSource,
   UploadResponse,
   Workspace,
+  PreprocessedDataResponse,
 } from "./shared";
 import type { DataConnection } from "../connectors/shared";
 import {
@@ -47,6 +51,16 @@ type TablePreviewEntry = {
   columns: string[];
   preview: Record<string, unknown>[];
   error?: string;
+};
+
+// Response shape for POST /workspace/{id}/predict — mirrors
+// squirrel.schemas.workspace.PredictResponse on the backend.
+type PredictResponse = {
+  workspace_id: string;
+  model_key: string;
+  predictions: unknown[];
+  probabilities?: number[][] | null;
+  classes?: string[] | null;
 };
 
 // Statuses for which the pipeline is actively progressing server-side and
@@ -106,6 +120,14 @@ const LEFT_PANEL_DEFAULT = 360;
  * jumps straight from "uploaded" to "completed" once the single /build
  * request resolves, since the backend updates status in the DB as it
  * progresses but nothing was reading it back mid-flight.
+ *
+ * Predicting on new data (POST /workspace/{id}/predict) follows the same
+ * "input on the left, output on the right" split as everything else: the
+ * left panel's "Predict on new data" section (only shown once a build has
+ * completed) is where the user picks a CSV of new, raw rows and — if they
+ * want — a specific fitted model; the right panel's "Predictions" section
+ * is purely the resulting predictions table plus a CSV download, and has
+ * no controls of its own.
  */
 export default function WorkspaceDetailPage(): JSX.Element {
   const { workspaceId } = useParams<{ workspaceId: string }>();
@@ -176,6 +198,10 @@ export default function WorkspaceDetailPage(): JSX.Element {
   const [modelComparison, setModelComparison] = useState<ModelMetric[]>([]);
   const [bestModel, setBestModel] = useState<string | null>(null);
   const [modelFiles, setModelFiles] = useState<ModelFile[]>([]);
+  const [preprocessedData, setPreprocessedData] = useState<PreprocessedDataResponse | null>(null);
+  const [preprocessedLoading, setPreprocessedLoading] = useState(false);
+  const [preprocessedError, setPreprocessedError] = useState<string | null>(null);
+  const [copiedApiValue, setCopiedApiValue] = useState<string | null>(null);
 
   const [downloadError, setDownloadError] = useState<string | null>(null);
   const [downloadingUrl, setDownloadingUrl] = useState<string | null>(null);
@@ -188,6 +214,19 @@ export default function WorkspaceDetailPage(): JSX.Element {
   const [uploadColumnEditLoading, setUploadColumnEditLoading] = useState(false);
   const [uploadColumnEditError, setUploadColumnEditError] = useState<string | null>(null);
   const [uploadColumnEditSaving, setUploadColumnEditSaving] = useState(false);
+
+  // ---- Predict on new data (POST /workspace/{id}/predict) ----------------
+  // Input lives on the left panel (file + optional model choice); the
+  // resulting predictions table lives on the right panel, alongside the
+  // rest of the system's output. See the class docstring above.
+  const [predictFile, setPredictFile] = useState<File | null>(null);
+  const [predictModelKey, setPredictModelKey] = useState<string>(""); // "" => let backend pick the best model
+  const [predictRows, setPredictRows] = useState<Record<string, unknown>[]>([]);
+  const [predictParseError, setPredictParseError] = useState<string | null>(null);
+  const [predicting, setPredicting] = useState(false);
+  const [predictError, setPredictError] = useState<string | null>(null);
+  const [predictResult, setPredictResult] = useState<PredictResponse | null>(null);
+  const predictFileInputRef = useRef<HTMLInputElement>(null);
 
   // ---- Draggable left panel -------------------------------------------
   const [leftWidth, setLeftWidth] = useState<number>(() => {
@@ -420,6 +459,8 @@ export default function WorkspaceDetailPage(): JSX.Element {
       setModelComparison([]);
       setModelFiles([]);
       setBestModel(null);
+      setPreprocessedData(null);
+      setPreprocessedError(null);
       setConflictColumns(null);
       setBuildError(null);
     } catch (err) {
@@ -749,6 +790,12 @@ export default function WorkspaceDetailPage(): JSX.Element {
       setBestModel(data.best_model);
       setModelFiles(data.model_files);
       setWorkspace((prev) => (prev ? { ...prev, status: data.status, target_column: targetColumn } : prev));
+      // A fresh build invalidates any prior prediction run — the fitted
+      // pipeline/model it was based on no longer exists server-side.
+      setPredictResult(null);
+      setPredictError(null);
+      setPreprocessedData(null);
+      setPreprocessedError(null);
     } catch (err) {
       const conflictCols = (err as { conflicting_columns?: string[] })?.conflicting_columns;
       if (conflictCols && conflictCols.length > 0) {
@@ -773,6 +820,143 @@ export default function WorkspaceDetailPage(): JSX.Element {
     } finally {
       setDownloadingUrl(null);
     }
+  };
+
+  const handleLoadPreprocessed = async () => {
+    if (!workspace) return;
+    setPreprocessedLoading(true);
+    setPreprocessedError(null);
+    try {
+      const data = await apiFetch<PreprocessedDataResponse>(
+        `/workspace/${workspace.workspace_id}/preprocessed?limit=100`
+      );
+      setPreprocessedData(data);
+    } catch (err) {
+      setPreprocessedError(err instanceof Error ? err.message : "Could not load preprocessed data.");
+    } finally {
+      setPreprocessedLoading(false);
+    }
+  };
+
+  const handleDownloadPreprocessed = async () => {
+    if (!workspace || !preprocessedData?.file_url) return;
+    setDownloadError(null);
+    try {
+      await downloadOutputFile(
+        workspace.workspace_id,
+        preprocessedData.file_url,
+        `${workspace.name}-preprocessed.csv`
+      );
+    } catch (err) {
+      setDownloadError(err instanceof Error ? err.message : "Download failed.");
+    }
+  };
+
+
+  const externalPredictEndpoint = workspace
+    ? `${API_BASE}/workspace/${workspace.workspace_id}/api/predict`
+    : "";
+  const externalPredictExample = JSON.stringify(
+    {
+      rows: [{ feature_a: 12, feature_b: "value" }],
+      model_key: bestModel ?? "optional-model-key",
+    },
+    null,
+    2
+  );
+
+  const copyApiValue = async (value: string, label: string) => {
+    try {
+      await navigator.clipboard.writeText(value);
+      setCopiedApiValue(label);
+      window.setTimeout(() => setCopiedApiValue(null), 1800);
+    } catch {
+      setCopiedApiValue(null);
+    }
+  };
+  // ---- Predict on new data (CSV -> rows -> POST /predict) ------------------
+  //
+  // The predict endpoint takes raw JSON rows shaped like the workspace's
+  // original input, so the CSV the user picks here is parsed client-side
+  // (never uploaded as a file — this isn't a new input *source*, just a
+  // one-off batch to score) and replayed against the workspace's saved
+  // fitted pipeline + chosen model.
+
+  const handlePredictFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0] ?? null;
+    setPredictError(null);
+    setPredictResult(null);
+    setPredictParseError(null);
+    setPredictFile(file);
+    setPredictRows([]);
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const text = String(reader.result ?? "");
+        const rows = parseCsv(text);
+        if (rows.length === 0) {
+          setPredictParseError("This CSV has no data rows.");
+          return;
+        }
+        setPredictRows(rows);
+      } catch (err) {
+        setPredictParseError(err instanceof Error ? err.message : "Couldn't parse this CSV.");
+      }
+    };
+    reader.onerror = () => setPredictParseError("Couldn't read this file.");
+    reader.readAsText(file);
+  };
+
+  const clearPredictFile = () => {
+    setPredictFile(null);
+    setPredictRows([]);
+    setPredictParseError(null);
+    setPredictError(null);
+    setPredictResult(null);
+    if (predictFileInputRef.current) predictFileInputRef.current.value = "";
+  };
+
+  const handlePredict = async () => {
+    if (!workspace || predictRows.length === 0) return;
+    setPredicting(true);
+    setPredictError(null);
+    try {
+      const data = await apiFetch<PredictResponse>(`/workspace/${workspace.workspace_id}/predict`, {
+        method: "POST",
+        body: JSON.stringify({
+          rows: predictRows,
+          model_key: predictModelKey || undefined,
+        }),
+      });
+      setPredictResult(data);
+    } catch (err) {
+      setPredictError(err instanceof Error ? err.message : "Prediction failed.");
+    } finally {
+      setPredicting(false);
+    }
+  };
+
+  const handleDownloadPredictions = () => {
+    if (!predictResult) return;
+    const hasProbabilities = Boolean(predictResult.probabilities && predictResult.classes);
+    const header = ["row", "prediction", ...(hasProbabilities ? predictResult.classes!.map((c) => `p(${c})`) : [])];
+    const lines = [header.join(",")];
+    predictResult.predictions.forEach((p, i) => {
+      const probRow = hasProbabilities ? predictResult.probabilities![i] ?? [] : [];
+      const cells = [String(i + 1), csvCell(p), ...probRow.map((v) => csvCell(v))];
+      lines.push(cells.join(","));
+    });
+    const blob = new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${workspace?.name || "predictions"}-predictions.csv`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
   };
 
   if (loading) {
@@ -809,22 +993,21 @@ export default function WorkspaceDetailPage(): JSX.Element {
   const isBusy = building || workspace.status === "preprocessing" || workspace.status === "modeling";
   const isStructured = workspace.data_type === "structured";
   const dataTypeLabel = DATA_TYPE_OPTIONS.find((o) => o.value === workspace.data_type)?.label ?? workspace.data_type;
+  const canPredict = workspace.status === "completed" && isStructured;
+  const canRunPrediction = canPredict && predictRows.length > 0 && !predicting && !predictParseError;
 
   return (
     // Normal-flow container (no fixed/absolute on the root), so this page
     // always renders beneath whatever app navbar wraps this route.
-    <div className="flex h-full min-h-0 bg-background text-foreground">
+    <div className="flex h-full min-h-0 flex-col bg-background text-foreground lg:flex-row">
       {/* ————————————————————— LEFT PANEL: every user choice ————————————————————— */}
       <aside
-        style={{ width: leftWidth, flexBasis: leftWidth }}
-        className="relative flex shrink-0 flex-col overflow-y-auto border-r border-border/70 bg-secondary/20"
+        style={{ "--left-panel-width": `${leftWidth}px` } as React.CSSProperties}
+        className="relative flex min-h-0 w-full shrink-0 flex-col overflow-y-auto border-b border-border/70 bg-secondary/20 lg:w-[var(--left-panel-width)] lg:basis-[var(--left-panel-width)] lg:border-b-0 lg:border-r"
       >
         {/* Sticky (NOT fixed) in-panel header — scoped to this aside's own
             scroll container, so it only ever floats within this box. */}
         <div className="sticky top-0 z-10 border-b border-border/70 bg-background/95 px-5 pb-4 pt-5 backdrop-blur">
-          {/* Empty div */}
-          <div className="mb-10 flex items-center justify-between gap-2">
-          </div>
           <div className="flex items-start justify-between gap-2">
             <div className="min-w-0 flex-1">
               {editingName ? (
@@ -863,8 +1046,7 @@ export default function WorkspaceDetailPage(): JSX.Element {
                 </div>
               ) : (
                 <h1 className="group flex items-center gap-1.5 text-base font-semibold tracking-tight text-foreground">
-                  <span className="truncate">{workspace.name}</span>
-                  <button
+                  <button onClick={() => navigate("/notebooks")}
                     onClick={() => setEditingName(true)}
                     aria-label="Rename workspace"
                     className="shrink-0 text-muted-foreground opacity-0 transition-opacity hover:text-foreground group-hover:opacity-100"
@@ -1135,6 +1317,103 @@ export default function WorkspaceDetailPage(): JSX.Element {
               </div>
             </div>
           )}
+
+          {/* ---- Predict on new data ---- */}
+          {canPredict && (
+            <div className="mt-6 rounded-xl border border-border bg-card p-4 shadow-sm">
+              <div className="mb-3 flex items-center gap-1.5">
+                <Wand2 className="h-3.5 w-3.5 text-primary" />
+                <span className="text-[11px] font-medium uppercase tracking-[0.14em] text-muted-foreground">
+                  Predict on new data
+                </span>
+              </div>
+              <p className="mb-3 text-xs text-muted-foreground">
+                Upload a CSV of new rows, shaped like your original input data (no{" "}
+                <span className="font-mono">{workspace.target_column}</span> column needed), to score it with a
+                fitted model from this workspace.
+              </p>
+
+              <div className="space-y-3">
+                <div>
+                  <input
+                    ref={predictFileInputRef}
+                    type="file"
+                    accept=".csv"
+                    onChange={handlePredictFileChange}
+                    className="hidden"
+                    id="predict-file-input"
+                  />
+                  {!predictFile ? (
+                    <label
+                      htmlFor="predict-file-input"
+                      className="flex cursor-pointer flex-col items-center gap-1.5 rounded-lg border border-dashed border-border py-5 text-center transition-colors hover:bg-secondary/50"
+                    >
+                      <Upload className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-xs text-muted-foreground">Click to choose a CSV of new rows</span>
+                    </label>
+                  ) : (
+                    <div className="flex items-center justify-between gap-2 rounded-md border border-border px-3 py-2 text-sm">
+                      <div className="min-w-0">
+                        <p className="truncate font-mono text-foreground">{predictFile.name}</p>
+                        {predictRows.length > 0 && (
+                          <p className="text-xs text-muted-foreground">{predictRows.length} row(s) parsed</p>
+                        )}
+                      </div>
+                      <button
+                        onClick={clearPredictFile}
+                        aria-label="Remove file"
+                        className="shrink-0 text-muted-foreground hover:text-foreground"
+                      >
+                        <X className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  )}
+                  {predictParseError && <p className="mt-1.5 text-xs text-destructive">{predictParseError}</p>}
+                </div>
+
+                {modelFiles.length > 0 && (
+                  <div>
+                    <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                      Model
+                    </label>
+                    <select
+                      value={predictModelKey}
+                      onChange={(e) => setPredictModelKey(e.target.value)}
+                      className="w-full rounded-md border border-input bg-secondary px-3 py-1.5 text-sm text-foreground outline-none focus:ring-2 focus:ring-ring"
+                    >
+                      <option value="">
+                        Best model{bestModel ? ` (${bestModel})` : ""} — recommended
+                      </option>
+                      {modelFiles.map((mf) => (
+                        <option key={mf.model_key} value={mf.model_key}>
+                          {mf.model_key}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
+                <button
+                  onClick={handlePredict}
+                  disabled={!canRunPrediction}
+                  className="flex w-full items-center justify-center gap-1.5 rounded-md bg-primary-gradient px-3 py-2 text-sm font-medium text-primary-foreground shadow-sm transition-opacity hover:opacity-90 disabled:opacity-40"
+                >
+                  {predicting ? (
+                    <>
+                      <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-primary-foreground/40 border-t-primary-foreground" />
+                      Predicting…
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="h-3.5 w-3.5" />
+                      Run prediction
+                    </>
+                  )}
+                </button>
+                {predictError && <p className="text-sm text-destructive">{predictError}</p>}
+              </div>
+            </div>
+          )}
         </div>
       </aside>
 
@@ -1148,7 +1427,7 @@ export default function WorkspaceDetailPage(): JSX.Element {
         onKeyDown={handleDragHandleKeyDown}
         onDoubleClick={() => setLeftWidth(LEFT_PANEL_DEFAULT)}
         title="Drag to resize (double-click to reset)"
-        className="group relative flex w-2.5 shrink-0 cursor-col-resize select-none items-center justify-center"
+        className="group relative hidden w-2.5 shrink-0 cursor-col-resize select-none items-center justify-center lg:flex"
       >
         <div
           className={`h-full w-px transition-colors ${isDragging ? "bg-primary/60" : "bg-border group-hover:bg-primary/40"}`}
@@ -1163,7 +1442,7 @@ export default function WorkspaceDetailPage(): JSX.Element {
       </div>
 
       {/* ————————————————————— RIGHT PANEL: system output only ————————————————————— */}
-      <main className="relative flex-1 overflow-y-auto">
+      <main className="relative min-h-0 flex-1 overflow-y-auto">
         {/* Sticky (NOT fixed) results header — same reasoning as the left
             panel's header: scoped to this main's own scroll container. */}
         <div className="sticky top-0 z-10 border-b border-border/70 bg-background/95 px-8 py-4 backdrop-blur">
@@ -1184,6 +1463,110 @@ export default function WorkspaceDetailPage(): JSX.Element {
               <div className="mt-3">
                 <SummaryKeyValueList data={preprocessingSummary} />
               </div>
+            </section>
+          )}
+
+          {workspace.status === "completed" && isStructured && (
+            <section className="rounded-xl border border-border bg-card p-4 shadow-sm">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <StepLabel n="02">How the model data was prepared</StepLabel>
+                  <p className="mt-2 text-sm text-muted-foreground">
+                    The model was trained on the output of the same preprocessing pipeline shown below. Cleaning,
+                    missing-value handling, encoding, scaling, and feature creation were fitted on the training data
+                    and then applied in order.
+                  </p>
+                </div>
+                <button
+                  onClick={handleLoadPreprocessed}
+                  disabled={preprocessedLoading}
+                  className="shrink-0 rounded-md border border-border px-2.5 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-secondary disabled:opacity-40"
+                >
+                  {preprocessedLoading ? "Loading…" : preprocessedData ? "Refresh data" : "Show data"}
+                </button>
+              </div>
+
+              {preprocessingSummary && Object.keys(preprocessingSummary).length > 0 && (
+                <details open className="mt-4 rounded-lg border border-border/70 bg-secondary/30 p-3">
+                  <summary className="cursor-pointer text-[11px] font-medium uppercase tracking-[0.14em] text-muted-foreground">
+                    Processing steps and outcomes
+                  </summary>
+                  <SummaryKeyValueList data={preprocessingSummary} />
+                </details>
+              )}
+
+              <div className="mt-4 rounded-lg border border-primary/20 bg-primary/5 p-3">
+                <h3 className="text-[11px] font-medium uppercase tracking-[0.14em] text-muted-foreground">
+                  Training features
+                </h3>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Target: <span className="font-mono text-foreground">{workspace.target_column ?? "Not set"}</span>
+                </p>
+                {preprocessedData ? (
+                  <div className="mt-2 flex flex-wrap gap-1.5">
+                    {preprocessedData.columns
+                      .filter((column) => column !== (workspace.target_column ?? preprocessedData.target_column))
+                      .map((column) => (
+                        <span key={column} className="rounded-full border border-border bg-card px-2 py-1 font-mono text-[11px] text-foreground">
+                          {column}
+                        </span>
+                      ))}
+                  </div>
+                ) : (
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Show the preprocessed data to inspect the final feature columns.
+                  </p>
+                )}
+              </div>
+
+              {preprocessedError && <p className="mt-3 text-sm text-destructive">{preprocessedError}</p>}
+
+              {preprocessedData && (
+                <details open className="mt-4">
+                  <summary className="mb-2 cursor-pointer text-xs font-medium text-foreground">
+                    Processed rows
+                  </summary>
+                  <div className="mb-2 flex items-center justify-between gap-3">
+                    <p className="text-xs text-muted-foreground">
+                      Showing {preprocessedData.rows.length} of {preprocessedData.row_count} processed rows.
+                    </p>
+                    {preprocessedData.file_url && (
+                      <button
+                        onClick={handleDownloadPreprocessed}
+                        className="inline-flex shrink-0 items-center gap-1.5 text-xs font-medium text-primary hover:underline"
+                      >
+                        <Download className="h-3 w-3" />
+                        Download CSV
+                      </button>
+                    )}
+                  </div>
+                  <div className="max-h-80 overflow-auto rounded-lg border border-border">
+                    <table className="min-w-full text-left font-mono text-xs">
+                      <thead className="sticky top-0 bg-secondary text-muted-foreground">
+                        <tr>
+                          {preprocessedData.columns.map((column) => (
+                            <th key={column} className="whitespace-nowrap px-2.5 py-1.5 font-medium">
+                              {column}
+                            </th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {preprocessedData.rows.map((row, index) => (
+                          <tr key={index} className="border-t border-border">
+                            {preprocessedData.columns.map((column) => (
+                              <td key={column} className="whitespace-nowrap px-2.5 py-1.5 text-foreground">
+                                {String(row[column] ?? "")}
+                              </td>
+                            ))}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                  {downloadError && <p className="mt-1.5 text-xs text-destructive">{downloadError}</p>}
+                </details>
+              )}
             </section>
           )}
 
@@ -1311,6 +1694,101 @@ export default function WorkspaceDetailPage(): JSX.Element {
               </p>
             </div>
           )}
+
+          {workspace.status === "completed" && isStructured && (
+            <details className="rounded-xl border border-primary/25 bg-primary/5 p-4 shadow-sm">
+              <summary className="flex cursor-pointer list-none items-start justify-between gap-3">
+                <div>
+                  <StepLabel n="04">Use this model in another app</StepLabel>
+                  <p className="mt-2 text-sm text-muted-foreground">
+                    Send raw feature rows to the prediction endpoint.
+                  </p>
+                </div>
+                <span className="shrink-0 rounded-full border border-primary/30 bg-background px-2 py-1 font-mono text-[10px] uppercase tracking-wide text-primary">
+                  POST
+                </span>
+              </summary>
+
+              <div className="mt-4 space-y-3">
+                <ApiSnippet label="Endpoint" value={externalPredictEndpoint} copyLabel="endpoint" copied={copiedApiValue === "endpoint"} onCopy={copyApiValue} />
+                <ApiSnippet
+                  label="JSON body"
+                  value={externalPredictExample}
+                  copyLabel="body"
+                  copied={copiedApiValue === "body"}
+                  onCopy={copyApiValue}
+                  multiline
+                />
+              </div>
+
+              <p className="mt-3 text-xs text-muted-foreground">
+                Include <span className="font-mono text-foreground">Authorization: Bearer &lt;token&gt;</span> and
+                send feature names matching the training data. The optional <span className="font-mono text-foreground">model_key</span>
+                can be any model listed above.
+              </p>
+            </details>
+          )}
+
+          {/* ---- Predictions (output of the left panel's "Predict on new
+              data" section) ---- */}
+          {(predicting || predictResult) && (
+            <section className="rounded-xl border border-border bg-card p-4 shadow-sm">
+              <div className="flex items-center justify-between gap-3">
+                <StepLabel n="04">Predictions</StepLabel>
+                {predictResult && (
+                  <button
+                    onClick={handleDownloadPredictions}
+                    className="flex shrink-0 items-center gap-1.5 rounded-md border border-border px-2.5 py-1 text-xs font-medium text-foreground transition-colors hover:bg-secondary"
+                  >
+                    <Download className="h-3 w-3" />
+                    Download CSV
+                  </button>
+                )}
+              </div>
+
+              {predicting && !predictResult && (
+                <p className="mt-3 text-sm text-muted-foreground">Scoring your rows…</p>
+              )}
+
+              {predictResult && (
+                <>
+                  <p className="mb-3 mt-3 text-sm text-muted-foreground">
+                    Predicted <span className="font-mono text-foreground">{workspace.target_column}</span> using{" "}
+                    <span className="font-mono text-foreground">{predictResult.model_key}</span> for{" "}
+                    {predictResult.predictions.length} row(s).
+                  </p>
+                  <div className="max-h-96 overflow-auto rounded-lg border border-border">
+                    <table className="min-w-full text-left text-sm">
+                      <thead className="sticky top-0 bg-secondary font-mono text-[11px] uppercase tracking-wide text-muted-foreground">
+                        <tr>
+                          <th className="px-3 py-2 font-medium">Row</th>
+                          <th className="px-3 py-2 font-medium">Prediction</th>
+                          {predictResult.classes?.map((c) => (
+                            <th key={c} className="px-3 py-2 text-right font-medium">
+                              p({c})
+                            </th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {predictResult.predictions.map((p, i) => (
+                          <tr key={i} className="border-t border-border">
+                            <td className="px-3 py-2 font-mono text-muted-foreground">{i + 1}</td>
+                            <td className="px-3 py-2 font-medium text-foreground">{String(p)}</td>
+                            {predictResult.classes?.map((c, ci) => (
+                              <td key={c} className="px-3 py-2 text-right font-mono tabular-nums text-foreground">
+                                {formatPercent(predictResult.probabilities?.[i]?.[ci] ?? 0)}
+                              </td>
+                            ))}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </>
+              )}
+            </section>
+          )}
         </div>
       </main>
 
@@ -1427,6 +1905,158 @@ export default function WorkspaceDetailPage(): JSX.Element {
           onSave={handleSaveUploadColumnEdit}
         />
       )}
+    </div>
+  );
+}
+
+// ————————————————————————————————————————————————————————————
+// CSV parsing helpers (client-side, for the "Predict on new data" upload)
+//
+// A small hand-rolled parser rather than pulling in a dependency for one
+// feature: handles quoted fields (including embedded commas/newlines/
+// escaped quotes) and coerces obviously-numeric cells to numbers so they
+// reach POST /predict as the same JSON types the backend's own CSV
+// parsing would produce (see workspace_route.py:_parse_csv), rather than
+// everything arriving as strings.
+
+function parseCsv(text: string): Record<string, unknown>[] {
+  const rows = tokenizeCsv(text);
+  if (rows.length === 0) return [];
+  const [header, ...body] = rows;
+  if (header.length === 0 || header.every((h) => h.trim() === "")) {
+    throw new Error("Couldn't find a header row in this CSV.");
+  }
+  return body
+    .filter((row) => row.some((cell) => cell.trim() !== ""))
+    .map((row) => {
+      const obj: Record<string, unknown> = {};
+      header.forEach((col, i) => {
+        obj[col.trim()] = coerceCsvValue(row[i]);
+      });
+      return obj;
+    });
+}
+
+function coerceCsvValue(raw: string | undefined): unknown {
+  if (raw === undefined) return null;
+  const trimmed = raw.trim();
+  if (trimmed === "") return null;
+  if (trimmed.toLowerCase() === "true") return true;
+  if (trimmed.toLowerCase() === "false") return false;
+  if (/^-?\d+$/.test(trimmed)) {
+    const n = Number(trimmed);
+    if (Number.isSafeInteger(n)) return n;
+  }
+  if (/^-?\d*\.\d+$/.test(trimmed) || /^-?\d+\.\d*$/.test(trimmed)) {
+    const n = Number(trimmed);
+    if (!Number.isNaN(n)) return n;
+  }
+  return raw;
+}
+
+/** RFC 4180-ish tokenizer: handles quoted fields, embedded commas/newlines, and "" escapes. */
+function tokenizeCsv(text: string): string[][] {
+  const rows: string[][] = [];
+  let row: string[] = [];
+  let field = "";
+  let inQuotes = false;
+  let i = 0;
+  const n = text.length;
+
+  while (i < n) {
+    const ch = text[i];
+    if (inQuotes) {
+      if (ch === '"') {
+        if (text[i + 1] === '"') {
+          field += '"';
+          i += 2;
+          continue;
+        }
+        inQuotes = false;
+        i += 1;
+        continue;
+      }
+      field += ch;
+      i += 1;
+      continue;
+    }
+    if (ch === '"') {
+      inQuotes = true;
+      i += 1;
+      continue;
+    }
+    if (ch === ",") {
+      row.push(field);
+      field = "";
+      i += 1;
+      continue;
+    }
+    if (ch === "\r") {
+      i += 1;
+      continue;
+    }
+    if (ch === "\n") {
+      row.push(field);
+      rows.push(row);
+      row = [];
+      field = "";
+      i += 1;
+      continue;
+    }
+    field += ch;
+    i += 1;
+  }
+  // Flush trailing field/row (files without a final newline).
+  if (field !== "" || row.length > 0) {
+    row.push(field);
+    rows.push(row);
+  }
+  return rows;
+}
+
+/** Escapes a single value for CSV output (used by the predictions download). */
+function csvCell(v: unknown): string {
+  const s = v === null || v === undefined ? "" : String(v);
+  if (/[",\n]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
+  return s;
+}
+
+function ApiSnippet({
+  label,
+  value,
+  copyLabel,
+  copied,
+  onCopy,
+  multiline = false,
+}: {
+  label: string;
+  value: string;
+  copyLabel: string;
+  copied: boolean;
+  onCopy: (value: string, label: string) => void;
+  multiline?: boolean;
+}): JSX.Element {
+  return (
+    <div>
+      <div className="mb-1 flex items-center justify-between gap-2">
+        <span className="text-[11px] font-medium uppercase tracking-[0.14em] text-muted-foreground">{label}</span>
+        <button
+          onClick={() => onCopy(value, copyLabel)}
+          aria-label={`Copy ${label.toLowerCase()}`}
+          title={`Copy ${label.toLowerCase()}`}
+          className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"
+        >
+          <Copy className="h-3 w-3" />
+          {copied ? "Copied" : "Copy"}
+        </button>
+      </div>
+      <pre
+        className={`overflow-x-auto rounded-md border border-border bg-background px-3 py-2 font-mono text-xs text-foreground ${
+          multiline ? "whitespace-pre" : "whitespace-nowrap"
+        }`}
+      >
+        {value}
+      </pre>
     </div>
   );
 }

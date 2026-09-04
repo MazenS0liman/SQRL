@@ -59,16 +59,16 @@ export default function WorkspacePage(): JSX.Element {
           <DotField
             dotRadius={1.5}
             dotSpacing={14}
-            bulgeStrength={67}
-            glowRadius={160}
+            bulgeStrength={50}
+            glowRadius={0}
             sparkle={false}
             waveAmplitude={0}
-            cursorRadius={500}
+            cursorRadius={100}
             cursorForce={0}
-            bulgeOnly={false}
+            bulgeOnly={true}
             gradientFrom="#592603"
             gradientTo="#613508"
-            glowColor="#120F17"
+            glowColor="#af4d08"
           />
         </div>
 

@@ -9,11 +9,33 @@ cleaning techniques. Each strategy exposes ``argument_specs`` so it can be catal
 prompted, and validated in the same way as the inspection strategies it is designed
 to complement.
 
+Inference-time replay
+----------------------
+Some strategies compute parameters *from the data they're given*
+(``ImputeMissingValuesCleanStrategy``'s fill values, ``ClipOutliersCleanStrategy``'s
+bounds, ``ScaleNumericCleanStrategy``'s mean/std/min/max/median/iqr). At training
+time that's correct — the parameters are fit from the training frame. At inference
+time, re-fitting from a single new row (or a small new batch) would be wrong: you'd
+get nonsensical bounds/means computed from data that isn't the training distribution.
+
+Every strategy whose ``clean()`` computes such parameters now accepts an optional
+``fitted_state`` kwarg: a ``{column_name: {...params...}}`` dict, normally the
+``per_column`` block of that step's own report from a previous ``clean()`` call made
+during training. When ``fitted_state`` is supplied for a column, the strategy reuses
+those parameters instead of recomputing them from the DataFrame passed in — i.e.
+"apply mode" instead of "fit mode". When omitted (the default), behavior is
+byte-for-byte unchanged from before: the strategy fits from the given data, which is
+correct during training.
+
+``TabularDataCleaner.run_pipeline()`` accepts an optional parallel ``fitted_states``
+list (one dict per step, or ``None`` for steps with no persisted state) so an entire
+saved plan can be replayed against new data in one call — see
+``TabularDataProcessorAgent.apply_fitted_pipeline`` for how this is used end to end.
 """
 # ——————————————————————————————————————————————————————————————
 # Imports
 from abc import ABC, abstractmethod
-from typing import Any, Union
+from typing import Any, Optional, Union
 import pandas as pd
 import numpy as np
 
@@ -32,13 +54,27 @@ class DataCleanStrategy(ABC):
     argument_specs: list[ArgumentSpec] = []  # override in subclasses
 
     @abstractmethod
-    def clean(self, data: pd.DataFrame, **kwargs) -> tuple[pd.DataFrame, dict]:
+    def clean(
+        self,
+        data: pd.DataFrame,
+        fitted_state: Optional[dict] = None,
+        **kwargs,
+    ) -> tuple[pd.DataFrame, dict]:
         """
         Apply the cleaning operation to *data*.
 
         :param data: DataFrame to clean.
+        :param fitted_state: Optional ``{column: {...params...}}`` dict of
+            previously-fitted parameters. When present for a given column,
+            strategies that would otherwise compute parameters from *data*
+            (means, bounds, fill values, ...) reuse the supplied values
+            instead — this is the "apply at inference time" path. Strategies
+            with no data-dependent parameters ignore this argument entirely.
         :return: A tuple of (cleaned_dataframe, report_dict).  The report dict
             always contains at least ``rows_affected`` and ``columns_affected``.
+            For strategies that support ``fitted_state``, the report's
+            ``per_column`` block is exactly the shape you should pass back in
+            as ``fitted_state`` on a future call to replay this step.
         """
 
     @classmethod
@@ -149,6 +185,9 @@ class DropDuplicatesCleanStrategy(DataCleanStrategy):
     """
     Removes duplicate rows, optionally scoped to a subset of columns,
     and returns a report of how many rows were dropped and which indices were affected.
+
+    No data-dependent parameters — ``fitted_state`` is accepted for interface
+    consistency but unused; behavior at inference time is identical to training.
     """
 
     argument_specs: list[ArgumentSpec] = [
@@ -209,12 +248,14 @@ class DropDuplicatesCleanStrategy(DataCleanStrategy):
         }
 
     def clean(
-        self, 
-        data: pd.DataFrame, 
-        **kwargs
+        self,
+        data: pd.DataFrame,
+        fitted_state: Optional[dict] = None,
+        **kwargs,
     ) -> tuple[pd.DataFrame, dict]:
         """
         :param data: Input DataFrame.
+        :param fitted_state: Unused — no data-dependent parameters.
         :param kwargs:
             - ``subset`` (list[str]): columns to check; default all.
             - ``keep`` (str): ``'first'``, ``'last'``, or ``'false'``; default ``'first'``.
@@ -246,6 +287,9 @@ class DropColumnsCleanStrategy(DataCleanStrategy):
     """
     Drops one or more columns from the DataFrame, with optional safety checks
     that prevent dropping columns with low missing ratios or high variance.
+
+    No data-dependent parameters — ``fitted_state`` is accepted for interface
+    consistency but unused.
     """
 
     argument_specs: list[ArgumentSpec] = [
@@ -287,12 +331,14 @@ class DropColumnsCleanStrategy(DataCleanStrategy):
         }
 
     def clean(
-        self, 
-        data: pd.DataFrame, 
-        **kwargs
+        self,
+        data: pd.DataFrame,
+        fitted_state: Optional[dict] = None,
+        **kwargs,
     ) -> tuple[pd.DataFrame, dict]:
         """
         :param data: Input DataFrame.
+        :param fitted_state: Unused — no data-dependent parameters.
         :param kwargs:
             - ``columns`` (list[str]): columns to drop (required).
             - ``errors`` (str): ``'raise'`` or ``'ignore'``; default ``'raise'``.
@@ -328,6 +374,16 @@ class ImputeMissingValuesCleanStrategy(DataCleanStrategy):
     Imputes missing values in one or more columns using a chosen strategy
     (mean, median, mode, constant, or forward/backward fill),
     selected per column or applied uniformly.
+
+    ``fitted_state`` support: when a column has an entry in ``fitted_state``
+    (shape ``{"fill_value": ..., "method": ...}``, as produced by this
+    strategy's own report), that exact fill value is reused instead of being
+    recomputed from *data* — e.g. the training-set mean/median/mode is
+    applied to new rows rather than the (statistically meaningless) mean of
+    a single new row. ``ffill``/``bfill`` cannot be replayed this way since
+    they depend on row order/neighbours, not a single scalar; they always
+    recompute from the data given, same as before, regardless of
+    ``fitted_state``.
     """
 
     argument_specs: list[ArgumentSpec] = [
@@ -412,12 +468,17 @@ class ImputeMissingValuesCleanStrategy(DataCleanStrategy):
         }
 
     def clean(
-        self, 
-        data: pd.DataFrame, 
-        **kwargs
+        self,
+        data: pd.DataFrame,
+        fitted_state: Optional[dict] = None,
+        **kwargs,
     ) -> tuple[pd.DataFrame, dict]:
         """
         :param data: Input DataFrame.
+        :param fitted_state: Optional ``{col: {"fill_value": ..., "method": ...}}``
+            from a previous training-time call. When present for a column
+            (and its method isn't ffill/bfill), the recorded ``fill_value``
+            is reused verbatim instead of recomputed from *data*.
         :param kwargs:
             - ``columns`` (list[str]): columns to impute (required).
             - ``method`` (str): default imputation method; default ``'mean'``.
@@ -429,6 +490,7 @@ class ImputeMissingValuesCleanStrategy(DataCleanStrategy):
         default_method: str = kwargs.get("method", "mean")
         fill_value = kwargs.get("fill_value")
         column_methods: dict = kwargs.get("column_methods") or {}
+        fitted_state = fitted_state or {}
 
         if not columns:
             raise ValueError("'columns' must be a non-empty list.")
@@ -450,7 +512,14 @@ class ImputeMissingValuesCleanStrategy(DataCleanStrategy):
                 report_per_column[col] = {"cells_imputed": 0, "fill_value": None, "method": method}
                 continue
 
-            computed_fill = self._compute_fill(series, method, fill_value)
+            prior = fitted_state.get(col)
+            if prior and method not in ("ffill", "bfill") and prior.get("fill_value") is not None:
+                # ── INFERENCE: reuse the fill value learned during training ──
+                computed_fill = prior["fill_value"]
+            else:
+                # ── TRAINING (or ffill/bfill, which can't be "fitted") ──────
+                computed_fill = self._compute_fill(series, method, fill_value)
+
             cleaned[col] = series.fillna(computed_fill) if method not in ("ffill", "bfill") else (
                 series.ffill() if method == "ffill" else series.bfill()
             )
@@ -470,10 +539,10 @@ class ImputeMissingValuesCleanStrategy(DataCleanStrategy):
         }
 
     def _compute_fill(
-        self, 
-        series: pd.Series, 
-        method: str, 
-        fill_value: Any
+        self,
+        series: pd.Series,
+        method: str,
+        fill_value: Any,
     ) -> Any:
         if method == "mean":
             return series.mean()
@@ -493,6 +562,10 @@ class CastDtypesCleanStrategy(DataCleanStrategy):
     """
     Casts one or more columns to specified dtypes, with configurable error
     handling and optional coercion (invalid values become NaN instead of raising).
+
+    No data-dependent parameters — the target dtype is a fixed argument, not
+    something fit from the data. ``fitted_state`` is accepted for interface
+    consistency but unused.
     """
 
     argument_specs: list[ArgumentSpec] = [
@@ -558,9 +631,15 @@ class CastDtypesCleanStrategy(DataCleanStrategy):
             ],
         }
 
-    def clean(self, data: pd.DataFrame, **kwargs) -> tuple[pd.DataFrame, dict]:
+    def clean(
+        self,
+        data: pd.DataFrame,
+        fitted_state: Optional[dict] = None,
+        **kwargs,
+    ) -> tuple[pd.DataFrame, dict]:
         """
         :param data: Input DataFrame.
+        :param fitted_state: Unused — no data-dependent parameters.
         :param kwargs:
             - ``column_dtypes`` (dict): col → dtype mapping (required).
             - ``errors`` (str): ``'raise'``, ``'coerce'``, or ``'ignore'``; default ``'coerce'``.
@@ -623,6 +702,9 @@ class RenameColumnsCleanStrategy(DataCleanStrategy):
     """
     Renames columns according to a mapping and optionally normalises all names
     to snake_case (lowercase, spaces and hyphens replaced with underscores).
+
+    No data-dependent parameters — ``fitted_state`` is accepted for interface
+    consistency but unused.
     """
 
     argument_specs: list[ArgumentSpec] = [
@@ -675,12 +757,14 @@ class RenameColumnsCleanStrategy(DataCleanStrategy):
         }
 
     def clean(
-        self, 
-        data: pd.DataFrame, 
-        **kwargs
+        self,
+        data: pd.DataFrame,
+        fitted_state: Optional[dict] = None,
+        **kwargs,
     ) -> tuple[pd.DataFrame, dict]:
         """
         :param data: Input DataFrame.
+        :param fitted_state: Unused — no data-dependent parameters.
         :param kwargs:
             - ``rename_map`` (dict): explicit old → new; default ``{}``.
             - ``normalise`` (bool): auto-snake_case; default ``False``.
@@ -718,6 +802,13 @@ class ClipOutliersCleanStrategy(DataCleanStrategy):
     Clips extreme values in numeric columns to a specified range, using either
     explicit bounds or IQR-derived fences, replacing values outside the range
     with the boundary value (Winsorisation).
+
+    ``fitted_state`` support: when a column has an entry in ``fitted_state``
+    (shape ``{"lower_bound": ..., "upper_bound": ...}``, as produced by this
+    strategy's own report), those exact bounds are reused instead of being
+    recomputed from *data* — i.e. new rows are clipped against the training
+    distribution's fences, not fences derived from the (possibly tiny,
+    possibly single-row) inference batch.
     """
 
     argument_specs: list[ArgumentSpec] = [
@@ -800,9 +891,18 @@ class ClipOutliersCleanStrategy(DataCleanStrategy):
             ],
         }
 
-    def clean(self, data: pd.DataFrame, **kwargs) -> tuple[pd.DataFrame, dict]:
+    def clean(
+        self,
+        data: pd.DataFrame,
+        fitted_state: Optional[dict] = None,
+        **kwargs,
+    ) -> tuple[pd.DataFrame, dict]:
         """
         :param data: Input DataFrame.
+        :param fitted_state: Optional ``{col: {"lower_bound": ..., "upper_bound": ...}}``
+            from a previous training-time call. When present for a column,
+            those bounds are reused verbatim instead of recomputed from
+            *data*.
         :param kwargs:
             - ``columns`` (list[str]): required.
             - ``method`` (str): ``'iqr'`` or ``'percentile'``; default ``'iqr'``.
@@ -816,6 +916,7 @@ class ClipOutliersCleanStrategy(DataCleanStrategy):
         explicit_upper = kwargs.get("upper")
         lower_pct: float = float(kwargs.get("lower_percentile", 1.0))
         upper_pct: float = float(kwargs.get("upper_percentile", 99.0))
+        fitted_state = fitted_state or {}
 
         if not columns:
             raise ValueError("'columns' must be a non-empty list.")
@@ -832,10 +933,16 @@ class ClipOutliersCleanStrategy(DataCleanStrategy):
                 per_column[col] = {"error": "non_numeric_column"}
                 continue
 
-            series = cleaned[col].dropna()
-            lower, upper = self._compute_bounds(
-                series, method, explicit_lower, explicit_upper, lower_pct, upper_pct
-            )
+            prior = fitted_state.get(col)
+            if prior and prior.get("lower_bound") is not None and prior.get("upper_bound") is not None:
+                # ── INFERENCE: reuse bounds fit at training time ──
+                lower, upper = float(prior["lower_bound"]), float(prior["upper_bound"])
+            else:
+                # ── TRAINING: derive bounds from this data ──
+                series = cleaned[col].dropna()
+                lower, upper = self._compute_bounds(
+                    series, method, explicit_lower, explicit_upper, lower_pct, upper_pct
+                )
 
             clipped_mask = (cleaned[col] < lower) | (cleaned[col] > upper)
             n_clipped = int(clipped_mask.sum())
@@ -885,6 +992,9 @@ class FilterRowsCleanStrategy(DataCleanStrategy):
     """
     Removes rows that do not satisfy one or more column-level conditions,
     supporting numeric comparisons and categorical membership checks.
+
+    No data-dependent parameters — conditions are fixed arguments.
+    ``fitted_state`` is accepted for interface consistency but unused.
     """
 
     argument_specs: list[ArgumentSpec] = [
@@ -933,9 +1043,15 @@ class FilterRowsCleanStrategy(DataCleanStrategy):
             ],
         }
 
-    def clean(self, data: pd.DataFrame, **kwargs) -> tuple[pd.DataFrame, dict]:
+    def clean(
+        self,
+        data: pd.DataFrame,
+        fitted_state: Optional[dict] = None,
+        **kwargs,
+    ) -> tuple[pd.DataFrame, dict]:
         """
         :param data: Input DataFrame.
+        :param fitted_state: Unused — no data-dependent parameters.
         :param kwargs:
             - ``conditions`` (list[dict]): required.
         :return: (cleaned_df, report)
@@ -1003,6 +1119,14 @@ class ScaleNumericCleanStrategy(DataCleanStrategy):
     """
     Scales numeric columns using standard scaling (Z-score), min-max normalisation,
     or robust scaling (IQR-based), fitting on the provided data in place.
+
+    ``fitted_state`` support: when a column has an entry in ``fitted_state``
+    (shape depends on ``method`` — e.g. ``{"mean": ..., "std": ...}`` for
+    standard, ``{"min": ..., "max": ...}`` for minmax, ``{"median": ...,
+    "iqr": ...}`` for robust — as produced by this strategy's own report),
+    those exact parameters are reused instead of being recomputed from
+    *data*. This is what lets a single new row be scaled consistently with
+    the training distribution instead of trivially becoming 0 (its own mean).
     """
 
     argument_specs: list[ArgumentSpec] = [
@@ -1045,9 +1169,18 @@ class ScaleNumericCleanStrategy(DataCleanStrategy):
             ],
         }
 
-    def clean(self, data: pd.DataFrame, **kwargs) -> tuple[pd.DataFrame, dict]:
+    def clean(
+        self,
+        data: pd.DataFrame,
+        fitted_state: Optional[dict] = None,
+        **kwargs,
+    ) -> tuple[pd.DataFrame, dict]:
         """
         :param data: Input DataFrame.
+        :param fitted_state: Optional ``{col: {...method-specific params...}}``
+            from a previous training-time call. When present and complete
+            for a column's method, those parameters are reused verbatim
+            instead of recomputed from *data*.
         :param kwargs:
             - ``columns`` (list[str]): required.
             - ``method`` (str): ``'standard'``, ``'minmax'``, or ``'robust'``; default ``'standard'``.
@@ -1055,6 +1188,7 @@ class ScaleNumericCleanStrategy(DataCleanStrategy):
         """
         columns: list[str] = kwargs.get("columns") or []
         method: str = kwargs.get("method", "standard")
+        fitted_state = fitted_state or {}
 
         if not columns:
             raise ValueError("'columns' must be a non-empty list.")
@@ -1071,21 +1205,31 @@ class ScaleNumericCleanStrategy(DataCleanStrategy):
                 continue
 
             series = cleaned[col].astype(float)
+            prior = fitted_state.get(col)
 
             if method == "standard":
-                mean, std = float(series.mean()), float(series.std())
+                if prior and prior.get("mean") is not None and prior.get("std") is not None:
+                    mean, std = float(prior["mean"]), float(prior["std"])
+                else:
+                    mean, std = float(series.mean()), float(series.std())
                 cleaned[col] = (series - mean) / std if std else series - mean
                 per_column[col] = {"method": method, "mean": mean, "std": std}
 
             elif method == "minmax":
-                mn, mx = float(series.min()), float(series.max())
+                if prior and prior.get("min") is not None and prior.get("max") is not None:
+                    mn, mx = float(prior["min"]), float(prior["max"])
+                else:
+                    mn, mx = float(series.min()), float(series.max())
                 cleaned[col] = (series - mn) / (mx - mn) if mx != mn else series - mn
                 per_column[col] = {"method": method, "min": mn, "max": mx}
 
             elif method == "robust":
-                median = float(series.median())
-                q1, q3 = float(series.quantile(0.25)), float(series.quantile(0.75))
-                iqr = q3 - q1
+                if prior and prior.get("median") is not None and prior.get("iqr") is not None:
+                    median, iqr = float(prior["median"]), float(prior["iqr"])
+                else:
+                    median = float(series.median())
+                    q1, q3 = float(series.quantile(0.25)), float(series.quantile(0.75))
+                    iqr = q3 - q1
                 cleaned[col] = (series - median) / iqr if iqr else series - median
                 per_column[col] = {"method": method, "median": median, "iqr": iqr}
 
@@ -1147,21 +1291,28 @@ class TabularDataCleaner:
         self.strategy = self._resolve(strategy)
 
     def execute_strategy(
-        self, data: pd.DataFrame, **kwargs
+        self,
+        data: pd.DataFrame,
+        fitted_state: Optional[dict] = None,
+        **kwargs,
     ) -> tuple[pd.DataFrame, dict]:
         """
         Run the current strategy and return ``(cleaned_df, report)``.
 
         :param data: DataFrame to clean.
+        :param fitted_state: Optional previously-fitted per-column parameters
+            to replay instead of recomputing from *data* (inference mode).
+            Ignored by strategies with no data-dependent parameters.
         :param kwargs: Forwarded to the strategy's ``clean`` method.
         :return: Tuple of cleaned DataFrame and report dict.
         """
-        return self.strategy.clean(data, **kwargs)
+        return self.strategy.clean(data, fitted_state=fitted_state, **kwargs)
 
     def run_pipeline(
         self,
         data: pd.DataFrame,
         steps: list[dict],
+        fitted_states: Optional[list[Optional[dict]]] = None,
     ) -> tuple[pd.DataFrame, list[dict]]:
         """
         Execute a sequence of cleaning steps, threading the DataFrame through each.
@@ -1173,18 +1324,25 @@ class TabularDataCleaner:
 
         :param data: Input DataFrame.
         :param steps: List of step dicts.
+        :param fitted_states: Optional list, same length as *steps* (or
+            ``None``), of per-step ``fitted_state`` dicts to replay — pass
+            each step's own ``per_column`` block from a prior training-time
+            report to run this pipeline in "apply" mode against new data
+            instead of "fit" mode.
         :return: (final_cleaned_df, list_of_reports)
         """
         current = data.copy()
         reports: list[dict] = []
+        fitted_states = fitted_states or [None] * len(steps)
 
         for i, step in enumerate(steps):
             strategy_id = step.get("cleaning")
             arguments: dict = step.get("arguments") or {}
             label: str = step.get("name", f"step_{i + 1}")
+            step_fitted_state = fitted_states[i] if i < len(fitted_states) else None
 
             self.set_strategy(strategy_id)
-            current, report = self.strategy.clean(current, **arguments)
+            current, report = self.strategy.clean(current, fitted_state=step_fitted_state, **arguments)
 
             reports.append({
                 "step": i + 1,

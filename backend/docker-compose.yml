@@ -16,9 +16,9 @@ services:
     restart: unless-stopped
     depends_on:
       postgres:
-        condition: service_healthy        # ← wait for postgres too
+        condition: service_healthy
       minio:
-        condition: service_healthy        # ← wait until MinIO is ready
+        condition: service_healthy
 
   postgres:
     image: postgres:17
@@ -73,7 +73,7 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-      start_period: 10s                   # give MinIO time to initialize first
+      start_period: 10s
 
 volumes:
   postgres_data:

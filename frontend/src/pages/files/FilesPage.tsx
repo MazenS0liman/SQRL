@@ -27,7 +27,6 @@ import {
   AlertCircle,
 } from 'lucide-react';
 import DotField from '@/components/background/DotField';
-import { useTheme } from '@/contexts/ThemeContext';
 import { API_BASE, apiFetch } from '@/pages/workspace/shared';
 import { authHeaders } from '@/lib/auth';
 
@@ -207,6 +206,18 @@ function getFileTypeMeta(fileType?: string | null, fileName?: string): FileTypeM
   );
 }
 
+function isHiddenArtifact(fileType?: string | null, fileName?: string): boolean {
+  const normalizedType = (fileType ?? '').toLowerCase().trim();
+  const normalizedName = (fileName ?? '').toLowerCase().split(/[?#]/, 1)[0];
+  return (
+    normalizedType === 'json' ||
+    normalizedType === 'joblib' ||
+    normalizedType.endsWith('/json') ||
+    normalizedName.endsWith('.json') ||
+    normalizedName.endsWith('.joblib')
+  );
+}
+
 // ——————————————————————————————————————————————————————————————
 // Toasts — transient feedback for page-level actions (upload/download
 // failures, bulk-action results) so they don't sit as permanent banners.
@@ -245,8 +256,6 @@ function ToastStack({ toasts, onDismiss }: { toasts: ToastItem[]; onDismiss: (id
 
 export default function FilesPage(): JSX.Element {
   const navigate = useNavigate();
-  const { theme } = useTheme();
-  const isDark = theme === 'dark';
   const [entries, setEntries] = useState<FileEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -300,17 +309,19 @@ export default function FilesPage(): JSX.Element {
     try {
       const response = await apiFetch<FilesListResponse>('/file/');
 
-      const mapped: FileEntry[] = (response.files ?? []).map((file) => ({
-        key: file.fileUrl,
-        fileName: file.fileName,
-        fileUrl: file.fileUrl,
-        fileType: file.fileType ?? null,
-        size: file.size ?? undefined,
-        updatedAt: file.uploadedAt ?? new Date().toISOString(),
-        workspaceId: file.workspaceId ?? null,
-        sourceId: file.sourceId ?? null,
-        notebookId: file.notebookId ?? null,
-      }));
+      const mapped: FileEntry[] = (response.files ?? [])
+        .filter((file) => !isHiddenArtifact(file.fileType, file.fileName))
+        .map((file) => ({
+          key: file.fileUrl,
+          fileName: file.fileName,
+          fileUrl: file.fileUrl,
+          fileType: file.fileType ?? null,
+          size: file.size ?? undefined,
+          updatedAt: file.uploadedAt ?? new Date().toISOString(),
+          workspaceId: file.workspaceId ?? null,
+          sourceId: file.sourceId ?? null,
+          notebookId: file.notebookId ?? null,
+        }));
 
       setEntries(
         mapped.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())

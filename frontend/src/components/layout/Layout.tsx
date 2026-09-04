@@ -12,7 +12,8 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const hideTopNav = /^\/notebooks\/[^/]+$/.test(location.pathname);
+  const hideTopNav1 = /^\/notebooks\/[^/]+$/.test(location.pathname);
+  const hideTopNav2 = /^\/workspace\/[^/]+$/.test(location.pathname);
 
   // Determine active tab based on current route
   const getActiveTab = (): 'home' | 'workspace' | 'notebooks' | 'files' | 'models' | 'data connectors' => {
@@ -52,7 +53,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
         onTabChange={handleTabChange}
       />
       <div className="relative flex-1 flex flex-col min-w-0">
-        {!hideTopNav && <TopNavBar isAuth={true} />}
+        {!hideTopNav1 && !hideTopNav2 && <TopNavBar isAuth={true} />}
         <div className="h-full overflow-y-auto">
           {children}
         </div>

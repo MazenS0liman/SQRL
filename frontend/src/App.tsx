@@ -26,7 +26,6 @@ import DataConnectorsPage from '@/pages/connectors/DataConnectorsPage';
 import NotebooksPage from '@/pages/notebooks/NotebooksPage';
 import NotebookDetailPage from '@/pages/notebooks/NotebookDetailPage';
 import FilesPage from '@/pages/files/FilesPage';
-import SettingsPage from '@/pages/settings/SettingsPage';
 import UserProfilePage from '@/pages/user/UserProfilePage';
 
 const queryClient = new QueryClient();
@@ -184,9 +183,7 @@ const App = () => (
               <Route
                 path="/settings"
                 element={
-                  <ProtectedLayout>
-                    <SettingsPage />
-                  </ProtectedLayout>
+                  <Navigate to="/profile" replace />
                 }
               />
               <Route path="*" element={<Navigate to="/" replace />} />

@@ -102,6 +102,15 @@ export interface ModelsResponse {
   model_files: ModelFile[];
 }
 
+export interface PreprocessedDataResponse {
+  workspace_id: string;
+  target_column?: string | null;
+  columns: string[];
+  rows: Record<string, unknown>[];
+  row_count: number;
+  file_url?: string | null;
+}
+
 export interface ConnectorSummary {
   connector_id: string;
   name: string;
@@ -148,7 +157,8 @@ export async function downloadOutputFile(
   suggestedName: string
 ): Promise<void> {
   const res = await fetch(
-    `${API_BASE}/workspace/${workspaceId}/download?file_url=${encodeURIComponent(fileUrl)}`
+    `${API_BASE}/workspace/${workspaceId}/download?file_url=${encodeURIComponent(fileUrl)}`,
+    { headers: authHeaders() }
   );
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));

@@ -15,7 +15,12 @@ Lifecycle
                   captures outputs and errors, and assembles a structured report.
 3. ``summarize``— asks the LLM to interpret the execution report and emit a
                   concise preprocessing summary with a before/after data profile.
-4. ``run``      — convenience wrapper that chains all three stages.
+4. ``run``      — convenience wrapper that chains all three stages. Now also
+                  returns the raw ``plan``/``execution`` report alongside the
+                  human-readable summary, so the caller can persist them as a
+                  durable "fitted pipeline" artifact (see
+                  ``WorkspaceService.save_pipeline_artifact``) and later replay
+                  it against new data via :meth:`apply_fitted_pipeline`.
 
 Multi-source support
 ---------------------
@@ -37,15 +42,27 @@ sample rows and propose a relationship (typically a join key), grounded in
 the ``target_column`` being predicted and any free-text ``objective`` the
 caller supplied. If the LLM can't find a defensible relationship, the
 merge is refused with an explanation rather than guessing.
+
+Inference-time replay
+----------------------
+``execute()``'s report captures, per completed step, exactly the
+data-dependent parameters each strategy fit from the training frame (see
+the ``fitted_state`` docs on ``TabularDataCleaner``/``TabularDataTransformer``).
+:meth:`apply_fitted_pipeline` replays a saved plan + execution report
+against a *new* DataFrame — same steps, same arguments, but every strategy
+that has a fitted-state hook reuses its training-time parameters instead of
+re-fitting from the (typically much smaller, sometimes single-row)
+inference batch. This is the counterpart to ``execute()`` used by
+``WorkspaceService.predict()``.
 """
 
 # ——————————————————————————————————————————————————————————————
 # Imports
 
 # Standard Libraries
-from copy import deepcopy
 import json
-from typing import Any, Dict
+from copy import deepcopy
+from typing import Any, Dict, Optional
 
 # Third-Party Libraries
 import pandas as pd
@@ -234,6 +251,7 @@ class TabularDataProcessorAgent(IAgent):
                 seen[col] = seen.get(col, 0) + 1
         return sorted(col for col, count in seen.items() if count > 1)
 
+
     @classmethod
     def merge_sources(
         cls,
@@ -343,7 +361,7 @@ class TabularDataProcessorAgent(IAgent):
         objective: str = "",
         merge_recommendation: Dict[str, Any] | None = None,   # NEW
         max_refinements: int = 1,
-    ) -> tuple[pd.DataFrame, dict]: 
+    ) -> tuple[pd.DataFrame, dict, str, str]:
         """
         Multi-source convenience wrapper: merge every source into one
         DataFrame (see :meth:`merge_sources`), then run the normal
@@ -358,6 +376,10 @@ class TabularDataProcessorAgent(IAgent):
             sources relate and/or what the model should optimize for.
             Forwarded to :meth:`merge_sources`'s LLM fallback, and to the
             preprocessing plan/summarize stages as the run's objective.
+        :return: ``(processed_df, summary, plan_json, execution_report_json)``
+            — the last two are the raw plan and execution report, returned
+            so the caller can persist them as the "fitted pipeline" artifact
+            needed by :meth:`apply_fitted_pipeline` at inference time.
         :raises DuplicateColumnError: propagated from :meth:`merge_sources`.
         :raises ValueError: propagated from :meth:`merge_sources` when no
             relationship between sources could be established.
@@ -369,16 +391,17 @@ class TabularDataProcessorAgent(IAgent):
             agent=self,
             merge_recommendation=merge_recommendation,
         )
-        processed_df, summary = self.run(
-            merged, 
-            eda_summary=eda_summary, 
-            objective=objective, 
-            max_refinements=max_refinements
+        processed_df, summary, plan, execution_report = self.run(
+            merged,
+            eda_summary=eda_summary,
+            objective=objective,
+            max_refinements=max_refinements,
+            target_column=target_column
         )
         summary["n_sources"] = len(dataframes)
         if merge_recommendation:
             summary["merge_strategy_used"] = merge_recommendation.get("strategy")
-        return processed_df, summary
+        return processed_df, summary, plan, execution_report
 
     # ── LLM-grounded source relationship finding ─────────────────────────────
 
@@ -437,7 +460,14 @@ class TabularDataProcessorAgent(IAgent):
             },
             strict=False,
             provider_order=[Provider.GROQ, Provider.GEMINI],
-            preference_model_names=["llama-3.3-70b-versatile", "models/gemini-2.5-pro"],
+            preference_model_names=[
+                # GROQ
+                "openai/gpt-oss-120b",
+                "openai/gpt-oss-20b",
+                "meta-llama/llama-4-scout-17b-16e-instruct",
+                # GEMINI
+                "models/gemini-2.5-flash"
+            ]
         )
 
         if response is None:
@@ -539,46 +569,68 @@ class TabularDataProcessorAgent(IAgent):
         data: pd.DataFrame,
         eda_summary: dict | None = None,
         objective: str = "",
+        target_column: str | None = None,
         max_refinements: int = 1,
-    ) -> tuple[pd.DataFrame, dict]:
-        plan = self.plan(data, eda_summary=eda_summary or {}, objective=objective)
-        processed_df, execution = self.execute(data, plan)
+    ) -> tuple[pd.DataFrame, dict, str, str]:
+        """
+        :param target_column: The column the downstream model will predict, if
+            known. When given, the planner is told to preserve it and any step
+            that would drop it is defensively stripped/skipped in execute() —
+            preprocessing has no other way to know a column it judges
+            "redundant" (e.g. highly collinear with another feature) is
+            actually the label, and losing it here surfaces only much later
+            as a hard failure in the model-builder stage.
+        :return: ``(processed_df, summary_dict, plan_json, execution_report_json)``.
+            ``plan_json`` and ``execution_report_json`` are the plan/execution
+            report from whichever attempt was selected as ``best`` — this is
+            the pair to persist (e.g. via
+            ``WorkspaceService.save_pipeline_artifact``) if you want to be
+            able to replay this exact preprocessing against new data later
+            via :meth:`apply_fitted_pipeline`.
+        """
+        plan = self.plan(data, eda_summary=eda_summary or {}, objective=objective, target_column=target_column)
+        processed_df, execution = self.execute(data, plan, target_column=target_column)
         summary_dict = self._parse_summary(self.summarize(data, processed_df, execution))
 
-        best_df, best_summary = processed_df, summary_dict
+        best_df, best_summary, best_plan, best_execution = processed_df, summary_dict, plan, execution
         attempt = 0
         while attempt < max_refinements and self._needs_refinement(best_summary):
             attempt += 1
             feedback = self._refinement_feedback(best_summary)
             logger.info("Preprocessing refinement attempt %s: %s", attempt, feedback)
 
-            plan = self.plan(data, eda_summary=eda_summary or {}, objective=f"{objective}\n\n{feedback}".strip())
-            candidate_df, execution = self.execute(data, plan)
+            plan = self.plan(
+                data, eda_summary=eda_summary or {},
+                objective=f"{objective}\n\n{feedback}".strip(),
+                target_column=target_column,
+            )
+            candidate_df, execution = self.execute(data, plan, target_column=target_column)
             candidate_summary = self._parse_summary(self.summarize(data, candidate_df, execution))
 
             if self._is_better(candidate_summary, best_summary):
                 best_df, best_summary = candidate_df, candidate_summary
+                best_plan, best_execution = plan, execution
 
         best_summary["refinement_attempts"] = attempt
-        return best_df, best_summary
+        return best_df, best_summary, best_plan, best_execution
 
     def plan(
         self,
         data: pd.DataFrame,
         eda_summary: dict | None = None,
         objective: str = "",
+        target_column: str | None = None,
     ) -> str:
         """
         Ask the LLM to build an ordered preprocessing plan.
 
-        The planner receives the dataset profile, the full EDA summary, and
-        both strategy catalogs.  Any steps that reference unknown strategies or
-        omit required arguments are flagged and regenerated up to
-        ``_MAX_REGEN_ATTEMPTS`` times before being marked invalid.
-
         :param data: Input DataFrame.
         :param eda_summary: Optional structured EDA findings.
         :param objective: Optional caller-supplied goal.
+        :param target_column: The column the downstream model will predict, if
+            known. Passed through to the prompt so the planner doesn't drop,
+            encode-away, or otherwise destroy it while cleaning "redundant"
+            columns (e.g. a feature highly correlated with the target itself).
         :return: JSON plan string.
         """
         dataset_profile = self._dataset_profile(data)
@@ -595,6 +647,7 @@ class TabularDataProcessorAgent(IAgent):
             eda_summary=eda_summary or {},
             cleaning_catalog=build_cleaning_catalog(),
             transform_catalog=build_transform_catalog(),
+            target_column=target_column,
         )
 
         response = self.get_response(
@@ -605,8 +658,15 @@ class TabularDataProcessorAgent(IAgent):
                 "schema": self._plan_schema(),
             },
             strict=False,
-            provider_order=[Provider.GROQ, Provider.GEMINI],
-            preference_model_names=["llama-3.3-70b-versatile", "models/gemini-2.5-pro"],
+            provider_order=[Provider.GEMINI, Provider.GROQ],
+            preference_model_names=[
+                # GROQ
+                "openai/gpt-oss-120b",
+                "openai/gpt-oss-20b",
+                "meta-llama/llama-4-scout-17b-16e-instruct",
+                # GEMINI
+                "models/gemini-2.5-flash"
+            ]
         )
 
         if response is None:
@@ -616,7 +676,6 @@ class TabularDataProcessorAgent(IAgent):
         if "error" in plan_obj:
             return self._error_json("plan", plan_obj.get("error", "Unknown error parsing plan."))
 
-        # ── Validate and selectively regenerate invalid steps ─────────────────
         plan_obj = self._validate_and_repair_plan(plan_obj, dataset_profile)
         return json.dumps(plan_obj, indent=2)
 
@@ -624,9 +683,12 @@ class TabularDataProcessorAgent(IAgent):
         self,
         data: pd.DataFrame,
         plan: str | dict,
+        target_column: str | None = None,
     ) -> tuple[pd.DataFrame, str]:
         """
-        Execute the preprocessing plan produced by ``plan()``.
+        Execute the preprocessing plan produced by ``plan()`` in "fit" mode:
+        every strategy computes its parameters (means, bounds, encoding
+        maps, ...) fresh from *data*. This is always the training-time path.
 
         Cleaning steps are dispatched through ``TabularDataCleaner`` and
         transformation steps through ``TabularDataTransformer``.  Unknown or
@@ -635,6 +697,14 @@ class TabularDataProcessorAgent(IAgent):
 
         :param data: Input DataFrame.
         :param plan: JSON plan string or dict from ``plan()``.
+        :param target_column: The column the downstream model will predict, if
+            known. Prompting the planner to preserve it (see :meth:`plan`) is
+            not sufficient on its own — the LLM can and does drop it anyway
+            (e.g. judging it "redundant" against a near-duplicate feature it
+            doesn't recognise as the label). Every step is defensively
+            checked here and the target column is stripped out of any
+            drop-columns arguments before execution, independent of what the
+            plan says.
         :return: ``(processed_df, json_execution_report_string)``
         """
         plan_obj = self._parse_plan(plan)
@@ -650,13 +720,104 @@ class TabularDataProcessorAgent(IAgent):
         executed_steps: list[dict[str, Any]] = []
 
         for step in plan_obj.get("steps", []):
+            step, skip_result = self._protect_target_column(step, target_column)
+            if skip_result is not None:
+                executed_steps.append(skip_result)
+                continue
+
             current_df, step_result = self._run_step(
-                current_df, step, cleaner, transformer
+                current_df, step, cleaner, transformer, fitted_state=None
             )
             executed_steps.append(step_result)
 
         report = self._execution_report(data, current_df, executed_steps)
+
         return current_df, json.dumps(report, indent=2, default=str)
+
+    def apply_fitted_pipeline(
+        self,
+        new_data: pd.DataFrame,
+        execution_report: str | dict,
+    ) -> pd.DataFrame:
+        """
+        Inference-time counterpart to :meth:`execute`: replay a previously
+        completed preprocessing run against *new_data*, reusing each step's
+        already-fitted parameters instead of recomputing them.
+
+        This walks ``execution_report["steps"]`` in the same order they ran
+        at training time. For each step whose original status was
+        ``"completed"``:
+          - The same strategy + arguments are re-applied to *new_data*.
+          - That step's recorded ``per_column`` block (the fitted state —
+            means, bounds, encoding maps, fitted λ, dummy-column sets, ...)
+            is passed through as ``fitted_state``, so every strategy with a
+            data-dependent parameter reuses the training-time value instead
+            of re-fitting from *new_data* (which, at inference time, may be
+            a single row — meaningless to "fit" anything from).
+        Steps that were ``"failed"`` or ``"skipped"`` during training are
+        skipped here too, since they never touched the training frame either.
+
+        :param new_data: Raw new data to transform into the same feature
+            space the model was trained on.
+        :param execution_report: The JSON execution report string or dict
+            returned by :meth:`execute` (or, equivalently,
+            ``run()``'s fourth return value) during training. This is what
+            ``WorkspaceService.save_pipeline_artifact`` persists and
+            ``WorkspaceService.predict`` loads back.
+        :return: *new_data* transformed through the identical pipeline the
+            training data went through, ready to feed to the fitted model
+            (after dropping the target column, if present).
+        :raises ValueError: if *execution_report* can't be parsed.
+        """
+        report_obj = (
+            execution_report if isinstance(execution_report, dict)
+            else json.loads(execution_report)
+        )
+        if report_obj.get("status") == "failed":
+            raise ValueError(
+                f"Cannot replay a failed preprocessing run: {report_obj.get('error')}"
+            )
+
+        cleaner = TabularDataCleaner("drop_duplicates")
+        transformer = TabularDataTransformer("standard_scale")
+
+        current_df = new_data.copy()
+
+        for step in report_obj.get("steps", []):
+            if step.get("status") != "completed":
+                # This step never touched the training frame either
+                # (unknown strategy / missing args / runtime failure) — skip
+                # it identically at inference time.
+                continue
+
+            strategy_name = step.get("strategy", "")
+            strategy_type = step.get("strategy_type", self._ALL_REGISTRY.get(strategy_name, ""))
+            arguments = step.get("arguments") or {}
+            fitted_state = (step.get("output") or {}).get("per_column") or {}
+
+            fabricated_step = {
+                "step": step.get("step"),
+                "name": step.get("name"),
+                "strategy": strategy_name,
+                "strategy_type": strategy_type,
+                "objective": step.get("objective"),
+                "arguments": arguments,
+            }
+
+            current_df, step_result = self._run_step(
+                current_df, fabricated_step, cleaner, transformer, fitted_state=fitted_state
+            )
+            if step_result.get("status") == "completed":
+                per_col_errors = {
+                    c: v.get("error") for c, v in (step_result.get("output") or {}).get("per_column", {}).items()
+                    if isinstance(v, dict) and v.get("error")
+                }
+                if per_col_errors:
+                    raise ValueError(
+                        f"Replay of step '{step.get('name')}' had per-column failures: {per_col_errors}"
+                    )
+
+        return current_df
 
     def summarize(
         self,
@@ -714,7 +875,14 @@ class TabularDataProcessorAgent(IAgent):
             },
             strict=False,
             provider_order=[Provider.GROQ, Provider.GEMINI],
-            preference_model_names=["llama-3.3-70b-versatile", "models/gemini-2.5-pro"],
+            preference_model_names=[
+                # GROQ
+                "openai/gpt-oss-120b",
+                "openai/gpt-oss-20b",
+                "meta-llama/llama-4-scout-17b-16e-instruct",
+                # GEMINI
+                "models/gemini-2.5-flash"
+            ]
         )
 
         if response is None:
@@ -726,7 +894,9 @@ class TabularDataProcessorAgent(IAgent):
     _MAX_REGEN_ATTEMPTS: int = 2
 
     def _validate_and_repair_plan(
-        self, plan_obj: dict, dataset_profile: dict
+        self, 
+        plan_obj: dict, 
+        dataset_profile: dict
     ) -> dict:
         """
         Walk through every step in *plan_obj*, validate it, and attempt
@@ -880,7 +1050,14 @@ class TabularDataProcessorAgent(IAgent):
             },
             strict=False,
             provider_order=[Provider.GROQ, Provider.GEMINI],
-            preference_model_names=["llama-3.3-70b-versatile", "models/gemini-2.5-pro"],
+            preference_model_names=[
+                # GROQ
+                "openai/gpt-oss-120b",
+                "openai/gpt-oss-20b",
+                "meta-llama/llama-4-scout-17b-16e-instruct",
+                # GEMINI
+                "models/gemini-2.5-flash"
+            ]
         )
 
     # ── Step execution ────────────────────────────────────────────────────────
@@ -891,6 +1068,7 @@ class TabularDataProcessorAgent(IAgent):
         step: dict[str, Any],
         cleaner: TabularDataCleaner,
         transformer: TabularDataTransformer,
+        fitted_state: Optional[dict] = None,
     ) -> tuple[pd.DataFrame, dict[str, Any]]:
         """
         Execute a single plan step and return ``(updated_df, step_result_dict)``.
@@ -900,6 +1078,13 @@ class TabularDataProcessorAgent(IAgent):
             - ``strategy_type == "transform"``  → TabularDataTransformer
             - strategy name found in clean registry but not type specified → cleaning
             - strategy name found in transform registry                     → transform
+
+        :param fitted_state: Optional ``{column: {...params...}}`` to pass
+            through to the strategy — ``None`` (the default) means "fit mode"
+            (used by :meth:`execute`, i.e. training); a supplied dict means
+            "apply mode" (used by :meth:`apply_fitted_pipeline`, i.e.
+            inference). Strategies with no data-dependent parameters ignore
+            this argument either way.
         """
         strategy_name: str = str(step.get("strategy", ""))
         strategy_type: str = str(
@@ -914,6 +1099,7 @@ class TabularDataProcessorAgent(IAgent):
             "objective":       step.get("objective"),
             "actions":         step.get("actions", []),
             "expected_output": step.get("expected_output", []),
+            "arguments":       step.get("arguments") or {},
         }
 
         # ── Unknown strategy ──────────────────────────────────────────────────
@@ -957,11 +1143,11 @@ class TabularDataProcessorAgent(IAgent):
                 # ("ClipOutliersCleanStrategy") — translate to short key for the orchestrator.
                 orchestrator_key = self._CLEAN_KEY_MAP.get(strategy_name, strategy_name)
                 cleaner.set_strategy(orchestrator_key)
-                updated_df, report = cleaner.execute_strategy(data, **arguments)
+                updated_df, report = cleaner.execute_strategy(data, fitted_state=fitted_state, **arguments)
             else:
                 orchestrator_key = self._TRANSFORM_KEY_MAP.get(strategy_name, strategy_name)
                 transformer.set_strategy(orchestrator_key)
-                updated_df, report = transformer.execute_strategy(data, **arguments)
+                updated_df, report = transformer.execute_strategy(data, fitted_state=fitted_state, **arguments)
 
             return updated_df, {
                 **base,
@@ -981,7 +1167,9 @@ class TabularDataProcessorAgent(IAgent):
         processed_df: pd.DataFrame,
         executed_steps: list[dict[str, Any]],
     ) -> dict[str, Any]:
-        """Assemble the top-level execution report dict."""
+        """
+        Assemble the top-level execution report dict.
+        """
         counts: dict[str, int] = {"completed": 0, "failed": 0, "skipped": 0}
         all_new_columns: list[str] = []
         all_dropped_columns: list[str] = []
@@ -1015,8 +1203,12 @@ class TabularDataProcessorAgent(IAgent):
     # ── Dataset profile ───────────────────────────────────────────────────────
 
     @staticmethod
-    def _dataset_profile(data: pd.DataFrame) -> dict[str, Any]:
-        """Lightweight dataset descriptor sent to the planner and summarizer."""
+    def _dataset_profile(
+        data: pd.DataFrame
+    ) -> dict[str, Any]:
+        """
+        Lightweight dataset descriptor sent to the planner and summarizer.
+        """
         return {
             "rows":           int(data.shape[0]),
             "columns":        int(data.shape[1]),
@@ -1170,6 +1362,82 @@ class TabularDataProcessorAgent(IAgent):
         return (candidate.get("steps_failed", 0), len(candidate.get("warnings") or [])) < \
             (current.get("steps_failed", 0), len(current.get("warnings") or []))
 
+
+    # ── Target-column protection ─────────────────────────────────────────────
+    #
+    # The planner is told (see PreprocessPromptGenerator._user_plan) which
+    # column is the prediction target, but that's a soft signal — an LLM can
+    # still drop it, e.g. when it looks "redundant" against a highly
+    # correlated feature (an 0.998 Open/Close correlation genuinely does look
+    # like a drop-one-of-them case unless you know one of them IS the label).
+    # When that happens, preprocessing reports success, but the model builder
+    # fails outright and only surfaces the real cause as a vague "target
+    # column not found" warning several minutes and several retries later.
+    # This is the hard backstop: independent of prompt compliance, no step is
+    # allowed to remove target_column from the frame.
+
+    @staticmethod
+    def _protect_target_column(
+        step: dict[str, Any],
+        target_column: str | None,
+    ) -> tuple[dict[str, Any], dict[str, Any] | None]:
+        """
+        Inspect a single plan step and, if it would drop ``target_column``,
+        rewrite it to exclude the target (or skip it outright if the target
+        was its only column).
+
+        :return: ``(possibly-rewritten step, skip_result)``. ``skip_result``
+            is ``None`` if the step should still be executed normally, or a
+            completed step-result dict (status "skipped") if nothing is left
+            to run.
+        """
+        if not target_column:
+            return step, None
+
+        strategy_name = str(step.get("strategy", ""))
+        if strategy_name not in ("DropColumnsCleanStrategy", "drop_columns"):
+            return step, None
+
+        arguments = dict(step.get("arguments") or {})
+        changed = False
+        for key, value in list(arguments.items()):
+            if isinstance(value, list) and target_column in value:
+                arguments[key] = [c for c in value if c != target_column]
+                changed = True
+            elif value == target_column:
+                arguments[key] = None
+                changed = True
+
+        if not changed:
+            return step, None
+
+        logger.warning(
+            "Preprocessing step %s (%s) would have dropped target column '%s'; "
+            "stripped it from the step's arguments to protect it.",
+            step.get("step"), strategy_name, target_column,
+        )
+
+        step = {**step, "arguments": arguments}
+
+        # If every remaining column-list argument is now empty, there's
+        # nothing left for this step to do — skip it rather than calling the
+        # strategy with an empty/None column list.
+        if all(not v for v in arguments.values()):
+            skip_result = {
+                "step": step.get("step"),
+                "name": step.get("name"),
+                "strategy": strategy_name,
+                "strategy_type": step.get("strategy_type", "cleaning"),
+                "objective": step.get("objective"),
+                "status": "skipped",
+                "error": (
+                    f"Refused to execute: only column targeted for dropping was "
+                    f"the prediction target '{target_column}'."
+                ),
+            }
+            return step, skip_result
+
+        return step, None
 
 class _AgentMergeRejected(Exception):
     """

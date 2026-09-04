@@ -292,6 +292,7 @@ class InspectPromptGenerator(IPromptGenerator):
             - Ensure to generate arguments in the correct format and with the right keys as shown in the examples above.
         """).strip()
 
+
     @staticmethod
     def _render_catalog(available: list[dict]) -> str:
         """
@@ -299,17 +300,12 @@ class InspectPromptGenerator(IPromptGenerator):
         Each entry shows name, description, accepted arguments, and a full example step.
         Falls back to a name+description-only block for any strategy not in INSPECTION_CATALOG.
         """
-        # The planner passes a full catalog (built by build_inspection_catalog()),
-        # but this function is defensive: accept minimal entries (name+description)
-        # as well as rich entries produced by DataInspectStrategy.to_catalog_entry().
         blocks: list[str] = []
 
         for entry in available:
             name = entry.get("name", "(unnamed)")
             description = entry.get("description", entry.get("doc", "(no description)"))
 
-            # Build argument lines from either a pre-rendered "arguments" dict
-            # or from the canonical "arguments_schema" produced by the catalog builder.
             args_lines = "      (none)"
             if entry.get("arguments") and isinstance(entry.get("arguments"), dict):
                 args_lines = "\n".join(f"      {k}: {v}" for k, v in entry["arguments"].items()) or args_lines
@@ -336,12 +332,10 @@ class InspectPromptGenerator(IPromptGenerator):
 
             args_description = entry.get("arguments_description", "No arguments required.")
 
-            # Also include a full-spec JSON block so any extra keys are visible
-            try:
-                full_spec = json.dumps(entry, indent=2, default=str)
-            except Exception:
-                full_spec = str(entry)
-
+            # NOTE: previously also dumped the full raw `entry` dict as a "Full spec"
+            # block here — removed. It duplicated everything above (and more),
+            # roughly doubling token cost per catalog entry for no comprehension
+            # benefit, and was the primary cause of 413s on Groq's 8K TPM tier.
             blocks.append(textwrap.dedent(f"""
                 ### {name}
                 {description}
@@ -352,9 +346,6 @@ class InspectPromptGenerator(IPromptGenerator):
 
                 Example step:
                 {example_json}
-
-                Full spec:
-                {full_spec}
             """).strip())
 
         return "\n\n".join(blocks)

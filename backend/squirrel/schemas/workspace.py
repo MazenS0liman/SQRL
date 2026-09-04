@@ -204,6 +204,15 @@ class ModelsResponse(BaseModel):
     model_files: List[ModelFileOut] = []
 
 
+class PreprocessedDataResponse(BaseModel):
+    workspace_id: str
+    target_column: Optional[str] = None
+    columns: List[str] = []
+    rows: List[Dict[str, Any]] = []
+    row_count: int = 0
+    file_url: Optional[str] = None
+
+
 # ——————————————————————————————————————————————————————————————
 # Chat-driven preprocessing / model-build endpoints (legacy conversational
 # flow, kept alongside the workspace-pipeline endpoints above)
@@ -290,3 +299,57 @@ class WorkspaceListResponse(BaseModel):
 
     total:      int                  = 0
     workspaces: List[WorkspaceRecord] = Field(default_factory=list)
+
+
+
+
+from typing import Any, Dict, List, Optional
+from pydantic import BaseModel, Field
+
+
+class PredictRequest(BaseModel):
+    """
+    Body for ``POST /workspace/{workspace_id}/predict``.
+    
+    ``rows`` should be shaped like the workspace's original raw input
+    source(s) — i.e. exactly what you'd upload as a CSV row or pull from a
+    connector — *not* already preprocessed. The saved fitted pipeline
+    handles cleaning/encoding/scaling internally.
+    """
+
+    rows: List[Dict[str, Any]] = Field(
+        ...,
+        description=(
+            "One or more raw rows to predict on, each a column-name -> "
+            "value mapping matching the workspace's original input schema."
+        ),
+        min_length=1,
+    )
+    model_key: Optional[str] = Field(
+        None,
+        description=(
+            "Which fitted model to use (see GET /workspace/{workspace_id}/models "
+            "for available keys). Omit to use the workspace's recommended "
+            "'best_model' from the most recent model-building run."
+        ),
+    )
+    
+
+class PredictResponse(BaseModel):
+    """Response for ``POST /workspace/{workspace_id}/predict``."""
+ 
+    workspace_id: str
+    model_key: str = Field(..., description="The fitted model actually used.")
+    predictions: List[Any] = Field(
+        ..., description="One prediction per input row, in the same order as `rows`."
+    )
+    probabilities: Optional[List[List[float]]] = Field(
+        None,
+        description=(
+            "Per-row class probabilities, only present for classifiers "
+            "exposing predict_proba(). Column order matches `classes`."
+        ),
+    )
+    classes: Optional[List[str]] = Field(
+        None, description="Class labels corresponding to each column of `probabilities`."
+    )

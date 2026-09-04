@@ -107,14 +107,13 @@ class MinIOService(IBlobStorageService):
             logger.info(f"Bucket '{self.bucket}' does not exist. Creating it.")
             self.client.make_bucket(self.bucket)
 
-
     @override
     def retrieve_file(
         self,
         file_url: str,
     ) -> Optional[File]:
         """
-        Download a specific file from MinIO bucket and return it with its
+        Download a specific file from MinIO bucket and return it with its raw
         content loaded into ``fileByte``.
 
         **Description:**
@@ -122,10 +121,22 @@ class MinIOService(IBlobStorageService):
             This method retrieves a file from the MinIO bucket via the API endpoint, handling
             directory structure preservation and authentication.
 
+        .. note::
+            ``fileByte`` holds the file's *raw bytes*, exactly as stored —
+            never force-decoded as UTF-8 text. This service has no way to know
+            whether a given object is text (CSV, JSON) or binary (a joblib
+            model, a future parquet/image artifact); every current caller
+            either consumes ``fileByte`` as bytes directly (``io.BytesIO(...)``
+            for pandas/joblib) or decodes it itself when it knows the content
+            is text (see ``WorkspaceService.load_pipeline_artifact``). Forcing
+            a UTF-8 decode here previously crashed on any binary object with
+            ``UnicodeDecodeError`` (e.g. downloading a ``.joblib`` model for
+            prediction) and was never actually correct for the text case either.
+
         :param file_url: URL of the file to download (e.g., s3://bucket/key)
         :type file_url: str
 
-        :return: File object with content in ``fileByte``, or None if retrieval fails
+        :return: File object with raw content in ``fileByte``, or None if retrieval fails
         :rtype: Optional[File]
         """
         try:
@@ -153,7 +164,7 @@ class MinIOService(IBlobStorageService):
                 return File(
                     fileUrl=file_url,
                     fileName=Path(object_name).name,
-                    fileByte=file_bytes.decode("utf-8"),
+                    fileByte=file_bytes,
                     size=local_path.stat().st_size,
                     uploadedAt=datetime.fromtimestamp(local_path.stat().st_mtime),
                 )

@@ -48,8 +48,9 @@ Pipeline per workspace
         non-target column with no way to reconcile them, the build is
         refused (409) so the frontend can surface it.
      c. Runs :class:`TabularDataProcessorAgent` (clean + transform + feature
-        engineer) on the merged frame, persisting that run via
-        :class:`WorkspaceService`.
+        engineer) on the merged frame, persisting that run — including the
+        fitted plan + execution report needed to replay this exact
+        preprocessing at inference time — via :class:`WorkspaceService`.
      d. Runs :class:`TabularDataModelBuilderAgent` on the processed frame
         and persists the fitted models + comparison summary.
      e. Returns both summaries, including per-model accuracy metrics, so
@@ -70,6 +71,13 @@ Pipeline per workspace
    Convenience endpoint returning just the latest model-building summary
    (model list + accuracy metrics + recommended model) for the workspace.
 
+10. ``POST /workspace/{workspace_id}/predict``
+    Given new, raw rows shaped like the workspace's original input
+    source(s), replays the workspace's saved fitted preprocessing pipeline
+    on them (reusing training-time fitted parameters — means, bounds,
+    encoding maps, etc. — rather than re-fitting from the new rows) and
+    runs the chosen (or best) fitted model to produce predictions.
+
 .. note::
     Data-type values other than ``"structured"`` (image / text / audio /
     other) are recorded on the workspace so the frontend can route to a
@@ -83,6 +91,8 @@ Pipeline per workspace
 
 # Standard Libraries
 import json
+import io
+import re
 import tempfile
 from pathlib import Path
 from typing import Optional, List, Dict, Any
@@ -134,8 +144,11 @@ from squirrel.schemas.workspace import (
     BuildRequest,
     BuildResponse,
     ModelsResponse,
+    PreprocessedDataResponse,
     ModelMetric,
     ModelFileOut,
+    PredictRequest,     # NEW — {"rows": [...], "model_key": Optional[str]}
+    PredictResponse,     # NEW — {"model_key", "predictions", "probabilities"?, "classes"?}
 )
 from squirrel.schemas.file import UploadedSourceOut
 
@@ -229,8 +242,6 @@ def _model_key_from_url(file_url: str) -> str:
     Falls back to the bare filename stem if the timestamp suffix isn't
     found, so this degrades gracefully for any unexpected naming.
     """
-    import re
-
     filename = file_url.rsplit("/", 1)[-1]
     stem = filename[: -len(".joblib")] if filename.endswith(".joblib") else filename
     match = re.match(r"^(.*)_\d{8}T\d{6}$", stem)
@@ -556,7 +567,11 @@ async def build_structured_models(
 
     Both stages are persisted through :class:`WorkspaceService`, so this
     workspace's run history is queryable the same way a chat-driven run
-    would be.
+    would be. The preprocessing stage additionally persists the fitted
+    plan + execution report as a standalone "pipeline artifact" — see
+    :meth:`WorkspaceService.save_pipeline_artifact` — so that
+    ``POST /{workspace_id}/predict`` can later replay the exact same
+    preprocessing against new rows.
     """
     workspace_svc = _workspace_service()
     try:
@@ -622,14 +637,22 @@ async def build_structured_models(
 
     try:
         processor = TabularDataProcessorAgent()
-        processed_df, preprocessing_summary = await run_in_threadpool(
-            processor.run_multi,
-            dataframes,
-            request.target_column,
-            inspection_report,          # eda_summary — full multi-source findings
-            request.query or "",
-            relationship,               # merge_recommendation
-            2,                          # max_refinements
+        # run_multi() returns (processed_df, summary, plan, execution_report).
+        # The last two capture every strategy's fitted, data-dependent
+        # parameters (means, bounds, encoding maps, fitted power-transform
+        # λ, one-hot dummy-column sets, ...) — they must be forwarded to
+        # save_run() below so the workspace becomes predictable via
+        # POST /{workspace_id}/predict. Previously these were discarded here.
+        processed_df, preprocessing_summary, preprocessing_plan, preprocessing_execution_report = (
+            await run_in_threadpool(
+                processor.run_multi,
+                dataframes,
+                request.target_column,
+                inspection_report,          # eda_summary — full multi-source findings
+                request.query or "",
+                relationship,               # merge_recommendation
+                2,                          # max_refinements
+            )
         )
     except DuplicateColumnError as exc:
         raise HTTPException(
@@ -673,6 +696,8 @@ async def build_structured_models(
         0,
         0,
         current_user.id,
+        preprocessing_plan,               # NEW — persisted as part of the pipeline artifact
+        preprocessing_execution_report,   # NEW — carries the fitted state predict() replays
     )
     output_file_urls: List[str] = list(preprocess_save.get("output_file_urls", []))
 
@@ -771,11 +796,24 @@ async def get_models(
     latest = records[0]
     model_summary = latest.get("agent_summary") or {}
     model_output_urls = list(latest.get("output_file_urls", []) or [])
+    preprocessing_records = await run_in_threadpool(
+        workspace_svc.get_records_by_workspace_id,
+        workspace_id,
+        "preprocessing",
+        1,
+        current_user.id,
+    )
+    preprocessing_summary = (
+        (preprocessing_records[0].get("agent_summary") or {})
+        if preprocessing_records
+        else None
+    )
 
     return ModelsResponse(
         workspace_id=workspace_id,
         status=workspace["status"],
         target_column=workspace.get("target_column"),
+        preprocessing_summary=preprocessing_summary,
         model_summary=model_summary,
         model_comparison=_extract_model_comparison(model_summary),
         best_model=model_summary.get("best_model"),
@@ -785,6 +823,134 @@ async def get_models(
             for url in model_output_urls
         ]
     )
+
+
+@router.get(
+    "/{workspace_id}/preprocessed",
+    summary="Preview the latest data after the training preprocessing pipeline",
+    response_model=PreprocessedDataResponse,
+)
+async def get_preprocessed_data(
+    workspace_id: str,
+    limit: int = 100,
+    current_user: AuthUserRead = Depends(get_current_user),
+) -> PreprocessedDataResponse:
+    if limit < 1 or limit > 500:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="limit must be between 1 and 500.")
+
+    workspace_svc = _workspace_service()
+    try:
+        workspace = await run_in_threadpool(workspace_svc.get_workspace, workspace_id, current_user.id)
+    except WorkspaceNotFoundError:
+        raise _not_found(workspace_id)
+
+    records = await run_in_threadpool(
+        workspace_svc.get_records_by_workspace_id,
+        workspace_id,
+        "preprocessing",
+        1,
+        current_user.id,
+    )
+    if not records:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No preprocessing run found for this workspace.")
+
+    urls = records[0].get("output_file_urls") or []
+    csv_url = next((url for url in urls if str(url).lower().endswith(".csv")), None)
+    if not csv_url:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No preprocessed data artifact found.")
+
+    raw = await run_in_threadpool(workspace_svc.download_output_file, csv_url)
+    if raw is None:
+        raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail="Could not retrieve preprocessed data.")
+
+    try:
+        df = pd.read_csv(io.BytesIO(raw))
+    except Exception as exc:
+        logger.exception("Could not parse preprocessed artifact for workspace={}", workspace_id)
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Could not parse preprocessed data.") from exc
+
+    preview_df = df.head(limit).astype(object).where(pd.notnull(df.head(limit)), None)
+    rows = [
+        {key: (value.item() if hasattr(value, "item") else value) for key, value in row.items()}
+        for row in preview_df.to_dict(orient="records")
+    ]
+    return PreprocessedDataResponse(
+        workspace_id=workspace_id,
+        target_column=workspace.get("target_column"),
+        columns=[str(column) for column in df.columns],
+        rows=rows,
+        row_count=int(len(df)),
+        file_url=str(csv_url),
+    )
+
+
+# ——————————————————————————————————————————————————————————————
+# Endpoints — predict
+
+
+@router.post(
+    "/{workspace_id}/api/predict",
+    summary="External model API: predict on raw rows with a workspace model",
+    response_model=PredictResponse,
+)
+@router.post(
+    "/{workspace_id}/predict",
+    summary="Predict on new rows using this workspace's saved fitted pipeline + model",
+    response_model=PredictResponse,
+)
+async def predict(
+    workspace_id: str,
+    request: PredictRequest = Body(...),
+    current_user: AuthUserRead = Depends(get_current_user),
+) -> PredictResponse:
+    """
+    Replay the workspace's saved preprocessing pipeline (persisted during
+    the most recent ``/build/structured`` call — see
+    :meth:`WorkspaceService.save_pipeline_artifact`) against
+    ``request.rows``, reusing every strategy's training-time fitted
+    parameters instead of re-fitting scalers/encoders from the new rows,
+    then runs the requested (or workspace-recommended) fitted model.
+
+    ``request.rows`` should be shaped like the workspace's original raw
+    input — i.e. exactly what you'd upload as a CSV/connector source —
+    not already preprocessed.
+
+    :raises 404: workspace not found.
+    :raises 400: no rows provided.
+    :raises 409: no saved pipeline / fitted model yet (run ``/build``
+        first), or ``model_key`` doesn't match any fitted model.
+    """
+    workspace_svc = _workspace_service()
+    try:
+        await run_in_threadpool(workspace_svc.get_workspace, workspace_id, current_user.id)
+    except WorkspaceNotFoundError:
+        raise _not_found(workspace_id)
+
+    if not request.rows:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Provide at least one row to predict on.",
+        )
+
+    new_data = pd.DataFrame(request.rows)
+
+    try:
+        result = await run_in_threadpool(
+            workspace_svc.predict, workspace_id, new_data, request.model_key, current_user.id
+        )
+    except RuntimeError as exc:
+        # No saved pipeline / model yet, or an unresolvable model_key — all
+        # "you haven't built (this model) yet" conditions, so 409 rather
+        # than 500.
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc))
+    except Exception as exc:
+        logger.exception("Prediction failed for workspace={}", workspace_id)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Prediction failed: {exc}",
+        )
+
+    return PredictResponse(workspace_id=workspace_id, **result)
 
 
 # ——————————————————————————————————————————————————————————————

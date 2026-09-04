@@ -130,16 +130,16 @@ export default function ModelsPage(): JSX.Element {
           <DotField
             dotRadius={1.5}
             dotSpacing={14}
-            bulgeStrength={67}
-            glowRadius={160}
+            bulgeStrength={50}
+            glowRadius={0}
             sparkle={false}
             waveAmplitude={0}
-            cursorRadius={500}
+            cursorRadius={100}
             cursorForce={0}
-            bulgeOnly={false}
+            bulgeOnly={true}
             gradientFrom="#592603"
             gradientTo="#613508"
-            glowColor="#120F17"
+            glowColor="#af4d08"
           />
         </div>
 
@@ -333,7 +333,7 @@ function BestModelCard({
         {/* Footer — open-workspace hint on the left, download on the right */}
         <div className="flex items-center justify-between border-t border-border/60 px-4 py-2.5">
           <span className="text-xs font-medium text-muted-foreground group-hover:text-primary">
-            Open workspace →
+            View Workspace
           </span>
           {file && (
             <button

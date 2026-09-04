@@ -94,7 +94,9 @@ populated when the underlying source is tabular::
 # Imports
 
 # Standard Libraries
+import io
 import json
+import re
 import uuid
 import tempfile
 from datetime import datetime, timezone
@@ -110,6 +112,9 @@ from squirrel.services.storage.database.PostgresService import PostgresService
 from squirrel.services.storage.blob.MinIOService import MinIOService
 from squirrel.services.data_connector.DataConnectorService import DataConnectorService
 from squirrel.services.file.FileService import FileService
+
+# Agents
+from squirrel.modules.agents.preprocessor.TabularDataProcessorAgent import TabularDataProcessorAgent
 
 # Constants
 from squirrel.constants.workspace import DataType, SourceKind, WorkspaceStatus
@@ -160,6 +165,10 @@ class WorkspaceService:
        agent summary, and LLM metadata for each pipeline run.
     5. Expose retrieval helpers so downstream routes can fetch workspace
        and run history.
+    6. Persist the fitted preprocessing pipeline (plan + execution report,
+       including every strategy's data-dependent fitted parameters) as its
+       own MinIO artifact, and replay it — together with a saved model —
+       against new data via :meth:`predict`.
 
     :param db: An open :class:`PostgresService` instance.
     :type db: Optional[PostgresService]
@@ -174,6 +183,7 @@ class WorkspaceService:
     _PREFIX_UPLOADS       = "uploads"
     _PREFIX_PREPROCESSED  = "preprocessed"
     _PREFIX_MODELS        = "models"
+    _PREFIX_PIPELINES     = "pipelines"
 
     def __init__(
         self,
@@ -506,8 +516,7 @@ class WorkspaceService:
             self._file_service.record_upload(
                 result,
                 owner_user_id=owner_user_id,
-                workspace_id=workspace_id,
-                source_id=source_id,
+                workspace_id=workspace_id
             )
 
             source: Dict[str, Any] = {
@@ -743,24 +752,26 @@ class WorkspaceService:
     ) -> pd.DataFrame:
         """
         Download a single uploaded CSV source from MinIO and load it into a
-        DataFrame. Used internally by :meth:`load_source_dataframes` for
-        every ``file_type == "csv"`` upload source on a workspace.
+        DataFrame. Used internally by :meth:`preview_upload_source` (and
+        previously mirrored, less correctly, by inline logic in
+        :meth:`load_source_dataframes`).
+
+        .. note::
+            Reads directly from ``retrieve_file``'s in-memory ``fileByte``
+            rather than treating ``fileUrl`` as a local filesystem path.
+            ``retrieve_file`` returns the *original* ``s3://...`` URL in
+            ``fileUrl`` (its local temp download is already deleted before it
+            returns) — passing that straight to ``pd.read_csv`` previously hit
+            fsspec's own (uncredentialed, non-MinIO-aware) S3 handling and
+            surfaced as ``FileNotFoundError: The specified bucket does not
+            exist``, since it was never actually reading the file this method
+            had just downloaded.
         """
         source_file = self._minio.retrieve_file(file_url)
         if source_file is None:
             raise RuntimeError(f"Could not retrieve source file: {file_url}")
 
-        local_path = source_file.fileUrl
-        if local_path.startswith("file://"):
-            local_path = local_path[len("file://"):]
-
-        try:
-            return pd.read_csv(local_path)
-        finally:
-            try:
-                Path(local_path).unlink(missing_ok=True)
-            except Exception:
-                pass
+        return pd.read_csv(io.BytesIO(source_file.fileByte))
 
     def fetch_data(
         self, 
@@ -826,9 +837,11 @@ class WorkspaceService:
                 )
 
             file_url = source.get("file_url")
+            logger.info("Loading source '{}' (file_type='{}') from {}", source, file_type, file_url)
             if not file_url:
                 raise RuntimeError(f"Source '{source_id}' has no file_url to load.")
-            df = loader(file_url)
+            file = self._minio.retrieve_file(file_url)
+            df = pd.read_csv(io.BytesIO(file.fileByte))
 
             # If the user narrowed this upload's columns via the column
             # editor, only keep the selected subset from here on.
@@ -858,9 +871,29 @@ class WorkspaceService:
             total_tokens:       int = 0,
             response_time_ms:   int = 0,
             owner_user_id:      Optional[str] = None,
+            plan:               Optional[Any] = None,
+            execution_report:   Optional[Any] = None,
         ) -> Dict:
             """
-            ...(docstring unchanged)...
+            Persist one pipeline run's output artifacts + summary.
+
+            :param plan: For ``agent_type == "preprocessing"`` only — the
+                JSON plan string/dict returned by
+                ``TabularDataProcessorAgent.plan()`` (or the third element
+                of ``run()``/``run_multi()``'s return tuple). Combined with
+                *execution_report* and persisted as a "fitted pipeline"
+                artifact so :meth:`predict` can later replay this exact
+                preprocessing against new data. Ignored for other
+                ``agent_type`` values.
+            :param execution_report: For ``agent_type == "preprocessing"``
+                only — the JSON execution report string/dict returned by
+                ``TabularDataProcessorAgent.execute()`` (or the fourth
+                element of ``run()``/``run_multi()``'s return tuple). This
+                is what actually carries the fitted parameters (means,
+                bounds, encoding maps, fitted power-transform λ, one-hot
+                dummy-column sets, ...) that :meth:`predict` needs. When
+                omitted, no pipeline artifact is saved and this workspace's
+                data won't be predictable on until a run supplies one.
             """
             output_urls: List[str] = []
 
@@ -878,6 +911,26 @@ class WorkspaceService:
                         "Could not upload processed CSV for workspace_id={}",
                         workspace_id
                     )
+
+                # Persist the fitted pipeline (plan + execution report) so
+                # predict() can replay this exact preprocessing on new rows
+                # instead of re-fitting scalers/encoders from them.
+                if execution_report is not None:
+                    pipeline_url = self.save_pipeline_artifact(
+                        workspace_id=workspace_id,
+                        plan=plan or {},
+                        execution_report=execution_report,
+                        owner_user_id=owner_user_id,
+                    )
+                    if pipeline_url:
+                        output_urls.append(pipeline_url)
+                        summary = dict(summary or {})
+                        summary["pipeline_artifact_url"] = pipeline_url
+                    else:
+                        logger.warning(
+                            "Could not persist fitted pipeline artifact for workspace_id={}",
+                            workspace_id
+                        )
 
             elif agent_type == "model_building" and isinstance(data, Dict):
                 for model_key, estimator in data.items():
@@ -919,6 +972,272 @@ class WorkspaceService:
                 "record_id": row_id,
                 "output_file_urls": output_urls
             }
+
+    # ------------------------------------------------------------------
+    # Fitted-pipeline persistence & replay
+    #
+    # TabularDataProcessorAgent.run_multi() (and run()) already return the
+    # (plan, execution_report) pair needed to replay training-time
+    # preprocessing against new data via apply_fitted_pipeline() — but
+    # until now nothing downstream of the /build route actually persisted
+    # them. save_run() stores this pair as a JSON artifact in MinIO
+    # whenever a preprocessing run supplies execution_report; the methods
+    # below read it back and drive apply_fitted_pipeline() + the fitted
+    # model for a single predict() call.
+
+    def save_pipeline_artifact(
+        self,
+        workspace_id: str,
+        plan: Any,
+        execution_report: Any,
+        owner_user_id: Optional[str] = None,
+    ) -> Optional[str]:
+        """
+        Persist the preprocessing plan + execution report as one JSON
+        artifact in MinIO.
+
+        The execution report's per-step ``per_column`` blocks are exactly
+        the fitted state (means, bounds, encoding maps, fitted
+        power-transform λ, one-hot dummy-column sets, group aggregation
+        stats, ...) that :meth:`predict` needs to replay this pipeline on
+        new rows instead of re-fitting from them.
+
+        :param plan: JSON plan string or dict.
+        :param execution_report: JSON execution report string or dict.
+        :return: The artifact's ``s3://`` URL, or ``None`` on failure.
+        """
+        try:
+            plan_obj = plan if isinstance(plan, Dict) else json.loads(plan)
+        except (TypeError, json.JSONDecodeError):
+            plan_obj = {}
+
+        try:
+            execution_obj = (
+                execution_report if isinstance(execution_report, Dict)
+                else json.loads(execution_report)
+            )
+        except (TypeError, json.JSONDecodeError):
+            logger.warning(
+                "execution_report for workspace_id={} was not valid JSON; "
+                "saving pipeline artifact with an empty execution_report.",
+                workspace_id,
+            )
+            execution_obj = {}
+
+        payload = json.dumps(
+            {"plan": plan_obj, "execution_report": execution_obj},
+            default=str,
+        )
+
+        ts = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S")
+        object_name = f"{workspace_id}/{self._PREFIX_PIPELINES}/pipeline_{ts}.json"
+
+        with tempfile.NamedTemporaryFile(
+            suffix=".json", delete=False, mode="w", encoding="utf-8"
+        ) as tmp:
+            tmp.write(payload)
+            tmp_path = tmp.name
+
+        try:
+            result = self._minio.upload_file(file_path=tmp_path, object_name=object_name)
+            if result is None:
+                return None
+
+            # Same reasoning as _upload_dataframe/_upload_model: this is an
+            # artifact this workspace produced, so it should show up on the
+            # Files page like everything else.
+            self._file_service.record_upload(
+                result,
+                owner_user_id=owner_user_id,
+                workspace_id=workspace_id,
+            )
+            return str(result.fileUrl)
+        except Exception:
+            logger.exception("Pipeline artifact upload to MinIO failed.")
+            return None
+        finally:
+            Path(tmp_path).unlink(missing_ok=True)
+
+    def load_pipeline_artifact(self, file_url: str) -> Dict[str, Any]:
+        """
+        Download and parse a pipeline artifact written by
+        :meth:`save_pipeline_artifact`.
+
+        :return: ``{"plan": {...}, "execution_report": {...}}``.
+        :raises RuntimeError: if the artifact can't be downloaded.
+        :raises ValueError: if the artifact isn't valid JSON.
+        """
+        raw = self.download_output_file(file_url)
+        if raw is None:
+            raise RuntimeError(f"Could not retrieve pipeline artifact: {file_url}")
+        try:
+            return json.loads(raw.decode("utf-8"))
+        except Exception as exc:
+            raise ValueError(f"Pipeline artifact at {file_url} is not valid JSON: {exc}") from exc
+
+    def get_latest_pipeline_artifact_url(
+        self,
+        workspace_id: str,
+        owner_user_id: Optional[str] = None,
+    ) -> Optional[str]:
+        """
+        Return the ``pipeline_artifact_url`` recorded in the ``agent_summary``
+        of the most recent ``preprocessing`` run for this workspace, or
+        ``None`` if the workspace has never been preprocessed with pipeline
+        persistence enabled (e.g. runs saved before this feature existed).
+        """
+        runs = self.get_records_by_workspace_id(
+            workspace_id, agent_type="preprocessing", limit=1, owner_user_id=owner_user_id
+        )
+        if not runs:
+            return None
+        return (runs[0].get("agent_summary") or {}).get("pipeline_artifact_url")
+
+    @staticmethod
+    def _model_key_from_url(file_url: str) -> str:
+        """
+        Recover ``model_key`` from a stored model artifact URL named
+        ``{model_key}_{timestamp}.joblib`` by :meth:`_upload_model`.
+        Mirrors the identical helper in the workspace route.
+        """
+        filename = file_url.rsplit("/", 1)[-1]
+        stem = filename[: -len(".joblib")] if filename.endswith(".joblib") else filename
+        match = re.match(r"^(.*)_\d{8}T\d{6}$", stem)
+        return match.group(1) if match else stem
+
+    def get_latest_model_url(
+        self,
+        workspace_id: str,
+        model_key: Optional[str] = None,
+        owner_user_id: Optional[str] = None,
+    ) -> str:
+        """
+        Resolve a fitted model's MinIO URL from the most recent
+        ``model_building`` run on this workspace.
+
+        :param model_key: Which fitted model to use. ``None`` falls back to
+            that run's recorded ``best_model``, then to the first output URL
+            if neither is available.
+        :raises RuntimeError: if there's no completed model-building run, or
+            *model_key* doesn't match any of its fitted models.
+        """
+        runs = self.get_records_by_workspace_id(
+            workspace_id, agent_type="model_building", limit=1, owner_user_id=owner_user_id
+        )
+        if not runs:
+            raise RuntimeError(f"Workspace {workspace_id} has no completed model-building run.")
+
+        run = runs[0]
+        urls: List[str] = list(run.get("output_file_urls") or [])
+        if not urls:
+            raise RuntimeError(f"Model-building run for workspace {workspace_id} has no artifacts.")
+
+        resolved_key = model_key or (run.get("agent_summary") or {}).get("best_model")
+        if resolved_key:
+            for url in urls:
+                if self._model_key_from_url(url) == resolved_key:
+                    return url
+            raise RuntimeError(
+                f"Model '{resolved_key}' not found among this workspace's fitted models."
+            )
+        return urls[0]
+
+    def _load_model(self, file_url: str) -> Any:
+        """Download and unpickle a joblib model artifact from MinIO."""
+        raw = self.download_output_file(file_url)
+        if raw is None:
+            raise RuntimeError(f"Could not retrieve model artifact: {file_url}")
+        return joblib.load(io.BytesIO(raw))
+
+    def predict(
+        self,
+        workspace_id: str,
+        new_data: pd.DataFrame,
+        model_key: Optional[str] = None,
+        owner_user_id: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """
+        Inference-time counterpart to ``/build``: replay this workspace's
+        saved preprocessing pipeline on *new_data* — reusing training-time
+        fitted parameters via
+        ``TabularDataProcessorAgent.apply_fitted_pipeline`` rather than
+        re-fitting scalers/encoders from the new rows — then run the chosen
+        fitted model on the transformed result.
+
+        :param new_data: Raw new rows, shaped like the original input
+            source(s) *before* preprocessing (i.e. exactly what you'd have
+            uploaded/attached). The target column, if present, is dropped
+            before prediction.
+        :param model_key: Which fitted model to use. ``None`` uses the
+            workspace's recorded ``best_model``.
+        :return: ``{"model_key", "predictions", ["probabilities", "classes"]}``.
+        :raises RuntimeError: no saved pipeline, no fitted model, or
+            *model_key* can't be resolved.
+        """
+        workspace = self.get_workspace(workspace_id, owner_user_id=owner_user_id)
+
+        pipeline_url = self.get_latest_pipeline_artifact_url(workspace_id, owner_user_id=owner_user_id)
+        if not pipeline_url:
+            raise RuntimeError(
+                f"Workspace {workspace_id} has no saved preprocessing pipeline. "
+                "Run /build at least once before predicting."
+            )
+        pipeline_artifact = self.load_pipeline_artifact(pipeline_url)
+        execution_report = pipeline_artifact.get("execution_report") or {}
+
+        trained_dtypes = (execution_report.get("dataset_before") or {}).get("dtypes") or {}
+        new_data = new_data.copy()
+        for col, dtype_str in trained_dtypes.items():
+            if col not in new_data.columns:
+                continue
+            dtype_str = str(dtype_str)
+            try:
+                if "datetime" in dtype_str:
+                    new_data[col] = pd.to_datetime(new_data[col], errors="coerce")
+                elif "int" in dtype_str or "float" in dtype_str:
+                    new_data[col] = pd.to_numeric(new_data[col], errors="coerce")
+            except Exception:
+                logger.warning(
+                    "Could not coerce column '%s' to trained dtype '%s' for workspace_id=%s",
+                    col, dtype_str, workspace_id,
+                )
+
+        transformed = TabularDataProcessorAgent().apply_fitted_pipeline(new_data, execution_report)
+
+        target_column = workspace.get("target_column")
+        if target_column and target_column in transformed.columns:
+            transformed = transformed.drop(columns=[target_column])
+
+        non_numeric_cols = transformed.select_dtypes(exclude=["number", "bool"]).columns.tolist()
+        if non_numeric_cols:
+            logger.warning(
+                "Dropping non-numeric columns before prediction for workspace_id=%s "
+                "(preprocessing replay didn't remove these): %s",
+                workspace_id, non_numeric_cols,
+            )
+            transformed = transformed.drop(columns=non_numeric_cols)
+
+        model_url = self.get_latest_model_url(workspace_id, model_key=model_key, owner_user_id=owner_user_id)
+        estimator = self._load_model(model_url)
+        predictions = estimator.predict(transformed)
+        result: Dict[str, Any] = {
+            "model_key": model_key or self._model_key_from_url(model_url),
+            "predictions": predictions.tolist() if hasattr(predictions, "tolist") else list(predictions),
+        }
+
+        if hasattr(estimator, "predict_proba"):
+            try:
+                proba = estimator.predict_proba(transformed)
+                result["probabilities"] = proba.tolist()
+                if hasattr(estimator, "classes_"):
+                    result["classes"] = [str(c) for c in estimator.classes_]
+            except Exception:
+                logger.warning(
+                    "predict_proba failed for workspace_id={} model_key={}",
+                    workspace_id, result["model_key"],
+                )
+
+        return result
 
     # ------------------------------------------------------------------
     # Retrieval
@@ -969,22 +1288,12 @@ class WorkspaceService:
         file_obj = self._minio.retrieve_file(s3_url)
         if file_obj is None:
             return None
-
-        local_path_str = file_obj.fileUrl
-        if local_path_str.startswith("file://"):
-            local_path_str = local_path_str[len("file://"):]
-
-        local_path = Path(local_path_str)
+        
         try:
-            return local_path.read_bytes()
+            return file_obj.fileByte
         except Exception:
-            logger.exception("Failed to read downloaded artifact: {}", local_path)
+            logger.exception("Failed to read downloaded artifact: {}", file_obj.fileUrl)
             return None
-        finally:
-            try:
-                local_path.unlink(missing_ok=True)
-            except Exception:
-                pass
 
     # ------------------------------------------------------------------
     # Private helpers — MinIO uploads

@@ -269,9 +269,13 @@ async def preview_connector_tables(
     for table_name in table_names:
         try:
             df = await run_in_threadpool(connector_svc.preview_table, connector_id, table_name, limit)
-            preview = df.where(pd.notnull(df), None).to_dict(orient="records")
+            preview_df = df.astype(object).where(pd.notnull(df), None)
+            preview = [
+                {k: (v.item() if hasattr(v, "item") else v) for k, v in row.items()}
+                for row in preview_df.to_dict(orient="records")
+            ]
             results.append(TablePreview(table=table_name, columns=list(df.columns), preview=preview))
         except Exception as exc:
             results.append(TablePreview(table=table_name, error=str(exc)))
-
+            
     return ConnectorTablesPreviewResponse(tables=results)

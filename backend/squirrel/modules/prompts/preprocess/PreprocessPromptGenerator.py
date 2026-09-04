@@ -188,10 +188,13 @@ class PreprocessPromptGenerator(IPromptGenerator):
         Expected kwargs:
             - ``dataset_profile``  (dict): shape, column names, dtypes, missing counts.
             - ``eda_summary``       (dict, optional): structured EDA findings from the
-              inspector agent (findings, anomalies, recommended_next_steps).
+            inspector agent (findings, anomalies, recommended_next_steps).
             - ``objective``         (str, optional): caller-supplied preprocessing goal.
             - ``cleaning_catalog``  (list[dict]): entries from DataCleanStrategy subclasses.
             - ``transform_catalog`` (list[dict]): entries from DataTransformStrategy subclasses.
+            - ``target_column``     (str, optional): the column the downstream model
+            will predict. When given, the plan must not drop, encode away, or
+            otherwise destroy it.
         """
         profile: dict = kwargs.get("dataset_profile", {})
         eda_summary: dict = kwargs.get("eda_summary", {})
@@ -201,15 +204,28 @@ class PreprocessPromptGenerator(IPromptGenerator):
         )
         cleaning_catalog: list = kwargs.get("cleaning_catalog", [])
         transform_catalog: list = kwargs.get("transform_catalog", [])
+        target_column: str | None = kwargs.get("target_column")
 
         eda_block = self._render_eda_summary(eda_summary)
         cleaning_block = self._render_catalog(cleaning_catalog, kind="cleaning", slim=True)
         transform_block = self._render_catalog(transform_catalog, kind="transform", slim=True)
 
+        target_block = (
+            f"## Prediction target\n"
+            f"Column '{target_column}' is the label the downstream model will predict. "
+            f"Do NOT drop it, rename it away, bin/encode/scale it, or otherwise remove "
+            f"or transform it out of the frame — even if it looks redundant or highly "
+            f"correlated with another feature. If a feature is highly correlated with "
+            f"'{target_column}', drop the OTHER feature, not the target.\n"
+            if target_column else
+            "## Prediction target\n(not specified — no column is protected from dropping)\n"
+        )
+
         return textwrap.dedent(f"""
             ## Preprocessing objective
             {objective}
 
+            {target_block}
             ## Dataset shape
             - Rows    : {profile.get('rows', 'unknown')}
             - Columns : {profile.get('columns', 'unknown')}
@@ -245,8 +261,8 @@ class PreprocessPromptGenerator(IPromptGenerator):
             - objective       (one sentence: why this step is needed for THIS dataset)
             - actions         (list of concrete sub-tasks the strategy will perform)
             - arguments       (dict — copy the argument structure from the example and
-                               substitute real column names; use {{}} only for strategies
-                               that genuinely accept no arguments)
+                            substitute real column names; use {{}} only for strategies
+                            that genuinely accept no arguments)
             - expected_output (list of artifact or quality types this step produces)
 
             Rules:
@@ -255,6 +271,8 @@ class PreprocessPromptGenerator(IPromptGenerator):
             - Populate ALL required arguments and relevant optional arguments.
             - Skip strategies that are not applicable to this dataset.
             - Ground every decision in the EDA findings where possible.
+            - Never drop, rename away, or transform the prediction target column
+            named above, if one is specified.
         """).strip()
 
     def _user_step(self, **kwargs) -> str:
@@ -277,8 +295,24 @@ class PreprocessPromptGenerator(IPromptGenerator):
         cleaning_catalog: list = kwargs.get("cleaning_catalog", [])
         transform_catalog: list = kwargs.get("transform_catalog", [])
 
-        cleaning_block = self._render_catalog(cleaning_catalog, kind="cleaning")
-        transform_block = self._render_catalog(transform_catalog, kind="transform")
+        # Only render the catalog half relevant to this step's type. A
+        # regeneration call is fixing exactly one step, so it never needs both
+        # the full cleaning AND full transform catalogs (~24 strategies with
+        # complete examples) — that was the main driver of oversized regen
+        # prompts on datasets with several invalid steps. Fall back to slim
+        # renderings of both halves only if the type is missing/unrecognised.
+        strategy_type = str(step.get("strategy_type", ""))
+        if strategy_type == "cleaning":
+            catalog_block = "## Available CLEANING strategies\n" + self._render_catalog(cleaning_catalog, kind="cleaning")
+        elif strategy_type == "transform":
+            catalog_block = "## Available TRANSFORMATION strategies\n" + self._render_catalog(transform_catalog, kind="transform")
+        else:
+            catalog_block = (
+                "## Available CLEANING strategies\n"
+                + self._render_catalog(cleaning_catalog, kind="cleaning", slim=True)
+                + "\n\n## Available TRANSFORMATION strategies\n"
+                + self._render_catalog(transform_catalog, kind="transform", slim=True)
+            )
 
         try:
             step_json = json.dumps(step, indent=4, default=str)
@@ -305,11 +339,7 @@ class PreprocessPromptGenerator(IPromptGenerator):
             ## Original (invalid) step
             {step_json}
 
-            ## Available CLEANING strategies
-            {cleaning_block}
-
-            ## Available TRANSFORMATION strategies
-            {transform_block}
+            {catalog_block}
 
             ## Task
             Regenerate the step with corrected arguments and/or strategy name.

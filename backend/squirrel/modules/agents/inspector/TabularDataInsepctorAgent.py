@@ -167,8 +167,15 @@ class TabularDataInspectorAgent(IAgent):
                 "schema": self._plan_schema(),
             },
             strict=False,
-            provider_order=[Provider.GROQ, Provider.GEMINI],
-            preference_model_names=["llama-3.3-70b-versatile", "models/gemini-2.5-pro"],
+            provider_order=[Provider.GEMINI, Provider.GROQ],
+            preference_model_names=[
+                # GEMINI
+                "models/gemini-2.5-flash",
+                # GROQ
+                "openai/gpt-oss-120b",
+                "openai/gpt-oss-20b",
+                "meta-llama/llama-4-scout-17b-16e-instruct",
+            ]
         )
 
         if response is None:
@@ -241,8 +248,15 @@ class TabularDataInspectorAgent(IAgent):
                         "schema": regen_step_schema,
                     },
                     strict=False,
-                    provider_order=[Provider.GROQ, Provider.GEMINI],
-                    preference_model_names=["llama-3.3-70b-versatile", "models/gemini-2.5-pro"],
+                    provider_order=[Provider.GEMINI, Provider.GROQ],
+                    preference_model_names=[
+                        # GEMINI
+                        "models/gemini-2.5-flash",
+                        # GROQ
+                        "openai/gpt-oss-120b",
+                        "openai/gpt-oss-20b",
+                        "meta-llama/llama-4-scout-17b-16e-instruct",
+                    ]
                 )
 
                 if regen_resp is None:
@@ -364,8 +378,15 @@ class TabularDataInspectorAgent(IAgent):
                 "schema": self._summary_schema(),
             },
             strict=False,
-            provider_order=[Provider.GROQ, Provider.GEMINI],
-            preference_model_names=["llama-3.3-70b-versatile", "models/gemini-2.5-pro"],
+            provider_order=[Provider.GEMINI, Provider.GROQ],
+            preference_model_names=[
+                # GEMINI
+                "models/gemini-2.5-flash",
+                # GROQ
+                "openai/gpt-oss-120b",
+                "openai/gpt-oss-20b",
+                "meta-llama/llama-4-scout-17b-16e-instruct",
+            ]
         )
 
         if response is None:
@@ -501,7 +522,14 @@ class TabularDataInspectorAgent(IAgent):
             model_input={"system_prompt": system_prompt, "user_prompt": user_prompt, "schema": schema},
             strict=False,
             provider_order=[Provider.GROQ, Provider.GEMINI],
-            preference_model_names=["llama-3.3-70b-versatile", "models/gemini-2.5-pro"],
+            preference_model_names=[
+                # GEMINI
+                "models/gemini-2.5-flash",
+                # GROQ
+                "openai/gpt-oss-120b",
+                "openai/gpt-oss-20b",
+                "meta-llama/llama-4-scout-17b-16e-instruct",
+            ]
         )
 
         if response is None:
@@ -533,7 +561,9 @@ class TabularDataInspectorAgent(IAgent):
         step: Dict[str, Any],
         registry: Dict[str, DataInspectStrategy],
     ) -> Dict[str, Any]:
-        """Execute a single plan step and return a structured step result."""
+        """
+        Execute a single plan step and return a structured step result.
+        """
         inspection_name = str(step.get("inspection", ""))
         base = {
             "step": step.get("step"),

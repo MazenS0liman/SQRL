@@ -180,7 +180,8 @@ class ModelBuilderPromptGenerator(IPromptGenerator):
         :param objective: Optional free-text modelling goal.
         :param dataset_profile: Dict from ``_dataset_profile()``.
         :param preprocessing_summary: Dict from ``TabularDataProcessorAgent.summarize()``.
-        :param model_catalog: List of model catalog entries.
+        :param model_catalog: List of model catalog entries (should already be
+            pre-filtered by task type by the caller where possible).
         :param action_catalog: List of action catalog entries (fit, evaluate, …).
         :return: Formatted user prompt string.
         """
@@ -197,24 +198,22 @@ class ModelBuilderPromptGenerator(IPromptGenerator):
 
         sections.append(
             "## Dataset Profile\n"
-            + json.dumps(dataset_profile or {}, indent=2)
+            + json.dumps(dataset_profile or {}, separators=(",", ":"))
         )
 
         sections.append(
             "## Preprocessing Summary\n"
-            + json.dumps(preprocessing_summary or {}, indent=2)
+            + json.dumps(preprocessing_summary or {}, separators=(",", ":"))
         )
 
         if model_catalog:
             sections.append(
-                "## Available Models\n"
-                + json.dumps(model_catalog, indent=2)
+                "## Available Models\n" + self._render_model_catalog(model_catalog)
             )
 
         if action_catalog:
             sections.append(
-                "## Available Actions\n"
-                + json.dumps(action_catalog, indent=2)
+                "## Available Actions\n" + self._render_action_catalog(action_catalog)
             )
 
         sections.append(
@@ -252,24 +251,22 @@ class ModelBuilderPromptGenerator(IPromptGenerator):
 
         sections.append(
             "## Invalid Step\n"
-            + json.dumps(step or {}, indent=2)
+            + json.dumps(step or {}, separators=(",", ":"))
         )
 
         sections.append(
             "## Dataset Profile\n"
-            + json.dumps(dataset_profile or {}, indent=2)
+            + json.dumps(dataset_profile or {}, separators=(",", ":"))
         )
 
         if model_catalog:
             sections.append(
-                "## Available Models\n"
-                + json.dumps(model_catalog, indent=2)
+                "## Available Models\n" + self._render_model_catalog(model_catalog)
             )
 
         if action_catalog:
             sections.append(
-                "## Available Actions\n"
-                + json.dumps(action_catalog, indent=2)
+                "## Available Actions\n" + self._render_action_catalog(action_catalog)
             )
 
         sections.append(
@@ -279,3 +276,36 @@ class ModelBuilderPromptGenerator(IPromptGenerator):
         )
 
         return "\n\n".join(sections)
+
+    # ── Rendering helpers ─────────────────────────────────────────────────────
+    #
+    # Replace raw json.dumps(..., indent=2) dumps of the catalogs — pretty
+    # printing spends tokens on whitespace/newlines the model doesn't need to
+    # "read" a catalog, and the original per-model dict repeated key names
+    # ("model_key", "task", "description", ...) on every entry. A compact
+    # one-line-per-entry format carries the same information for a fraction
+    # of the tokens.
+
+    @staticmethod
+    def _render_model_catalog(catalog: list[dict]) -> str:
+        lines = []
+        for m in catalog:
+            req = ",".join(m.get("required_params") or []) or "none"
+            opt = ",".join(m.get("optional_params") or []) or "none"
+            lines.append(
+                f"- {m['model_key']} [{m['task']}]: {m['description']} "
+                f"(required: {req}; optional: {opt})"
+            )
+        return "\n".join(lines)
+
+    @staticmethod
+    def _render_action_catalog(catalog: list[dict]) -> str:
+        lines = []
+        for a in catalog:
+            req = ",".join(a.get("required_params") or []) or "none"
+            opt = ",".join(a.get("optional_params") or []) or "none"
+            lines.append(
+                f"- {a['action_key']}: {a['description']} "
+                f"(required: {req}; optional: {opt})"
+            )
+        return "\n".join(lines)

@@ -20,11 +20,30 @@ Encoding             : OneHotEncodeTransformStrategy, OrdinalEncodeTransformStra
 Normalisation        : StandardScaleTransformStrategy, MinMaxScaleTransformStrategy,
                        RobustScaleTransformStrategy, LogTransformTransformStrategy,
                        PowerTransformTransformStrategy
+
+Inference-time replay
+----------------------
+Every strategy whose ``transform()`` computes parameters *from the data it's given*
+(scaling stats, encoding maps, group aggregations, the fitted power-transform λ,
+one-hot's fixed set of dummy columns, ...) now accepts an optional ``fitted_state``
+kwarg: a ``{column_name: {...params...}}`` dict — normally the ``per_column`` block
+of that step's own report from a previous training-time call. When supplied for a
+column, the strategy reuses those parameters ("apply mode") instead of recomputing
+them from the DataFrame passed in ("fit mode", the default, unchanged from before).
+
+``AggregationFeaturesTransformStrategy`` and ``BinNumericTransformStrategy`` (and the
+other purely-structural feature-engineering strategies) don't need this — their
+outputs are either deterministic given their arguments, or (in Aggregation's case)
+are keyed off ``fitted_state`` the same way via group statistics, noted per-class
+below.
+
+``TabularDataTransformer.run_pipeline()`` accepts an optional parallel
+``fitted_states`` list so a saved plan can be replayed end to end against new data.
 """
 # ——————————————————————————————————————————————————————————————
 # Imports
 from abc import ABC, abstractmethod
-from typing import Any, Union
+from typing import Any, Optional, Union
 import pandas as pd
 import numpy as np
 
@@ -42,13 +61,28 @@ class DataTransformStrategy(ABC):
     argument_specs: list[ArgumentSpec] = []
 
     @abstractmethod
-    def transform(self, data: pd.DataFrame, **kwargs) -> tuple[pd.DataFrame, dict]:
+    def transform(
+        self,
+        data: pd.DataFrame,
+        fitted_state: Optional[dict] = None,
+        **kwargs,
+    ) -> tuple[pd.DataFrame, dict]:
         """
         Apply the transformation to *data*.
 
         :param data: DataFrame to transform.
+        :param fitted_state: Optional ``{column: {...params...}}`` dict of
+            previously-fitted parameters (that column's ``per_column`` entry
+            from a prior training-time report). When present, strategies
+            with data-dependent parameters reuse the supplied values instead
+            of recomputing them from *data* — this is the inference-time
+            "apply" path. Strategies with no data-dependent parameters
+            ignore this argument entirely.
         :return: (transformed_df, report_dict).  The report always contains at
             least ``new_columns``, ``dropped_columns``, and ``rows_affected``.
+            For strategies that support ``fitted_state``, the report's
+            ``per_column`` block is exactly the shape to pass back in as
+            ``fitted_state`` on a future call to replay this step.
         """
 
     # ── Catalog / schema helpers (identical pattern to DataCleanStrategy) ────
@@ -161,6 +195,13 @@ class BinNumericTransformStrategy(DataTransformStrategy):
     Discretises one or more numeric columns into labelled bins using either
     equal-width or quantile-based (equal-frequency) binning, producing a new
     categorical column per source column.
+
+    ``fitted_state`` support: bin *edges* are data-dependent (``pd.qcut``/
+    ``pd.cut`` compute them from the input), so at inference time we reuse
+    the training-time edges via ``pd.cut(..., bins=prior_edges)`` rather than
+    re-deriving quantile edges from a small/new inference batch — the latter
+    would silently redefine what "high" or "bin 3" means between training
+    and inference.
     """
 
     argument_specs: list[ArgumentSpec] = [
@@ -251,13 +292,19 @@ class BinNumericTransformStrategy(DataTransformStrategy):
             ],
         }
 
-    def transform(self, data: pd.DataFrame, **kwargs) -> tuple[pd.DataFrame, dict]:
+    def transform(
+        self,
+        data: pd.DataFrame,
+        fitted_state: Optional[dict] = None,
+        **kwargs,
+    ) -> tuple[pd.DataFrame, dict]:
         columns: list[str] = kwargs.get("columns") or []
         n_bins: int = int(kwargs.get("n_bins", 5))
         strategy: str = kwargs.get("strategy", "quantile")
         labels_arg: list[str] = kwargs.get("labels") or []
         suffix: str = kwargs.get("suffix", "_bin")
         drop_original: bool = bool(kwargs.get("drop_original", False))
+        fitted_state = fitted_state or {}
 
         if not columns:
             raise ValueError("'columns' must be a non-empty list.")
@@ -274,9 +321,17 @@ class BinNumericTransformStrategy(DataTransformStrategy):
                 continue
             new_col = col + suffix
             series = result[col]
+            prior = fitted_state.get(col)
 
             try:
-                if strategy == "quantile":
+                if prior and prior.get("bin_edges"):
+                    # ── INFERENCE: reuse training-time bin edges ──
+                    edges = prior["bin_edges"]
+                    binned = pd.cut(
+                        series, bins=edges, labels=labels, include_lowest=True
+                    )
+                    bins = edges
+                elif strategy == "quantile":
                     binned, bins = pd.qcut(
                         series, q=n_bins, labels=labels, retbins=True, duplicates="drop"
                     )
@@ -311,6 +366,10 @@ class DatetimePartsTransformStrategy(DataTransformStrategy):
     Extracts calendar and time components from one or more datetime columns,
     creating a configurable set of new integer columns (year, month, day,
     day_of_week, hour, minute, second, quarter, week_of_year, is_weekend).
+
+    No data-dependent parameters — every extracted part is a deterministic
+    function of the timestamp itself. ``fitted_state`` is accepted for
+    interface consistency but unused; replay is identical to training.
     """
 
     _PART_MAP = {
@@ -383,7 +442,12 @@ class DatetimePartsTransformStrategy(DataTransformStrategy):
             ],
         }
 
-    def transform(self, data: pd.DataFrame, **kwargs) -> tuple[pd.DataFrame, dict]:
+    def transform(
+        self,
+        data: pd.DataFrame,
+        fitted_state: Optional[dict] = None,
+        **kwargs,
+    ) -> tuple[pd.DataFrame, dict]:
         columns: list[str] = kwargs.get("columns") or []
         parts: list[str] = kwargs.get("parts") or ["year", "month", "day", "day_of_week", "hour"]
         drop_original: bool = bool(kwargs.get("drop_original", False))
@@ -432,6 +496,10 @@ class InteractionTermsTransformStrategy(DataTransformStrategy):
     Creates pairwise interaction features between specified numeric column pairs
     using multiplication, division, addition, or subtraction, storing results
     as new columns with auto-generated names.
+
+    No data-dependent parameters — the operation is a fixed function of the
+    two columns named in ``pairs``. ``fitted_state`` is accepted for
+    interface consistency but unused.
     """
 
     argument_specs: list[ArgumentSpec] = [
@@ -490,7 +558,12 @@ class InteractionTermsTransformStrategy(DataTransformStrategy):
             "expected_output": ["New column 'income_div_age'"],
         }
 
-    def transform(self, data: pd.DataFrame, **kwargs) -> tuple[pd.DataFrame, dict]:
+    def transform(
+        self,
+        data: pd.DataFrame,
+        fitted_state: Optional[dict] = None,
+        **kwargs,
+    ) -> tuple[pd.DataFrame, dict]:
         pairs: list[dict] = kwargs.get("pairs") or []
         zero_handling: str = kwargs.get("handle_division_by_zero", "nan")
 
@@ -551,6 +624,10 @@ class PolynomialFeaturesTransformStrategy(DataTransformStrategy):
     """
     Generates polynomial and optional interaction features up to a specified
     degree for a list of numeric columns, without relying on scikit-learn.
+
+    No data-dependent parameters — powers/cross-products are pure functions
+    of each row's own values. ``fitted_state`` is accepted for interface
+    consistency but unused.
     """
 
     argument_specs: list[ArgumentSpec] = [
@@ -618,7 +695,12 @@ class PolynomialFeaturesTransformStrategy(DataTransformStrategy):
             ],
         }
 
-    def transform(self, data: pd.DataFrame, **kwargs) -> tuple[pd.DataFrame, dict]:
+    def transform(
+        self,
+        data: pd.DataFrame,
+        fitted_state: Optional[dict] = None,
+        **kwargs,
+    ) -> tuple[pd.DataFrame, dict]:
         from itertools import combinations
 
         columns: list[str] = kwargs.get("columns") or []
@@ -678,6 +760,14 @@ class AggregationFeaturesTransformStrategy(DataTransformStrategy):
     Computes group-level aggregations (mean, std, min, max, count, median)
     for a numeric target column grouped by a categorical key column, then
     joins the results back as new columns on the original DataFrame.
+
+    ``fitted_state`` support: the group statistics (e.g. mean income per
+    city) are computed from the training data and must NOT be recomputed
+    from a small inference batch — a single new row has no meaningful
+    "group mean". When ``fitted_state`` supplies ``group_stats`` for a
+    ``(group_column, agg_column, agg_func)`` combination, those training-time
+    group values are mapped onto the new data; groups seen at inference but
+    not during training map to NaN (there is no learned statistic for them).
     """
 
     argument_specs: list[ArgumentSpec] = [
@@ -741,11 +831,17 @@ class AggregationFeaturesTransformStrategy(DataTransformStrategy):
             ],
         }
 
-    def transform(self, data: pd.DataFrame, **kwargs) -> tuple[pd.DataFrame, dict]:
+    def transform(
+        self,
+        data: pd.DataFrame,
+        fitted_state: Optional[dict] = None,
+        **kwargs,
+    ) -> tuple[pd.DataFrame, dict]:
         group_column: str = kwargs.get("group_column") or ""
         agg_columns: list[str] = kwargs.get("agg_columns") or []
         agg_funcs: list[str] = kwargs.get("agg_funcs") or ["mean", "std"]
         prefix: str = kwargs.get("prefix", "grp_")
+        fitted_state = fitted_state or {}
 
         if not group_column:
             raise ValueError("'group_column' is required.")
@@ -756,17 +852,35 @@ class AggregationFeaturesTransformStrategy(DataTransformStrategy):
 
         result = data.copy()
         new_columns: list[str] = []
+        # fitted_state, if supplied, is keyed by agg_col here (mirroring the
+        # "per_column" convention used elsewhere), each holding a mapping of
+        # "func" -> {group_value: stat}.
+        prior_by_agg_col: dict = fitted_state or {}
 
         for agg_col in agg_columns:
             if agg_col not in result.columns:
                 continue
+            prior = prior_by_agg_col.get(agg_col) or {}
             grouped = result.groupby(group_column)[agg_col]
+
             for func in agg_funcs:
                 new_col = f"{prefix}{group_column}_{agg_col}_{func}"
-                result[new_col] = result[group_column].map(
-                    getattr(grouped, func)()
-                )
+                prior_group_map = prior.get(func)
+
+                if prior_group_map:
+                    # ── INFERENCE: reuse training-time group statistics ──
+                    # Unseen group values map to NaN — there is no learned
+                    # statistic for a category the model never saw fit.
+                    result[new_col] = result[group_column].map(prior_group_map)
+                else:
+                    # ── TRAINING: compute group stats from this data ──
+                    stat_series = getattr(grouped, func)()
+                    result[new_col] = result[group_column].map(stat_series)
+                    prior.setdefault(func, stat_series.to_dict())
+
                 new_columns.append(new_col)
+
+            prior_by_agg_col[agg_col] = prior
 
         return result, {
             "new_columns": new_columns,
@@ -775,6 +889,7 @@ class AggregationFeaturesTransformStrategy(DataTransformStrategy):
             "group_column": group_column,
             "agg_columns": agg_columns,
             "agg_funcs": agg_funcs,
+            "per_column": prior_by_agg_col,
         }
 
 
@@ -784,6 +899,12 @@ class RatioFeaturesTransformStrategy(DataTransformStrategy):
     Computes ratio features between a list of numerator columns and a single
     denominator column (or the row-wise sum of all numerator columns), useful
     for compositional data such as spend breakdown or part-to-whole shares.
+
+    No data-dependent parameters when an explicit ``denominator_column`` is
+    given — the ratio is a pure per-row function. When the denominator is
+    the row-wise sum of numerators (no ``denominator_column``), it's still
+    computed per-row from that row's own values, so it's consistent between
+    training and inference without needing ``fitted_state``.
     """
 
     argument_specs: list[ArgumentSpec] = [
@@ -851,7 +972,12 @@ class RatioFeaturesTransformStrategy(DataTransformStrategy):
             ],
         }
 
-    def transform(self, data: pd.DataFrame, **kwargs) -> tuple[pd.DataFrame, dict]:
+    def transform(
+        self,
+        data: pd.DataFrame,
+        fitted_state: Optional[dict] = None,
+        **kwargs,
+    ) -> tuple[pd.DataFrame, dict]:
         numerator_columns: list[str] = kwargs.get("numerator_columns") or []
         denominator_column: str | None = kwargs.get("denominator_column")
         suffix: str = kwargs.get("suffix", "_ratio")
@@ -901,6 +1027,15 @@ class OneHotEncodeTransformStrategy(DataTransformStrategy):
     Applies one-hot encoding to one or more categorical columns, optionally
     dropping the first dummy to avoid multicollinearity, and removes the
     source columns by default.
+
+    ``fitted_state`` support: the *set* of dummy columns (and their order)
+    is data-dependent — ``pd.get_dummies`` on a new/small inference batch
+    would produce a different (and misaligned) set of columns than training
+    did. When ``fitted_state`` supplies ``dummy_columns`` for a column
+    (produced during training), inference builds exactly that fixed set:
+    a category seen at inference but not training contributes to no dummy
+    column (all zeros); a category seen at training but absent at inference
+    still gets its column, filled with zeros.
     """
 
     argument_specs: list[ArgumentSpec] = [
@@ -977,12 +1112,18 @@ class OneHotEncodeTransformStrategy(DataTransformStrategy):
             ],
         }
 
-    def transform(self, data: pd.DataFrame, **kwargs) -> tuple[pd.DataFrame, dict]:
+    def transform(
+        self,
+        data: pd.DataFrame,
+        fitted_state: Optional[dict] = None,
+        **kwargs,
+    ) -> tuple[pd.DataFrame, dict]:
         columns: list[str] = kwargs.get("columns") or []
         drop_first: bool = bool(kwargs.get("drop_first", True))
         prefix_sep: str = kwargs.get("prefix_sep", "_")
         drop_original: bool = bool(kwargs.get("drop_original", True))
         max_cardinality: int = int(kwargs.get("max_cardinality", 50))
+        fitted_state = fitted_state or {}
 
         if not columns:
             raise ValueError("'columns' must be a non-empty list.")
@@ -998,6 +1139,32 @@ class OneHotEncodeTransformStrategy(DataTransformStrategy):
                 per_column[col] = {"error": "column_not_found"}
                 continue
 
+            prior = fitted_state.get(col)
+
+            if prior and prior.get("dummy_columns"):
+                # ── INFERENCE: build exactly the training-time dummy set ──
+                fixed_dummy_cols: list[str] = prior["dummy_columns"]
+                # Recompute raw dummies from the new data, then reindex onto
+                # the fixed training-time column set — this drops any
+                # category unseen at training and zero-fills any category
+                # seen at training but absent from this batch.
+                raw_dummies = pd.get_dummies(
+                    result[col], prefix=col, prefix_sep=prefix_sep, drop_first=False
+                ).astype(int)
+                dummies = raw_dummies.reindex(columns=fixed_dummy_cols, fill_value=0)
+                n_unique = result[col].nunique(dropna=True)
+                result = pd.concat([result, dummies], axis=1)
+                new_columns.extend(dummies.columns.tolist())
+                per_column[col] = {
+                    "n_categories": n_unique,
+                    "dummy_columns": dummies.columns.tolist(),
+                }
+                if drop_original:
+                    result.drop(columns=[col], inplace=True)
+                    dropped_columns.append(col)
+                continue
+
+            # ── TRAINING: fit the dummy set from this data ──
             n_unique = result[col].nunique(dropna=True)
             if n_unique > max_cardinality:
                 skipped.append(col)
@@ -1036,6 +1203,15 @@ class OrdinalEncodeTransformStrategy(DataTransformStrategy):
     Encodes one or more ordinal categorical columns as integers according to
     a caller-supplied ordering or, if none is given, lexicographic order,
     with optional handling for unseen categories.
+
+    ``fitted_state`` support: when no explicit ``orderings`` entry is given
+    for a column, the ordering (and therefore the mapping) is derived from
+    whichever categories happen to be present in the data — which must be
+    the *training* categories, not whatever shows up in a later inference
+    batch. When ``fitted_state`` supplies ``mapping``/``ordering`` for a
+    column, that exact map is reused; categories unseen at training fall
+    back to ``unknown_value``, same as any category the trained mapping
+    doesn't recognise.
     """
 
     argument_specs: list[ArgumentSpec] = [
@@ -1116,12 +1292,18 @@ class OrdinalEncodeTransformStrategy(DataTransformStrategy):
             ],
         }
 
-    def transform(self, data: pd.DataFrame, **kwargs) -> tuple[pd.DataFrame, dict]:
+    def transform(
+        self,
+        data: pd.DataFrame,
+        fitted_state: Optional[dict] = None,
+        **kwargs,
+    ) -> tuple[pd.DataFrame, dict]:
         columns: list[str] = kwargs.get("columns") or []
         orderings: dict = kwargs.get("orderings") or {}
         unknown_value: int = int(kwargs.get("unknown_value", -1))
         suffix: str = kwargs.get("suffix", "_ord")
         drop_original: bool = bool(kwargs.get("drop_original", True))
+        fitted_state = fitted_state or {}
 
         if not columns:
             raise ValueError("'columns' must be a non-empty list.")
@@ -1136,10 +1318,18 @@ class OrdinalEncodeTransformStrategy(DataTransformStrategy):
                 per_column[col] = {"error": "column_not_found"}
                 continue
 
-            ordering = orderings.get(col) or sorted(
-                result[col].dropna().astype(str).unique().tolist()
-            )
-            mapping = {v: i for i, v in enumerate(ordering)}
+            prior = fitted_state.get(col)
+            if prior and prior.get("mapping"):
+                # ── INFERENCE: reuse the training-time category -> int map ──
+                mapping = prior["mapping"]
+                ordering = prior.get("ordering", list(mapping.keys()))
+            else:
+                # ── TRAINING: derive ordering/mapping from this data ──
+                ordering = orderings.get(col) or sorted(
+                    result[col].dropna().astype(str).unique().tolist()
+                )
+                mapping = {v: i for i, v in enumerate(ordering)}
+
             new_col = col + suffix
             result[new_col] = result[col].map(mapping).fillna(unknown_value).astype(int)
             new_columns.append(new_col)
@@ -1163,6 +1353,14 @@ class TargetEncodeTransformStrategy(DataTransformStrategy):
     Replaces each category value with the mean of the target column within that
     category (target / mean encoding), with optional smoothing to shrink small
     groups towards the global mean and reduce overfitting.
+
+    ``fitted_state`` support: this is the strategy most sensitive to being
+    re-fit at inference time — target encoding uses the target column, which
+    generally is NOT available (or must not be used) at inference time at
+    all. When ``fitted_state`` supplies ``group_stats``/``global_mean`` for a
+    column (from training), those are reused directly and ``target_column``
+    is not required to be present in *data*; unseen categories map to the
+    training-time ``global_mean``, same as at training time.
     """
 
     argument_specs: list[ArgumentSpec] = [
@@ -1241,49 +1439,75 @@ class TargetEncodeTransformStrategy(DataTransformStrategy):
             ],
         }
 
-    def transform(self, data: pd.DataFrame, **kwargs) -> tuple[pd.DataFrame, dict]:
+    def transform(
+        self,
+        data: pd.DataFrame,
+        fitted_state: Optional[dict] = None,
+        **kwargs,
+    ) -> tuple[pd.DataFrame, dict]:
         columns: list[str] = kwargs.get("columns") or []
         target_column: str = kwargs.get("target_column") or ""
         smoothing: float = float(kwargs.get("smoothing", 10.0))
         suffix: str = kwargs.get("suffix", "_target_enc")
         drop_original: bool = bool(kwargs.get("drop_original", True))
+        fitted_state = fitted_state or {}
 
         if not columns:
             raise ValueError("'columns' must be a non-empty list.")
-        if not target_column:
-            raise ValueError("'target_column' is required.")
-        if target_column not in data.columns:
-            raise ValueError(f"Target column not found: {target_column}")
 
         result = data.copy()
-        global_mean = float(pd.to_numeric(result[target_column], errors="coerce").mean())
         new_columns: list[str] = []
         dropped_columns: list[str] = []
         per_column: dict = {}
+
+        # Only require target_column / compute global_mean from *data* when
+        # at least one column lacks fitted_state (i.e. we're training for
+        # that column). If every column has fitted_state, target_column
+        # need not even be present in *data* (the usual inference case).
+        columns_needing_fit = [c for c in columns if not (fitted_state.get(c) or {}).get("group_stats")]
+        global_mean = None
+        if columns_needing_fit:
+            if not target_column:
+                raise ValueError("'target_column' is required.")
+            if target_column not in data.columns:
+                raise ValueError(f"Target column not found: {target_column}")
+            global_mean = float(pd.to_numeric(result[target_column], errors="coerce").mean())
 
         for col in columns:
             if col not in result.columns:
                 per_column[col] = {"error": "column_not_found"}
                 continue
 
-            target_series = pd.to_numeric(result[target_column], errors="coerce")
-            stats = result.groupby(col)[target_column].agg(
-                group_mean=lambda x: pd.to_numeric(x, errors="coerce").mean(),
-                group_count="count",
-            )
-            # Smoothed encoding: λ * group_mean + (1 - λ) * global_mean
-            # λ = n / (n + k)
-            lam = stats["group_count"] / (stats["group_count"] + smoothing)
-            stats["smoothed"] = lam * stats["group_mean"] + (1 - lam) * global_mean
-
+            prior = fitted_state.get(col)
             new_col = col + suffix
-            result[new_col] = result[col].map(stats["smoothed"]).fillna(global_mean)
-            new_columns.append(new_col)
-            per_column[col] = {
-                "new_column": new_col,
-                "global_mean": global_mean,
-                "group_stats": stats[["group_mean", "group_count", "smoothed"]].to_dict(),
-            }
+
+            if prior and prior.get("group_stats"):
+                # ── INFERENCE: reuse training-time smoothed group means ──
+                col_global_mean = prior["global_mean"]
+                smoothed_map = prior["group_stats"].get("smoothed", {})
+                result[new_col] = result[col].map(smoothed_map).fillna(col_global_mean)
+                new_columns.append(new_col)
+                per_column[col] = {
+                    "new_column": new_col,
+                    "global_mean": col_global_mean,
+                    "group_stats": prior["group_stats"],
+                }
+            else:
+                # ── TRAINING: fit smoothed group means from this data ──
+                stats = result.groupby(col)[target_column].agg(
+                    group_mean=lambda x: pd.to_numeric(x, errors="coerce").mean(),
+                    group_count="count",
+                )
+                lam = stats["group_count"] / (stats["group_count"] + smoothing)
+                stats["smoothed"] = lam * stats["group_mean"] + (1 - lam) * global_mean
+
+                result[new_col] = result[col].map(stats["smoothed"]).fillna(global_mean)
+                new_columns.append(new_col)
+                per_column[col] = {
+                    "new_column": new_col,
+                    "global_mean": global_mean,
+                    "group_stats": stats[["group_mean", "group_count", "smoothed"]].to_dict(),
+                }
 
             if drop_original:
                 result.drop(columns=[col], inplace=True)
@@ -1305,6 +1529,12 @@ class FrequencyEncodeTransformStrategy(DataTransformStrategy):
     Replaces each category value with its relative frequency (proportion)
     in the dataset — a lightweight, cardinality-safe alternative to one-hot
     encoding for high-cardinality categoricals.
+
+    ``fitted_state`` support: frequencies must come from the training
+    distribution, not from an inference batch (which may be a single row,
+    where every category would trivially have frequency 1.0). When
+    ``fitted_state`` supplies ``frequency_map`` for a column, that map is
+    reused; categories unseen at training map to 0.
     """
 
     argument_specs: list[ArgumentSpec] = [
@@ -1361,11 +1591,17 @@ class FrequencyEncodeTransformStrategy(DataTransformStrategy):
             "expected_output": ["New column 'product_category_freq' with float proportions"],
         }
 
-    def transform(self, data: pd.DataFrame, **kwargs) -> tuple[pd.DataFrame, dict]:
+    def transform(
+        self,
+        data: pd.DataFrame,
+        fitted_state: Optional[dict] = None,
+        **kwargs,
+    ) -> tuple[pd.DataFrame, dict]:
         columns: list[str] = kwargs.get("columns") or []
         normalise: bool = bool(kwargs.get("normalise", True))
         suffix: str = kwargs.get("suffix", "_freq")
         drop_original: bool = bool(kwargs.get("drop_original", True))
+        fitted_state = fitted_state or {}
 
         if not columns:
             raise ValueError("'columns' must be a non-empty list.")
@@ -1380,9 +1616,18 @@ class FrequencyEncodeTransformStrategy(DataTransformStrategy):
                 per_column[col] = {"error": "column_not_found"}
                 continue
 
-            freq_map = result[col].value_counts(normalize=normalise).to_dict()
-            new_col = col + suffix
-            result[new_col] = result[col].map(freq_map)
+            prior = fitted_state.get(col)
+            if prior and prior.get("frequency_map"):
+                # ── INFERENCE: reuse training-time frequency map ──
+                freq_map = prior["frequency_map"]
+                new_col = col + suffix
+                result[new_col] = result[col].map(freq_map).fillna(0)
+            else:
+                # ── TRAINING: fit frequency map from this data ──
+                freq_map = result[col].value_counts(normalize=normalise).to_dict()
+                new_col = col + suffix
+                result[new_col] = result[col].map(freq_map)
+
             new_columns.append(new_col)
             per_column[col] = {"new_column": new_col, "frequency_map": freq_map}
 
@@ -1405,6 +1650,14 @@ class BinaryEncodeTransformStrategy(DataTransformStrategy):
     are converted to their binary representation, producing ceil(log2(k)) new
     bit columns per source column — more compact than one-hot for high-cardinality
     features while preserving more information than ordinal encoding.
+
+    ``fitted_state`` support: the category → integer-code mapping (and
+    therefore the number of bit columns and their meaning) is data-dependent
+    (``pandas`` assigns codes based on whichever categories are present).
+    When ``fitted_state`` supplies ``category_map``/``n_bits`` for a column,
+    inference reuses that exact mapping; a category unseen at training gets
+    code ``-1`` (all-zero bits), matching pandas' own convention for
+    unrecognised/NaN categories.
     """
 
     argument_specs: list[ArgumentSpec] = [
@@ -1449,10 +1702,16 @@ class BinaryEncodeTransformStrategy(DataTransformStrategy):
             "expected_output": ["8 new integer (0/1) columns: country_bin0 … country_bin7"],
         }
 
-    def transform(self, data: pd.DataFrame, **kwargs) -> tuple[pd.DataFrame, dict]:
+    def transform(
+        self,
+        data: pd.DataFrame,
+        fitted_state: Optional[dict] = None,
+        **kwargs,
+    ) -> tuple[pd.DataFrame, dict]:
         columns: list[str] = kwargs.get("columns") or []
         suffix: str = kwargs.get("suffix", "_bin")
         drop_original: bool = bool(kwargs.get("drop_original", True))
+        fitted_state = fitted_state or {}
 
         if not columns:
             raise ValueError("'columns' must be a non-empty list.")
@@ -1467,9 +1726,22 @@ class BinaryEncodeTransformStrategy(DataTransformStrategy):
                 per_column[col] = {"error": "column_not_found"}
                 continue
 
-            categories = result[col].astype("category").cat
-            codes = categories.codes  # -1 for NaN
-            n_bits = max(int(np.ceil(np.log2(len(categories.categories) + 1))), 1)
+            prior = fitted_state.get(col)
+
+            if prior and prior.get("category_map") is not None and prior.get("n_bits") is not None:
+                # ── INFERENCE: reuse the training-time category -> code map ──
+                category_map: dict = prior["category_map"]
+                n_bits: int = int(prior["n_bits"])
+                codes = result[col].map(category_map)
+                codes = codes.fillna(-1).astype(int).to_numpy()
+                n_categories = len(category_map)
+            else:
+                # ── TRAINING: fit category codes from this data ──
+                categories = result[col].astype("category").cat
+                codes = categories.codes  # -1 for NaN
+                n_categories = len(categories.categories)
+                n_bits = max(int(np.ceil(np.log2(n_categories + 1))), 1)
+                category_map = {cat: i for i, cat in enumerate(categories.categories)}
 
             bit_cols: list[str] = []
             for bit in range(n_bits):
@@ -1479,9 +1751,10 @@ class BinaryEncodeTransformStrategy(DataTransformStrategy):
                 bit_cols.append(new_col)
 
             per_column[col] = {
-                "n_categories": len(categories.categories),
+                "n_categories": n_categories,
                 "n_bits": n_bits,
                 "bit_columns": bit_cols,
+                "category_map": category_map,
             }
 
             if drop_original:
@@ -1505,6 +1778,13 @@ class StandardScaleTransformStrategy(DataTransformStrategy):
     Applies Z-score standardisation to numeric columns: (x - mean) / std,
     producing zero-mean unit-variance features. Fit statistics are included
     in the report for later inverse-transform or inference-time re-use.
+
+    ``fitted_state`` support: when a column has an entry in ``fitted_state``
+    (``{"mean": ..., "std": ...}``, as produced by this strategy's own
+    report), those exact values are reused instead of recomputed from
+    *data* — the whole point of this hook, since scaling a single new row
+    by its own "mean" and "std" is meaningless (both would trivially be the
+    row's own value and 0/NaN respectively).
     """
 
     argument_specs: list[ArgumentSpec] = [
@@ -1558,10 +1838,16 @@ class StandardScaleTransformStrategy(DataTransformStrategy):
             ],
         }
 
-    def transform(self, data: pd.DataFrame, **kwargs) -> tuple[pd.DataFrame, dict]:
+    def transform(
+        self,
+        data: pd.DataFrame,
+        fitted_state: Optional[dict] = None,
+        **kwargs,
+    ) -> tuple[pd.DataFrame, dict]:
         columns: list[str] = kwargs.get("columns") or []
         with_std: bool = bool(kwargs.get("with_std", True))
         suffix: str = kwargs.get("suffix", "_scaled")
+        fitted_state = fitted_state or {}
 
         if not columns:
             raise ValueError("'columns' must be a non-empty list.")
@@ -1579,8 +1865,14 @@ class StandardScaleTransformStrategy(DataTransformStrategy):
                 continue
 
             s = result[col].astype(float)
-            mean = float(s.mean())
-            std = float(s.std())
+            prior = fitted_state.get(col)
+            if prior and prior.get("mean") is not None and prior.get("std") is not None:
+                # ── INFERENCE: reuse training-time mean/std ──
+                mean, std = float(prior["mean"]), float(prior["std"])
+            else:
+                # ── TRAINING: fit mean/std from this data ──
+                mean, std = float(s.mean()), float(s.std())
+
             scaled = (s - mean) / std if (with_std and std != 0) else s - mean
             new_col = col + suffix if suffix else col
             result[new_col] = scaled
@@ -1601,6 +1893,12 @@ class MinMaxScaleTransformStrategy(DataTransformStrategy):
     """
     Scales numeric columns to a [feature_min, feature_max] range (default [0, 1])
     using min-max normalisation: (x - min) / (max - min) * (max_val - min_val) + min_val.
+
+    ``fitted_state`` support: reuses training-time ``data_min``/``data_max``
+    (as produced by this strategy's own report) instead of recomputing them
+    from the inference batch, so a single new value isn't trivially scaled
+    to the target range's minimum (or produce a divide-by-zero from a
+    single-row min==max).
     """
 
     argument_specs: list[ArgumentSpec] = [
@@ -1658,11 +1956,17 @@ class MinMaxScaleTransformStrategy(DataTransformStrategy):
             "expected_output": ["New column 'pixel_value_minmax' in range [-1, 1]"],
         }
 
-    def transform(self, data: pd.DataFrame, **kwargs) -> tuple[pd.DataFrame, dict]:
+    def transform(
+        self,
+        data: pd.DataFrame,
+        fitted_state: Optional[dict] = None,
+        **kwargs,
+    ) -> tuple[pd.DataFrame, dict]:
         columns: list[str] = kwargs.get("columns") or []
         feature_min: float = float(kwargs.get("feature_min", 0.0))
         feature_max: float = float(kwargs.get("feature_max", 1.0))
         suffix: str = kwargs.get("suffix", "_minmax")
+        fitted_state = fitted_state or {}
 
         if not columns:
             raise ValueError("'columns' must be a non-empty list.")
@@ -1683,7 +1987,14 @@ class MinMaxScaleTransformStrategy(DataTransformStrategy):
                 continue
 
             s = result[col].astype(float)
-            mn, mx = float(s.min()), float(s.max())
+            prior = fitted_state.get(col)
+            if prior and prior.get("data_min") is not None and prior.get("data_max") is not None:
+                # ── INFERENCE: reuse training-time data min/max ──
+                mn, mx = float(prior["data_min"]), float(prior["data_max"])
+            else:
+                # ── TRAINING: fit min/max from this data ──
+                mn, mx = float(s.min()), float(s.max())
+
             data_range = mx - mn
             scaled = (s - mn) / data_range * scale_range + feature_min if data_range else s * 0 + feature_min
             new_col = col + suffix if suffix else col
@@ -1707,6 +2018,10 @@ class RobustScaleTransformStrategy(DataTransformStrategy):
     Scales numeric columns using statistics robust to outliers: centres on the
     median and scales by the interquartile range (IQR), making the transformation
     insensitive to extreme values — (x - median) / IQR.
+
+    ``fitted_state`` support: reuses training-time ``median``/``iqr`` (as
+    produced by this strategy's own report) rather than recomputing quantiles
+    from the (possibly single-row) inference batch.
     """
 
     argument_specs: list[ArgumentSpec] = [
@@ -1754,10 +2069,16 @@ class RobustScaleTransformStrategy(DataTransformStrategy):
             "expected_output": ["New column 'income_robust'"],
         }
 
-    def transform(self, data: pd.DataFrame, **kwargs) -> tuple[pd.DataFrame, dict]:
+    def transform(
+        self,
+        data: pd.DataFrame,
+        fitted_state: Optional[dict] = None,
+        **kwargs,
+    ) -> tuple[pd.DataFrame, dict]:
         columns: list[str] = kwargs.get("columns") or []
         quantile_range: list[float] = kwargs.get("quantile_range") or [25.0, 75.0]
         suffix: str = kwargs.get("suffix", "_robust")
+        fitted_state = fitted_state or {}
 
         if not columns:
             raise ValueError("'columns' must be a non-empty list.")
@@ -1776,9 +2097,18 @@ class RobustScaleTransformStrategy(DataTransformStrategy):
                 continue
 
             s = result[col].astype(float)
-            median = float(s.median())
-            q1, q3 = float(s.quantile(q_lo)), float(s.quantile(q_hi))
-            iqr = q3 - q1
+            prior = fitted_state.get(col)
+            if prior and prior.get("median") is not None and prior.get("iqr") is not None:
+                # ── INFERENCE: reuse training-time median/IQR ──
+                median, iqr = float(prior["median"]), float(prior["iqr"])
+                q1 = prior.get("q1")
+                q3 = prior.get("q3")
+            else:
+                # ── TRAINING: fit median/IQR from this data ──
+                median = float(s.median())
+                q1, q3 = float(s.quantile(q_lo)), float(s.quantile(q_hi))
+                iqr = q3 - q1
+
             scaled = (s - median) / iqr if iqr else s - median
             new_col = col + suffix if suffix else col
             result[new_col] = scaled
@@ -1800,6 +2130,13 @@ class LogTransformTransformStrategy(DataTransformStrategy):
     Applies a logarithmic transformation to numeric columns to reduce right
     skewness, with configurable base (natural, log2, log10) and an optional
     constant shift to handle zero or negative values.
+
+    No fitted parameters — ``base`` and ``shift`` are fixed arguments and
+    the transform is applied per-value, so replay at inference time is
+    identical to training. ``fitted_state`` is accepted for interface
+    consistency but unused (the ``skewness_before``/``skewness_after``
+    values recorded are diagnostic only, not needed to reproduce the
+    transform).
     """
 
     argument_specs: list[ArgumentSpec] = [
@@ -1863,7 +2200,12 @@ class LogTransformTransformStrategy(DataTransformStrategy):
             "expected_output": ["New column 'income_log' with reduced skewness"],
         }
 
-    def transform(self, data: pd.DataFrame, **kwargs) -> tuple[pd.DataFrame, dict]:
+    def transform(
+        self,
+        data: pd.DataFrame,
+        fitted_state: Optional[dict] = None,
+        **kwargs,
+    ) -> tuple[pd.DataFrame, dict]:
         columns: list[str] = kwargs.get("columns") or []
         base: str = kwargs.get("base", "natural")
         shift: float = float(kwargs.get("shift", 1.0))
@@ -1918,6 +2260,14 @@ class PowerTransformTransformStrategy(DataTransformStrategy):
     Applies a Box-Cox (λ) or Yeo-Johnson power transformation to numeric columns
     to stabilise variance and approximate normality. Yeo-Johnson supports zero
     and negative values; Box-Cox requires strictly positive values.
+
+    ``fitted_state`` support: the fitted λ is the single most important
+    parameter to persist here — ``scipy.stats.yeojohnson``/``boxcox`` without
+    a fixed ``lmbda`` re-estimate λ to maximise normality *of whatever data
+    is passed in*, which for a single inference row is undefined/meaningless.
+    When ``fitted_state`` supplies ``lambda`` for a column, it's passed as a
+    fixed ``lmbda`` to the scipy functions so the exact training-time
+    transform is replayed.
     """
 
     argument_specs: list[ArgumentSpec] = [
@@ -1990,13 +2340,20 @@ class PowerTransformTransformStrategy(DataTransformStrategy):
             ],
         }
 
-    def transform(self, data: pd.DataFrame, **kwargs) -> tuple[pd.DataFrame, dict]:
+    def transform(
+        self,
+        data: pd.DataFrame,
+        fitted_state: Optional[dict] = None,
+        **kwargs,
+    ) -> tuple[pd.DataFrame, dict]:
         from scipy.stats import yeojohnson, boxcox
+        from scipy.special import inv_boxcox
 
         columns: list[str] = kwargs.get("columns") or []
         method: str = kwargs.get("method", "yeo-johnson")
         lambda_value = kwargs.get("lambda_value")
         suffix: str = kwargs.get("suffix", "_power")
+        fitted_state = fitted_state or {}
 
         if not columns:
             raise ValueError("'columns' must be a non-empty list.")
@@ -2017,19 +2374,29 @@ class PowerTransformTransformStrategy(DataTransformStrategy):
             skew_before = float(s.skew())
             non_null = s.dropna().values
 
+            prior = fitted_state.get(col)
+            # A fitted λ from a prior training run takes precedence over an
+            # explicit lambda_value argument, which itself takes precedence
+            # over auto-estimation — the fitted value is what makes this
+            # transform reproducible at inference time.
+            effective_lambda = (
+                prior["lambda"] if (prior and prior.get("lambda") is not None)
+                else lambda_value
+            )
+
             try:
                 if method == "yeo-johnson":
-                    if lambda_value is not None:
-                        transformed_vals, lam = yeojohnson(non_null, lmbda=float(lambda_value))
+                    if effective_lambda is not None:
+                        transformed_vals, lam = yeojohnson(non_null, lmbda=float(effective_lambda))
                     else:
                         transformed_vals, lam = yeojohnson(non_null)
                 else:  # box-cox
                     if (non_null <= 0).any():
                         per_column[col] = {"error": "box-cox requires strictly positive values"}
                         continue
-                    if lambda_value is not None:
-                        transformed_vals = boxcox(non_null, lmbda=float(lambda_value))
-                        lam = float(lambda_value)
+                    if effective_lambda is not None:
+                        transformed_vals = boxcox(non_null, lmbda=float(effective_lambda))
+                        lam = float(effective_lambda)
                     else:
                         transformed_vals, lam = boxcox(non_null)
 
@@ -2113,21 +2480,28 @@ class TabularDataTransformer:
         self.strategy = self._resolve(strategy)
 
     def execute_strategy(
-        self, data: pd.DataFrame, **kwargs
+        self,
+        data: pd.DataFrame,
+        fitted_state: Optional[dict] = None,
+        **kwargs,
     ) -> tuple[pd.DataFrame, dict]:
         """
         Run the current strategy and return ``(transformed_df, report)``.
 
         :param data: DataFrame to transform.
+        :param fitted_state: Optional previously-fitted per-column parameters
+            to replay instead of recomputing from *data* (inference mode).
+            Ignored by strategies with no data-dependent parameters.
         :param kwargs: Forwarded to the strategy's ``transform`` method.
         :return: Tuple of transformed DataFrame and report dict.
         """
-        return self.strategy.transform(data, **kwargs)
+        return self.strategy.transform(data, fitted_state=fitted_state, **kwargs)
 
     def run_pipeline(
         self,
         data: pd.DataFrame,
         steps: list[dict],
+        fitted_states: Optional[list[Optional[dict]]] = None,
     ) -> tuple[pd.DataFrame, list[dict]]:
         """
         Execute a sequence of transformation steps, threading the DataFrame
@@ -2140,18 +2514,27 @@ class TabularDataTransformer:
 
         :param data: Input DataFrame.
         :param steps: Ordered list of step dicts.
+        :param fitted_states: Optional list, same length as *steps* (or
+            ``None``), of per-step ``fitted_state`` dicts to replay — pass
+            each step's own ``per_column`` block from a prior training-time
+            report to run this pipeline in "apply" mode against new data
+            instead of "fit" mode.
         :return: (final_transformed_df, list_of_reports)
         """
         current = data.copy()
         reports: list[dict] = []
+        fitted_states = fitted_states or [None] * len(steps)
 
         for i, step in enumerate(steps):
             strategy_id = step.get("transform")
             arguments: dict = step.get("arguments") or {}
             label: str = step.get("name", f"step_{i + 1}")
+            step_fitted_state = fitted_states[i] if i < len(fitted_states) else None
 
             self.set_strategy(strategy_id)
-            current, report = self.strategy.transform(current, **arguments)
+            current, report = self.strategy.transform(
+                current, fitted_state=step_fitted_state, **arguments
+            )
 
             reports.append({
                 "step": i + 1,

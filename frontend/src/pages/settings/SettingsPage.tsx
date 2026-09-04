@@ -2,45 +2,21 @@ import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Moon, Sun, Palette, Check } from 'lucide-react';
 import { useTheme } from '@/contexts/ThemeContext';
 
-// Dotted background — same component used on the Notebooks / Workspace
-// pages, so Settings reads as part of the same app rather than a
-// separately-designed screen.
-import DotField from '@/components/background/DotField';
-
 export default function SettingsPage() {
   const navigate = useNavigate();
   const { theme, setTheme } = useTheme();
 
   return (
     <div className="h-full min-h-0 overflow-y-auto bg-background text-foreground">
-      <div className="relative h-full min-h-0 overflow-y-auto bg-background text-foreground">
-        {/* Content column below is un-capped (min-h-full, not h-full) so this
-            stretches across the full scrollable content, not just the first
-            screen — same treatment as Notebooks / Workspace. */}
-        <div className="pointer-events-none absolute inset-0 overflow-hidden">
-          <DotField
-            dotRadius={1.5}
-            dotSpacing={14}
-            bulgeStrength={67}
-            glowRadius={160}
-            sparkle={false}
-            waveAmplitude={0}
-            cursorRadius={500}
-            cursorForce={0}
-            bulgeOnly={false}
-            gradientFrom="#592603"
-            gradientTo="#613508"
-            glowColor="#120F17"
-          />
-        </div>
-
-        <div className="relative min-h-full w-full mx-auto max-w-4xl px-6 py-10">
+        <div className="mx-auto min-h-full w-full max-w-3xl px-6 py-8 sm:px-10">
           {/* Header */}
-          <header className="relative mb-8 flex items-center gap-3 border-b border-border pb-6">
+          <header className="mb-8 border-b border-border pb-6">
+            <button onClick={() => navigate(-1)} className="mb-6 inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground">
+              <ArrowLeft className="h-3.5 w-3.5" />
+              Back
+            </button>
             <div>
-              <h1 className="bg-primary-gradient bg-clip-text text-[28px] font-semibold leading-none tracking-tight text-transparent">
-                Settings
-              </h1>
+              <h1 className="text-2xl font-semibold tracking-tight text-foreground">Settings</h1>
               <p className="mt-2 text-sm text-muted-foreground">
                 Manage how Squirrel looks and behaves on this device.
               </p>
@@ -48,7 +24,7 @@ export default function SettingsPage() {
           </header>
 
           {/* Content */}
-          <div className="relative space-y-12">
+          <div className="space-y-10">
             {/* Appearance */}
             <section>
               <div className="mb-1 flex items-center gap-2">
@@ -59,7 +35,7 @@ export default function SettingsPage() {
               </div>
               <p className="mb-6 text-sm text-muted-foreground">Choose how Squirrel looks on this device.</p>
 
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 {(
                   [
                     { id: 'light' as const, label: 'Light', icon: Sun, swatch: ['#F5F1EA', '#FFFFFF', '#E8895C'] },
@@ -73,7 +49,7 @@ export default function SettingsPage() {
                       onClick={() => setTheme(id)}
                       aria-pressed={active}
                       className={`group relative overflow-hidden rounded-2xl border text-left transition-all duration-300 ease-out hover:-translate-y-0.5 ${
-                        active ? 'border-primary ring-1 ring-primary/40 shadow-sm' : 'border-border hover:border-primary/40'
+                        active ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/40'
                       }`}
                     >
                       {/* Title bar — matches the WorkspaceCard / BestModelCard treatment */}
@@ -90,7 +66,7 @@ export default function SettingsPage() {
                       </div>
 
                       {/* Mini live preview */}
-                      <div className="flex h-24 w-full items-center gap-2 p-4" style={{ backgroundColor: swatch[0] }}>
+                      <div className="flex h-20 w-full items-center gap-2 p-4" style={{ backgroundColor: swatch[0] }}>
                         <span className="h-8 w-8 rounded-md shadow-sm" style={{ backgroundColor: swatch[1] }} />
                         <span className="flex-1 space-y-1.5">
                           <span className="block h-2 w-3/4 rounded-full opacity-90" style={{ backgroundColor: swatch[2] }} />
@@ -127,8 +103,8 @@ export default function SettingsPage() {
               </h2>
               <p className="mb-6 text-sm text-muted-foreground">How the current theme's tokens look in practice.</p>
 
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                <div className="overflow-hidden rounded-2xl border border-border bg-card">
+              <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                <div className="overflow-hidden rounded-md border border-border bg-card">
                   <div className="border-b border-border/70 bg-secondary/40 px-4 py-2.5">
                     <h3 className="text-[11px] font-medium uppercase tracking-[0.14em] text-muted-foreground">
                       Colors
@@ -148,7 +124,7 @@ export default function SettingsPage() {
                   </div>
                 </div>
 
-                <div className="overflow-hidden rounded-2xl border border-border bg-card">
+                <div className="overflow-hidden rounded-md border border-border bg-card">
                   <div className="border-b border-border/70 bg-secondary/40 px-4 py-2.5">
                     <h3 className="text-[11px] font-medium uppercase tracking-[0.14em] text-muted-foreground">
                       Typography
@@ -168,7 +144,7 @@ export default function SettingsPage() {
             </section>
 
             {/* About */}
-            <section className="overflow-hidden rounded-2xl border border-border bg-card">
+            <section className="overflow-hidden rounded-md border border-border bg-card">
               <div className="border-b border-border/70 bg-secondary/40 px-4 py-2.5">
                 <h2 className="text-[11px] font-medium uppercase tracking-[0.14em] text-muted-foreground">About</h2>
               </div>
@@ -181,7 +157,6 @@ export default function SettingsPage() {
             </section>
           </div>
         </div>
-      </div>
     </div>
   );
 }
