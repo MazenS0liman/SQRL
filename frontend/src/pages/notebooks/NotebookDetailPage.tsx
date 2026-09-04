@@ -597,7 +597,7 @@ function DataSourceSetup({ notebook, onBound }: { notebook: Notebook; onBound: (
 
 // ── toChartDef ────────────────────────────────────────────────────────────
 async function downloadNotebookFile(path: string, filename: string) {
-  const baseUrl = import.meta.env.VITE_BACKEND_API_BASE_URL?.replace(/\/$/, '');
+  const baseUrl = (import.meta.env.VITE_BACKEND_API_BASE_URL || "/api").replace(/\/$/, '');
   const response = await fetch(`${baseUrl}${path}`, { headers: authHeaders() });
   if (!response.ok) throw new Error(`Download failed: ${response.statusText}`);
   const blob = await response.blob();
@@ -1135,7 +1135,7 @@ function NotebookWorkspace({
     if (scriptContent) return; // cached from a prior open this session
     setScriptLoading(true); setScriptError(null);
     try {
-      const baseUrl = import.meta.env.VITE_BACKEND_API_BASE_URL?.replace(/\/$/, "");
+      const baseUrl = (import.meta.env.VITE_BACKEND_API_BASE_URL || "/api").replace(/\/$/, "");
       const res = await fetch(`${baseUrl}/notebook/${notebook.id}/export/prep-script`, { headers: authHeaders() });
       if (!res.ok) throw new Error(`Failed: ${res.statusText}`);
       setScriptContent(await res.text());

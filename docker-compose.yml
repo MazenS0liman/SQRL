@@ -7,10 +7,10 @@ services:
     ports:
       - "8000:8000"
     volumes:
-      - ./docs:/docs
-      - ./logs:/logs
-      - ./squirrel:/squirrel
-      - ./static:/static
+      - ./backend/docs:/docs
+      - ./backend/logs:/logs
+      - ./backend/squirrel:/squirrel
+      - ./backend/static:/static
     env_file:
       - .env
     restart: unless-stopped

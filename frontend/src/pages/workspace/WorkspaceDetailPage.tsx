@@ -1047,6 +1047,12 @@ export default function WorkspaceDetailPage(): JSX.Element {
               ) : (
                 <h1 className="group flex items-center gap-1.5 text-base font-semibold tracking-tight text-foreground">
                   <button onClick={() => navigate("/notebooks")}
+                    className="shrink-0 rounded-lg border border-border p-1.5 text-muted-foreground hover:bg-secondary hover:text-foreground"
+                    title="Back to notebooks">
+                    <ArrowLeft className="h-4 w-4" />
+                  </button>
+                  <span className="truncate">{workspace.name}</span>
+                  <button
                     onClick={() => setEditingName(true)}
                     aria-label="Rename workspace"
                     className="shrink-0 text-muted-foreground opacity-0 transition-opacity hover:text-foreground group-hover:opacity-100"

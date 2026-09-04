@@ -39,7 +39,7 @@ interface CurrentUserResponse {
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 const USER_STORAGE_KEY = 'sqrl-user-profile';
-const API_BASE = `${import.meta.env.VITE_BACKEND_API_BASE_URL}`.replace(/\/$/, '');
+const API_BASE = (import.meta.env.VITE_BACKEND_API_BASE_URL || "/api").replace(/\/$/, '');
 
 function buildAvatarSeed(username: string, name: string): string {
   return `${username.trim().charAt(0) || 'S'}${name.trim().charAt(0) || 'Q'}`.toUpperCase();

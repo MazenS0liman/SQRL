@@ -115,7 +115,7 @@ export default function SignupPage(): JSX.Element {
               <div className="mb-6 flex items-center gap-4">
                 <div className="relative flex h-16 w-16 shrink-0 items-center justify-center">
                   <img
-                    src="src/assets/imgs/logo.png"
+                    src="/imgs/logo.png"
                     alt="Squirrel logo"
                     className="sqrl-anim-logo relative h-14 w-14 object-contain transition-transform duration-300 ease-out hover:-rotate-6 hover:scale-105"
                   />

@@ -84,7 +84,7 @@ export const Message = ({
         >
             {message.role === "assistant" && (
                 <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0 mt-1">
-                    <img src="./src/assets/imgs/ai.png" alt="assistant" width={50} height={50} />
+                    <img src="/imgs/ai.png" alt="assistant" width={50} height={50} />
                 </div>
             )}
 
@@ -118,7 +118,7 @@ export const Message = ({
 
             {message.role === "user" && (
                 <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0 mt-1">
-                    <img src="./src/assets/imgs/user.png" alt="user" width={20} height={20} />
+                    <img src="/imgs/user.png" alt="user" width={20} height={20} />
                 </div>
             )}
         </div>

@@ -29,7 +29,7 @@ export const CONNECTOR_TYPES: ConnectorTypeDef[] = [
     label: "PostgreSQL",
     description: "Connect to a Postgres database.",
     badgeClass: "bg-secondary text-foreground border border-border",
-    logo: "src/assets/imgs/postgres.png",
+    logo: "/imgs/postgres.png",
     fields: [
       { key: "host", label: "Host", type: "text", placeholder: "db.internal.example.com", required: true },
       { key: "port", label: "Port", type: "number", placeholder: "5432", required: true },
@@ -68,7 +68,7 @@ export interface DataConnection {
 
 import { authHeaders } from "@/lib/auth";
 
-const CONNECTORS_API_BASE = `${import.meta.env.VITE_BACKEND_API_BASE_URL}/connector`;
+const CONNECTORS_API_BASE = `${import.meta.env.VITE_BACKEND_API_BASE_URL || "/api"}/connector`;
 
 /**
  * Thrown by `connectorsFetch` for any non-OK response, carrying the HTTP

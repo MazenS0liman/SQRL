@@ -117,7 +117,7 @@ export interface ConnectorSummary {
   type: string;
 }
 
-export const API_BASE = `${import.meta.env.VITE_BACKEND_API_BASE_URL}`;
+export const API_BASE = import.meta.env.VITE_BACKEND_API_BASE_URL || "/api";
 
 export const DATA_TYPE_OPTIONS: { value: WorkspaceDataType; label: string }[] = [
   { value: "structured", label: "Structured (CSV)" },

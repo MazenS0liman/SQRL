@@ -4,7 +4,7 @@ import { authHeaders } from '@/lib/auth';
 // ——————————————————————————————————————————————————————————————
 // API client
 
-export const API_BASE = `${import.meta.env.VITE_BACKEND_API_BASE_URL}`;
+export const API_BASE = import.meta.env.VITE_BACKEND_API_BASE_URL || "/api";
 
 export class ApiError extends Error {}
 
@@ -38,7 +38,7 @@ export async function apiFetch<T>(path: string, options: RequestInit = {}): Prom
 // ——————————————————————————————————————————————————————————————
 // Connector API
 
-const CONNECTORS_API_BASE = `${import.meta.env.VITE_BACKEND_API_BASE_URL}/connector`;
+const CONNECTORS_API_BASE = `${API_BASE}/connector`;
 
 async function connectorsFetch<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(`${CONNECTORS_API_BASE}${path}`, {

@@ -23,8 +23,10 @@ Features
 # Imports
 
 import time
+from pathlib import Path
 from fastapi import FastAPI, Request, status
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
 
 from squirrel.api.api import api_router
 from squirrel.core.config import settings
@@ -69,10 +71,16 @@ app.add_middleware(RequestLoggingMiddleware)
 app.include_router(api_router, prefix="/api")
 
 
+FRONTEND_DIR = Path(__file__).resolve().parent / "frontend-dist"
+FRONTEND_INDEX = FRONTEND_DIR / "index.html"
+
+
 # Root route
 @app.get("/", status_code=status.HTTP_200_OK)
 async def root():
-    """Root endpoint"""
+    """Serve the production frontend, or the API metadata in dev images."""
+    if FRONTEND_INDEX.is_file():
+        return FileResponse(FRONTEND_INDEX)
     return {
         "name": settings.APP_NAME,
         "version": settings.VERSION,
@@ -80,6 +88,18 @@ async def root():
         "docs": "/docs" if settings.ENVIRONMENT != "production" else None,
         "health": "/api/health",
     }
+
+
+@app.get("/{path:path}", include_in_schema=False)
+async def frontend_fallback(path: str):
+    """Serve frontend assets and support browser refreshes on SPA routes."""
+    if not FRONTEND_INDEX.is_file():
+        return {"detail": "Not found"}
+
+    requested = (FRONTEND_DIR / path).resolve()
+    if requested.is_file() and FRONTEND_DIR in requested.parents:
+        return FileResponse(requested)
+    return FileResponse(FRONTEND_INDEX)
 
 
 if __name__ == "__main__":

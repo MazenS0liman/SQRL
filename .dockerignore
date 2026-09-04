@@ -1,0 +1,16 @@
+**/node_modules
+**/dist
+**/.git
+**/__pycache__
+**/*.pyc
+backend/docs/_build
+backend/logs
+backend/.venv
+backend/artifacts
+backend/datasets
+backend/notebooks
+backend/output.csv
+backend/output.json
+backend/model.json
+frontend/.vite
+frontend/coverage

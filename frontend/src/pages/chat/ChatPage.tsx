@@ -58,7 +58,7 @@ export const ChatPage: React.FC<ChatPageProps> = ({ session }: ChatPageProps) =>
 	const handleUserMessage = useCallback(async (message: ChatMessage) => {
 		updateSession(message);
 
-		const baseUrl = import.meta.env.VITE_BACKEND_API_BASE_URL?.replace(/\/$/, '');
+		const baseUrl = (import.meta.env.VITE_BACKEND_API_BASE_URL || "/api").replace(/\/$/, '');
 		const fileUrls = (message.data?.files as UploadedFile[] | undefined)?.map((f) => f.fileUrl) ?? [];
 
 		// conversationId must match ^[a-zA-Z0-9_-]+$

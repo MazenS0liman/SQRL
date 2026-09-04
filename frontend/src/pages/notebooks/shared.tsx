@@ -4,7 +4,7 @@ import { authHeaders } from '@/lib/auth';
 // ——————————————————————————————————————————————————————————————
 // API client
 
-export const API_BASE = `${import.meta.env.VITE_BACKEND_API_BASE_URL}`;
+export const API_BASE = import.meta.env.VITE_BACKEND_API_BASE_URL || "/api";
 
 export class ApiError extends Error {}
 

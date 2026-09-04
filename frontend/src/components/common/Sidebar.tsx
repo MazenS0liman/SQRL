@@ -57,7 +57,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, onTabChange }) => {
       <div className="flex h-[80px] items-center gap-2 border-b border-sidebar-border px-3">
         <div className="flex h-full w-full shrink-0 items-center justify-center rounded-lg">
           <img
-            src="src/assets/imgs/logo.png"
+            src="/imgs/logo.png"
             alt="Squirrel logo"
             className="h-full w-full object-contain"
           />
