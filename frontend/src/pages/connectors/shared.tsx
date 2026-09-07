@@ -66,7 +66,7 @@ export interface DataConnection {
   updated_at: string;
 }
 
-import { authHeaders } from "@/lib/auth";
+import { authHeaders, notifyAuthExpired } from "@/lib/auth";
 
 const CONNECTORS_API_BASE = `${import.meta.env.VITE_BACKEND_API_BASE_URL || "/api"}/connector`;
 
@@ -90,6 +90,7 @@ async function connectorsFetch<T>(path: string, init?: RequestInit): Promise<T> 
     headers: authHeaders({ "Content-Type": "application/json" }),
     ...init,
   });
+  if (res.status === 401) notifyAuthExpired();
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
     throw new ConnectorApiError(body.detail || `Request failed (${res.status})`, res.status);

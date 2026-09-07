@@ -1,4 +1,5 @@
 const AUTH_TOKEN_KEY = 'sqrl-auth-token';
+const AUTH_EXPIRED_EVENT = 'sqrl-auth-expired';
 
 export function getStoredAuthToken(): string | null {
   if (typeof window === 'undefined') return null;
@@ -12,6 +13,18 @@ export function setStoredAuthToken(token: string | null): void {
     return;
   }
   window.localStorage.removeItem(AUTH_TOKEN_KEY);
+}
+
+export function notifyAuthExpired(): void {
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new Event(AUTH_EXPIRED_EVENT));
+  }
+}
+
+export function onAuthExpired(listener: () => void): () => void {
+  if (typeof window === 'undefined') return () => undefined;
+  window.addEventListener(AUTH_EXPIRED_EVENT, listener);
+  return () => window.removeEventListener(AUTH_EXPIRED_EVENT, listener);
 }
 
 export function authHeaders(headers: HeadersInit = {}): HeadersInit {

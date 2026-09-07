@@ -1,7 +1,8 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import type { ModelFile, ModelMetric, ModelSummary, Workspace } from "@/pages/workspace/shared";
-import { apiFetch, downloadOutputFile, formatPercent, statusMeta } from "@/pages/workspace/shared";
+import type { ModelFile, ModelMetric, ModelSummary, Workspace } from "@/types";
+import { downloadOutputFile, formatPercent, statusMeta } from "@/pages/workspace/shared";
+import { apiFetch } from "@/lib/utils";
 
 // Dotted background (same component used on the Workspace page) — kept
 // consistent so Models reads as a continuation of Workspace, not a

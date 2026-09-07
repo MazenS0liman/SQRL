@@ -39,3 +39,31 @@ export type {
 export type {
     ConnectorSummary
 } from './connector';
+
+// Auth types
+export type {
+    AuthTokenResponse,
+    AuthUserResponse,
+    CurrentUserResponse,
+    UserProfile,
+    AuthContextValue
+} from './auth';
+
+// Workspace types
+export type {
+    WorkspaceStatus,
+    WorkspaceDataType,
+    Workspace,
+    DataSource,
+    UploadedSourceOut,
+    UploadResponse,
+    ModelMetric,
+    ModelSummary,
+    BuildResponse,
+    ConnectorSummary,
+    ModelFile,
+    ModelsResponse,
+    PreprocessedDataResponse,
+    PredictResponse,
+    TablePreviewEntry
+} from './workspace';

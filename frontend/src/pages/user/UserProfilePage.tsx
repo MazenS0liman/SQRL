@@ -20,7 +20,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
-import { apiFetch } from '@/pages/workspace/shared';
+import { apiFetch } from '@/lib/utils';
 
 interface TokenRead {
   id: string;

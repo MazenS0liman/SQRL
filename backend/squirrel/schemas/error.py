@@ -1,5 +1,9 @@
 from typing import List
 
+
+# ——————————————————————————————————————————————————————————————
+# Workspace Exceptions
+
 class WorkspaceNotFoundError(Exception):
     """Raised when a project_id does not resolve to a workspace row."""
 
@@ -24,6 +28,20 @@ class DuplicateColumnError(ValueError):
               "of the sources (or remove the duplicate) before building models."
         )
 
+
+class DuplicateColumnError(Exception):
+    """
+    Raised when two or more input sources share a non-target column name in
+    a way that can't be resolved into an unambiguous merge (see
+    ``TabularDataProcessorAgent.merge_sources``).
+    """
+
+    def __init__(self, columns: List[str]):
+        self.columns = columns
+        super().__init__(
+            f"Columns {columns} appear in more than one input source and "
+            "can't be merged unambiguously."
+        )
 
 # ——————————————————————————————————————————————————————————————
 # Notebook Errors

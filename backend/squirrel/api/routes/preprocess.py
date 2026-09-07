@@ -52,7 +52,6 @@ from squirrel.modules.agents import TabularDataInspectorAgent, TabularDataProces
 # Services
 from squirrel.services.workspace.WorkspaceService import (
     WorkspaceService,
-    DuplicateColumnError,
 )
 from squirrel.services.storage.blob.MinIOService import MinIOService
 
@@ -68,6 +67,11 @@ from squirrel.schemas.workspace import (
 )
 from squirrel.api.routes.auth import get_current_user
 from squirrel.schemas.auth import AuthUserRead
+
+# Errors
+from squirrel.schemas.error import (
+    DuplicateColumnError
+)
 
 # Logging
 from loguru import logger

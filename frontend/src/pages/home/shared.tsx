@@ -1,5 +1,5 @@
 import type { Notebook, ConnectorSummary } from '@/types';
-import { authHeaders } from '@/lib/auth';
+import { authHeaders, notifyAuthExpired } from '@/lib/auth';
 
 // ——————————————————————————————————————————————————————————————
 // API client
@@ -19,6 +19,8 @@ export async function apiFetch<T>(path: string, options: RequestInit = {}): Prom
       ...authHeaders(),
     },
   });
+
+  if (res.status === 401) notifyAuthExpired();
 
   if (!res.ok) {
     let detail = res.statusText;
@@ -45,6 +47,7 @@ async function connectorsFetch<T>(path: string, init?: RequestInit): Promise<T> 
     headers: { "Content-Type": "application/json" },
     ...init,
   });
+  if (res.status === 401) notifyAuthExpired();
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
     throw new Error(body.detail || `Request failed (${res.status})`);

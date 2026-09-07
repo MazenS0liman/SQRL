@@ -198,7 +198,10 @@ class FileService:
         """Return True if ``file_url`` has a row owned by ``owner_user_id``."""
         return self._get_row(file_url, owner_user_id) is not None
 
-    def list_files(self, owner_user_id: str) -> list[File]:
+    def list_files(
+        self, 
+        owner_user_id: str
+    ) -> list[File]:
         """Return every file record owned by ``owner_user_id``."""
         try:
             result = self.db_service.retrieve(self.TABLE, filters={"owner_user_id": owner_user_id})
@@ -208,7 +211,11 @@ class FileService:
         rows = (result or {}).get("rows", [])
         return [self.from_dict(row) for row in rows]
 
-    def get_owned_file(self, file_url: str, owner_user_id: str) -> Optional[File]:
+    def get_owned_file(
+        self, 
+        file_url: str, 
+        owner_user_id: str
+    ) -> Optional[File]:
         """Return the record for ``file_url`` if owned by ``owner_user_id``, else None."""
         row = self._get_row(file_url, owner_user_id)
         return self.from_dict(row) if row else None
@@ -216,11 +223,18 @@ class FileService:
     # ——————————————————————————————————————————————————————————
     # Internal helpers
 
-    def _get_row(self, file_url: str, owner_user_id: str) -> Optional[dict[str, Any]]:
+    def _get_row(
+        self, 
+        file_url: str, 
+        owner_user_id: str
+    ) -> Optional[dict[str, Any]]:
         try:
             result = self.db_service.retrieve(
                 self.TABLE,
-                filters={"file_url": file_url, "owner_user_id": owner_user_id},
+                filters={
+                    "file_url": file_url, 
+                    "owner_user_id": owner_user_id
+                },
             )
         finally:
             self.db_service.disconnect()

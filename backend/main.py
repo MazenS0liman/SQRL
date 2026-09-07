@@ -3,7 +3,6 @@ Squirrel API Application Entry Point
 
 Overview
 --------
-
 Main FastAPI application module that initializes and configures the Squirrel API server.
 Sets up routes, middleware, error handlers, logging, and CORS configuration for
 the REST API endpoints.

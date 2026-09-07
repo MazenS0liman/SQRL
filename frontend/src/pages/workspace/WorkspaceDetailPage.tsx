@@ -31,37 +31,24 @@ import type {
   UploadResponse,
   Workspace,
   PreprocessedDataResponse,
+  WorkspaceStatus,
+  TablePreviewEntry,
+  PredictResponse
+} from "@/types";
+import {
+  DATA_TYPE_OPTIONS,
+  downloadOutputFile,
+  statusMeta,
+  formatPercent,
+  formatSummaryLabel,
+  formatSummaryValue,
 } from "./shared";
-import type { DataConnection } from "../connectors/shared";
 import {
   API_BASE,
-  DATA_TYPE_OPTIONS,
-  PipelineRail,
-  StepLabel,
   apiFetch,
-  downloadOutputFile,
-  formatPercent,
-  SummaryKeyValueList,
-} from "./shared";
+} from "@/lib/utils";
+import type { DataConnection } from "../connectors/shared";
 import { connectorsApi } from "../connectors/shared";
-import { authHeaders } from '@/lib/auth';
-
-type TablePreviewEntry = {
-  table: string;
-  columns: string[];
-  preview: Record<string, unknown>[];
-  error?: string;
-};
-
-// Response shape for POST /workspace/{id}/predict — mirrors
-// squirrel.schemas.workspace.PredictResponse on the backend.
-type PredictResponse = {
-  workspace_id: string;
-  model_key: string;
-  predictions: unknown[];
-  probabilities?: number[][] | null;
-  classes?: string[] | null;
-};
 
 // Statuses for which the pipeline is actively progressing server-side and
 // the frontend should keep polling for updates rather than wait for a
@@ -76,59 +63,79 @@ const LEFT_PANEL_MIN = 300;
 const LEFT_PANEL_MAX = 640;
 const LEFT_PANEL_DEFAULT = 360;
 
-/**
- * Workspace Detail Page
- * ======================
- * Two-panel layout: the left panel is the running record of every choice
- * the user has made (name, sources, target column, relate/optimize query)
- * and is where all of those choices are edited. The right panel is purely
- * the system's output — pipeline status, preprocessing summary, model
- * comparison, downloads — and never contains input controls.
- *
- * The panels are split by a draggable divider (see `PanelResizeHandle`)
- * so the left panel's width is under the user's control instead of fixed.
- *
- * NAVBAR NOTE: the little header bars inside each panel below use
- * `position: sticky` scoped to that panel's own `overflow-y-auto`
- * container — never `position: fixed`. Sticky respects normal document
- * flow, so it can only ever sit within this component's own box, which
- * itself renders in normal flow beneath whatever app-level navbar wraps
- * this route. `fixed` would anchor to the viewport instead and could
- * climb on top of that navbar, so it's intentionally avoided here except
- * for true modal overlays (which are supposed to cover everything).
- *
- * Data type is fixed at creation (see WorkspacePage) and shown here as a
- * read-only badge; changing the shape of a workspace's data after sources
- * have been attached isn't something the backend supports safely.
- *
- * Connector sources are attached in two decoupled steps:
- *   1. Pick which tables to attach (ConnectorListModal -> TableSelectModal).
- *      This step is table-only — no column fiddling — so attaching a
- *      source is a quick, low-friction action.
- *   2. Once attached, each table gets its own row in the left panel with
- *      an "Edit columns" action that opens `ColumnEditModal`, a focused,
- *      searchable, single-table column picker with a live preview.
- * This mirrors how the rest of the page works: attach broadly, refine
- * narrowly. Both save paths still go through remove-then-reattach under
- * the hood (see handleSaveTableSelection / handleSaveColumnEdit) since the
- * backend only supports attach/remove per table, not an in-place update.
- *
- * Pipeline status (the "Ingest / Prep / Train / Compare" rail) is kept in
- * sync by polling GET /workspace/{id} while a build is in flight or the
- * workspace's last-known status is a busy one — see the polling effect
- * near the bottom of the component. Without this, the rail only ever
- * jumps straight from "uploaded" to "completed" once the single /build
- * request resolves, since the backend updates status in the DB as it
- * progresses but nothing was reading it back mid-flight.
- *
- * Predicting on new data (POST /workspace/{id}/predict) follows the same
- * "input on the left, output on the right" split as everything else: the
- * left panel's "Predict on new data" section (only shown once a build has
- * completed) is where the user picks a CSV of new, raw rows and — if they
- * want — a specific fitted model; the right panel's "Predictions" section
- * is purely the resulting predictions table plus a CSV download, and has
- * no controls of its own.
- */
+export function SummaryKeyValueList({
+  data,
+}: {
+  data: Record<string, unknown>;
+}): JSX.Element | null {
+  const entries = Object.entries(data).filter(([, v]) => v !== null && v !== undefined);
+  if (entries.length === 0) return null;
+  return (
+    <dl className="grid grid-cols-1 gap-x-6 gap-y-2.5 sm:grid-cols-2">
+      {entries.map(([key, value]) => (
+        <div key={key} className="flex items-baseline justify-between gap-3 border-b border-border/60 pb-1.5">
+          <dt className="text-xs text-muted-foreground">{formatSummaryLabel(key)}</dt>
+          <dd className="truncate font-mono text-xs text-foreground" title={formatSummaryValue(value)}>
+            {formatSummaryValue(value)}
+          </dd>
+        </div>
+      ))}
+    </dl>
+  );
+}
+
+export function PipelineRail({ status }: { status: WorkspaceStatus }): JSX.Element {
+  const meta = statusMeta(status);
+  const stages = [
+    { n: "01", label: "Ingest" },
+    { n: "02", label: "Prep" },
+    { n: "03", label: "Train" },
+    { n: "04", label: "Compare" },
+  ];
+  const failed = meta.stage === -1;
+
+  return (
+    <div className="flex overflow-hidden rounded-md border border-border">
+      {stages.map((s, i) => {
+        const idx = i + 1;
+        const isDone = !failed && meta.stage > idx;
+        const isActive = !failed && meta.stage === idx;
+
+        let cellClass = "bg-muted/40 text-muted-foreground";
+        if (isDone) cellClass = "bg-primary/10 text-primary border-primary/20";
+        if (isActive) cellClass = "bg-accent text-accent-foreground";
+        if (failed) cellClass = "bg-destructive/10 text-destructive";
+
+        return (
+          <div
+            key={s.n}
+            className={`flex flex-1 items-center gap-2 px-3 py-2 ${cellClass} ${
+              i === 0 ? "" : "border-l border-border"
+            }`}
+          >
+            <span className="font-mono text-[10px] opacity-70">{s.n}</span>
+            <span className="text-[11px] font-medium uppercase tracking-wide">{s.label}</span>
+            {isActive && (
+              <span className="ml-auto h-1.5 w-1.5 animate-pulse rounded-full bg-accent-foreground" />
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+export function StepLabel({ n, children }: { n: string; children: React.ReactNode }): JSX.Element {
+  return (
+    <h3 className="mb-3 flex items-baseline gap-2">
+      <span className="font-mono text-xs font-medium text-primary">{n}</span>
+      <span className="text-[13px] font-semibold uppercase tracking-wide text-foreground">
+        {children}
+      </span>
+    </h3>
+  );
+}
+
 export default function WorkspaceDetailPage(): JSX.Element {
   const { workspaceId } = useParams<{ workspaceId: string }>();
   const navigate = useNavigate();
@@ -165,13 +172,12 @@ export default function WorkspaceDetailPage(): JSX.Element {
   const [connectorsLoading, setConnectorsLoading] = useState(false);
   const [connectorError, setConnectorError] = useState<string | null>(null);
 
+  // Table selection modal (step 2) is opened after a connector is chosen
   const [showTableSelectModal, setShowTableSelectModal] = useState(false);
   const [pendingConnector, setPendingConnector] = useState<DataConnection | null>(null);
   const [tablesLoading, setTablesLoading] = useState(false);
   const [tablesError, setTablesError] = useState<string | null>(null);
   const [tablePreviews, setTablePreviews] = useState<TablePreviewEntry[]>([]);
-  // Table-selection-only state: which tables (no column-level detail) are
-  // checked in the "add tables" modal.
   const [selectedTables, setSelectedTables] = useState<Set<string>>(new Set());
   const [saving, setSaving] = useState(false);
 
@@ -215,10 +221,7 @@ export default function WorkspaceDetailPage(): JSX.Element {
   const [uploadColumnEditError, setUploadColumnEditError] = useState<string | null>(null);
   const [uploadColumnEditSaving, setUploadColumnEditSaving] = useState(false);
 
-  // ---- Predict on new data (POST /workspace/{id}/predict) ----------------
-  // Input lives on the left panel (file + optional model choice); the
-  // resulting predictions table lives on the right panel, alongside the
-  // rest of the system's output. See the class docstring above.
+  // ---- Predict (inference) ------------------------------------------------
   const [predictFile, setPredictFile] = useState<File | null>(null);
   const [predictModelKey, setPredictModelKey] = useState<string>(""); // "" => let backend pick the best model
   const [predictRows, setPredictRows] = useState<Record<string, unknown>[]>([]);
@@ -282,15 +285,6 @@ export default function WorkspaceDetailPage(): JSX.Element {
   }, [workspaceId]);
 
   // ---- Live status polling ----------------------------------------------
-  //
-  // A single POST /build/structured call runs ingest -> preprocess -> train
-  // synchronously and only resolves once everything is done, but the
-  // backend writes intermediate status (preprocessing/modeling) to the DB
-  // as it goes. Without polling, the rail never shows those in-between
-  // states — it jumps straight from "uploaded" to "completed" when the
-  // fetch finally resolves. This polls a lightweight status/read endpoint
-  // while a build is in flight (or the workspace was left mid-pipeline,
-  // e.g. after a page reload) and stops as soon as it settles.
   const pollTimer = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const refreshStatusOnly = useCallback(async () => {
@@ -364,7 +358,6 @@ export default function WorkspaceDetailPage(): JSX.Element {
   }, [isDragging, leftWidth]);
 
   const handleDragHandleKeyDown = (e: React.KeyboardEvent) => {
-    // Keyboard-accessible resize: arrow keys nudge by 16px.
     if (e.key === "ArrowLeft") {
       setLeftWidth((w) => Math.max(LEFT_PANEL_MIN, w - 16));
     } else if (e.key === "ArrowRight") {
@@ -423,16 +416,10 @@ export default function WorkspaceDetailPage(): JSX.Element {
       const formData = new FormData();
       Array.from(files).forEach((f) => formData.append("files", f));
 
-      const res = await fetch(`${API_BASE}/workspace/${workspace.workspace_id}/upload`, {
+      const data = await apiFetch<UploadResponse>(`/workspace/${workspace.workspace_id}/upload`, {
         method: "POST",
         body: formData,
-        headers: authHeaders(),
       });
-      if (!res.ok) {
-        const body = await res.json().catch(() => ({}));
-        throw new Error(body.detail || "Upload failed.");
-      }
-      const data: UploadResponse = await res.json();
 
       setSources(data.sources);
       setSourceColumns((prev) => {
@@ -569,8 +556,6 @@ export default function WorkspaceDetailPage(): JSX.Element {
           method: "POST",
           body: JSON.stringify({
             connector_id: pendingConnector.connector_id,
-            // No columns object => backend attaches every column; the
-            // user narrows this later via "Edit columns" if they want to.
             tables: Array.from(selectedTables).map((table) => ({ table, columns: null })),
           }),
         }
@@ -628,9 +613,6 @@ export default function WorkspaceDetailPage(): JSX.Element {
     setColumnEditSaving(true);
     setColumnEditError(null);
     try {
-      // Backend only supports attach/remove per table, not an in-place
-      // column update, so this is implemented as remove-then-reattach —
-      // same pattern used for the whole-connector edit this replaces.
       await apiFetch<DataSource[]>(`/workspace/${workspace.workspace_id}/sources/${existing.source_id}`, {
         method: "DELETE",
       });
@@ -1046,7 +1028,7 @@ export default function WorkspaceDetailPage(): JSX.Element {
                 </div>
               ) : (
                 <h1 className="group flex items-center gap-1.5 text-base font-semibold tracking-tight text-foreground">
-                  <button onClick={() => navigate("/notebooks")}
+                  <button onClick={() => navigate("/workspace")}
                     className="shrink-0 rounded-lg border border-border p-1.5 text-muted-foreground hover:bg-secondary hover:text-foreground"
                     title="Back to notebooks">
                     <ArrowLeft className="h-4 w-4" />
@@ -2085,8 +2067,8 @@ function SourceRow({
   onEditColumns: () => void;
   removing: boolean;
 }): JSX.Element {
-  const allColumnsCount = source.all_columns?.length ?? columns.length;   // ← add
-  const selectedCount = columns.length;                                   // ← add
+  const allColumnsCount = source.all_columns?.length ?? columns.length;
+  const selectedCount = columns.length;
 
   return (
     <li className="rounded-lg border border-border px-3 py-2.5 text-sm">
@@ -2436,7 +2418,7 @@ function TablePreviewOnlyModal({ entry, onClose }: { entry: TablePreviewEntry; o
  * immediately, rather than just toggling checkboxes against a flat list.
  */
 function ColumnEditModal({
-  subtitle,          // was: connectorName
+  subtitle,
   table,
   loading,
   error,
@@ -2446,7 +2428,7 @@ function ColumnEditModal({
   onClose,
   onSave,
 }: {
-  subtitle: string;  // was: connectorName: string;
+  subtitle: string;
   table: string;
   loading: boolean;
   error: string | null;

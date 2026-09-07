@@ -42,7 +42,7 @@ import { Chat } from "@/components/chat/Chat";
 import AnalyticsCard from "@/components/visual/AnalyticsCard";
 import { DashboardModal, type DashboardLayoutPayload } from "@/components/visual/DashboardModal";
 import { apiFetch, statusMeta, timeAgo } from "./shared";
-import { authHeaders } from '@/lib/auth';
+import { authHeaders, notifyAuthExpired } from '@/lib/auth';
 
 // ── Types ─────────────────────────────────────────────────────────────────
 interface DataSourcePreview {
@@ -599,6 +599,7 @@ function DataSourceSetup({ notebook, onBound }: { notebook: Notebook; onBound: (
 async function downloadNotebookFile(path: string, filename: string) {
   const baseUrl = (import.meta.env.VITE_BACKEND_API_BASE_URL || "/api").replace(/\/$/, '');
   const response = await fetch(`${baseUrl}${path}`, { headers: authHeaders() });
+  if (response.status === 401) notifyAuthExpired();
   if (!response.ok) throw new Error(`Download failed: ${response.statusText}`);
   const blob = await response.blob();
   const url = URL.createObjectURL(blob);
@@ -1137,6 +1138,7 @@ function NotebookWorkspace({
     try {
       const baseUrl = (import.meta.env.VITE_BACKEND_API_BASE_URL || "/api").replace(/\/$/, "");
       const res = await fetch(`${baseUrl}/notebook/${notebook.id}/export/prep-script`, { headers: authHeaders() });
+      if (res.status === 401) notifyAuthExpired();
       if (!res.ok) throw new Error(`Failed: ${res.statusText}`);
       setScriptContent(await res.text());
     } catch (err) {

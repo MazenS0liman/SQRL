@@ -1,41 +1,6 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
-import { getStoredAuthToken, setStoredAuthToken } from '@/lib/auth';
-
-export interface UserProfile {
-  id: string;
-  username: string;
-  name: string;
-  email: string;
-  role: string;
-  joinedAt: string;
-  lastLoginAt: string;
-  avatarSeed: string;
-}
-
-interface AuthContextValue {
-  user: UserProfile | null;
-  isAuthenticated: boolean;
-  login: (input: { username: string; password: string }) => Promise<UserProfile>;
-  signup: (input: { username: string; password: string; name: string; email: string }) => Promise<UserProfile>;
-  logout: () => Promise<void>;
-}
-
-interface AuthUserResponse {
-  id: string;
-  username: string;
-  email: string;
-  full_name?: string | null;
-  created_at: string;
-}
-
-interface AuthTokenResponse {
-  access_token: string;
-  user: AuthUserResponse;
-}
-
-interface CurrentUserResponse {
-  user: AuthUserResponse;
-}
+import { getStoredAuthToken, notifyAuthExpired, onAuthExpired, setStoredAuthToken } from '@/lib/auth';
+import type { AuthContextValue, AuthTokenResponse, AuthUserResponse, CurrentUserResponse, UserProfile } from '@/types';
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 const USER_STORAGE_KEY = 'sqrl-user-profile';
@@ -93,13 +58,14 @@ async function authRequest<T>(path: string, init: RequestInit = {}): Promise<T> 
     },
   });
 
+  if (res.status === 401) notifyAuthExpired();
+
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
     let message = 'Authentication request failed.';
     if (typeof body.detail === 'string') {
       message = body.detail;
     } else if (Array.isArray(body.detail)) {
-      // FastAPI/pydantic validation error shape
       message = body.detail
         .map((e: any) => `${(e.loc ?? []).slice(1).join('.')}: ${e.msg}`)
         .join('; ');
@@ -124,9 +90,15 @@ function getInitialUser(): UserProfile | null {
 export function AuthProvider({ children }: { children: React.ReactNode }): JSX.Element {
   const [user, setUser] = useState<UserProfile | null>(getInitialUser);
 
+  useEffect(() => onAuthExpired(() => {
+    setStoredAuthToken(null);
+    setUser(null);
+    writeUser(null);
+  }), []);
+
   useEffect(() => {
     const token = getStoredAuthToken();
-    if (!token || user) return;
+    if (!token) return;
 
     void authRequest<CurrentUserResponse>('/auth/me')
       .then((response) => {

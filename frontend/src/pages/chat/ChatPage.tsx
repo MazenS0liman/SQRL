@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { Chat } from '@/components/chat/Chat';
 import { Message } from '@/components/chat/Message';
 import type { ChatMessage, ChatSessionData, UploadedFile } from '@/types';
-import { authHeaders } from '@/lib/auth';
+import { authHeaders, notifyAuthExpired } from '@/lib/auth';
 
 interface ChatPageProps {
 	session: ChatSessionData | null;
@@ -85,6 +85,8 @@ export const ChatPage: React.FC<ChatPageProps> = ({ session }: ChatPageProps) =>
 					conversationHistory,
 				}),
 			});
+
+			if (response.status === 401) notifyAuthExpired();
 
 			if (!response.ok) throw new Error(`Chat request failed: ${response.statusText}`);
 

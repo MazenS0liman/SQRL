@@ -27,8 +27,8 @@ import {
   AlertCircle,
 } from 'lucide-react';
 import DotField from '@/components/background/DotField';
-import { API_BASE, apiFetch } from '@/pages/workspace/shared';
-import { authHeaders } from '@/lib/auth';
+import { API_BASE, apiFetch } from '@/lib/utils';
+import { authHeaders, notifyAuthExpired } from '@/lib/auth';
 
 type ListedFile = {
   fileUrl: string;
@@ -371,6 +371,8 @@ export default function FilesPage(): JSX.Element {
           body: formData,
           headers: authHeaders(),
         });
+
+        if (res.status === 401) notifyAuthExpired();
 
         if (!res.ok) {
           const text = await res.text().catch(() => '');

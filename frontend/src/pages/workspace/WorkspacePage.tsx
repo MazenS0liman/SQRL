@@ -1,14 +1,15 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import type { Workspace, WorkspaceDataType } from "./shared";
-import { apiFetch, statusMeta, DATA_TYPE_OPTIONS } from "./shared";
+import { statusMeta, DATA_TYPE_OPTIONS } from "./shared";
+import { apiFetch } from "@/lib/utils";
+import type { Workspace, WorkspaceDataType } from "@/types";
 
 // Dotted background (same component used on the Notebooks page)
 import DotField from "@/components/background/DotField";
 
 /**
  * Workspace Page
- * ============
+ * =============
  */
 export default function WorkspacePage(): JSX.Element {
   const navigate = useNavigate();

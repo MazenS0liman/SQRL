@@ -47,11 +47,9 @@ from __future__ import annotations
 import json
 import os
 import time
+import pandas as pd
 from pathlib import Path
 from typing import Any, Dict, List, Optional
-
-# Third-party
-import pandas as pd
 
 # FastAPI
 from fastapi import WebSocket
@@ -73,13 +71,17 @@ from squirrel.modules.providers.abstract.IProvider import Provider
 from squirrel.services.storage.database import PostgresService
 from squirrel.services.workspace.WorkspaceService import (
     WorkspaceService,
-    DuplicateColumnError,
 )
 from squirrel.services.storage.blob.MinIOService import MinIOService
 
 # Schemas
 from squirrel.schemas.api import AgentRequest, AgentResponse, LLMTokens
 from squirrel.schemas.file import FileProcessingIssue
+
+# Errors
+from squirrel.schemas.error import (
+    DuplicateColumnError
+)
 
 # Logging
 from loguru import logger

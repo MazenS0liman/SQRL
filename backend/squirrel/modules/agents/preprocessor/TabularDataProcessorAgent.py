@@ -54,6 +54,38 @@ that has a fitted-state hook reuses its training-time parameters instead of
 re-fitting from the (typically much smaller, sometimes single-row)
 inference batch. This is the counterpart to ``execute()`` used by
 ``WorkspaceService.predict()``.
+
+Plan-time schema consistency
+------------------------------
+A plan can be individually well-formed step-by-step (known strategy, all
+required arguments present) and still be broken *in context* — e.g. one
+step drops column 'Open' and a later step tries to scale it. Neither
+``_validate_step`` (which only ever sees the plan's original dataset
+schema) nor ``execute()``'s per-step execution alone would historically
+catch this: each step in isolation looks fine, so the plan "completes"
+and produces a model that trains successfully but can never be replayed
+against new data at inference time (``apply_fitted_pipeline`` raises when
+it hits the missing column).
+
+Two independent, complementary checks close this gap:
+
+1. **Plan time** — ``_validate_and_repair_plan`` now tracks a running
+   column set across the plan (``_apply_schema_effect``) and validates
+   each step's referenced columns (``_extract_referenced_columns``)
+   against the schema as it would exist *at that point in the plan*, not
+   just the original dataset. A step referencing an already-dropped/
+   renamed column is flagged invalid and sent through the existing
+   regeneration loop, grounded in the up-to-date schema.
+2. **Execute time** — as a defensive backstop for anything the plan-time
+   heuristics don't model (e.g. dynamically-named columns from
+   aggregation/polynomial features), ``execute()`` now applies the same
+   per-column-error check that ``apply_fitted_pipeline`` already used at
+   replay time (see ``_per_column_errors``). A step whose strategy quietly
+   recorded a per-column failure (e.g. ``{"error": "column_not_found"}``)
+   while still returning a top-level "completed" status is now demoted to
+   "failed" — so it's visible in the execution report, feeds into
+   ``_needs_refinement``, and can trigger a refinement retry instead of
+   silently producing an unreplayable pipeline.
 """
 
 # ——————————————————————————————————————————————————————————————
@@ -299,7 +331,7 @@ class TabularDataProcessorAgent(IAgent):
         :raises ValueError: if no defensible merge strategy applies, including
             when the LLM fallback explicitly rejects the sources as unrelated.
         """
-        from squirrel.services.workspace.WorkspaceService import DuplicateColumnError
+        from squirrel.schemas.error import DuplicateColumnError
 
         if not dataframes:
             raise ValueError("No input sources to merge.")
@@ -612,6 +644,15 @@ class TabularDataProcessorAgent(IAgent):
                 best_plan, best_execution = plan, execution
 
         best_summary["refinement_attempts"] = attempt
+        temporal_columns = [
+            str(column)
+            for column in data.columns
+            if pd.api.types.is_datetime64_any_dtype(data[column])
+            or any(token in str(column).lower() for token in ("date", "time", "timestamp"))
+        ]
+        if temporal_columns:
+            best_summary["sequential"] = True
+            best_summary["temporal_columns"] = temporal_columns
         return best_df, best_summary, best_plan, best_execution
 
     def plan(
@@ -695,6 +736,19 @@ class TabularDataProcessorAgent(IAgent):
         failed steps are recorded in the report rather than raising, so the
         pipeline always produces a complete result.
 
+        A strategy can report a top-level status of "completed" while one or
+        more of its columns silently failed internally (e.g. a step
+        referencing a column an earlier step already dropped/renamed —
+        strategies record this as ``per_column: {col: {"error": ...}}``
+        rather than raising). Left unchecked, this produces a pipeline that
+        "trains successfully" but can never be replayed against new data at
+        inference time (see :meth:`apply_fitted_pipeline`, which already
+        checks for exactly this). Every step here is now checked the same
+        way immediately after execution, and demoted to "failed" if any
+        column silently failed — so the problem surfaces at build time,
+        feeds into refinement, and doesn't wait until a predict request to
+        appear.
+
         :param data: Input DataFrame.
         :param plan: JSON plan string or dict from ``plan()``.
         :param target_column: The column the downstream model will predict, if
@@ -728,6 +782,20 @@ class TabularDataProcessorAgent(IAgent):
             current_df, step_result = self._run_step(
                 current_df, step, cleaner, transformer, fitted_state=None
             )
+
+            # See docstring: a step can be "completed" at the top level while
+            # a column inside it silently failed. Demote it here so the
+            # failure is visible in the execution report instead of only
+            # surfacing later when apply_fitted_pipeline replays the plan.
+            if step_result.get("status") == "completed":
+                col_errors = self._per_column_errors(step_result)
+                if col_errors:
+                    step_result = {
+                        **step_result,
+                        "status": "failed",
+                        "error": f"Per-column failures: {col_errors}",
+                    }
+
             executed_steps.append(step_result)
 
         report = self._execution_report(data, current_df, executed_steps)
@@ -808,10 +876,7 @@ class TabularDataProcessorAgent(IAgent):
                 current_df, fabricated_step, cleaner, transformer, fitted_state=fitted_state
             )
             if step_result.get("status") == "completed":
-                per_col_errors = {
-                    c: v.get("error") for c, v in (step_result.get("output") or {}).get("per_column", {}).items()
-                    if isinstance(v, dict) and v.get("error")
-                }
+                per_col_errors = self._per_column_errors(step_result)
                 if per_col_errors:
                     raise ValueError(
                         f"Replay of step '{step.get('name')}' had per-column failures: {per_col_errors}"
@@ -900,31 +965,58 @@ class TabularDataProcessorAgent(IAgent):
     ) -> dict:
         """
         Walk through every step in *plan_obj*, validate it, and attempt
-        regeneration for any step that references an unknown strategy or is
-        missing required arguments.
+        regeneration for any step that references an unknown strategy, is
+        missing required arguments, or references a column that an earlier
+        step in this same plan already dropped/renamed.
 
-        Mirrors the validation loop in TabularDataInspectorAgent.plan().
+        Mirrors the validation loop in TabularDataInspectorAgent.plan(), with
+        one addition: a running ``current_columns`` set is threaded through
+        the loop (see ``_apply_schema_effect``) so validation reflects the
+        schema *as it would exist at that point in the plan*, not just the
+        plan's original dataset. This catches plans that are individually
+        well-formed step-by-step but internally inconsistent — e.g. step 2
+        drops 'Open' and step 6 tries to scale it — before they're ever
+        executed, rather than surfacing only later as a replay failure.
         """
         # Accept both class names and short orchestrator keys in plan steps.
         available_strategies = set(self._ALL_REGISTRY.keys()) | set(self._CLEAN_KEY_MAP.values()) | set(self._TRANSFORM_KEY_MAP.values())
+        current_columns: set[str] = set(dataset_profile.get("column_names") or [])
 
         for idx, step in enumerate(plan_obj.get("steps", [])):
             reason = self._validate_step(step, available_strategies)
 
             if reason is None:
+                referenced = self._extract_referenced_columns(step.get("arguments") or {})
+                missing = sorted(referenced - current_columns)
+                if missing:
+                    reason = (
+                        f"References column(s) not present at this point in the "
+                        f"pipeline (already dropped/renamed by an earlier step): {missing}"
+                    )
+
+            if reason is None:
                 plan_obj["steps"][idx]["status"] = "valid"
+                current_columns = self._apply_schema_effect(
+                    str(step.get("strategy", "")), step.get("arguments") or {}, current_columns
+                )
                 continue
 
             plan_obj["steps"][idx]["status"] = "invalid"
             plan_obj["steps"][idx]["error"] = reason
             logger.info("Plan step %s needs regeneration: %s", idx, reason)
 
+            # Ground regeneration in the schema as it actually stands at this
+            # point in the plan, not the original dataset — otherwise a
+            # regenerated step can just as easily reference the same
+            # already-gone column again.
+            step_dataset_profile = {**dataset_profile, "column_names": sorted(current_columns)}
+
             regenerated = False
             for attempt in range(self._MAX_REGEN_ATTEMPTS):
                 regen_resp = self._regenerate_step(
                     step=step,
                     reason=reason,
-                    dataset_profile=dataset_profile,
+                    dataset_profile=step_dataset_profile,
                 )
                 if regen_resp is None:
                     continue
@@ -951,8 +1043,18 @@ class TabularDataProcessorAgent(IAgent):
 
                 recheck = self._validate_step(new_step, available_strategies)
                 if recheck is None:
+                    recheck_missing = sorted(
+                        self._extract_referenced_columns(new_step.get("arguments") or {}) - current_columns
+                    )
+                    if recheck_missing:
+                        recheck = f"Regenerated step still references missing column(s): {recheck_missing}"
+
+                if recheck is None:
                     plan_obj["steps"][idx] = new_step
                     logger.info("Successfully regenerated step %s", idx)
+                    current_columns = self._apply_schema_effect(
+                        str(new_step.get("strategy", "")), new_step.get("arguments") or {}, current_columns
+                    )
                     regenerated = True
                     break
 
@@ -966,6 +1068,10 @@ class TabularDataProcessorAgent(IAgent):
                 plan_obj["steps"][idx]["error"] = (
                     f"Failed to regenerate after {self._MAX_REGEN_ATTEMPTS} attempts: {reason}"
                 )
+                # Leave current_columns as-is — an invalid step that never
+                # gets repaired won't run in execute() either (it'll hit the
+                # "unknown strategy"/"missing arguments" path there), so it
+                # shouldn't be treated as having changed the schema.
 
         return plan_obj
 
@@ -984,14 +1090,7 @@ class TabularDataProcessorAgent(IAgent):
         :return: Error reason string if invalid, ``None`` if valid.
         """
         raw_name: str = str(step.get("strategy", ""))
-
-        # Normalise: if a short key was given, map it to the class name.
-        # Build a reverse of the key maps once per call (cheap, only ~16 entries each).
-        short_to_class: dict[str, str] = {
-            **{v: k for k, v in self._CLEAN_KEY_MAP.items()},
-            **{v: k for k, v in self._TRANSFORM_KEY_MAP.items()},
-        }
-        strategy_name = short_to_class.get(raw_name, raw_name)
+        strategy_name = self._normalize_strategy_name(raw_name)
 
         if strategy_name not in available_strategies:
             return f"Unknown strategy '{raw_name}'"
@@ -1059,6 +1158,101 @@ class TabularDataProcessorAgent(IAgent):
                 "models/gemini-2.5-flash"
             ]
         )
+
+    # ── Column-existence tracking across a plan ──────────────────────────────
+    #
+    # A step can be individually well-formed (known strategy, all required
+    # args present) and still be broken *in context* — e.g. step 2 drops
+    # 'Open' and step 6 tries to scale it. _validate_step alone can't catch
+    # this because it only ever sees the plan's original dataset_profile.
+    # These helpers let _validate_and_repair_plan track the column set as it
+    # would exist after each step actually ran, and validate later steps
+    # against that instead of the original schema.
+
+    def _normalize_strategy_name(self, raw_name: str) -> str:
+        """Map a short orchestrator key (e.g. 'drop_columns') to its class name."""
+        short_to_class: dict[str, str] = {
+            **{v: k for k, v in self._CLEAN_KEY_MAP.items()},
+            **{v: k for k, v in self._TRANSFORM_KEY_MAP.items()},
+        }
+        return short_to_class.get(raw_name, raw_name)
+
+    @staticmethod
+    def _extract_referenced_columns(arguments: dict) -> set[str]:
+        """
+        Best-effort extraction of every existing-column name a step's
+        arguments reference, so we can check them against the running
+        column set. Deliberately conservative — it's fine to miss an
+        argument shape we don't recognise, but not fine to flag a false
+        positive, since that would spuriously regenerate a valid step.
+        """
+        cols: set[str] = set()
+        for key, value in (arguments or {}).items():
+            if key in ("columns", "column_1", "column_2", "group_columns"):
+                if isinstance(value, str):
+                    cols.add(value)
+                elif isinstance(value, (list, tuple, set)):
+                    cols.update(v for v in value if isinstance(v, str))
+            elif key in ("column", "target_column"):
+                if isinstance(value, str):
+                    cols.add(value)
+            elif key == "column_dtypes" and isinstance(value, dict):
+                # e.g. CastDtypesCleanStrategy: {"Date": "datetime64[ns]"}
+                cols.update(k for k in value.keys() if isinstance(k, str))
+            elif key in ("mapping", "rename_map") and isinstance(value, dict):
+                # RenameColumnsCleanStrategy: {"old_name": "new_name"}
+                cols.update(k for k in value.keys() if isinstance(k, str))
+        return cols
+
+    def _apply_schema_effect(
+        self,
+        strategy_name: str,
+        arguments: dict,
+        current_columns: set[str],
+    ) -> set[str]:
+        """
+        Return the column set that would exist *after* this step ran,
+        given ``current_columns`` beforehand. Heuristic by design — it only
+        needs to track drops/renames/known-suffix additions well enough to
+        catch a later step referencing an already-gone column; it doesn't
+        need to predict every transform's exact output column names.
+        """
+        normalized = self._normalize_strategy_name(strategy_name)
+        updated = set(current_columns)
+        arguments = arguments or {}
+
+        if normalized == "DropColumnsCleanStrategy":
+            cols = arguments.get("columns")
+            cols = [cols] if isinstance(cols, str) else (cols or [])
+            for c in cols:
+                updated.discard(c)
+
+        elif normalized == "RenameColumnsCleanStrategy":
+            mapping = arguments.get("mapping") or arguments.get("rename_map") or {}
+            if isinstance(mapping, dict):
+                for old, new in mapping.items():
+                    updated.discard(old)
+                    if isinstance(new, str):
+                        updated.add(new)
+
+        elif arguments.get("drop_original") is True:
+            # e.g. DatetimePartsTransformStrategy(..., drop_original=True)
+            cols = arguments.get("columns")
+            cols = [cols] if isinstance(cols, str) else (cols or [])
+            for c in cols:
+                updated.discard(c)
+
+        # Suffix-producing transforms (log_transform, power_transform, ...)
+        # add a new column alongside the original rather than replacing it.
+        suffix = arguments.get("suffix")
+        cols = arguments.get("columns")
+        cols = [cols] if isinstance(cols, str) else (cols or [])
+        if suffix and cols:
+            for c in cols:
+                if isinstance(c, str):
+                    updated.add(f"{c}{suffix}")
+
+        return updated
 
     # ── Step execution ────────────────────────────────────────────────────────
 
@@ -1158,6 +1352,28 @@ class TabularDataProcessorAgent(IAgent):
         except Exception as exc:
             logger.exception("Strategy %s failed: %s", strategy_name, exc)
             return data, {**base, "status": "failed", "error": str(exc)}
+
+    @staticmethod
+    def _per_column_errors(step_result: dict[str, Any]) -> dict[str, str]:
+        """
+        Extract any column-level failures a strategy recorded inside its own
+        ``output.per_column`` block (e.g. {"error": "column_not_found"}).
+
+        Strategies don't raise for a missing/invalid column — they record the
+        failure per-column and keep going (see e.g.
+        ``MinMaxScaleTransformStrategy.transform``), so a step can come back
+        with top-level status "completed" while one of its columns silently
+        did nothing. Used by both :meth:`execute` and
+        :meth:`apply_fitted_pipeline` so a step that would fail on replay is
+        caught at build time too, instead of only surfacing when a saved
+        plan is later replayed against new data.
+        """
+        per_column = (step_result.get("output") or {}).get("per_column") or {}
+        return {
+            col: entry.get("error")
+            for col, entry in per_column.items()
+            if isinstance(entry, dict) and entry.get("error")
+        }
 
     # ── Report assembly ───────────────────────────────────────────────────────
 

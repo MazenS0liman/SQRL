@@ -25,6 +25,8 @@ Lifecycle
 # Standard Libraries
 import json
 import joblib
+import inspect
+import time
 from typing import Any
 from pathlib import Path
 
@@ -44,7 +46,17 @@ from sklearn.metrics import (
     r2_score,
 )
 
-# Optional heavy boosters (graceful fallback if not installed)
+# Abstract Base Class
+from squirrel.modules.agents.abstract import IAgent
+from squirrel.modules.providers import Provider
+
+# Prompt generator
+from squirrel.modules.prompts.builder.TabularDataPromptGenerator import (
+    ModelBuilderPromptGenerator,
+    ModelBuilderPromptType
+)
+
+# Models
 try:
     from squirrel.models.classification import XGBClassifierModel, XGBRegressorModel
     _HAS_XGB = XGBClassifierModel is not None and XGBRegressorModel is not None
@@ -76,28 +88,11 @@ from squirrel.models.classification import (
     SVCModel,
     SVRModel,
 )
-try:
-    from squirrel.models.time_series import BiLSTMPredictor, LSTMAttentionPredictor
-    _HAS_TENSORFLOW = True
-except ImportError:
-    BiLSTMPredictor = None
-    LSTMAttentionPredictor = None
-    _HAS_TENSORFLOW = False
-
-# Abstract Base Class
-from squirrel.modules.agents.abstract import IAgent
-from squirrel.modules.providers import Provider
-
-# Prompt generator
-from squirrel.modules.prompts.builder.TabularDataPromptGenerator import (
-    ModelBuilderPromptGenerator,
-    ModelBuilderPromptType
-)
-
+from squirrel.models.time_series import BiLSTMPredictor, LSTMAttentionPredictor
+_HAS_TENSORFLOW = True
 
 # ——————————————————————————————————————————————————————————————
 # Model registry
-
 
 def _build_model_registry() -> dict[str, dict]:
     """
@@ -414,7 +409,22 @@ class TabularDataModelBuilderAgent(IAgent):
         objective: str = "",
         max_refinements: int = 1,
     ) -> tuple[dict[str, Any], dict]:
-        plan = self.plan(data, preprocessing_summary=preprocessing_summary or {}, objective=objective)
+        started_at = time.perf_counter()
+        logger.info(
+            "Model build started: target={}, rows={}, columns={}, objective={!r}",
+            self.target_column,
+            len(data),
+            len(data.columns),
+            objective,
+        )
+        # Generate the initial plan, execute it, and summarize the results.
+        plan = self.plan(
+            data,
+            preprocessing_summary=preprocessing_summary or {},
+            objective=objective
+        )
+
+        # Execute the plan and summarize the results.
         fitted_models, execution = self.execute(data, plan)
         summary_dict = self._parse_summary(self.summarize(execution))
 
@@ -423,7 +433,7 @@ class TabularDataModelBuilderAgent(IAgent):
         while attempt < max_refinements and self._needs_refinement(best[1]):
             attempt += 1
             feedback = self._refinement_feedback(best[1])
-            logger.info("Model-building refinement attempt %s: %s", attempt, feedback)
+            logger.info("Model-building refinement attempt {}: {}", attempt, feedback)
 
             plan = self.plan(
                 data, preprocessing_summary=preprocessing_summary or {},
@@ -436,6 +446,14 @@ class TabularDataModelBuilderAgent(IAgent):
                 best = (candidate_models, candidate_summary)
 
         best[1]["refinement_attempts"] = attempt
+        logger.info(
+            "Model build finished: target={}, trained={}, failed={}, best={}, elapsed_seconds={:.2f}",
+            self.target_column,
+            best[1].get("models_trained", []),
+            best[1].get("models_failed", []),
+            best[1].get("best_model"),
+            time.perf_counter() - started_at,
+        )
         return best
 
     def plan(
@@ -460,10 +478,7 @@ class TabularDataModelBuilderAgent(IAgent):
 
         # Infer task type up front from the target column dtype so the model
         # catalog sent to the planner can be filtered to relevant models only.
-        # Previously every registered model (16+ with XGBoost/LightGBM
-        # installed, roughly half classification and half regression) was sent
-        # regardless of task, which was pure waste — this halves the catalog
-        # in the common case and is a major contributor to prompt size.
+        # Previously every registered model
         inferred_task: str | None = None
         if self.target_column in data.columns:
             try:
@@ -477,8 +492,20 @@ class TabularDataModelBuilderAgent(IAgent):
             if inferred_task else full_model_catalog
         )
         is_sequential = self._is_sequential_data(data, preprocessing_summary or {})
+        if is_sequential and not _HAS_TENSORFLOW:
+            logger.warning(
+                "Sequential data detected but TensorFlow is unavailable; "
+                "LSTM candidates will be omitted from the model portfolio."
+            )
         if not is_sequential:
             model_catalog = [m for m in model_catalog if not m.get("sequential", False)]
+
+        logger.info(
+            "Model plan context: task={}, sequential={}, candidates={}",
+            inferred_task or "unknown",
+            is_sequential,
+            [model["model_key"] for model in model_catalog],
+        )
 
         system_prompt = self.prompt_generator.generate_system_prompt(
             prompt_type=ModelBuilderPromptType.GENERATE_PLAN,
@@ -526,6 +553,12 @@ class TabularDataModelBuilderAgent(IAgent):
         # key is correctly flagged as invalid rather than silently accepted —
         # filtering only shrinks what's shown to the planner, not what's valid.
         plan_obj = self._validate_and_repair_plan(plan_obj, dataset_profile)
+        plan_obj = self._ensure_plan_coverage(
+            plan_obj,
+            inferred_task=inferred_task,
+            is_sequential=is_sequential,
+            n_rows=len(data),
+        )
         return json.dumps(plan_obj, indent=2)
 
     def execute(
@@ -566,7 +599,10 @@ class TabularDataModelBuilderAgent(IAgent):
         X = data.drop(columns=[self.target_column])
         y = data[self.target_column]
         task_type = self._infer_task_type(y)
-        is_sequential = self._is_sequential_data(data)
+        is_sequential = self._is_sequential_data(data) or any(
+            _MODEL_REGISTRY.get(step.get("model_key"), {}).get("sequential", False)
+            for step in plan_obj.get("steps", [])
+        )
 
         # Defensively drop any non-numeric columns (e.g. datetime, object,
         # category) that survived preprocessing. sklearn/xgboost/lightgbm
@@ -586,7 +622,17 @@ class TabularDataModelBuilderAgent(IAgent):
         fitted_models: dict[str, Any] = {}
         executed_steps: list[dict[str, Any]] = []
 
+        logger.info(
+            "Executing model plan: task={}, sequential={}, steps={}, features={}, samples={}",
+            task_type,
+            is_sequential,
+            len(plan_obj.get("steps", [])),
+            X.shape[1],
+            X.shape[0],
+        )
+
         for step in plan_obj.get("steps", []):
+            step_started_at = time.perf_counter()
             step_result, fitted_model = self._run_step(
                 step, X, y, task_type, is_sequential=is_sequential
             )
@@ -594,6 +640,13 @@ class TabularDataModelBuilderAgent(IAgent):
             if fitted_model is not None:
                 model_key = step.get("model_key", step.get("name", f"model_{len(fitted_models)}"))
                 fitted_models[model_key] = fitted_model
+            logger.info(
+                "Model step finished: model={}, status={}, elapsed_seconds={:.2f}, errors={}",
+                step_result.get("model_key"),
+                step_result.get("status"),
+                time.perf_counter() - step_started_at,
+                step_result.get("error"),
+            )
 
         report = {
             "task":          "model_building",
@@ -692,7 +745,7 @@ class TabularDataModelBuilderAgent(IAgent):
 
             plan_obj["steps"][idx]["status"] = "invalid"
             plan_obj["steps"][idx]["error"] = reason
-            logger.info("Model plan step %s needs regeneration: %s", idx, reason)
+            logger.info("Model plan step {} needs regeneration: {}", idx, reason)
 
             regenerated = False
             for _ in range(self._MAX_REGEN_ATTEMPTS):
@@ -717,12 +770,12 @@ class TabularDataModelBuilderAgent(IAgent):
 
                 if self._validate_step(new_step, available_keys) is None:
                     plan_obj["steps"][idx] = new_step
-                    logger.info("Successfully regenerated model step %s", idx)
+                    logger.info("Successfully regenerated model step {}", idx)
                     regenerated = True
                     break
 
             if not regenerated:
-                logger.warning("Failed to regenerate model step %s", idx)
+                logger.warning("Failed to regenerate model step {}", idx)
                 plan_obj["steps"][idx]["status"] = "invalid"
                 plan_obj["steps"][idx]["error"] = (
                     f"Failed to regenerate after {self._MAX_REGEN_ATTEMPTS} attempts: {reason}"
@@ -826,7 +879,7 @@ class TabularDataModelBuilderAgent(IAgent):
 
         # ── Unknown key ───────────────────────────────────────────────────────
         if model_key not in _MODEL_REGISTRY:
-            logger.warning("Unknown model key: %s", model_key)
+            logger.warning("Unknown model key: {}", model_key)
             return {**base, "status": "skipped", "error": f"Unknown model key: {model_key}"}, None
 
         meta = _MODEL_REGISTRY[model_key]
@@ -852,21 +905,27 @@ class TabularDataModelBuilderAgent(IAgent):
         try:
             estimator = meta["cls"](**hyperparams)
         except Exception as exc:
-            logger.exception("Failed to instantiate %s: %s", model_key, exc)
+            logger.exception("Failed to instantiate {}: {}", model_key, exc)
             return {**base, "status": "failed", "error": f"Instantiation error: {exc}"}, None
 
         # ── Fit ───────────────────────────────────────────────────────────────
         try:
             if meta.get("sequential"):
-                self._fit_time_series_model(estimator, y)
+                fit_report = self._fit_time_series_model(estimator, y)
             else:
                 estimator.fit(X, y)
         except Exception as exc:
-            logger.exception("Failed to fit %s: %s", model_key, exc)
+            logger.exception("Failed to fit {}: {}", model_key, exc)
             return {**base, "status": "failed", "error": f"Fit error: {exc}"}, None
 
         # ── Run attached actions ──────────────────────────────────────────────
         action_results: list[dict] = []
+        if not meta.get("sequential"):
+            action_keys = {action.get("action_key") for action in actions}
+            if "cv_evaluate" not in action_keys:
+                actions = [*actions, {"action_key": "cv_evaluate", "params": {}}]
+            if "holdout_evaluate" not in action_keys:
+                actions = [*actions, {"action_key": "holdout_evaluate", "params": {}}]
         for action_spec in actions:
             action_key = action_spec.get("action_key", "")
             action_params: dict = action_spec.get("params") or {}
@@ -886,10 +945,11 @@ class TabularDataModelBuilderAgent(IAgent):
             **base,
             "status":   "completed",
             "actions":  action_results,
+            "validation": fit_report if meta.get("sequential") else None,
         }, estimator
 
     @staticmethod
-    def _fit_time_series_model(estimator: Any, target: pd.Series) -> None:
+    def _fit_time_series_model(estimator: Any, target: pd.Series) -> dict[str, Any]:
         """Fit a sequence predictor on the target in its existing row order."""
         values = pd.to_numeric(target, errors="raise").to_numpy(dtype=float)
         if len(values) <= estimator.window_size + estimator.difference_order:
@@ -899,11 +959,30 @@ class TabularDataModelBuilderAgent(IAgent):
 
         differences = np.diff(values, n=estimator.difference_order)
         scaled = estimator.scaler.fit_transform(differences.reshape(-1, 1)).flatten()
-        X_diff, y_diff = estimator.prepare_data(scaled)
-        train_size = int(len(X_diff) * 0.8)
-        if train_size == 0 or train_size == len(X_diff):
+        prepare_parameters = inspect.signature(estimator.prepare_data).parameters
+        if len(prepare_parameters) >= 2:
+            X_diff, y_diff, base_values, target_values = estimator.prepare_data(values, scaled)
+            split = estimator.split_data(X_diff, y_diff, base_values, target_values)
+            (X_train, y_train, _, _), (X_test, y_test, base_test, target_test) = split
+        else:
+            X_diff, y_diff = estimator.prepare_data(scaled)
+            split = estimator.split_data(X_diff, y_diff)
+            (X_train, y_train), (X_test, y_test) = split
+            base_test = target_test = None
+
+        if len(X_train) == 0 or len(X_test) == 0:
             raise ValueError("Sequential data does not provide both training and validation rows.")
-        estimator.fit(X_diff[:train_size], y_diff[:train_size], X_diff[train_size:], y_diff[train_size:])
+        estimator.fit(X_train, y_train, X_test, y_test, verbose=0)
+
+        if base_test is not None:
+            mse, mae = estimator.eval(X_test, y_test, base_test, target_test)
+        else:
+            mse, mae = estimator.eval(X_test, y_test)
+        return {
+            "validation_metrics": {"mse": float(mse), "mae": float(mae)},
+            "n_train": int(len(X_train)),
+            "n_validation": int(len(X_test)),
+        }
 
     # ── Actions ───────────────────────────────────────────────────────────────
 
@@ -919,7 +998,18 @@ class TabularDataModelBuilderAgent(IAgent):
         Run stratified (classification) or plain (regression) k-fold CV and
         return mean ± std for each scoring metric.
         """
-        cv_folds: int = int(params.get("cv", 5))
+        requested_folds = int(params.get("cv", 5))
+        if task_type == "classification":
+            smallest_class = int(y.value_counts().min())
+            cv_folds = min(requested_folds, smallest_class)
+        else:
+            cv_folds = min(requested_folds, len(y))
+        if cv_folds < 2:
+            return {
+                "action_key": "cv_evaluate",
+                "status": "skipped",
+                "error": "At least two samples per class are required for cross-validation.",
+            }
         scoring: list[str] | str = params.get("scoring") or (
             ["accuracy", "f1_weighted", "roc_auc_ovr_weighted"]
             if task_type == "classification"
@@ -961,7 +1051,7 @@ class TabularDataModelBuilderAgent(IAgent):
                 "metrics":    metrics,
             }
         except Exception as exc:
-            logger.warning("cv_evaluate failed: %s", exc)
+            logger.warning("cv_evaluate failed: {}", exc)
             return {"action_key": "cv_evaluate", "status": "failed", "error": str(exc)}
 
     def _action_feature_importance(
@@ -1081,10 +1171,98 @@ class TabularDataModelBuilderAgent(IAgent):
             }
 
         except Exception as exc:
-            logger.warning("holdout_evaluate failed: %s", exc)
+            logger.warning("holdout_evaluate failed: {}", exc)
             return {"action_key": "holdout_evaluate", "status": "failed", "error": str(exc)}
 
     # ── Helpers ───────────────────────────────────────────────────────────────
+
+    @staticmethod
+    def _model_family(model_key: str) -> str:
+        if model_key.startswith(("logistic_regression", "ridge", "lasso")):
+            return "linear"
+        if model_key.startswith(("random_forest", "extra_trees", "gradient_boosting", "adaboost", "decision_tree", "xgb", "lgbm")):
+            return "tree"
+        if model_key.startswith(("svc", "svr")):
+            return "kernel"
+        if model_key.startswith("knn"):
+            return "neighbors"
+        if model_key in {"bilstm", "lstm_attention"}:
+            return "sequence"
+        return "other"
+
+    def _ensure_plan_coverage(
+        self,
+        plan_obj: dict,
+        inferred_task: str | None,
+        is_sequential: bool,
+        n_rows: int,
+    ) -> dict:
+        """Add a small, deterministic model portfolio when the LLM plan is narrow."""
+        if inferred_task not in {"classification", "regression"}:
+            return plan_obj
+
+        steps = plan_obj.setdefault("steps", [])
+        selected = {
+            step.get("model_key")
+            for step in steps
+            if step.get("model_key") in _MODEL_REGISTRY
+        }
+        families = {self._model_family(key) for key in selected}
+
+        if is_sequential:
+            candidates = [
+                "ridge",
+                "random_forest_regressor",
+                "gradient_boosting_regressor",
+                "bilstm",
+                "lstm_attention",
+            ] if inferred_task == "regression" else []
+        elif inferred_task == "classification":
+            candidates = [
+                "logistic_regression",
+                "random_forest_classifier",
+                "gradient_boosting_classifier",
+                "svc",
+            ]
+        else:
+            candidates = [
+                "ridge",
+                "random_forest_regressor",
+                "gradient_boosting_regressor",
+                "svr",
+            ]
+
+        for model_key in candidates:
+            meta = _MODEL_REGISTRY.get(model_key)
+            if not meta or model_key in selected:
+                continue
+            if meta["task"] != inferred_task:
+                continue
+            if meta.get("sequential") and (not is_sequential or n_rows < 80):
+                continue
+            if not meta.get("sequential") and is_sequential:
+                # Sequence data still benefits from non-sequential baselines,
+                # but the portfolio should not be dominated by them.
+                if families and len(families) >= 2:
+                    continue
+
+            steps.append({
+                "step": len(steps) + 1,
+                "name": f"{model_key} baseline",
+                "model_key": model_key,
+                "objective": "Provide an independent model-family baseline for comparison.",
+                "hyperparameters": {},
+                "actions": [],
+                "status": "valid",
+            })
+            selected.add(model_key)
+            families.add(self._model_family(model_key))
+            logger.info("Added deterministic portfolio candidate: model={}, family={}", model_key, self._model_family(model_key))
+
+            if not is_sequential and len(families) >= 3:
+                break
+
+        return plan_obj
 
     @staticmethod
     def _infer_task_type(y: pd.Series) -> str:
@@ -1095,6 +1273,7 @@ class TabularDataModelBuilderAgent(IAgent):
           1. object / bool / category dtype → classification.
           2. integer dtype with ≤ 20 unique values → classification.
           3. Otherwise → regression.
+
         """
         if y.dtype == object or y.dtype.name in ("bool", "category"):
             return "classification"
@@ -1109,6 +1288,8 @@ class TabularDataModelBuilderAgent(IAgent):
     ) -> bool:
         """Identify ordered data using datetime columns or preprocessing metadata."""
         summary = preprocessing_summary or {}
+        if summary.get("sequential") is True:
+            return True
         datetime_columns = summary.get("datetime_columns") or summary.get("temporal_columns")
         if datetime_columns:
             return True

@@ -1,5 +1,5 @@
 import type { NotebookStatus } from '@/types';
-import { authHeaders } from '@/lib/auth';
+import { authHeaders, notifyAuthExpired } from '@/lib/auth';
 
 // ——————————————————————————————————————————————————————————————
 // API client
@@ -19,6 +19,8 @@ export async function apiFetch<T>(path: string, options: RequestInit = {}): Prom
       ...authHeaders(),
     },
   });
+
+  if (res.status === 401) notifyAuthExpired();
 
   if (!res.ok) {
     let detail = res.statusText;

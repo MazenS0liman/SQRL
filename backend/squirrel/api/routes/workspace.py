@@ -109,7 +109,6 @@ from squirrel.services.workspace.WorkspaceService import (
     WorkspaceStatus,
     DataType,
     SourceKind,
-    DuplicateColumnError,
 )
 
 # Schema
@@ -124,7 +123,6 @@ from squirrel.schemas.workspace import (
 )
 from squirrel.api.routes.auth import get_current_user
 from squirrel.schemas.auth import AuthUserRead
-
 
 # Agents
 from squirrel.modules.agents import (
@@ -147,13 +145,13 @@ from squirrel.schemas.workspace import (
     PreprocessedDataResponse,
     ModelMetric,
     ModelFileOut,
-    PredictRequest,     # NEW — {"rows": [...], "model_key": Optional[str]}
-    PredictResponse,     # NEW — {"model_key", "predictions", "probabilities"?, "classes"?}
+    PredictRequest,
+    PredictResponse
 )
 from squirrel.schemas.file import UploadedSourceOut
 
 # Exception
-from squirrel.schemas.error import WorkspaceNotFoundError, SourceNotFoundError
+from squirrel.schemas.error import WorkspaceNotFoundError, SourceNotFoundError, DuplicateColumnError
 
 # Logging
 from loguru import logger
@@ -637,12 +635,6 @@ async def build_structured_models(
 
     try:
         processor = TabularDataProcessorAgent()
-        # run_multi() returns (processed_df, summary, plan, execution_report).
-        # The last two capture every strategy's fitted, data-dependent
-        # parameters (means, bounds, encoding maps, fitted power-transform
-        # λ, one-hot dummy-column sets, ...) — they must be forwarded to
-        # save_run() below so the workspace becomes predictable via
-        # POST /{workspace_id}/predict. Previously these were discarded here.
         processed_df, preprocessing_summary, preprocessing_plan, preprocessing_execution_report = (
             await run_in_threadpool(
                 processor.run_multi,
@@ -668,8 +660,6 @@ async def build_structured_models(
             },
         )
     except ValueError as exc:
-        # Raised when the agent couldn't find a defensible relationship
-        # between sources (see TabularDataProcessorAgent._merge_via_agent).
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail={"message": str(exc)},
@@ -696,8 +686,8 @@ async def build_structured_models(
         0,
         0,
         current_user.id,
-        preprocessing_plan,               # NEW — persisted as part of the pipeline artifact
-        preprocessing_execution_report,   # NEW — carries the fitted state predict() replays
+        preprocessing_plan,
+        preprocessing_execution_report,
     )
     output_file_urls: List[str] = list(preprocess_save.get("output_file_urls", []))
 

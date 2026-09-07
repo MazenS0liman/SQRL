@@ -17,10 +17,8 @@ Two tables back this service:
 
 ``workspaces``
     One row per workspace: its name, lifecycle status, data type
-    ("structured" | "image" | "text" | "audio"), the list of
-    input sources (uploaded files and/or connected data-connector
-    references), the owning user id, and the target column chosen for
-    modelling.
+    ("structured"), the list of input sources (uploaded files and/or connected data-connector
+    references), the owning user id, and the target column chosen for modelling.
 
 ``workspace_runs``
     One row per pipeline run (``preprocessing`` or ``model_building``)
@@ -98,14 +96,12 @@ import io
 import json
 import re
 import uuid
-import tempfile
-from datetime import datetime, timezone
-from pathlib import Path
-from typing import Optional, List, Dict, Any
-
-# Third-Party Libraries
 import joblib
+import tempfile
 import pandas as pd
+from pathlib import Path
+from datetime import datetime, timezone
+from typing import Optional, List, Dict, Any
 
 # Services
 from squirrel.services.storage.database.PostgresService import PostgresService
@@ -116,6 +112,9 @@ from squirrel.services.file.FileService import FileService
 # Agents
 from squirrel.modules.agents.preprocessor.TabularDataProcessorAgent import TabularDataProcessorAgent
 
+# Models
+from squirrel.models.time_series import BiLSTMPredictor, LSTMAttentionPredictor
+
 # Constants
 from squirrel.constants.workspace import DataType, SourceKind, WorkspaceStatus
 
@@ -125,29 +124,8 @@ from squirrel.schemas.error import WorkspaceNotFoundError, SourceNotFoundError
 # Logging
 from loguru import logger
 
-
-# ——————————————————————————————————————————————————————————————
-# Exceptions specific to this service
-
-
-class DuplicateColumnError(Exception):
-    """
-    Raised when two or more input sources share a non-target column name in
-    a way that can't be resolved into an unambiguous merge (see
-    ``TabularDataProcessorAgent.merge_sources``).
-    """
-
-    def __init__(self, columns: List[str]):
-        self.columns = columns
-        super().__init__(
-            f"Columns {columns} appear in more than one input source and "
-            "can't be merged unambiguously."
-        )
-
-
 # ——————————————————————————————————————————————————————————————
 # WorkspaceService
-
 
 class WorkspaceService:
     """
@@ -174,8 +152,11 @@ class WorkspaceService:
     :type db: Optional[PostgresService]
     :param minio: An open :class:`MinIOService` instance.
     :type minio: Optional[MinIOService]
+    :param connector: An open :class:`DataConnectorService` instance.
+    :type connector: Optional[DataConnectorService]
     """
 
+    # Database tables
     _WORKSPACES_TABLE = "workspaces"
     _RUNS_TABLE        = "workspace_runs"
 
@@ -185,25 +166,43 @@ class WorkspaceService:
     _PREFIX_MODELS        = "models"
     _PREFIX_PIPELINES     = "pipelines"
 
+    # ==================================================================
+    # Construction & table bootstrap
+    # ==================================================================
+
     def __init__(
         self,
         db:    Optional[PostgresService] = None,
         minio: Optional[MinIOService]    = None,
         connector: Optional[DataConnectorService] = None
     ) -> None:
+        """
+        Wire up (or accept already-open) service dependencies and make sure
+        the backing tables exist.
+
+        :param db: An open :class:`PostgresService` instance. A new one is
+            constructed when omitted.
+        :type db: Optional[PostgresService]
+        :param minio: An open :class:`MinIOService` instance. A new one is
+            constructed when omitted.
+        :type minio: Optional[MinIOService]
+        :param connector: An open :class:`DataConnectorService` instance. A
+            new one is constructed when omitted.
+        :type connector: Optional[DataConnectorService]
+        """
         self._db    = db    or PostgresService()
         self._minio = minio or MinIOService()
         self._file_service = FileService()
         self._connector = connector or DataConnectorService()
         self._ensure_tables()
 
-    # ------------------------------------------------------------------
-    # Table bootstrap
-
     def _ensure_tables(self) -> None:
         """
         Create the ``workspaces`` and ``workspace_runs`` tables when they
-        don't yet exist.
+        don't yet exist, and backfill any columns (``owner_user_id``) added
+        after the tables were first created. Failures are logged, not
+        raised, so a transient DB hiccup at construction time doesn't crash
+        the caller.
         """
         try:
             self._db.execute(
@@ -261,13 +260,27 @@ class WorkspaceService:
 
     @staticmethod
     def _workspace_filters(workspace_id: str, owner_user_id: Optional[str] = None) -> Dict[str, Any]:
+        """
+        Build the ``filters`` dict used to scope a ``workspaces`` table
+        lookup to a single workspace, optionally also constraining it to a
+        specific owner so one user can't reach another user's workspace by
+        id alone.
+
+        :param workspace_id: Workspace to filter on.
+        :type workspace_id: str
+        :param owner_user_id: If provided, also filter on this owner.
+        :type owner_user_id: Optional[str]
+        :return: A filters dict suitable for :meth:`PostgresService.retrieve`.
+        :rtype: Dict[str, Any]
+        """
         filters: Dict[str, Any] = {"workspace_id": workspace_id}
         if owner_user_id:
             filters["owner_user_id"] = owner_user_id
         return filters
 
-    # ------------------------------------------------------------------
+    # ==================================================================
     # Workspace CRUD
+    # ==================================================================
 
     def create_workspace(
         self,
@@ -285,8 +298,15 @@ class WorkspaceService:
             ``"structured"`` (tabular CSV pipeline).
         :type data_type: str
 
+        :param owner_user_id: The user id that will own this workspace.
+        :type owner_user_id: Optional[str]
+
         :return: The newly created workspace row, keyed by ``workspace_id``.
         :rtype: dict
+
+        :raises ValueError: if *data_type* isn't one of :class:`DataType`.
+        :raises RuntimeError: if the insert doesn't come back with a
+            ``workspace_id``.
         """
         if data_type not in DataType.ALL:
             raise ValueError(f"Unknown data_type '{data_type}'.")
@@ -306,7 +326,7 @@ class WorkspaceService:
                 """,
                 "params": {
                     "workspace_id": workspace_id,
-                        "owner_user_id": owner_user_id,
+                    "owner_user_id": owner_user_id,
                     "name": name,
                     "status": WorkspaceStatus.CREATED,
                     "data_type": data_type,
@@ -322,6 +342,32 @@ class WorkspaceService:
         logger.info("Created workspace '{}' (workspace_id={}, data_type={})", name, workspace_id, data_type)
         return result[0]
 
+    def get_workspace(
+        self,
+        workspace_id: str,
+        owner_user_id: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """
+        Fetch a single workspace row by ``workspace_id``.
+
+        :param workspace_id: Workspace to fetch.
+        :type workspace_id: str
+        :param owner_user_id: If provided, only return the workspace if it
+            belongs to this user.
+        :type owner_user_id: Optional[str]
+        :return: The matching workspace row.
+        :rtype: Dict[str, Any]
+        :raises WorkspaceNotFoundError: if no matching workspace exists.
+        """
+        result = self._db.retrieve(
+            self._WORKSPACES_TABLE, 
+            filters=self._workspace_filters(workspace_id, owner_user_id)
+        )
+        rows = result.get("rows", []) if result else []
+        if not rows:
+            raise WorkspaceNotFoundError(f"No workspace with workspace_id={workspace_id}")
+        return rows[0]
+
     def list_workspaces(
         self,
         limit: int = 200,
@@ -329,6 +375,14 @@ class WorkspaceService:
     ) -> List[Dict[str, Any]]:
         """
         Return all workspaces, newest first.
+
+        :param limit: Maximum number of rows to return.
+        :type limit: int
+        :param owner_user_id: If provided, only list workspaces owned by
+            this user.
+        :type owner_user_id: Optional[str]
+        :return: Workspace rows, most recently created first.
+        :rtype: List[Dict[str, Any]]
         """
         filters: Dict[str, Any] = {}
         if owner_user_id:
@@ -338,19 +392,89 @@ class WorkspaceService:
         rows.sort(key=lambda r: r.get("created_at", ""), reverse=True)
         return rows[:limit]
 
-    def get_workspace(
+    def update_workspace(
         self,
         workspace_id: str,
+        fields: Dict[str, Any],
         owner_user_id: Optional[str] = None,
-    ) -> Dict[str, Any]:
+    ) -> None:
         """
-        Fetch a single workspace row by ``workspace_id``, or raise ``WorkspaceNotFoundError``.
+        Patch arbitrary columns on a workspace row and bump ``updated_at``.
+
+        JSONB columns (currently just ``input_sources``) are automatically
+        serialized and cast with ``::jsonb`` in the generated ``SET``
+        clause; every other field is passed through as-is.
+
+        :param workspace_id: Workspace to update.
+        :type workspace_id: str
+        :param fields: Column-name -> new-value pairs to set. A no-op when
+            empty.
+        :type fields: Dict[str, Any]
+        :param owner_user_id: If provided, only update the workspace if it
+            belongs to this user. Otherwise, update any workspace with the
+            given ``workspace_id``.
+        :type owner_user_id: Optional[str]
         """
-        result = self._db.retrieve(self._WORKSPACES_TABLE, filters=self._workspace_filters(workspace_id, owner_user_id))
-        rows = result.get("rows", []) if result else []
-        if not rows:
-            raise WorkspaceNotFoundError(f"No workspace with workspace_id={workspace_id}")
-        return rows[0]
+        if not fields:
+            return
+        fields = dict(fields)
+        jsonb_cols = {"input_sources"}
+        set_parts = []
+        params: Dict[str, Any] = {"workspace_id": workspace_id, "updated_at": datetime.now(timezone.utc)}
+        for k, v in fields.items():
+            if k in jsonb_cols:
+                set_parts.append(f"{k} = %({k})s::jsonb")
+                params[k] = json.dumps(v)
+            else:
+                set_parts.append(f"{k} = %({k})s")
+                params[k] = v
+        set_parts.append("updated_at = %(updated_at)s")
+        set_clause = ", ".join(set_parts)
+        try:
+            where_clause = "workspace_id = %(workspace_id)s"
+            if owner_user_id:
+                where_clause += " AND owner_user_id = %(owner_user_id)s"
+            self._db.execute(
+                f"UPDATE {self._WORKSPACES_TABLE} SET {set_clause} WHERE {where_clause}",
+                params={**params, **({"owner_user_id": owner_user_id} if owner_user_id else {})},
+                fetch=False,
+            )
+        except Exception:
+            logger.exception("Failed to update workspace workspace_id={}", workspace_id)
+            raise
+
+    def set_status(
+        self,
+        workspace_id: str,
+        status: str,
+        target_column: Optional[str] = None,
+        error: Optional[str] = None,
+        owner_user_id: Optional[str] = None,
+    ) -> None:
+        """
+        Update workspace status (and, optionally, the chosen target column
+        and/or a recorded error message).
+
+        :param workspace_id: Workspace to update.
+        :type workspace_id: str
+        :param status: New lifecycle status, e.g. one of :class:`WorkspaceStatus`.
+        :type status: str
+        :param target_column: If provided, also record this as the
+            workspace's chosen modelling target.
+        :type target_column: Optional[str]
+        :param error: If provided, also record this as the workspace's
+            error message (e.g. on pipeline failure).
+        :type error: Optional[str]
+        :param owner_user_id: If provided, only update the workspace if it
+            belongs to this user.
+        :type owner_user_id: Optional[str]
+        """
+        fields: Dict[str, Any] = {"status": status}
+        if target_column is not None:
+            fields["target_column"] = target_column
+        if error is not None:
+            fields["error"] = error
+        self.update_workspace(workspace_id, fields, owner_user_id=owner_user_id)
 
     def rename_workspace(
         self,
@@ -360,11 +484,28 @@ class WorkspaceService:
     ) -> Dict[str, Any]:
         """
         Rename a workspace and return the updated row.
+
+        :param workspace_id: Workspace to rename.
+        :type workspace_id: str
+        :param name: New display name. Leading/trailing whitespace is
+            stripped.
+        :type name: str
+        :param owner_user_id: If provided, only rename the workspace if it
+            belongs to this user.
+        :type owner_user_id: Optional[str]
+        :return: The updated workspace row.
+        :rtype: Dict[str, Any]
+        :raises ValueError: if *name* is empty after stripping.
+        :raises WorkspaceNotFoundError: if the workspace doesn't exist.
         """
         name = name.strip()
         if not name:
             raise ValueError("Workspace name cannot be empty.")
-        self._update_workspace(workspace_id, {"name": name}, owner_user_id=owner_user_id)
+        self.update_workspace(
+            workspace_id, 
+            {"name": name}, 
+            owner_user_id=owner_user_id
+        )
         return self.get_workspace(workspace_id, owner_user_id=owner_user_id)
 
     def delete_workspace(
@@ -379,12 +520,14 @@ class WorkspaceService:
 
         :param workspace_id: Workspace to delete.
         :type workspace_id: str
-
         :param purge_artifacts: If ``True``, best-effort delete every
             uploaded/output MinIO object referenced by the workspace's runs
             and input sources. Failures to purge an individual object are
             logged, not raised — a stray blob shouldn't block the delete.
         :type purge_artifacts: bool
+        :param owner_user_id: If provided, only delete the workspace if it belongs
+            to this user. Otherwise, delete any workspace with the given ``workspace_id``.
+        :type owner_user_id: Optional[str]
 
         :raises WorkspaceNotFoundError: if the workspace doesn't exist.
         """
@@ -419,6 +562,22 @@ class WorkspaceService:
         workspace_id: str,
         workspace: Dict[str, Any]
     ) -> None:
+        """
+        Best-effort delete every MinIO object a workspace ever produced or
+        consumed: each uploaded input source plus every output artifact
+        (processed CSVs, models, pipeline artifacts) recorded across all of
+        its runs. Called by :meth:`delete_workspace` before the workspace's
+        rows are removed.
+
+        Individual delete failures are logged and skipped rather than
+        raised, so one stray/missing blob can't block deletion of the rest.
+
+        :param workspace_id: Workspace whose artifacts are being purged.
+        :type workspace_id: str
+        :param workspace: The workspace row (already fetched by the caller),
+            used to enumerate its input sources.
+        :type workspace: Dict[str, Any]
+        """
         urls: List[str] = []
         for src in workspace.get("input_sources") or []:
             if src.get("kind") == SourceKind.UPLOAD and src.get("file_url"):
@@ -433,61 +592,9 @@ class WorkspaceService:
             except Exception:
                 logger.warning("Could not purge artifact {} for workspace_id={}", url, workspace_id)
 
-    def set_status(
-        self,
-        workspace_id: str,
-        status: str,
-        target_column: Optional[str] = None,
-        error: Optional[str] = None,
-        owner_user_id: Optional[str] = None,
-    ) -> None:
-        """
-        Update workspace status (and, optionally, the chosen target column
-        and/or a recorded error message).
-        """
-        fields: Dict[str, Any] = {"status": status}
-        if target_column is not None:
-            fields["target_column"] = target_column
-        if error is not None:
-            fields["error"] = error
-        self._update_workspace(workspace_id, fields, owner_user_id=owner_user_id)
-
-    def _update_workspace(
-        self,
-        workspace_id: str,
-        fields: Dict[str, Any],
-        owner_user_id: Optional[str] = None,
-    ) -> None:
-        if not fields:
-            return
-        fields = dict(fields)
-        jsonb_cols = {"input_sources"}
-        set_parts = []
-        params: Dict[str, Any] = {"workspace_id": workspace_id, "updated_at": datetime.now(timezone.utc)}
-        for k, v in fields.items():
-            if k in jsonb_cols:
-                set_parts.append(f"{k} = %({k})s::jsonb")
-                params[k] = json.dumps(v)
-            else:
-                set_parts.append(f"{k} = %({k})s")
-                params[k] = v
-        set_parts.append("updated_at = %(updated_at)s")
-        set_clause = ", ".join(set_parts)
-        try:
-            where_clause = "workspace_id = %(workspace_id)s"
-            if owner_user_id:
-                where_clause += " AND owner_user_id = %(owner_user_id)s"
-            self._db.execute(
-                f"UPDATE {self._WORKSPACES_TABLE} SET {set_clause} WHERE {where_clause}",
-                params={**params, **({"owner_user_id": owner_user_id} if owner_user_id else {})},
-                fetch=False,
-            )
-        except Exception:
-            logger.exception("Failed to update workspace workspace_id={}", workspace_id)
-            raise
-
-    # ------------------------------------------------------------------
-    # Input sources — generic across file types
+    # ==================================================================
+    # Input sources — attach / edit / detach uploads and connector tables
+    # ==================================================================
 
     def add_file_source(
         self,
@@ -500,7 +607,32 @@ class WorkspaceService:
         owner_user_id: Optional[str] = None
         ) -> Dict[str, Any]:
             """
-            ...(docstring unchanged)...
+            Upload a local file to MinIO and attach it to a workspace as a
+            new ``"upload"`` input source. Also records the upload on the
+            Files page (via :class:`FileService`) tagged with this workspace
+            so it can deep-link back.
+
+            :param workspace_id: Workspace to attach the source to.
+            :type workspace_id: str
+            :param file_path: Local filesystem path of the file to upload.
+            :type file_path: str
+            :param file_name: Display name for the source (typically the
+                original filename).
+            :type file_name: str
+            :param file_type: File type/extension, e.g. ``"csv"``.
+            :type file_type: str
+            :param columns: Known column list, for tabular files. Stored as
+                both ``columns`` and ``all_columns`` on the source.
+            :type columns: Optional[List[str]]
+            :param row_count: Known row count, for tabular files.
+            :type row_count: Optional[int]
+            :param owner_user_id: If provided, only attach the source if the
+                workspace belongs to this user.
+            :type owner_user_id: Optional[str]
+            :return: The newly created source dict.
+            :rtype: Dict[str, Any]
+            :raises WorkspaceNotFoundError: if the workspace doesn't exist.
+            :raises RuntimeError: if the upload to MinIO fails.
             """
             workspace = self.get_workspace(workspace_id, owner_user_id=owner_user_id)
             source_id = f"src_{uuid.uuid4().hex[:12]}"
@@ -539,7 +671,7 @@ class WorkspaceService:
             if workspace.get("status") == WorkspaceStatus.CREATED:
                 update_fields["status"] = WorkspaceStatus.UPLOADED
 
-            self._update_workspace(workspace_id, update_fields, owner_user_id=owner_user_id)
+            self.update_workspace(workspace_id, update_fields, owner_user_id=owner_user_id)
             return source
 
     def preview_upload_source(
@@ -554,6 +686,23 @@ class WorkspaceService:
             its full column list and a small preview. Lets the column editor
             re-open a source (e.g. after a page reload) without the frontend
             needing to keep the original upload-time parse result around.
+
+            :param workspace_id: Workspace the source belongs to.
+            :type workspace_id: str
+            :param source_id: Source to preview.
+            :type source_id: str
+            :param limit: Maximum number of preview rows to return.
+            :type limit: int
+            :param owner_user_id: If provided, only preview the source if the
+                workspace belongs to this user.
+            :type owner_user_id: Optional[str]
+            :return: ``{"table", "columns", "preview"}``.
+            :rtype: Dict[str, Any]
+            :raises SourceNotFoundError: if *source_id* isn't attached to the
+                workspace.
+            :raises ValueError: if the source isn't an uploaded file.
+            :raises NotImplementedError: if the source's ``file_type`` isn't
+                ``"csv"``.
             """
             workspace = self.get_workspace(workspace_id, owner_user_id=owner_user_id)
             source = next(
@@ -589,8 +738,22 @@ class WorkspaceService:
             Narrow which columns of an already-attached source feed into
             preprocessing, without removing and re-attaching it.
 
+            :param workspace_id: Workspace the source belongs to.
+            :type workspace_id: str
+            :param source_id: Source to update.
+            :type source_id: str
             :param columns: subset of the source's full column list to keep.
                 ``None`` (or the full list) resets to "use every column".
+            :type columns: Optional[List[str]]
+            :param owner_user_id: If provided, only update the source if the
+                workspace belongs to this user.
+            :type owner_user_id: Optional[str]
+            :return: The updated source dict.
+            :rtype: Dict[str, Any]
+            :raises SourceNotFoundError: if *source_id* isn't attached to the
+                workspace.
+            :raises ValueError: if the source has no known full column list,
+                or *columns* references an unknown column.
             """
             workspace = self.get_workspace(workspace_id, owner_user_id=owner_user_id)
             sources = list(workspace.get("input_sources") or [])
@@ -612,7 +775,7 @@ class WorkspaceService:
                 source["columns"] = list(all_columns)
 
             sources[idx] = source
-            self._update_workspace(workspace_id, {"input_sources": sources}, owner_user_id=owner_user_id)
+            self.update_workspace(workspace_id, {"input_sources": sources}, owner_user_id=owner_user_id)
             return source
 
     def add_connector_source(
@@ -628,8 +791,23 @@ class WorkspaceService:
         Attach a single table (optionally restricted to a subset of its
         columns) from a connector as a workspace input source.
 
+        :param workspace_id: Workspace to attach the source to.
+        :type workspace_id: str
+        :param connector_id: Connector the table belongs to.
+        :type connector_id: str
+        :param table_name: Name of the table to attach.
+        :type table_name: str
+        :param name: Display name for the source. Defaults to *table_name*.
+        :type name: Optional[str]
         :param columns: Column names to keep. ``None`` means "all columns",
             same as before.
+        :type columns: Optional[List[str]]
+        :param owner_user_id: If provided, only attach the source if the
+            workspace belongs to this user.
+        :type owner_user_id: Optional[str]
+        :return: The newly created source dict.
+        :rtype: Dict[str, Any]
+        :raises ValueError: if the resolved display name is empty.
         """
         self._connector.get_connection(connector_id)  # fail fast if missing
         query = self._connector.build_table_query(connector_id, table_name, columns)  # validates table + columns
@@ -670,9 +848,8 @@ class WorkspaceService:
         if workspace.get("status") == WorkspaceStatus.CREATED:
             update_fields["status"] = WorkspaceStatus.UPLOADED
 
-        self._update_workspace(workspace_id, update_fields, owner_user_id=owner_user_id)
+        self.update_workspace(workspace_id, update_fields, owner_user_id=owner_user_id)
         return source
-
 
     def add_connector_sources(
         self,
@@ -684,8 +861,18 @@ class WorkspaceService:
         """
         Attach multiple tables from the same connector in one call.
 
+        :param workspace_id: Workspace to attach the sources to.
+        :type workspace_id: str
+        :param connector_id: Connector to attach the sources from.
+        :type connector_id: str
         :param tables: list of ``{"table": str, "columns": Optional[List[str]]}``.
             ``columns`` omitted or ``None`` means "all columns" for that table.
+        :type tables: List[Dict[str, Any]]
+        :param owner_user_id: If provided, only attach the sources if the workspace belongs
+            to this user. Otherwise, attach to any workspace with the given
+            ``workspace_id``.
+        :type owner_user_id: Optional[str]
+        
         :raises ValueError: if the list is empty, references an unknown table,
             or a table is already attached from this connector.
         """
@@ -698,7 +885,10 @@ class WorkspaceService:
         if unknown:
             raise ValueError(f"Unknown table(s) for this connector: {unknown}")
 
-        workspace = self.get_workspace(workspace_id, owner_user_id=owner_user_id)
+        workspace = self.get_workspace(
+            workspace_id, 
+            owner_user_id=owner_user_id
+        )
         already_attached = {
             s.get("table") for s in (workspace.get("input_sources") or [])
             if s.get("kind") == SourceKind.CONNECTOR and s.get("connector_id") == connector_id
@@ -711,7 +901,11 @@ class WorkspaceService:
         for entry in tables:
             created.append(
                 self.add_connector_source(
-                    workspace_id, connector_id, entry["table"], columns=entry.get("columns"), owner_user_id=owner_user_id
+                    workspace_id, 
+                    connector_id, 
+                    entry["table"], 
+                    columns=entry.get("columns"), 
+                    owner_user_id=owner_user_id
                 )
             )
         return created
@@ -724,6 +918,21 @@ class WorkspaceService:
     ) -> None:
         """
         Remove a single input source (upload or connector) from a workspace.
+
+        If the source is an uploaded file, its MinIO blob is best-effort
+        deleted too (failure to delete the blob is logged, not raised). If
+        no sources remain afterwards, the workspace's status is reset to
+        ``WorkspaceStatus.CREATED``.
+
+        :param workspace_id: Workspace the source belongs to.
+        :type workspace_id: str
+        :param source_id: Source to remove.
+        :type source_id: str
+        :param owner_user_id: If provided, only remove the source if the
+            workspace belongs to this user.
+        :type owner_user_id: Optional[str]
+        :raises SourceNotFoundError: if *source_id* isn't attached to the
+            workspace.
         """
         workspace = self.get_workspace(workspace_id, owner_user_id=owner_user_id)
         sources = list(workspace.get("input_sources") or [])
@@ -739,12 +948,14 @@ class WorkspaceService:
                 logger.warning("Could not delete removed source blob {}", removed["file_url"])
 
         update_fields: Dict[str, Any] = {"input_sources": remaining}
+
         if not remaining:
             update_fields["status"] = WorkspaceStatus.CREATED
-        self._update_workspace(workspace_id, update_fields, owner_user_id=owner_user_id)
+        self.update_workspace(workspace_id, update_fields, owner_user_id=owner_user_id)
 
-    # ------------------------------------------------------------------
-    # Retrieve data
+    # ==================================================================
+    # Loading source data into DataFrames
+    # ==================================================================
 
     def load_csv(
         self,
@@ -766,6 +977,12 @@ class WorkspaceService:
             surfaced as ``FileNotFoundError: The specified bucket does not
             exist``, since it was never actually reading the file this method
             had just downloaded.
+
+        :param file_url: ``s3://...`` URL of the CSV to load.
+        :type file_url: str
+        :return: The parsed CSV as a DataFrame.
+        :rtype: pd.DataFrame
+        :raises RuntimeError: if the file can't be retrieved from MinIO.
         """
         source_file = self._minio.retrieve_file(file_url)
         if source_file is None:
@@ -784,6 +1001,12 @@ class WorkspaceService:
         :meth:`DataConnectorService.fetch_dataframe`, which still raises
         ``NotImplementedError`` for connector types with no reader wired up
         (Snowflake, BigQuery, Google Sheets today).
+
+        :param source: A ``kind == "connector"`` input-source dict.
+        :type source: Dict[str, Any]
+        :return: The queried data as a DataFrame.
+        :rtype: pd.DataFrame
+        :raises RuntimeError: if the source has no recorded ``query``.
         """
         query = source.get("query")
         if not query:
@@ -791,9 +1014,18 @@ class WorkspaceService:
                 f"Connector source '{source.get('source_id')}' has no query "
                 "recorded — remove and re-attach it via add_connector_source."
             )
+
         return self._connector.fetch_dataframe(source["connector_id"], query)
 
     def _upload_loaders(self) -> Dict[str, Any]:
+        """
+        Registry mapping an upload source's ``file_type`` to the loader
+        function that can parse it into a DataFrame. Consulted by
+        :meth:`load_source_dataframes`; only ``"csv"`` is wired up today.
+
+        :return: ``{"csv": self.load_csv}``.
+        :rtype: Dict[str, Any]
+        """
         return {
             "csv": self.load_csv,
         }
@@ -813,6 +1045,12 @@ class WorkspaceService:
           sources (Postgres, BigQuery, warehouses, etc.) — today it raises
           ``NotImplementedError`` with a clear message so the route can
           surface a 501 rather than a silent failure.
+
+        :param sources: Input-source dicts, as stored on a workspace's
+            ``input_sources``.
+        :type sources: List[Dict[str, Any]]
+        :return: DataFrames keyed by ``source_id``.
+        :rtype: Dict[str, pd.DataFrame]
 
         :raises RuntimeError: if any upload source can't be downloaded.
         :raises NotImplementedError: if a connector source, or an upload
@@ -856,517 +1094,148 @@ class WorkspaceService:
 
         return frames
 
-    # ------------------------------------------------------------------
-    # Save agent's output
+    # ==================================================================
+    # Run persistence & retrieval
+    # ==================================================================
 
     def save_run(
-            self,
-            workspace_id:       str,
-            agent_type:         str,
-            input_file_urls:    List[str],
-            data:               Any,
-            summary:            Dict,
-            prompt_tokens:      int = 0,
-            completion_tokens:  int = 0,
-            total_tokens:       int = 0,
-            response_time_ms:   int = 0,
-            owner_user_id:      Optional[str] = None,
-            plan:               Optional[Any] = None,
-            execution_report:   Optional[Any] = None,
-        ) -> Dict:
-            """
-            Persist one pipeline run's output artifacts + summary.
+        self,
+        workspace_id:       str,
+        agent_type:         str,
+        input_file_urls:    List[str],
+        data:               Any,
+        summary:            Dict,
+        prompt_tokens:      int = 0,
+        completion_tokens:  int = 0,
+        total_tokens:       int = 0,
+        response_time_ms:   int = 0,
+        owner_user_id:      Optional[str] = None,
+        plan:               Optional[Any] = None,
+        execution_report:   Optional[Any] = None,
+    ) -> Dict:
+        """
+        Persist one pipeline run's output artifacts + summary.
 
-            :param plan: For ``agent_type == "preprocessing"`` only — the
-                JSON plan string/dict returned by
-                ``TabularDataProcessorAgent.plan()`` (or the third element
-                of ``run()``/``run_multi()``'s return tuple). Combined with
-                *execution_report* and persisted as a "fitted pipeline"
-                artifact so :meth:`predict` can later replay this exact
-                preprocessing against new data. Ignored for other
-                ``agent_type`` values.
-            :param execution_report: For ``agent_type == "preprocessing"``
-                only — the JSON execution report string/dict returned by
-                ``TabularDataProcessorAgent.execute()`` (or the fourth
-                element of ``run()``/``run_multi()``'s return tuple). This
-                is what actually carries the fitted parameters (means,
-                bounds, encoding maps, fitted power-transform λ, one-hot
-                dummy-column sets, ...) that :meth:`predict` needs. When
-                omitted, no pipeline artifact is saved and this workspace's
-                data won't be predictable on until a run supplies one.
-            """
-            output_urls: List[str] = []
+        :param workspace_id: Workspace the run belongs to.
+        :type workspace_id: str
+        :param agent_type: ``"preprocessing"`` or ``"model_building"``.
+        :type agent_type: str
+        :param input_file_urls: S3 URLs of every input file consumed.
+        :type input_file_urls: List[str]
+        :param data: For ``"preprocessing"``, the processed DataFrame. For
+            ``"model_building"``, a dict of ``{model_key: fitted_estimator}``.
+            Anything else is left unpersisted (no output artifacts uploaded).
+        :type data: Any
+        :param summary: Agent's structured JSON summary of the run.
+        :type summary: Dict
+        :param prompt_tokens: LLM prompt token count for the run.
+        :type prompt_tokens: int
+        :param completion_tokens: LLM completion token count for the run.
+        :type completion_tokens: int
+        :param total_tokens: LLM total token count for the run.
+        :type total_tokens: int
+        :param response_time_ms: Wall-clock time the run took, in ms.
+        :type response_time_ms: int
+        :param owner_user_id: Owning user id, recorded on the run and any
+            uploaded artifacts.
+        :type owner_user_id: Optional[str]
+        :param plan: For ``agent_type == "preprocessing"`` only — the
+            JSON plan string/dict returned by
+            ``TabularDataProcessorAgent.plan()`` (or the third element
+            of ``run()``/``run_multi()``'s return tuple). Combined with
+            *execution_report* and persisted as a "fitted pipeline"
+            artifact so :meth:`predict` can later replay this exact
+            preprocessing against new data. Ignored for other
+            ``agent_type`` values.
+        :param execution_report: For ``agent_type == "preprocessing"``
+            only — the JSON execution report string/dict returned by
+            ``TabularDataProcessorAgent.execute()`` (or the fourth
+            element of ``run()``/``run_multi()``'s return tuple). This
+            is what actually carries the fitted parameters (means,
+            bounds, encoding maps, fitted power-transform λ, one-hot
+            dummy-column sets, ...) that :meth:`predict` needs. When
+            omitted, no pipeline artifact is saved and this workspace's
+            data won't be predictable on until a run supplies one.
+        :return: ``{"record_id", "output_file_urls"}``.
+        :rtype: Dict
+        """
+        output_urls: List[str] = []
 
-            if agent_type == "preprocessing" and isinstance(data, pd.DataFrame):
-                file_url = self._upload_dataframe(
-                    df=data,
+        if agent_type == "preprocessing" and isinstance(data, pd.DataFrame):
+            file_url = self._upload_dataframe(
+                df=data,
+                workspace_id=workspace_id,
+                label="processed",
+                owner_user_id=owner_user_id,
+            )
+            if file_url:
+                output_urls.append(file_url)
+            else:
+                logger.warning(
+                    "Could not upload processed CSV for workspace_id={}",
+                    workspace_id
+                )
+
+            # Persist the fitted pipeline (plan + execution report) so
+            # predict() can replay this exact preprocessing on new rows
+            # instead of re-fitting scalers/encoders from them.
+            if execution_report is not None:
+                pipeline_url = self.save_pipeline_artifact(
                     workspace_id=workspace_id,
-                    label="processed",
+                    plan=plan or {},
+                    execution_report=execution_report,
                     owner_user_id=owner_user_id,
                 )
-                if file_url:
-                    output_urls.append(file_url)
+                if pipeline_url:
+                    output_urls.append(pipeline_url)
+                    summary = dict(summary or {})
+                    summary["pipeline_artifact_url"] = pipeline_url
                 else:
                     logger.warning(
-                        "Could not upload processed CSV for workspace_id={}",
+                        "Could not persist fitted pipeline artifact for workspace_id={}",
                         workspace_id
                     )
 
-                # Persist the fitted pipeline (plan + execution report) so
-                # predict() can replay this exact preprocessing on new rows
-                # instead of re-fitting scalers/encoders from them.
-                if execution_report is not None:
-                    pipeline_url = self.save_pipeline_artifact(
-                        workspace_id=workspace_id,
-                        plan=plan or {},
-                        execution_report=execution_report,
-                        owner_user_id=owner_user_id,
-                    )
-                    if pipeline_url:
-                        output_urls.append(pipeline_url)
-                        summary = dict(summary or {})
-                        summary["pipeline_artifact_url"] = pipeline_url
-                    else:
-                        logger.warning(
-                            "Could not persist fitted pipeline artifact for workspace_id={}",
-                            workspace_id
-                        )
-
-            elif agent_type == "model_building" and isinstance(data, Dict):
-                for model_key, estimator in data.items():
-                    model_url = self._upload_model(
-                        estimator=estimator,
-                        model_key=model_key,
-                        workspace_id=workspace_id,
-                        owner_user_id=owner_user_id,
-                    )
-                    if model_url:
-                        output_urls.append(model_url)
-                    else:
-                        logger.warning(
-                            "Could not upload model '{}' for workspace_id={}",
-                            model_key,
-                            workspace_id
-                        )
-
-            else:
-                pass
-
-            input_file_urls = [str(u) for u in (input_file_urls or [])]
-            output_urls = [str(u) for u in output_urls]
-
-            row_id = self._insert_run(
-                workspace_id=workspace_id,
-                owner_user_id=owner_user_id,
-                agent_type=agent_type,
-                input_file_urls=input_file_urls,
-                output_file_urls=output_urls,
-                agent_summary=summary,
-                prompt_tokens=prompt_tokens,
-                completion_tokens=completion_tokens,
-                total_tokens=total_tokens,
-                response_time_ms=response_time_ms
-            )
-
-            return {
-                "record_id": row_id,
-                "output_file_urls": output_urls
-            }
-
-    # ------------------------------------------------------------------
-    # Fitted-pipeline persistence & replay
-    #
-    # TabularDataProcessorAgent.run_multi() (and run()) already return the
-    # (plan, execution_report) pair needed to replay training-time
-    # preprocessing against new data via apply_fitted_pipeline() — but
-    # until now nothing downstream of the /build route actually persisted
-    # them. save_run() stores this pair as a JSON artifact in MinIO
-    # whenever a preprocessing run supplies execution_report; the methods
-    # below read it back and drive apply_fitted_pipeline() + the fitted
-    # model for a single predict() call.
-
-    def save_pipeline_artifact(
-        self,
-        workspace_id: str,
-        plan: Any,
-        execution_report: Any,
-        owner_user_id: Optional[str] = None,
-    ) -> Optional[str]:
-        """
-        Persist the preprocessing plan + execution report as one JSON
-        artifact in MinIO.
-
-        The execution report's per-step ``per_column`` blocks are exactly
-        the fitted state (means, bounds, encoding maps, fitted
-        power-transform λ, one-hot dummy-column sets, group aggregation
-        stats, ...) that :meth:`predict` needs to replay this pipeline on
-        new rows instead of re-fitting from them.
-
-        :param plan: JSON plan string or dict.
-        :param execution_report: JSON execution report string or dict.
-        :return: The artifact's ``s3://`` URL, or ``None`` on failure.
-        """
-        try:
-            plan_obj = plan if isinstance(plan, Dict) else json.loads(plan)
-        except (TypeError, json.JSONDecodeError):
-            plan_obj = {}
-
-        try:
-            execution_obj = (
-                execution_report if isinstance(execution_report, Dict)
-                else json.loads(execution_report)
-            )
-        except (TypeError, json.JSONDecodeError):
-            logger.warning(
-                "execution_report for workspace_id={} was not valid JSON; "
-                "saving pipeline artifact with an empty execution_report.",
-                workspace_id,
-            )
-            execution_obj = {}
-
-        payload = json.dumps(
-            {"plan": plan_obj, "execution_report": execution_obj},
-            default=str,
-        )
-
-        ts = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S")
-        object_name = f"{workspace_id}/{self._PREFIX_PIPELINES}/pipeline_{ts}.json"
-
-        with tempfile.NamedTemporaryFile(
-            suffix=".json", delete=False, mode="w", encoding="utf-8"
-        ) as tmp:
-            tmp.write(payload)
-            tmp_path = tmp.name
-
-        try:
-            result = self._minio.upload_file(file_path=tmp_path, object_name=object_name)
-            if result is None:
-                return None
-
-            # Same reasoning as _upload_dataframe/_upload_model: this is an
-            # artifact this workspace produced, so it should show up on the
-            # Files page like everything else.
-            self._file_service.record_upload(
-                result,
-                owner_user_id=owner_user_id,
-                workspace_id=workspace_id,
-            )
-            return str(result.fileUrl)
-        except Exception:
-            logger.exception("Pipeline artifact upload to MinIO failed.")
-            return None
-        finally:
-            Path(tmp_path).unlink(missing_ok=True)
-
-    def load_pipeline_artifact(self, file_url: str) -> Dict[str, Any]:
-        """
-        Download and parse a pipeline artifact written by
-        :meth:`save_pipeline_artifact`.
-
-        :return: ``{"plan": {...}, "execution_report": {...}}``.
-        :raises RuntimeError: if the artifact can't be downloaded.
-        :raises ValueError: if the artifact isn't valid JSON.
-        """
-        raw = self.download_output_file(file_url)
-        if raw is None:
-            raise RuntimeError(f"Could not retrieve pipeline artifact: {file_url}")
-        try:
-            return json.loads(raw.decode("utf-8"))
-        except Exception as exc:
-            raise ValueError(f"Pipeline artifact at {file_url} is not valid JSON: {exc}") from exc
-
-    def get_latest_pipeline_artifact_url(
-        self,
-        workspace_id: str,
-        owner_user_id: Optional[str] = None,
-    ) -> Optional[str]:
-        """
-        Return the ``pipeline_artifact_url`` recorded in the ``agent_summary``
-        of the most recent ``preprocessing`` run for this workspace, or
-        ``None`` if the workspace has never been preprocessed with pipeline
-        persistence enabled (e.g. runs saved before this feature existed).
-        """
-        runs = self.get_records_by_workspace_id(
-            workspace_id, agent_type="preprocessing", limit=1, owner_user_id=owner_user_id
-        )
-        if not runs:
-            return None
-        return (runs[0].get("agent_summary") or {}).get("pipeline_artifact_url")
-
-    @staticmethod
-    def _model_key_from_url(file_url: str) -> str:
-        """
-        Recover ``model_key`` from a stored model artifact URL named
-        ``{model_key}_{timestamp}.joblib`` by :meth:`_upload_model`.
-        Mirrors the identical helper in the workspace route.
-        """
-        filename = file_url.rsplit("/", 1)[-1]
-        stem = filename[: -len(".joblib")] if filename.endswith(".joblib") else filename
-        match = re.match(r"^(.*)_\d{8}T\d{6}$", stem)
-        return match.group(1) if match else stem
-
-    def get_latest_model_url(
-        self,
-        workspace_id: str,
-        model_key: Optional[str] = None,
-        owner_user_id: Optional[str] = None,
-    ) -> str:
-        """
-        Resolve a fitted model's MinIO URL from the most recent
-        ``model_building`` run on this workspace.
-
-        :param model_key: Which fitted model to use. ``None`` falls back to
-            that run's recorded ``best_model``, then to the first output URL
-            if neither is available.
-        :raises RuntimeError: if there's no completed model-building run, or
-            *model_key* doesn't match any of its fitted models.
-        """
-        runs = self.get_records_by_workspace_id(
-            workspace_id, agent_type="model_building", limit=1, owner_user_id=owner_user_id
-        )
-        if not runs:
-            raise RuntimeError(f"Workspace {workspace_id} has no completed model-building run.")
-
-        run = runs[0]
-        urls: List[str] = list(run.get("output_file_urls") or [])
-        if not urls:
-            raise RuntimeError(f"Model-building run for workspace {workspace_id} has no artifacts.")
-
-        resolved_key = model_key or (run.get("agent_summary") or {}).get("best_model")
-        if resolved_key:
-            for url in urls:
-                if self._model_key_from_url(url) == resolved_key:
-                    return url
-            raise RuntimeError(
-                f"Model '{resolved_key}' not found among this workspace's fitted models."
-            )
-        return urls[0]
-
-    def _load_model(self, file_url: str) -> Any:
-        """Download and unpickle a joblib model artifact from MinIO."""
-        raw = self.download_output_file(file_url)
-        if raw is None:
-            raise RuntimeError(f"Could not retrieve model artifact: {file_url}")
-        return joblib.load(io.BytesIO(raw))
-
-    def predict(
-        self,
-        workspace_id: str,
-        new_data: pd.DataFrame,
-        model_key: Optional[str] = None,
-        owner_user_id: Optional[str] = None,
-    ) -> Dict[str, Any]:
-        """
-        Inference-time counterpart to ``/build``: replay this workspace's
-        saved preprocessing pipeline on *new_data* — reusing training-time
-        fitted parameters via
-        ``TabularDataProcessorAgent.apply_fitted_pipeline`` rather than
-        re-fitting scalers/encoders from the new rows — then run the chosen
-        fitted model on the transformed result.
-
-        :param new_data: Raw new rows, shaped like the original input
-            source(s) *before* preprocessing (i.e. exactly what you'd have
-            uploaded/attached). The target column, if present, is dropped
-            before prediction.
-        :param model_key: Which fitted model to use. ``None`` uses the
-            workspace's recorded ``best_model``.
-        :return: ``{"model_key", "predictions", ["probabilities", "classes"]}``.
-        :raises RuntimeError: no saved pipeline, no fitted model, or
-            *model_key* can't be resolved.
-        """
-        workspace = self.get_workspace(workspace_id, owner_user_id=owner_user_id)
-
-        pipeline_url = self.get_latest_pipeline_artifact_url(workspace_id, owner_user_id=owner_user_id)
-        if not pipeline_url:
-            raise RuntimeError(
-                f"Workspace {workspace_id} has no saved preprocessing pipeline. "
-                "Run /build at least once before predicting."
-            )
-        pipeline_artifact = self.load_pipeline_artifact(pipeline_url)
-        execution_report = pipeline_artifact.get("execution_report") or {}
-
-        trained_dtypes = (execution_report.get("dataset_before") or {}).get("dtypes") or {}
-        new_data = new_data.copy()
-        for col, dtype_str in trained_dtypes.items():
-            if col not in new_data.columns:
-                continue
-            dtype_str = str(dtype_str)
-            try:
-                if "datetime" in dtype_str:
-                    new_data[col] = pd.to_datetime(new_data[col], errors="coerce")
-                elif "int" in dtype_str or "float" in dtype_str:
-                    new_data[col] = pd.to_numeric(new_data[col], errors="coerce")
-            except Exception:
-                logger.warning(
-                    "Could not coerce column '%s' to trained dtype '%s' for workspace_id=%s",
-                    col, dtype_str, workspace_id,
+        elif agent_type == "model_building" and isinstance(data, Dict):
+            for model_key, estimator in data.items():
+                model_url = self._upload_model(
+                    estimator=estimator,
+                    model_key=model_key,
+                    workspace_id=workspace_id,
+                    owner_user_id=owner_user_id,
                 )
+                if model_url:
+                    output_urls.append(model_url)
+                else:
+                    logger.warning(
+                        "Could not upload model '{}' for workspace_id={}",
+                        model_key,
+                        workspace_id
+                    )
 
-        transformed = TabularDataProcessorAgent().apply_fitted_pipeline(new_data, execution_report)
+        else:
+            pass
 
-        target_column = workspace.get("target_column")
-        if target_column and target_column in transformed.columns:
-            transformed = transformed.drop(columns=[target_column])
+        input_file_urls = [str(u) for u in (input_file_urls or [])]
+        output_urls = [str(u) for u in output_urls]
 
-        non_numeric_cols = transformed.select_dtypes(exclude=["number", "bool"]).columns.tolist()
-        if non_numeric_cols:
-            logger.warning(
-                "Dropping non-numeric columns before prediction for workspace_id=%s "
-                "(preprocessing replay didn't remove these): %s",
-                workspace_id, non_numeric_cols,
-            )
-            transformed = transformed.drop(columns=non_numeric_cols)
+        row_id = self._insert_run(
+            workspace_id=workspace_id,
+            owner_user_id=owner_user_id,
+            agent_type=agent_type,
+            input_file_urls=input_file_urls,
+            output_file_urls=output_urls,
+            agent_summary=summary,
+            prompt_tokens=prompt_tokens,
+            completion_tokens=completion_tokens,
+            total_tokens=total_tokens,
+            response_time_ms=response_time_ms
+        )
 
-        model_url = self.get_latest_model_url(workspace_id, model_key=model_key, owner_user_id=owner_user_id)
-        estimator = self._load_model(model_url)
-        predictions = estimator.predict(transformed)
-        result: Dict[str, Any] = {
-            "model_key": model_key or self._model_key_from_url(model_url),
-            "predictions": predictions.tolist() if hasattr(predictions, "tolist") else list(predictions),
+        return {
+            "record_id": row_id,
+            "output_file_urls": output_urls
         }
-
-        if hasattr(estimator, "predict_proba"):
-            try:
-                proba = estimator.predict_proba(transformed)
-                result["probabilities"] = proba.tolist()
-                if hasattr(estimator, "classes_"):
-                    result["classes"] = [str(c) for c in estimator.classes_]
-            except Exception:
-                logger.warning(
-                    "predict_proba failed for workspace_id={} model_key={}",
-                    workspace_id, result["model_key"],
-                )
-
-        return result
-
-    # ------------------------------------------------------------------
-    # Retrieval
-
-    def get_record(
-        self,
-        record_id: int,
-        owner_user_id: Optional[str] = None,
-    ) -> Optional[dict]:
-        """
-        Fetch a single workspace-run row by primary key.
-        """
-        filters: Dict[str, Any] = {"id": record_id}
-        if owner_user_id:
-            filters["owner_user_id"] = owner_user_id
-        result = self._db.retrieve(self._RUNS_TABLE, filters=filters)
-        rows = result.get("rows", []) if result else []
-        return rows[0] if rows else None
-
-    def get_records_by_workspace_id(
-        self,
-        workspace_id: str,
-        agent_type: Optional[str] = None,
-        limit: int = 100,
-        owner_user_id: Optional[str] = None,
-    ) -> List[dict]:
-        """
-        Return workspace-run rows for a workspace, newest first.
-        """
-        filters: dict = {"workspace_id": workspace_id}
-        if owner_user_id:
-            filters["owner_user_id"] = owner_user_id
-        if agent_type:
-            filters["agent_type"] = agent_type
-
-        result = self._db.retrieve(self._RUNS_TABLE, filters=filters)
-        rows = result.get("rows", []) if result else []
-        rows.sort(key=lambda r: r.get("created_at", ""), reverse=True)
-        return rows[:limit]
-
-    def download_output_file(
-        self,
-        s3_url: str
-    ) -> Optional[bytes]:
-        """
-        Download an output artifact from MinIO and return its raw bytes.
-        """
-        file_obj = self._minio.retrieve_file(s3_url)
-        if file_obj is None:
-            return None
-        
-        try:
-            return file_obj.fileByte
-        except Exception:
-            logger.exception("Failed to read downloaded artifact: {}", file_obj.fileUrl)
-            return None
-
-    # ------------------------------------------------------------------
-    # Private helpers — MinIO uploads
-
-    def _upload_dataframe(
-        self,
-        df: pd.DataFrame,
-        workspace_id: str,
-        label: str = "processed",
-        owner_user_id: Optional[str] = None,
-    ) -> Optional[str]:
-        ts = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S")
-        object_name = f"{workspace_id}/{self._PREFIX_PREPROCESSED}/{label}_{ts}.csv"
-
-        with tempfile.NamedTemporaryFile(suffix=".csv", delete=False, mode="w", encoding="utf-8") as tmp:
-            df.to_csv(tmp, index=False)
-            tmp_path = tmp.name
-
-        try:
-            result = self._minio.upload_file(file_path=tmp_path, object_name=object_name)
-            if result is None:
-                return None
-
-            # Agent-generated output is still "a file this user's workspace
-            # produced" — record it the same way any other upload is, so
-            # Files-page visibility and ownership stay consistent across
-            # every artifact type instead of only the ones the user chose.
-            self._file_service.record_upload(
-                result,
-                owner_user_id=owner_user_id,
-                workspace_id=workspace_id,
-            )
-            return str(result.fileUrl)
-        except Exception:
-            logger.exception("DataFrame upload to MinIO failed.")
-            return None
-        finally:
-            Path(tmp_path).unlink(missing_ok=True)
-
-
-    def _upload_model(
-        self,
-        estimator: object,
-        model_key: str,
-        workspace_id: str,
-        owner_user_id: Optional[str] = None,
-    ) -> Optional[str]:
-        ts = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S")
-        object_name = f"{workspace_id}/{self._PREFIX_MODELS}/{model_key}_{ts}.joblib"
-
-        with tempfile.NamedTemporaryFile(suffix=".joblib", delete=False) as tmp:
-            tmp_path = tmp.name
-
-        try:
-            joblib.dump(estimator, tmp_path)
-            result = self._minio.upload_file(file_path=tmp_path, object_name=object_name)
-            if result is None:
-                return None
-
-            self._file_service.record_upload(
-                result,
-                owner_user_id=owner_user_id,
-                workspace_id=workspace_id,
-            )
-            return str(result.fileUrl)
-        except Exception:
-            logger.exception("Model '{}' upload to MinIO failed.", model_key)
-            return None
-        finally:
-            Path(tmp_path).unlink(missing_ok=True)
-
-    # ------------------------------------------------------------------
-    # Private helpers — PostgreSQL writes
 
     def _insert_run(
         self,
@@ -1381,6 +1250,35 @@ class WorkspaceService:
         total_tokens:    int,
         response_time_ms: int
     ) -> Optional[int]:
+        """
+        Insert a single ``workspace_runs`` row. Low-level counterpart to
+        :meth:`save_run`, which resolves *data* into uploaded artifact URLs
+        before calling this.
+
+        :param workspace_id: Workspace the run belongs to.
+        :type workspace_id: str
+        :param owner_user_id: Owning user id to record on the row.
+        :type owner_user_id: Optional[str]
+        :param agent_type: ``"preprocessing"`` or ``"model_building"``.
+        :type agent_type: str
+        :param input_file_urls: S3 URLs of every input file consumed.
+        :type input_file_urls: List[str]
+        :param output_file_urls: S3 URLs of every output artifact produced.
+        :type output_file_urls: List[str]
+        :param agent_summary: Agent's structured JSON summary of the run.
+        :type agent_summary: dict
+        :param prompt_tokens: LLM prompt token count for the run.
+        :type prompt_tokens: int
+        :param completion_tokens: LLM completion token count for the run.
+        :type completion_tokens: int
+        :param total_tokens: LLM total token count for the run.
+        :type total_tokens: int
+        :param response_time_ms: Wall-clock time the run took, in ms.
+        :type response_time_ms: int
+        :return: The new row's ``id``, or ``None`` on failure (logged, not
+            raised).
+        :rtype: Optional[int]
+        """
         try:
             result = self._db.insert(
                 {
@@ -1442,3 +1340,589 @@ class WorkspaceService:
         except Exception:
             logger.exception("Failed to insert workspace_run row for workspace_id={}", workspace_id)
             return None
+
+    def get_record(
+        self,
+        record_id: int,
+        owner_user_id: Optional[str] = None,
+    ) -> Optional[dict]:
+        """
+        Fetch a single workspace-run row by primary key.
+
+        :param record_id: The run's ``id``.
+        :type record_id: int
+        :param owner_user_id: If provided, only return the run if it
+            belongs to this user.
+        :type owner_user_id: Optional[str]
+        :return: The matching run row, or ``None`` if not found.
+        :rtype: Optional[dict]
+        """
+        filters: Dict[str, Any] = {"id": record_id}
+        if owner_user_id:
+            filters["owner_user_id"] = owner_user_id
+        result = self._db.retrieve(self._RUNS_TABLE, filters=filters)
+        rows = result.get("rows", []) if result else []
+        return rows[0] if rows else None
+
+    def get_records_by_workspace_id(
+        self,
+        workspace_id: str,
+        agent_type: Optional[str] = None,
+        limit: int = 100,
+        owner_user_id: Optional[str] = None,
+    ) -> List[dict]:
+        """
+        Return workspace-run rows for a workspace, newest first.
+
+        :param workspace_id: Workspace to fetch runs for.
+        :type workspace_id: str
+        :param agent_type: If provided, only return runs of this type
+            (``"preprocessing"`` or ``"model_building"``).
+        :type agent_type: Optional[str]
+        :param limit: Maximum number of rows to return.
+        :type limit: int
+        :param owner_user_id: If provided, only return runs belonging to
+            this user.
+        :type owner_user_id: Optional[str]
+        :return: Run rows, most recently created first.
+        :rtype: List[dict]
+        """
+        filters: dict = {"workspace_id": workspace_id}
+        if owner_user_id:
+            filters["owner_user_id"] = owner_user_id
+        if agent_type:
+            filters["agent_type"] = agent_type
+
+        result = self._db.retrieve(self._RUNS_TABLE, filters=filters)
+        rows = result.get("rows", []) if result else []
+        rows.sort(key=lambda r: r.get("created_at", ""), reverse=True)
+        return rows[:limit]
+
+    def download_output_file(
+        self,
+        s3_url: str
+    ) -> Optional[bytes]:
+        """
+        Download an output artifact from MinIO and return its raw bytes.
+
+        :param s3_url: ``s3://...`` URL of the artifact to download.
+        :type s3_url: str
+        :return: The artifact's raw bytes, or ``None`` if it couldn't be
+            retrieved or read.
+        :rtype: Optional[bytes]
+        """
+        file_obj = self._minio.retrieve_file(s3_url)
+        if file_obj is None:
+            return None
+        
+        try:
+            return file_obj.fileByte
+        except Exception:
+            logger.exception("Failed to read downloaded artifact: {}", file_obj.fileUrl)
+            return None
+
+    # ==================================================================
+    # MinIO artifact uploads (DataFrames & models)
+    # ==================================================================
+
+    def _upload_dataframe(
+        self,
+        df: pd.DataFrame,
+        workspace_id: str,
+        label: str = "processed",
+        owner_user_id: Optional[str] = None,
+    ) -> Optional[str]:
+        """
+        Write a DataFrame to a temp CSV and upload it to MinIO under this
+        workspace's "preprocessed" prefix, recording it on the Files page.
+
+        :param df: DataFrame to upload.
+        :type df: pd.DataFrame
+        :param workspace_id: Workspace the output belongs to.
+        :type workspace_id: str
+        :param label: Filename label, e.g. ``"processed"``.
+        :type label: str
+        :param owner_user_id: Owning user id to record on the upload.
+        :type owner_user_id: Optional[str]
+        :return: The uploaded object's ``s3://`` URL, or ``None`` on
+            failure (logged, not raised).
+        :rtype: Optional[str]
+        """
+        ts = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S")
+        object_name = f"{workspace_id}/{self._PREFIX_PREPROCESSED}/{label}_{ts}.csv"
+
+        with tempfile.NamedTemporaryFile(suffix=".csv", delete=False, mode="w", encoding="utf-8") as tmp:
+            df.to_csv(tmp, index=False)
+            tmp_path = tmp.name
+
+        try:
+            result = self._minio.upload_file(file_path=tmp_path, object_name=object_name)
+            if result is None:
+                return None
+
+            # Agent-generated output is still "a file this user's workspace
+            # produced" — record it the same way any other upload is, so
+            # Files-page visibility and ownership stay consistent across
+            # every artifact type instead of only the ones the user chose.
+            self._file_service.record_upload(
+                result,
+                owner_user_id=owner_user_id,
+                workspace_id=workspace_id,
+            )
+            return str(result.fileUrl)
+        except Exception:
+            logger.exception("DataFrame upload to MinIO failed.")
+            return None
+        finally:
+            Path(tmp_path).unlink(missing_ok=True)
+
+    def _upload_model(
+        self,
+        estimator: object,
+        model_key: str,
+        workspace_id: str,
+        owner_user_id: Optional[str] = None,
+    ) -> Optional[str]:
+        """
+        Pickle a fitted estimator with joblib and upload it to MinIO under
+        this workspace's "models" prefix, recording it on the Files page.
+
+        :param estimator: Fitted model/estimator to persist.
+        :type estimator: object
+        :param model_key: Identifier for this model (e.g. ``"random_forest"``),
+            embedded in the stored filename so it can later be recovered by
+            :meth:`_model_key_from_url`.
+        :type model_key: str
+        :param workspace_id: Workspace the model belongs to.
+        :type workspace_id: str
+        :param owner_user_id: Owning user id to record on the upload.
+        :type owner_user_id: Optional[str]
+        :return: The uploaded object's ``s3://`` URL, or ``None`` on
+            failure (logged, not raised).
+        :rtype: Optional[str]
+        """
+        ts = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S")
+        object_name = f"{workspace_id}/{self._PREFIX_MODELS}/{model_key}_{ts}.joblib"
+
+        with tempfile.NamedTemporaryFile(suffix=".joblib", delete=False) as tmp:
+            tmp_path = tmp.name
+
+        try:
+            joblib.dump(estimator, tmp_path)
+            result = self._minio.upload_file(file_path=tmp_path, object_name=object_name)
+            if result is None:
+                return None
+
+            self._file_service.record_upload(
+                result,
+                owner_user_id=owner_user_id,
+                workspace_id=workspace_id,
+            )
+            return str(result.fileUrl)
+        except Exception:
+            logger.exception("Model '{}' upload to MinIO failed.", model_key)
+            return None
+        finally:
+            Path(tmp_path).unlink(missing_ok=True)
+
+    # ==================================================================
+    # Fitted-pipeline persistence & replay
+    # ==================================================================
+
+    def save_pipeline_artifact(
+        self,
+        workspace_id: str,
+        plan: Any,
+        execution_report: Any,
+        owner_user_id: Optional[str] = None,
+    ) -> Optional[str]:
+        """
+        Persist the preprocessing plan + execution report as one JSON
+        artifact in MinIO.
+
+        The execution report's per-step ``per_column`` blocks are exactly
+        the fitted state (means, bounds, encoding maps, fitted
+        power-transform λ, one-hot dummy-column sets, group aggregation
+        stats, ...) that :meth:`predict` needs to replay this pipeline on
+        new rows instead of re-fitting from them.
+
+        :param workspace_id: Workspace the pipeline belongs to.
+        :type workspace_id: str
+        :param plan: JSON plan string or dict.
+        :type plan: Union[str, Dict]
+        :param execution_report: JSON execution report string or dict.
+        :type execution_report: Union[str, Dict]
+        :param owner_user_id: If provided, only save the artifact if the workspace belongs
+            to this user. Otherwise, save for any workspace with the given
+            workspace_id.
+        :type owner_user_id: Optional[str]
+        
+        :return: The artifact's ``s3://`` URL, or ``None`` on failure.
+        :rtype: Optional[str]
+        """
+        try:
+            plan_obj = plan if isinstance(plan, Dict) else json.loads(plan)
+        except (TypeError, json.JSONDecodeError):
+            plan_obj = {}
+
+        try:
+            execution_obj = (
+                execution_report if isinstance(execution_report, Dict)
+                else json.loads(execution_report)
+            )
+        except (TypeError, json.JSONDecodeError):
+            logger.warning(
+                "execution_report for workspace_id={} was not valid JSON; "
+                "saving pipeline artifact with an empty execution_report.",
+                workspace_id,
+            )
+            execution_obj = {}
+
+        payload = json.dumps(
+            {"plan": plan_obj, "execution_report": execution_obj},
+            default=str,
+        )
+
+        ts = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S")
+        object_name = f"{workspace_id}/{self._PREFIX_PIPELINES}/pipeline_{ts}.json"
+
+        with tempfile.NamedTemporaryFile(
+            suffix=".json", delete=False, mode="w", encoding="utf-8"
+        ) as tmp:
+            tmp.write(payload)
+            tmp_path = tmp.name
+
+        try:
+            result = self._minio.upload_file(file_path=tmp_path, object_name=object_name)
+            if result is None:
+                return None
+
+            # Same reasoning as _upload_dataframe/_upload_model: this is an
+            # artifact this workspace produced, so it should show up on the
+            # Files page like everything else.
+            self._file_service.record_upload(
+                result,
+                owner_user_id=owner_user_id,
+                workspace_id=workspace_id,
+            )
+            return str(result.fileUrl)
+        except Exception:
+            logger.exception("Pipeline artifact upload to MinIO failed.")
+            return None
+        finally:
+            Path(tmp_path).unlink(missing_ok=True)
+
+    def load_pipeline_artifact(
+        self, 
+        file_url: str
+    ) -> Dict[str, Any]:
+        """
+        Download and parse a pipeline artifact written by
+        :meth:`save_pipeline_artifact`.
+
+        :param file_url: ``s3://...`` URL of the pipeline artifact.
+        :type file_url: str
+        :return: ``{"plan": {...}, "execution_report": {...}}``.
+        :rtype: Dict[str, Any]
+        :raises RuntimeError: if the artifact can't be downloaded.
+        :raises ValueError: if the artifact isn't valid JSON.
+        """
+        raw = self.download_output_file(file_url)
+        if raw is None:
+            raise RuntimeError(f"Could not retrieve pipeline artifact: {file_url}")
+        try:
+            return json.loads(raw.decode("utf-8"))
+        except Exception as exc:
+            raise ValueError(f"Pipeline artifact at {file_url} is not valid JSON: {exc}") from exc
+
+    def get_latest_pipeline_artifact_url(
+        self,
+        workspace_id: str,
+        owner_user_id: Optional[str] = None,
+    ) -> Optional[str]:
+        """
+        Return the ``pipeline_artifact_url`` recorded in the ``agent_summary``
+        of the most recent ``preprocessing`` run for this workspace, or
+        ``None`` if the workspace has never been preprocessed with pipeline
+        persistence enabled (e.g. runs saved before this feature existed).
+
+        :param workspace_id: Workspace to look up.
+        :type workspace_id: str
+        :param owner_user_id: If provided, only look up runs belonging to
+            this user.
+        :type owner_user_id: Optional[str]
+        :return: The pipeline artifact's ``s3://`` URL, or ``None``.
+        :rtype: Optional[str]
+        """
+        runs = self.get_records_by_workspace_id(
+            workspace_id, agent_type="preprocessing", limit=1, owner_user_id=owner_user_id
+        )
+        if not runs:
+            return None
+        return (runs[0].get("agent_summary") or {}).get("pipeline_artifact_url")
+
+    # ==================================================================
+    # Model resolution & prediction
+    # ==================================================================
+
+    @staticmethod
+    def _model_key_from_url(file_url: str) -> str:
+        """
+        Recover ``model_key`` from a stored model artifact URL named
+        ``{model_key}_{timestamp}.joblib`` by :meth:`_upload_model`.
+        Mirrors the identical helper in the workspace route.
+
+        :param file_url: A model artifact's ``s3://`` URL.
+        :type file_url: str
+        :return: The recovered ``model_key``, or the filename stem
+            unchanged if it doesn't match the expected pattern.
+        :rtype: str
+        """
+        filename = file_url.rsplit("/", 1)[-1]
+        stem = filename[: -len(".joblib")] if filename.endswith(".joblib") else filename
+        match = re.match(r"^(.*)_\d{8}T\d{6}$", stem)
+        return match.group(1) if match else stem
+
+    def get_latest_model_url(
+        self,
+        workspace_id: str,
+        model_key: Optional[str] = None,
+        owner_user_id: Optional[str] = None,
+    ) -> str:
+        """
+        Resolve a fitted model's MinIO URL from the most recent
+        ``model_building`` run on this workspace.
+
+        :param workspace_id: Workspace to resolve a model for.
+        :type workspace_id: str
+        :param model_key: Which fitted model to use. ``None`` falls back to
+            that run's recorded ``best_model``, then to the first output URL
+            if neither is available.
+        :type model_key: Optional[str]
+        :param owner_user_id: If provided, only resolve runs belonging to
+            this user.
+        :type owner_user_id: Optional[str]
+        :return: The resolved model artifact's ``s3://`` URL.
+        :rtype: str
+        :raises RuntimeError: if there's no completed model-building run, or
+            *model_key* doesn't match any of its fitted models.
+        """
+        runs = self.get_records_by_workspace_id(
+            workspace_id, agent_type="model_building", limit=1, owner_user_id=owner_user_id
+        )
+        if not runs:
+            raise RuntimeError(f"Workspace {workspace_id} has no completed model-building run.")
+
+        run = runs[0]
+        urls: List[str] = list(run.get("output_file_urls") or [])
+        if not urls:
+            raise RuntimeError(f"Model-building run for workspace {workspace_id} has no artifacts.")
+
+        resolved_key = model_key or (run.get("agent_summary") or {}).get("best_model")
+        if resolved_key:
+            for url in urls:
+                if self._model_key_from_url(url) == resolved_key:
+                    return url
+            raise RuntimeError(
+                f"Model '{resolved_key}' not found among this workspace's fitted models."
+            )
+        return urls[0]
+
+    def _load_model(self, file_url: str) -> Any:
+        """
+        Download and unpickle a joblib model artifact from MinIO.
+
+        :param file_url: A model artifact's ``s3://`` URL.
+        :type file_url: str
+        :return: The unpickled estimator.
+        :rtype: Any
+        :raises RuntimeError: if the artifact can't be downloaded.
+        """
+        raw = self.download_output_file(file_url)
+        if raw is None:
+            raise RuntimeError(f"Could not retrieve model artifact: {file_url}")
+        return joblib.load(io.BytesIO(raw))
+
+    def _load_target_history(
+        self,
+        workspace: Dict[str, Any],
+        target_column: str,
+        min_length: int,
+    ) -> "list[float]":
+        """
+        Reconstruct the target column's raw historical values from this
+        workspace's original input sources, for seeding a sequential
+        (bilstm/lstm_attention) model's forecast.
+
+        Sequential models are fit purely on the target column's own row-order
+        history (see TabularDataModelBuilderAgent._fit_time_series_model) —
+        never on the feature matrix — so predicting with them requires that
+        same raw history, not the preprocessed/transformed feature rows the
+        tabular predict path uses.
+
+        :param workspace: The workspace row to reconstruct history from.
+        :type workspace: Dict[str, Any]
+        :param target_column: Name of the target column to reconstruct.
+        :type target_column: str
+        :param min_length: Minimum number of historical values required.
+        :type min_length: int
+        :return: The reconstructed, numeric-coerced target history.
+        :rtype: list[float]
+        :raises RuntimeError: if the workspace has no sources, the target
+            column can't be found after merging them, or there isn't enough
+            history to seed the model's window.
+        """
+        sources = workspace.get("input_sources") or []
+        if not sources:
+            raise RuntimeError(
+                f"Workspace {workspace.get('workspace_id')} has no input sources to "
+                "reconstruct prediction history from."
+            )
+
+        dataframes = self.load_source_dataframes(sources)
+        merged = TabularDataProcessorAgent.merge_sources(dataframes, target_column=target_column)
+
+        if target_column not in merged.columns:
+            raise RuntimeError(
+                f"Target column '{target_column}' not found among this workspace's input sources."
+            )
+
+        values = pd.to_numeric(merged[target_column], errors="coerce").dropna().to_numpy(dtype=float)
+        if len(values) < min_length:
+            raise RuntimeError(
+                f"Not enough historical '{target_column}' values to seed prediction: "
+                f"need at least {min_length}, found {len(values)}."
+            )
+        return values.tolist()
+
+    def predict(
+        self,
+        workspace_id: str,
+        new_data: pd.DataFrame,
+        model_key: Optional[str] = None,
+        owner_user_id: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """
+        Inference-time counterpart to ``/build``.
+
+        Two distinct prediction paths, depending on the resolved model:
+
+        - **Sequential models** (``bilstm``, ``lstm_attention``): these are
+        fit purely on the target column's own historical values (see
+        ``TabularDataModelBuilderAgent._fit_time_series_model``) — the
+        feature matrix is never used. Predicting with them replays that
+        same contract: the target column's raw history is reconstructed
+        from this workspace's original input sources (see
+        :meth:`_load_target_history`) and forecast forward by
+        ``len(new_data)`` steps. *new_data* itself only determines how many
+        steps to forecast — its feature columns are not used.
+        - **Everything else**: replays the saved preprocessing pipeline on
+        *new_data* via ``TabularDataProcessorAgent.apply_fitted_pipeline``
+        (reusing training-time fitted parameters rather than re-fitting
+        from the new rows), then predicts on the transformed result — the
+        original behaviour.
+
+        :param workspace_id: Workspace to predict against.
+        :type workspace_id: str
+        :param new_data: For non-sequential models: raw new rows, shaped like
+            the original input source(s) *before* preprocessing. For
+            sequential models: only its row count is used, as the number of
+            future steps to forecast.
+        :type new_data: pd.DataFrame
+        :param model_key: Which fitted model to use. ``None`` uses the
+            workspace's recorded ``best_model``.
+        :type model_key: Optional[str]
+        :param owner_user_id: If provided, only predict against a workspace
+            belonging to this user.
+        :type owner_user_id: Optional[str]
+        :return: ``{"model_key", "predictions", ["probabilities", "classes"]}``.
+        :rtype: Dict[str, Any]
+        :raises RuntimeError: no saved pipeline, no fitted model, no target
+            history to seed a sequential model, or *model_key* can't be resolved.
+        """
+        workspace = self.get_workspace(workspace_id, owner_user_id=owner_user_id)
+
+        model_url = self.get_latest_model_url(workspace_id, model_key=model_key, owner_user_id=owner_user_id)
+        estimator = self._load_model(model_url)
+        resolved_key = model_key or self._model_key_from_url(model_url)
+
+        # ── Sequential models: predict from the target column's own history ──
+        if isinstance(estimator, (BiLSTMPredictor, LSTMAttentionPredictor)):
+            target_column = workspace.get("target_column")
+            if not target_column:
+                raise RuntimeError(
+                    f"Workspace {workspace_id} has no recorded target_column; "
+                    "can't seed a sequential model's prediction history."
+                )
+            required_length = estimator.window_size + estimator.difference_order
+            history = self._load_target_history(workspace, target_column, required_length)
+
+            n_steps = len(new_data) if len(new_data) > 0 else 1
+            predictions = estimator.predict(X=history, n_steps=n_steps)
+            return {
+                "model_key": resolved_key,
+                "predictions": [float(p) for p in predictions],
+            }
+
+        # ── Everything else: replay the saved preprocessing pipeline ──────────
+        pipeline_url = self.get_latest_pipeline_artifact_url(workspace_id, owner_user_id=owner_user_id)
+        if not pipeline_url:
+            raise RuntimeError(
+                f"Workspace {workspace_id} has no saved preprocessing pipeline. "
+                "Run /build at least once before predicting."
+            )
+
+        pipeline_artifact = self.load_pipeline_artifact(pipeline_url)
+        execution_report = pipeline_artifact.get("execution_report") or {}
+
+        trained_dtypes = (execution_report.get("dataset_before") or {}).get("dtypes") or {}
+        new_data = new_data.copy()
+        for col, dtype_str in trained_dtypes.items():
+            if col not in new_data.columns:
+                continue
+            dtype_str = str(dtype_str)
+            try:
+                if "datetime" in dtype_str:
+                    new_data[col] = pd.to_datetime(new_data[col], errors="coerce")
+                elif "int" in dtype_str or "float" in dtype_str:
+                    new_data[col] = pd.to_numeric(new_data[col], errors="coerce")
+            except Exception:
+                logger.warning(
+                    "Could not coerce column '%s' to trained dtype '%s' for workspace_id=%s",
+                    col, dtype_str, workspace_id,
+                )
+
+        transformed = TabularDataProcessorAgent().apply_fitted_pipeline(new_data, execution_report)
+
+        target_column = workspace.get("target_column")
+        if target_column and target_column in transformed.columns:
+            transformed = transformed.drop(columns=[target_column])
+
+        non_numeric_cols = transformed.select_dtypes(exclude=["number", "bool"]).columns.tolist()
+        if non_numeric_cols:
+            logger.warning(
+                "Dropping non-numeric columns before prediction for workspace_id=%s "
+                "(preprocessing replay didn't remove these): %s",
+                workspace_id, non_numeric_cols,
+            )
+            transformed = transformed.drop(columns=non_numeric_cols)
+
+        predictions = estimator.predict(transformed)
+        result: Dict[str, Any] = {
+            "model_key": resolved_key,
+            "predictions": predictions.tolist() if hasattr(predictions, "tolist") else list(predictions),
+        }
+
+        if hasattr(estimator, "predict_proba"):
+            try:
+                proba = estimator.predict_proba(transformed)
+                result["probabilities"] = proba.tolist()
+                if hasattr(estimator, "classes_"):
+                    result["classes"] = [str(c) for c in estimator.classes_]
+            except Exception:
+                logger.warning(
+                    "predict_proba failed for workspace_id={} model_key={}",
+                    workspace_id, result["model_key"],
+                )
+
+        return result
