@@ -1,0 +1,398 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>squirrel.services.storage.blob.MinIOService &mdash; squirrel  documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../../../../_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" type="text/css" href="../../../../../_static/css/custom.css?v=adc7883a" />
+
+  
+    <link rel="shortcut icon" href="../../../../../_static/sqrl.png"/>
+      <script src="../../../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../../../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../../../../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script src="../../../../../_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="../../../../../_static/copybutton.js?v=a46eff05"></script>
+    <script src="../../../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../../../index.html" class="icon icon-home">
+            squirrel
+              <img src="../../../../../_static/sqrl.png" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Python API Reference:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../api.html">Python API Reference</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../../index.html">squirrel</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">squirrel.services.storage.blob.MinIOService</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for squirrel.services.storage.blob.MinIOService</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/python</span>
+<span class="sd">"""</span>
+<span class="sd">MinIO Service Module</span>
+<span class="sd">=====================</span>
+
+<span class="sd">Overview</span>
+<span class="sd">--------</span>
+
+<span class="sd">This module provides MinIO (S3-compatible) service integration capabilities for SQRL.</span>
+<span class="sd">The MinIOService class enables interaction with a MinIO server or S3-compatible</span>
+<span class="sd">HTTP API for file uploads, downloads, and storage operations.</span>
+
+<span class="sd">Features</span>
+<span class="sd">--------</span>
+
+<span class="sd">- Upload and download operations against an S3-compatible API</span>
+<span class="sd">- Error handling and logging</span>
+
+<span class="sd">"""</span>
+<span class="c1"># ——————————————————————————————————————————————————————————————</span>
+<span class="c1"># Imports</span>
+
+<span class="c1"># Standard Libraries</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">shutil</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">tempfile</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">enum</span><span class="w"> </span><span class="kn">import</span> <span class="n">Enum</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="kn">import</span> <span class="n">datetime</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Optional</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">urllib.parse</span><span class="w"> </span><span class="kn">import</span> <span class="n">urlparse</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">httpx</span><span class="w"> </span><span class="kn">import</span> <span class="n">Timeout</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing_extensions</span><span class="w"> </span><span class="kn">import</span> <span class="n">override</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">urllib3</span><span class="w"> </span><span class="kn">import</span> <span class="n">PoolManager</span><span class="p">,</span> <span class="n">Timeout</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">urllib.parse</span><span class="w"> </span><span class="kn">import</span> <span class="n">urlparse</span><span class="p">,</span> <span class="n">unquote</span>
+
+<span class="c1"># MinIO client</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">minio</span><span class="w"> </span><span class="kn">import</span> <span class="n">Minio</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">minio.error</span><span class="w"> </span><span class="kn">import</span> <span class="n">S3Error</span>
+
+<span class="c1"># Abstract</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">squirrel.services.storage.blob.IBlobStorageService</span><span class="w"> </span><span class="kn">import</span> <span class="n">IBlobStorageService</span>
+
+<span class="c1"># Model</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">squirrel.schemas.file</span><span class="w"> </span><span class="kn">import</span> <span class="n">File</span><span class="p">,</span> <span class="n">FileType</span>
+
+<span class="c1"># Logging</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">loguru</span><span class="w"> </span><span class="kn">import</span> <span class="n">logger</span>
+
+<span class="c1"># ——————————————————————————————————————————————————————————————</span>
+<span class="c1"># MinIO Endpoint Enum</span>
+<div class="viewcode-block" id="MinIOConfig">
+<a class="viewcode-back" href="../../../../../generated/squirrel_services_storage_blob_MinIOService.html#squirrel.services.storage.blob.MinIOService.MinIOConfig">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">MinIOConfig</span><span class="p">(</span><span class="n">Enum</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Enum for MinIO API endpoints.</span>
+<span class="sd">    """</span>
+    <span class="n">ENDPOINT</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">"MINIO_ENDPOINT"</span><span class="p">,</span> <span class="s2">"http://localhost:9000"</span><span class="p">)</span>
+    <span class="n">ACCESS_KEY</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">"MINIO_ACCESS_KEY"</span><span class="p">,</span> <span class="s2">"admin"</span><span class="p">)</span>
+    <span class="n">SECRET_KEY</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">"MINIO_SECRET_KEY"</span><span class="p">,</span> <span class="s2">"strongpassword123"</span><span class="p">)</span>
+    <span class="n">BUCKET</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">"MINIO_BUCKET"</span><span class="p">,</span> <span class="s2">"squirrel"</span><span class="p">)</span></div>
+
+
+<span class="c1"># ——————————————————————————————————————————————————————————————</span>
+<span class="c1"># MinIO Service Class</span>
+<div class="viewcode-block" id="MinIOService">
+<a class="viewcode-back" href="../../../../../generated/squirrel_services_storage_blob_MinIOService.html#squirrel.services.storage.blob.MinIOService.MinIOService">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">MinIOService</span><span class="p">(</span><span class="n">IBlobStorageService</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    MinIO Service Class</span>
+<span class="sd">    ---------------------</span>
+
+<span class="sd">    A class that provides methods for managing file operations against a</span>
+<span class="sd">    MinIO HTTP API. Endpoints are sourced from MINIO_*</span>
+<span class="sd">    environment variables where available.</span>
+
+<span class="sd">    **Methods:**</span>
+<span class="sd">    </span>
+<span class="sd">    - :meth:`retrieve_file`</span>
+<span class="sd">        Downloads a file from MinIO.</span>
+<span class="sd">        </span>
+<span class="sd">    - :meth:`upload_file`</span>
+<span class="sd">        Uploads a file to MinIO.</span>
+<span class="sd">    </span>
+<span class="sd">    - :meth:`delete_file`</span>
+<span class="sd">        Deletes a file from MinIO.</span>
+<span class="sd">    """</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="c1"># Configure MinIO client</span>
+        <span class="n">endpoint</span> <span class="o">=</span> <span class="n">MinIOConfig</span><span class="o">.</span><span class="n">ENDPOINT</span><span class="o">.</span><span class="n">value</span>
+        
+        <span class="c1"># strip scheme if present for Minio constructor</span>
+        <span class="n">parsed</span> <span class="o">=</span> <span class="n">urlparse</span><span class="p">(</span><span class="n">endpoint</span><span class="p">)</span>
+        <span class="n">host</span> <span class="o">=</span> <span class="n">parsed</span><span class="o">.</span><span class="n">netloc</span> <span class="ow">or</span> <span class="n">parsed</span><span class="o">.</span><span class="n">path</span>
+        <span class="n">secure</span> <span class="o">=</span> <span class="n">parsed</span><span class="o">.</span><span class="n">scheme</span> <span class="o">==</span> <span class="s2">"https"</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">client</span> <span class="o">=</span> <span class="n">Minio</span><span class="p">(</span>
+            <span class="n">host</span><span class="p">,</span>
+            <span class="n">access_key</span><span class="o">=</span><span class="n">MinIOConfig</span><span class="o">.</span><span class="n">ACCESS_KEY</span><span class="o">.</span><span class="n">value</span><span class="p">,</span>
+            <span class="n">secret_key</span><span class="o">=</span><span class="n">MinIOConfig</span><span class="o">.</span><span class="n">SECRET_KEY</span><span class="o">.</span><span class="n">value</span><span class="p">,</span>
+            <span class="n">secure</span><span class="o">=</span><span class="n">secure</span><span class="p">,</span>
+            <span class="n">http_client</span><span class="o">=</span><span class="n">PoolManager</span><span class="p">(</span>
+                <span class="n">timeout</span><span class="o">=</span><span class="n">Timeout</span><span class="p">(</span><span class="n">connect</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">read</span><span class="o">=</span><span class="mi">30</span><span class="p">),</span>
+                <span class="n">maxsize</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
+                <span class="n">retries</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>          <span class="c1"># don't silently retry 503s</span>
+            <span class="p">),</span>
+        <span class="p">)</span>
+        
+        <span class="c1"># Create bucket if it doesn't exist</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">bucket</span> <span class="o">=</span> <span class="n">MinIOConfig</span><span class="o">.</span><span class="n">BUCKET</span><span class="o">.</span><span class="n">value</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">bucket_exists</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">bucket</span><span class="p">):</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Bucket '</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">bucket</span><span class="si">}</span><span class="s2">' does not exist. Creating it."</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">make_bucket</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">bucket</span><span class="p">)</span>
+
+<div class="viewcode-block" id="MinIOService.retrieve_file">
+<a class="viewcode-back" href="../../../../../generated/squirrel_services_storage_blob_MinIOService.html#squirrel.services.storage.blob.MinIOService.MinIOService.retrieve_file">[docs]</a>
+    <span class="nd">@override</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">retrieve_file</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">file_url</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">File</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Download a specific file from MinIO bucket and return it with its raw</span>
+<span class="sd">        content loaded into ``fileByte``.</span>
+
+<span class="sd">        **Description:**</span>
+
+<span class="sd">            This method retrieves a file from the MinIO bucket via the API endpoint, handling</span>
+<span class="sd">            directory structure preservation and authentication.</span>
+
+<span class="sd">        .. note::</span>
+<span class="sd">            ``fileByte`` holds the file's *raw bytes*, exactly as stored —</span>
+<span class="sd">            never force-decoded as UTF-8 text. This service has no way to know</span>
+<span class="sd">            whether a given object is text (CSV, JSON) or binary (a joblib</span>
+<span class="sd">            model, a future parquet/image artifact); every current caller</span>
+<span class="sd">            either consumes ``fileByte`` as bytes directly (``io.BytesIO(...)``</span>
+<span class="sd">            for pandas/joblib) or decodes it itself when it knows the content</span>
+<span class="sd">            is text (see ``WorkspaceService.load_pipeline_artifact``). Forcing</span>
+<span class="sd">            a UTF-8 decode here previously crashed on any binary object with</span>
+<span class="sd">            ``UnicodeDecodeError`` (e.g. downloading a ``.joblib`` model for</span>
+<span class="sd">            prediction) and was never actually correct for the text case either.</span>
+
+<span class="sd">        :param file_url: URL of the file to download (e.g., s3://bucket/key)</span>
+<span class="sd">        :type file_url: str</span>
+
+<span class="sd">        :return: File object with raw content in ``fileByte``, or None if retrieval fails</span>
+<span class="sd">        :rtype: Optional[File]</span>
+<span class="sd">        """</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Retrieving file from MinIO: </span><span class="si">{</span><span class="n">file_url</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+
+            <span class="c1"># Expect s3://bucket/key or bucket/key</span>
+            <span class="n">url</span> <span class="o">=</span> <span class="n">file_url</span>
+            <span class="k">if</span> <span class="n">url</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">"s3://"</span><span class="p">):</span>
+                <span class="n">url</span> <span class="o">=</span> <span class="n">url</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">"s3://"</span><span class="p">,</span> <span class="s2">""</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+
+            <span class="n">parts</span> <span class="o">=</span> <span class="n">url</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">"/"</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">parts</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">2</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Invalid S3 path format: </span><span class="si">{</span><span class="n">file_url</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+            <span class="n">bucket</span><span class="p">,</span> <span class="n">object_name</span> <span class="o">=</span> <span class="n">parts</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">parts</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+
+            <span class="k">with</span> <span class="n">tempfile</span><span class="o">.</span><span class="n">NamedTemporaryFile</span><span class="p">(</span>
+                <span class="n">delete</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">suffix</span><span class="o">=</span><span class="n">Path</span><span class="p">(</span><span class="n">object_name</span><span class="p">)</span><span class="o">.</span><span class="n">suffix</span>
+            <span class="p">)</span> <span class="k">as</span> <span class="n">tmp</span><span class="p">:</span>
+                <span class="n">local_path</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">tmp</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+
+            <span class="k">try</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">fget_object</span><span class="p">(</span><span class="n">bucket</span><span class="p">,</span> <span class="n">object_name</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">local_path</span><span class="p">))</span>
+                <span class="n">file_bytes</span> <span class="o">=</span> <span class="n">local_path</span><span class="o">.</span><span class="n">read_bytes</span><span class="p">()</span>
+
+                <span class="k">return</span> <span class="n">File</span><span class="p">(</span>
+                    <span class="n">fileUrl</span><span class="o">=</span><span class="n">file_url</span><span class="p">,</span>
+                    <span class="n">fileName</span><span class="o">=</span><span class="n">Path</span><span class="p">(</span><span class="n">object_name</span><span class="p">)</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+                    <span class="n">fileByte</span><span class="o">=</span><span class="n">file_bytes</span><span class="p">,</span>
+                    <span class="n">size</span><span class="o">=</span><span class="n">local_path</span><span class="o">.</span><span class="n">stat</span><span class="p">()</span><span class="o">.</span><span class="n">st_size</span><span class="p">,</span>
+                    <span class="n">uploadedAt</span><span class="o">=</span><span class="n">datetime</span><span class="o">.</span><span class="n">fromtimestamp</span><span class="p">(</span><span class="n">local_path</span><span class="o">.</span><span class="n">stat</span><span class="p">()</span><span class="o">.</span><span class="n">st_mtime</span><span class="p">),</span>
+                <span class="p">)</span>
+            <span class="k">finally</span><span class="p">:</span>
+                <span class="n">local_path</span><span class="o">.</span><span class="n">unlink</span><span class="p">(</span><span class="n">missing_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="k">except</span> <span class="n">S3Error</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">"MinIO error retrieving '</span><span class="si">{</span><span class="n">object_name</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="s1">'object_name'</span><span class="w"> </span><span class="ow">in</span><span class="w"> </span><span class="nb">locals</span><span class="p">()</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="n">file_url</span><span class="si">}</span><span class="s2">' from bucket '</span><span class="si">{</span><span class="n">bucket</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="s1">'bucket'</span><span class="w"> </span><span class="ow">in</span><span class="w"> </span><span class="nb">locals</span><span class="p">()</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="s1">'?'</span><span class="si">}</span><span class="s2">': </span><span class="si">{</span><span class="n">e</span><span class="o">.</span><span class="n">code</span><span class="si">}</span><span class="s2"> — </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+            <span class="k">return</span> <span class="kc">None</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">exception</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Failed to retrieve file from MinIO: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+            <span class="k">return</span> <span class="kc">None</span></div>
+
+
+<div class="viewcode-block" id="MinIOService.upload_file">
+<a class="viewcode-back" href="../../../../../generated/squirrel_services_storage_blob_MinIOService.html#squirrel.services.storage.blob.MinIOService.MinIOService.upload_file">[docs]</a>
+    <span class="nd">@override</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">upload_file</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">file_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">object_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">metadata</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">File</span><span class="p">]:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">object_name</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"object_name is required"</span><span class="p">)</span>
+        
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">upload_file</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">file_path</span><span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">upload_file</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+                <span class="k">raise</span> <span class="ne">FileNotFoundError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"File not found: </span><span class="si">{</span><span class="n">file_path</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+
+            <span class="n">file_bytes</span> <span class="o">=</span> <span class="n">upload_file</span><span class="o">.</span><span class="n">read_bytes</span><span class="p">()</span>
+            <span class="n">md5_hex</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_calculate_file_md5</span><span class="p">(</span><span class="n">file_bytes</span><span class="p">)</span>
+
+            <span class="c1"># Check if object with the same name already exists</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">stat</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">stat_object</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">bucket</span><span class="p">,</span> <span class="n">object_name</span><span class="p">)</span>
+                <span class="n">existing_md5</span> <span class="o">=</span> <span class="p">(</span><span class="n">stat</span><span class="o">.</span><span class="n">metadata</span> <span class="ow">or</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"x-amz-meta-md5"</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">existing_md5</span> <span class="o">==</span> <span class="n">md5_hex</span><span class="p">:</span>
+                    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Identical file already exists in MinIO, skipping upload: </span><span class="si">{</span><span class="n">object_name</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+                    <span class="k">return</span> <span class="n">File</span><span class="p">(</span>
+                        <span class="n">fileUrl</span><span class="o">=</span><span class="sa">f</span><span class="s2">"s3://</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">bucket</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">object_name</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
+                        <span class="n">fileName</span><span class="o">=</span><span class="n">object_name</span><span class="p">,</span>
+                        <span class="n">size</span><span class="o">=</span><span class="n">upload_file</span><span class="o">.</span><span class="n">stat</span><span class="p">()</span><span class="o">.</span><span class="n">st_size</span><span class="p">,</span>
+                        <span class="n">uploadedAt</span><span class="o">=</span><span class="n">datetime</span><span class="o">.</span><span class="n">fromtimestamp</span><span class="p">(</span><span class="n">upload_file</span><span class="o">.</span><span class="n">stat</span><span class="p">()</span><span class="o">.</span><span class="n">st_mtime</span><span class="p">),</span>
+                    <span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">"File with same name but different content found, overwriting: </span><span class="si">{</span><span class="n">object_name</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+            <span class="k">except</span> <span class="n">S3Error</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">e</span><span class="o">.</span><span class="n">code</span> <span class="o">!=</span> <span class="s2">"NoSuchKey"</span><span class="p">:</span>
+                    <span class="k">raise</span>
+
+            <span class="c1"># Upload with md5 stored as user metadata</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">fput_object</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">bucket</span><span class="p">,</span>
+                <span class="n">object_name</span><span class="p">,</span>
+                <span class="nb">str</span><span class="p">(</span><span class="n">upload_file</span><span class="p">),</span>
+                <span class="n">metadata</span><span class="o">=</span><span class="p">{</span>
+                    <span class="s2">"x-amz-meta-md5"</span><span class="p">:</span> <span class="n">md5_hex</span><span class="p">,</span>
+                    <span class="o">**</span><span class="p">(</span><span class="n">metadata</span> <span class="ow">or</span> <span class="p">{}),</span>
+                <span class="p">},</span>
+            <span class="p">)</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Uploaded file to MinIO: </span><span class="si">{</span><span class="n">object_name</span><span class="si">}</span><span class="s2"> (md5=</span><span class="si">{</span><span class="n">md5_hex</span><span class="si">}</span><span class="s2">)"</span><span class="p">)</span>
+
+            <span class="k">return</span> <span class="n">File</span><span class="p">(</span>
+                <span class="n">fileUrl</span><span class="o">=</span><span class="sa">f</span><span class="s2">"s3://</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">bucket</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">object_name</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
+                <span class="n">fileName</span><span class="o">=</span><span class="n">object_name</span><span class="p">,</span>
+                <span class="n">size</span><span class="o">=</span><span class="n">upload_file</span><span class="o">.</span><span class="n">stat</span><span class="p">()</span><span class="o">.</span><span class="n">st_size</span><span class="p">,</span>
+                <span class="n">uploadedAt</span><span class="o">=</span><span class="n">datetime</span><span class="o">.</span><span class="n">fromtimestamp</span><span class="p">(</span><span class="n">upload_file</span><span class="o">.</span><span class="n">stat</span><span class="p">()</span><span class="o">.</span><span class="n">st_mtime</span><span class="p">),</span>
+            <span class="p">)</span>
+        <span class="k">except</span> <span class="n">S3Error</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">"MinIO error uploading object: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+            <span class="k">return</span> <span class="kc">None</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">exception</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Failed to upload file to MinIO: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+            <span class="k">return</span> <span class="kc">None</span></div>
+
+
+<div class="viewcode-block" id="MinIOService.delete_file">
+<a class="viewcode-back" href="../../../../../generated/squirrel_services_storage_blob_MinIOService.html#squirrel.services.storage.blob.MinIOService.MinIOService.delete_file">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">delete_file</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">file_url</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Delete a specific file from MinIO bucket.</span>
+
+<span class="sd">        :param file_url: URL of the file to delete (e.g., s3://bucket/key)</span>
+<span class="sd">        :type file_url: str</span>
+<span class="sd">        </span>
+<span class="sd">        :return: True if deletion was successful, False otherwise</span>
+<span class="sd">        :rtype: bool</span>
+<span class="sd">        """</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Deleting file from MinIO: </span><span class="si">{</span><span class="n">file_url</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+
+            <span class="c1"># Expect s3://bucket/key or bucket/key</span>
+            <span class="n">url</span> <span class="o">=</span> <span class="n">file_url</span>
+            <span class="k">if</span> <span class="n">url</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">"s3://"</span><span class="p">):</span>
+                <span class="n">url</span> <span class="o">=</span> <span class="n">url</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">"s3://"</span><span class="p">,</span> <span class="s2">""</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+
+            <span class="n">parts</span> <span class="o">=</span> <span class="n">url</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">"/"</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">parts</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">2</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Invalid S3 path format: </span><span class="si">{</span><span class="n">file_url</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+            <span class="n">bucket</span><span class="p">,</span> <span class="n">object_name</span> <span class="o">=</span> <span class="n">parts</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">parts</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">remove_object</span><span class="p">(</span><span class="n">bucket</span><span class="p">,</span> <span class="n">object_name</span><span class="p">)</span>
+            <span class="k">return</span> <span class="kc">True</span>
+        <span class="k">except</span> <span class="n">S3Error</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">"MinIO error deleting object: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+            <span class="k">return</span> <span class="kc">False</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">exception</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Failed to delete file from MinIO: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+            <span class="k">return</span> <span class="kc">False</span></div>
+</div>
+
+        
+    
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, Mazen Soliman.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

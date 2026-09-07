@@ -128,12 +128,12 @@ class FilesResponse(BaseModel):
 class FileProcessingIssue(BaseModel):
     """
     File Processing Issue Model
-    --------------------------
+    ---------------------------
 
-    **Description:**
+    Description:
 
-        Represents a file that failed to process, including the file URL, name,
-        type of issue encountered, and error message.
+    Represents a file that failed to process, including the file URL, name,
+    type of issue encountered, and error message.
 
     """
     #: URL of the file that couldn't be processed

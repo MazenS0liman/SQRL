@@ -1,0 +1,413 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>squirrel.modules.inspectors.tabular &mdash; squirrel  documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/custom.css?v=adc7883a" />
+
+  
+    <link rel="shortcut icon" href="../_static/sqrl.png"/>
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="../_static/copybutton.js?v=a46eff05"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="squirrel.modules.preprocessors.cleaning.tabular" href="squirrel_modules_preprocessors_cleaning_tabular.html" />
+    <link rel="prev" title="squirrel.modules.agents.preprocessor.TabularDataProcessorAgent" href="squirrel_modules_agents_preprocessor_TabularDataProcessorAgent.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            squirrel
+              <img src="../_static/sqrl.png" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Python API Reference:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="../api.html">Python API Reference</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="../generated_classes.html">Generated API classes</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="squirrel_constants_connector.html">squirrel.constants.connector</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_constants_workspace.html">squirrel.constants.workspace</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_core_config.html">squirrel.core.config</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_core_error_handlers.html">squirrel.core.error_handlers</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_core_logging.html">squirrel.core.logging</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_core_middleware.html">squirrel.core.middleware</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_models_classification.html">squirrel.models.classification</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_models_time_series.html">squirrel.models.time_series</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_modules_agents_abstract_IAgent.html">squirrel.modules.agents.abstract.IAgent</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_modules_agents_builder_TabularDataModelBuilderAgent.html">squirrel.modules.agents.builder.TabularDataModelBuilderAgent</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_modules_agents_exploratory_TabularDataExploratoryAgent.html">squirrel.modules.agents.exploratory.TabularDataExploratoryAgent</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_modules_agents_inspector_TabularDataInsepctorAgent.html">squirrel.modules.agents.inspector.TabularDataInsepctorAgent</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_modules_agents_orchestrator_OrchestratorAgent.html">squirrel.modules.agents.orchestrator.OrchestratorAgent</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_modules_agents_preprocessor_TabularDataProcessorAgent.html">squirrel.modules.agents.preprocessor.TabularDataProcessorAgent</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">squirrel.modules.inspectors.tabular</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#squirrel.modules.inspectors.tabular.DataInspectStrategy"><code class="docutils literal notranslate"><span class="pre">DataInspectStrategy</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#squirrel.modules.inspectors.tabular.DataTypeInspectionStrategy"><code class="docutils literal notranslate"><span class="pre">DataTypeInspectionStrategy</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#squirrel.modules.inspectors.tabular.SummaryStatisticsInspectionStrategy"><code class="docutils literal notranslate"><span class="pre">SummaryStatisticsInspectionStrategy</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#squirrel.modules.inspectors.tabular.DetectOutliersInspectionStrategy"><code class="docutils literal notranslate"><span class="pre">DetectOutliersInspectionStrategy</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#squirrel.modules.inspectors.tabular.CorrelationInspectionStrategy"><code class="docutils literal notranslate"><span class="pre">CorrelationInspectionStrategy</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#squirrel.modules.inspectors.tabular.MissingValuesInspectionStrategy"><code class="docutils literal notranslate"><span class="pre">MissingValuesInspectionStrategy</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#squirrel.modules.inspectors.tabular.TabularDataInpsector"><code class="docutils literal notranslate"><span class="pre">TabularDataInpsector</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_modules_preprocessors_cleaning_tabular.html">squirrel.modules.preprocessors.cleaning.tabular</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_modules_preprocessors_transformers_tabular.html">squirrel.modules.preprocessors.transformers.tabular</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_modules_prompts_abstract_IPromptGenerator.html">squirrel.modules.prompts.abstract.IPromptGenerator</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_modules_prompts_builder_TabularDataPromptGenerator.html">squirrel.modules.prompts.builder.TabularDataPromptGenerator</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_modules_prompts_exploratory_ExploratoryPromptGenerator.html">squirrel.modules.prompts.exploratory.ExploratoryPromptGenerator</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_modules_prompts_inspect_InspectPromptGenerator.html">squirrel.modules.prompts.inspect.InspectPromptGenerator</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_modules_prompts_orchestrator_OrchestratorPromptGenerator.html">squirrel.modules.prompts.orchestrator.OrchestratorPromptGenerator</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_modules_prompts_preprocess_PreprocessPromptGenerator.html">squirrel.modules.prompts.preprocess.PreprocessPromptGenerator</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_modules_providers_abstract_IProvider.html">squirrel.modules.providers.abstract.IProvider</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_modules_providers_gemini_GeminiProvider.html">squirrel.modules.providers.gemini.GeminiProvider</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_modules_providers_groq_GroqProvider.html">squirrel.modules.providers.groq.GroqProvider</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_modules_providers_openrouter_OpenRouterProvider.html">squirrel.modules.providers.openrouter.OpenRouterProvider</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_schemas_api.html">squirrel.schemas.api</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_schemas_argument_spec.html">squirrel.schemas.argument_spec</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_schemas_auth.html">squirrel.schemas.auth</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_schemas_connector.html">squirrel.schemas.connector</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_schemas_eda.html">squirrel.schemas.eda</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_schemas_error.html">squirrel.schemas.error</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_schemas_file.html">squirrel.schemas.file</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_schemas_notebook.html">squirrel.schemas.notebook</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_schemas_token.html">squirrel.schemas.token</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_schemas_workspace.html">squirrel.schemas.workspace</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_services_auth_AuthService.html">squirrel.services.auth.AuthService</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_services_auth_TokenService.html">squirrel.services.auth.TokenService</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_services_chat_MessagingService.html">squirrel.services.chat.MessagingService</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_services_data_connector_DataConnectorService.html">squirrel.services.data_connector.DataConnectorService</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_services_file_FileService.html">squirrel.services.file.FileService</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_services_notebook_NotebookService.html">squirrel.services.notebook.NotebookService</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_services_orchestrator_OrchestratorService.html">squirrel.services.orchestrator.OrchestratorService</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_services_storage_blob_IBlobStorageService.html">squirrel.services.storage.blob.IBlobStorageService</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_services_storage_blob_MinIOService.html">squirrel.services.storage.blob.MinIOService</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_services_storage_database_IDatabaseService.html">squirrel.services.storage.database.IDatabaseService</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_services_storage_database_PostgresService.html">squirrel.services.storage.database.PostgresService</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_services_workspace_WorkspaceService.html">squirrel.services.workspace.WorkspaceService</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">squirrel</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../api.html">Python API Reference</a></li>
+          <li class="breadcrumb-item"><a href="../generated_classes.html">Generated API classes</a></li>
+      <li class="breadcrumb-item active">squirrel.modules.inspectors.tabular</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/generated/squirrel_modules_inspectors_tabular.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="squirrel-modules-inspectors-tabular">
+<h1>squirrel.modules.inspectors.tabular<a class="headerlink" href="#squirrel-modules-inspectors-tabular" title="Link to this heading"></a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="squirrel.modules.inspectors.tabular.DataInspectStrategy">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">squirrel.modules.inspectors.tabular.</span></span><span class="sig-name descname"><span class="pre">DataInspectStrategy</span></span><a class="reference internal" href="../_modules/squirrel/modules/inspectors/tabular.html#DataInspectStrategy"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.modules.inspectors.tabular.DataInspectStrategy" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">ABC</span></code></p>
+<p>Abstract base class for tabular data inspection strategies.
+Subclasses declare <code class="docutils literal notranslate"><span class="pre">argument_specs</span></code> to expose their accepted arguments
+to the catalog, prompt generator, and runtime validator.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="squirrel.modules.inspectors.tabular.DataInspectStrategy.to_catalog_entry">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">to_catalog_entry</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/modules/inspectors/tabular.html#DataInspectStrategy.to_catalog_entry"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.modules.inspectors.tabular.DataInspectStrategy.to_catalog_entry" title="Link to this definition"></a></dt>
+<dd><p>Build a catalog entry dict from the class itself.
+Called by <code class="docutils literal notranslate"><span class="pre">build_inspection_catalog()</span></code> — no manual catalog needed.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="squirrel.modules.inspectors.tabular.DataInspectStrategy.to_json_schema">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">to_json_schema</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/modules/inspectors/tabular.html#DataInspectStrategy.to_json_schema"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.modules.inspectors.tabular.DataInspectStrategy.to_json_schema" title="Link to this definition"></a></dt>
+<dd><p>Return a JSON Schema object describing this inspection’s arguments.</p>
+<p>The schema is intended for LLM tool prompting and runtime validation.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="squirrel.modules.inspectors.tabular.DataTypeInspectionStrategy">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">squirrel.modules.inspectors.tabular.</span></span><span class="sig-name descname"><span class="pre">DataTypeInspectionStrategy</span></span><a class="reference internal" href="../_modules/squirrel/modules/inspectors/tabular.html#DataTypeInspectionStrategy"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.modules.inspectors.tabular.DataTypeInspectionStrategy" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#squirrel.modules.inspectors.tabular.DataInspectStrategy" title="squirrel.modules.inspectors.tabular.DataInspectStrategy"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataInspectStrategy</span></code></a></p>
+<p>A concrete implementation of DataInspectStrategy that inspects the data types
+of each column and enriches the result with semantic type classification,
+cardinality, and agent-facing recommendations.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="squirrel.modules.inspectors.tabular.DataTypeInspectionStrategy.inspect">
+<span class="sig-name descname"><span class="pre">inspect</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/modules/inspectors/tabular.html#DataTypeInspectionStrategy.inspect"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.modules.inspectors.tabular.DataTypeInspectionStrategy.inspect" title="Link to this definition"></a></dt>
+<dd><p>Inspect the data types of each column and return a structured, agent-ready summary.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>data</strong> (<em>pd.DataFrame</em>) – DataFrame to inspect.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Per-column type profile plus a dataset-level summary.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>dict</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="squirrel.modules.inspectors.tabular.SummaryStatisticsInspectionStrategy">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">squirrel.modules.inspectors.tabular.</span></span><span class="sig-name descname"><span class="pre">SummaryStatisticsInspectionStrategy</span></span><a class="reference internal" href="../_modules/squirrel/modules/inspectors/tabular.html#SummaryStatisticsInspectionStrategy"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.modules.inspectors.tabular.SummaryStatisticsInspectionStrategy" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#squirrel.modules.inspectors.tabular.DataInspectStrategy" title="squirrel.modules.inspectors.tabular.DataInspectStrategy"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataInspectStrategy</span></code></a></p>
+<p>A concrete implementation of DataInspectStrategy that computes per-column
+summary statistics as structured dicts, separated by column type and enriched
+with distribution shape indicators for agent consumption.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="squirrel.modules.inspectors.tabular.SummaryStatisticsInspectionStrategy.inspect">
+<span class="sig-name descname"><span class="pre">inspect</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/modules/inspectors/tabular.html#SummaryStatisticsInspectionStrategy.inspect"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.modules.inspectors.tabular.SummaryStatisticsInspectionStrategy.inspect" title="Link to this definition"></a></dt>
+<dd><p>Compute summary statistics for each column, structured for agent use.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>data</strong> (<em>pd.DataFrame</em>) – DataFrame to inspect.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Structured per-column statistics split by column type.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>dict</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="squirrel.modules.inspectors.tabular.DetectOutliersInspectionStrategy">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">squirrel.modules.inspectors.tabular.</span></span><span class="sig-name descname"><span class="pre">DetectOutliersInspectionStrategy</span></span><a class="reference internal" href="../_modules/squirrel/modules/inspectors/tabular.html#DetectOutliersInspectionStrategy"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.modules.inspectors.tabular.DetectOutliersInspectionStrategy" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#squirrel.modules.inspectors.tabular.DataInspectStrategy" title="squirrel.modules.inspectors.tabular.DataInspectStrategy"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataInspectStrategy</span></code></a></p>
+<p>A concrete implementation of DataInspectStrategy that detects outliers using
+IQR (default) or Z-score, with per-column severity classification and
+agent-facing recommended actions.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="squirrel.modules.inspectors.tabular.DetectOutliersInspectionStrategy.inspect">
+<span class="sig-name descname"><span class="pre">inspect</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/modules/inspectors/tabular.html#DetectOutliersInspectionStrategy.inspect"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.modules.inspectors.tabular.DetectOutliersInspectionStrategy.inspect" title="Link to this definition"></a></dt>
+<dd><p>Detect outliers in all numeric columns.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data</strong> (<em>pd.DataFrame</em>) – DataFrame to inspect.</p></li>
+<li><p><strong>kwargs</strong> – Optional keys:
+- <code class="docutils literal notranslate"><span class="pre">method</span></code> (str): <code class="docutils literal notranslate"><span class="pre">&quot;iqr&quot;</span></code> (default) or <code class="docutils literal notranslate"><span class="pre">&quot;zscore&quot;</span></code>.
+- <code class="docutils literal notranslate"><span class="pre">zscore_threshold</span></code> (float): cutoff for Z-score method, default <code class="docutils literal notranslate"><span class="pre">3.0</span></code>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Per-column outlier profile plus a dataset-level summary.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>dict</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="squirrel.modules.inspectors.tabular.CorrelationInspectionStrategy">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">squirrel.modules.inspectors.tabular.</span></span><span class="sig-name descname"><span class="pre">CorrelationInspectionStrategy</span></span><a class="reference internal" href="../_modules/squirrel/modules/inspectors/tabular.html#CorrelationInspectionStrategy"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.modules.inspectors.tabular.CorrelationInspectionStrategy" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#squirrel.modules.inspectors.tabular.DataInspectStrategy" title="squirrel.modules.inspectors.tabular.DataInspectStrategy"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataInspectStrategy</span></code></a></p>
+<p>A concrete implementation of DataInspectStrategy that measures the association
+between two columns, automatically selecting the appropriate method based on
+their dtypes:</p>
+<ul class="simple">
+<li><p>numeric  × numeric  → Pearson r</p></li>
+<li><p>ordinal  × ordinal  → Spearman ρ  (pass ordinal_columns=[…] to flag these)</p></li>
+<li><p>numeric  × category → Eta squared  (η²)</p></li>
+<li><p>category × category → Cramér’s V</p></li>
+</ul>
+<dl class="py method">
+<dt class="sig sig-object py" id="squirrel.modules.inspectors.tabular.CorrelationInspectionStrategy.inspect">
+<span class="sig-name descname"><span class="pre">inspect</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/modules/inspectors/tabular.html#CorrelationInspectionStrategy.inspect"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.modules.inspectors.tabular.CorrelationInspectionStrategy.inspect" title="Link to this definition"></a></dt>
+<dd><p>Measure the association between two columns and return a structured result
+suitable for downstream agent consumption.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>data</strong> (<em>pd.DataFrame</em>) – DataFrame containing the tabular data to inspect.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Structured association result for agent consumption.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>dict</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="squirrel.modules.inspectors.tabular.MissingValuesInspectionStrategy">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">squirrel.modules.inspectors.tabular.</span></span><span class="sig-name descname"><span class="pre">MissingValuesInspectionStrategy</span></span><a class="reference internal" href="../_modules/squirrel/modules/inspectors/tabular.html#MissingValuesInspectionStrategy"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.modules.inspectors.tabular.MissingValuesInspectionStrategy" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#squirrel.modules.inspectors.tabular.DataInspectStrategy" title="squirrel.modules.inspectors.tabular.DataInspectStrategy"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataInspectStrategy</span></code></a></p>
+<p>A unified strategy that inspects missing values for any column type and,
+when a related column is provided, estimates whether the missingness
+depends on it (numeric or categorical related column both supported).</p>
+<p>Target column dtype is detected automatically:
+- Categorical target: result includes <code class="docutils literal notranslate"><span class="pre">observed_value_counts</span></code>.
+- Numeric target: result includes <code class="docutils literal notranslate"><span class="pre">target_column_type:</span> <span class="pre">&quot;numeric&quot;</span></code>.</p>
+<p>Dependency is assessed on the <em>related</em> column’s dtype:
+- Numeric related: standardized mean gap between missing / observed groups.
+- Categorical related: max per-category missing-rate deviation from overall rate.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="squirrel.modules.inspectors.tabular.MissingValuesInspectionStrategy.inspect">
+<span class="sig-name descname"><span class="pre">inspect</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/modules/inspectors/tabular.html#MissingValuesInspectionStrategy.inspect"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.modules.inspectors.tabular.MissingValuesInspectionStrategy.inspect" title="Link to this definition"></a></dt>
+<dd><p>Inspect missing values for a target column and optionally assess
+whether missingness depends on a related column.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>data</strong> (<em>pd.DataFrame</em>) – DataFrame containing the data to inspect.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Summary dict with missing stats and, when a related column is
+supplied, a <code class="docutils literal notranslate"><span class="pre">dependency</span></code> and <code class="docutils literal notranslate"><span class="pre">missingness_type</span></code> classification.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>dict</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="squirrel.modules.inspectors.tabular.TabularDataInpsector">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">squirrel.modules.inspectors.tabular.</span></span><span class="sig-name descname"><span class="pre">TabularDataInpsector</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">strategy</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/modules/inspectors/tabular.html#TabularDataInpsector"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.modules.inspectors.tabular.TabularDataInpsector" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>A class for analyzing tabular data using a specified data inspection strategy. This class allows for flexible analysis of tabular datasets by utilizing different strategies to inspect and summarize the data.
+The <cite>analyze</cite> method can be implemented to perform specific analyses based on the chosen strategy, providing insights into the structure and characteristics of the dataset.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>strategy</strong> (<a class="reference internal" href="#squirrel.modules.inspectors.tabular.DataInspectStrategy" title="squirrel.modules.inspectors.tabular.DataInspectStrategy"><em>DataInspectStrategy</em></a><em> | </em><em>str</em>)</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>str</p>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="squirrel.modules.inspectors.tabular.TabularDataInpsector.set_strategy">
+<span class="sig-name descname"><span class="pre">set_strategy</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">strategy</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/modules/inspectors/tabular.html#TabularDataInpsector.set_strategy"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.modules.inspectors.tabular.TabularDataInpsector.set_strategy" title="Link to this definition"></a></dt>
+<dd><p>Set a new data inspection strategy for the analyzer.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>strategy</strong> (<em>Union</em><em>[</em><a class="reference internal" href="#squirrel.modules.inspectors.tabular.DataInspectStrategy" title="squirrel.modules.inspectors.tabular.DataInspectStrategy"><em>DataInspectStrategy</em></a><em>, </em><em>str</em><em>]</em>) – The new data inspection strategy to be used, either as an instance of DataInspectStrategy or as a string identifier.</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>ValueError</strong> – If the provided strategy is not recognized or is invalid.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="squirrel.modules.inspectors.tabular.TabularDataInpsector.execute_strategy">
+<span class="sig-name descname"><span class="pre">execute_strategy</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/modules/inspectors/tabular.html#TabularDataInpsector.execute_strategy"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.modules.inspectors.tabular.TabularDataInpsector.execute_strategy" title="Link to this definition"></a></dt>
+<dd><p>Execute the current data inspection strategy on the provided DataFrame.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data</strong> (<em>pd.DataFrame</em>) – A pandas DataFrame containing the tabular data to be analyzed.</p></li>
+<li><p><strong>kwargs</strong> (<em>Any</em>) – Additional keyword arguments forwarded to the strategy.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The result of the data inspection based on the current strategy.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Any</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="squirrel_modules_agents_preprocessor_TabularDataProcessorAgent.html" class="btn btn-neutral float-left" title="squirrel.modules.agents.preprocessor.TabularDataProcessorAgent" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="squirrel_modules_preprocessors_cleaning_tabular.html" class="btn btn-neutral float-right" title="squirrel.modules.preprocessors.cleaning.tabular" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, Mazen Soliman.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

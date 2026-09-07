@@ -1,0 +1,347 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>squirrel.schemas.api &mdash; squirrel  documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/custom.css?v=adc7883a" />
+
+  
+    <link rel="shortcut icon" href="../../../_static/sqrl.png"/>
+      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="../../../_static/copybutton.js?v=a46eff05"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            squirrel
+              <img src="../../../_static/sqrl.png" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Python API Reference:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../api.html">Python API Reference</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">squirrel</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">squirrel.schemas.api</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for squirrel.schemas.api</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/python</span>
+<span class="sd">"""</span>
+<span class="sd">API Models Module</span>
+<span class="sd">=================</span>
+
+<span class="sd">Overview</span>
+<span class="sd">--------</span>
+
+<span class="sd">This module provides Pydantic data models for agent-related API requests and responses.</span>
+<span class="sd">It defines models for conversation messages, agent requests and agent responses.</span>
+
+<span class="sd">Models</span>
+<span class="sd">------</span>
+
+<span class="sd">- :class:`ConversationMessage`: Represents a single message in conversation history</span>
+<span class="sd">- :class:`AgentRequest`: Represents a agent API request</span>
+<span class="sd">- :class:`AgentResponse`: Represents a agent API response</span>
+
+<span class="sd">"""</span>
+<span class="c1"># ——————————————————————————————————————————————————————————————</span>
+<span class="c1"># Imports</span>
+
+<span class="c1"># Standard Libraries</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">enum</span><span class="w"> </span><span class="kn">import</span> <span class="n">Enum</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="kn">import</span> <span class="n">datetime</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">importlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">metadata</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pydantic</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseModel</span><span class="p">,</span> <span class="n">Field</span><span class="p">,</span> <span class="n">AnyUrl</span><span class="p">,</span> <span class="n">model_validator</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">List</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Literal</span>
+
+<span class="c1"># Schemas</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">squirrel.schemas.file</span><span class="w"> </span><span class="kn">import</span> <span class="n">FileProcessingIssue</span><span class="p">,</span> <span class="n">FileType</span>
+
+<span class="c1"># ——————————————————————————————————————————————————————————————</span>
+<span class="c1"># Agentic API Models</span>
+
+<span class="c1"># --- Conversation Message Model ---</span>
+<div class="viewcode-block" id="ConversationMessage">
+<a class="viewcode-back" href="../../../generated/squirrel_schemas_api.html#squirrel.schemas.api.ConversationMessage">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">ConversationMessage</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Conversation Message Model</span>
+<span class="sd">    --------------------------</span>
+<span class="sd">    </span>
+<span class="sd">    **Description:**</span>
+<span class="sd">    </span>
+<span class="sd">        Represents a single message exchange in a conversation, tracking the speaker</span>
+<span class="sd">        role (user or assistant), message content, and timestamp.</span>
+
+<span class="sd">    """</span>
+    <span class="n">role</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s1">'user'</span><span class="p">,</span> <span class="s1">'assistant'</span><span class="p">]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="o">...</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">"The role of the message sender (user or assistant)"</span><span class="p">)</span>
+    <span class="n">content</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="o">...</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">"The content of the message"</span><span class="p">)</span>
+    <span class="n">timestamp</span><span class="p">:</span> <span class="n">datetime</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="n">datetime</span><span class="o">.</span><span class="n">utcnow</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">"The timestamp when the message was created"</span><span class="p">)</span></div>
+
+
+<span class="c1"># --- LLM Tokens Model ---</span>
+<div class="viewcode-block" id="LLMTokens">
+<a class="viewcode-back" href="../../../generated/squirrel_schemas_api.html#squirrel.schemas.api.LLMTokens">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">LLMTokens</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    LLM Tokens Model</span>
+<span class="sd">    ----------------</span>
+<span class="sd">    </span>
+<span class="sd">    **Description:**</span>
+<span class="sd">    </span>
+<span class="sd">        Represents the token usage details for a chat interaction, including the number</span>
+<span class="sd">        of tokens used in the prompt, completion, and total.</span>
+<span class="sd">    </span>
+<span class="sd">    """</span>
+    <span class="c1">#: Number of tokens used in the prompt</span>
+    <span class="n">promptTokens</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="o">...</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">"Number of tokens used in the prompt"</span><span class="p">)</span>
+    
+    <span class="c1">#: Number of tokens used in the completion</span>
+    <span class="n">completionTokens</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="o">...</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">"Number of tokens used in the completion"</span><span class="p">)</span>
+    
+    <span class="c1">#: Total number of tokens used (prompt + completion)</span>
+    <span class="n">totalTokens</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="o">...</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">"Total number of tokens used (prompt + completion)"</span><span class="p">)</span></div>
+
+
+<span class="c1"># --- Agent Request Model ---</span>
+<div class="viewcode-block" id="AgentRequest">
+<a class="viewcode-back" href="../../../generated/squirrel_schemas_api.html#squirrel.schemas.api.AgentRequest">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">AgentRequest</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Chat Request Model</span>
+<span class="sd">    ------------------</span>
+<span class="sd">    </span>
+<span class="sd">    **Description:**</span>
+<span class="sd">    </span>
+<span class="sd">        Represents the structure of a chat API request, including the user's query,</span>
+<span class="sd">        conversation history, and optional parameters for response generation.</span>
+
+<span class="sd">    """</span>
+    <span class="c1">#: The user's query or message to the assistant</span>
+    <span class="n">query</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span>
+        <span class="n">min_length</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+        <span class="n">max_length</span><span class="o">=</span><span class="mi">5000</span><span class="p">,</span>
+        <span class="n">description</span><span class="o">=</span><span class="s2">"The user's query or message to the assistant"</span>
+    <span class="p">)</span>
+
+    <span class="c1">#: Unqiue project identifier</span>
+    <span class="n">projectId</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="o">...</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">"Unique identifier for the project"</span><span class="p">)</span>
+
+    <span class="c1">#: Unique conversation identifier</span>
+    <span class="n">conversationId</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span>
+        <span class="n">pattern</span><span class="o">=</span><span class="sa">r</span><span class="s1">'^[a-zA-Z0-9_-]+$'</span><span class="p">,</span>
+        <span class="n">description</span><span class="o">=</span><span class="s2">"Unique identifier for the conversation (alphanumeric, underscores, hyphens)"</span>
+    <span class="p">)</span>
+
+    <span class="c1">#: Optional request body content</span>
+    <span class="n">body</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span>
+        <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">description</span><span class="o">=</span><span class="s2">"Optional request body content for additional context or parameters"</span>
+    <span class="p">)</span>
+
+    <span class="c1">#: Block Storage URLs of files to be processed</span>
+    <span class="n">fileUrls</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span>
+        <span class="n">default</span><span class="o">=</span><span class="p">[],</span>
+        <span class="n">min_items</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+        <span class="n">description</span><span class="o">=</span><span class="s2">"List of Block Storage URLs of files to be processed"</span>
+    <span class="p">)</span>
+
+    <span class="c1">#: Optional recent conversation history for context (up to 10 messages)</span>
+    <span class="n">conversationHistory</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="n">ConversationMessage</span><span class="p">]]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span>
+        <span class="n">default</span><span class="o">=</span><span class="p">[],</span>
+        <span class="n">max_items</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
+        <span class="n">description</span><span class="o">=</span><span class="s2">"Optional recent conversation history for context (up to 10 messages)"</span>
+    <span class="p">)</span>
+
+    <span class="c1">#: Optional additional parameters as metadata</span>
+    <span class="n">metadata</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span>
+        <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">description</span><span class="o">=</span><span class="s2">"Optional additional parameters as metadata for the request"</span>
+    <span class="p">)</span>
+    
+    <span class="c1">#: Request identifier</span>
+    <span class="n">requestId</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span>
+        <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">description</span><span class="o">=</span><span class="s2">"Unique identifier for the request (for tracking and correlation)"</span>
+    <span class="p">)</span>
+    
+<div class="viewcode-block" id="AgentRequest.convert_empty_strings_to_none">
+<a class="viewcode-back" href="../../../generated/squirrel_schemas_api.html#squirrel.schemas.api.AgentRequest.convert_empty_strings_to_none">[docs]</a>
+    <span class="nd">@model_validator</span><span class="p">(</span><span class="n">mode</span><span class="o">=</span><span class="s1">'before'</span><span class="p">)</span>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">convert_empty_strings_to_none</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Convert empty strings to None for optional URL fields before validation"""</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+            <span class="c1"># Handle sourceDocumentUrl</span>
+            <span class="k">if</span> <span class="s1">'sourceDocumentUrl'</span> <span class="ow">in</span> <span class="n">data</span> <span class="ow">and</span> <span class="n">data</span><span class="p">[</span><span class="s1">'sourceDocumentUrl'</span><span class="p">]</span> <span class="o">==</span> <span class="s1">''</span><span class="p">:</span>
+                <span class="n">data</span><span class="p">[</span><span class="s1">'sourceDocumentUrl'</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="c1"># Handle generatedId</span>
+            <span class="k">if</span> <span class="s1">'generatedId'</span> <span class="ow">in</span> <span class="n">data</span> <span class="ow">and</span> <span class="n">data</span><span class="p">[</span><span class="s1">'generatedId'</span><span class="p">]</span> <span class="o">==</span> <span class="s1">''</span><span class="p">:</span>
+                <span class="n">data</span><span class="p">[</span><span class="s1">'generatedId'</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">return</span> <span class="n">data</span></div>
+</div>
+
+
+<span class="c1"># --- Agent Response Model ---</span>
+<div class="viewcode-block" id="AgentResponse">
+<a class="viewcode-back" href="../../../generated/squirrel_schemas_api.html#squirrel.schemas.api.AgentResponse">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">AgentResponse</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Agent Response Data Model</span>
+<span class="sd">    -------------------------</span>
+<span class="sd">    </span>
+<span class="sd">    **Description:**</span>
+<span class="sd">    </span>
+<span class="sd">        Represents the data structure of a chat API response, including the assistant's</span>
+<span class="sd">        reply, any generated files, and optional metadata.</span>
+
+<span class="sd">    """</span>
+    <span class="c1">#: The assistant's reply to the user's query</span>
+    <span class="n">reply</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="o">...</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">"The assistant's reply to the user's query"</span><span class="p">)</span>
+    
+    <span class="c1">#: The action taken by the agent</span>
+    <span class="n">action</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">"chat"</span><span class="p">,</span> <span class="s2">"explore"</span><span class="p">,</span> <span class="s2">"build"</span><span class="p">]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="o">...</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">"The action taken by the orchestator agent."</span><span class="p">)</span>
+
+    <span class="c1">#: Unqiue project identifier</span>
+    <span class="n">projectId</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="o">...</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">"Unique identifier for the project"</span><span class="p">)</span>
+
+    <span class="c1">#: Unique conversation identifier</span>
+    <span class="n">conversationId</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="o">...</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">"Unique identifier for the conversation"</span><span class="p">)</span> 
+    
+    <span class="c1">#: Block Storage URLs of files</span>
+    <span class="n">fileUrls</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span>
+        <span class="n">default</span><span class="o">=</span><span class="p">[],</span>
+        <span class="n">min_items</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+        <span class="n">description</span><span class="o">=</span><span class="s2">"List of Block Storage URLs of files."</span>
+    <span class="p">)</span>
+
+    <span class="c1">#: Optional response body content</span>
+    <span class="n">body</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span>
+        <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">description</span><span class="o">=</span><span class="s2">"Optional response body content for additional context or parameters"</span>
+    <span class="p">)</span>
+    
+    <span class="c1">#: Timestamp when the response was generated</span>
+    <span class="n">timestamp</span><span class="p">:</span> <span class="n">datetime</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="n">datetime</span><span class="o">.</span><span class="n">utcnow</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">"The timestamp when the response was generated"</span><span class="p">)</span>
+
+    <span class="c1">#: Time taken to generate the response in seconds</span>
+    <span class="n">responseTime</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="o">...</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">"Time taken to generate the response in seconds"</span><span class="p">)</span>
+
+    <span class="c1">#: LLM token usage details for the response</span>
+    <span class="n">llmTokens</span><span class="p">:</span> <span class="n">LLMTokens</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="o">...</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">"LLM token usage details for the response"</span><span class="p">)</span>
+
+    <span class="c1">#: Optional list of files that could not be processed, including details about the issues encountered</span>
+    <span class="n">fileProcessingIssues</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="n">FileProcessingIssue</span><span class="p">]]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span>
+        <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">description</span><span class="o">=</span><span class="s2">"Optional list of files that could not be processed, including details about the issues encountered"</span>
+    <span class="p">)</span>
+
+    <span class="c1">#: Optional metadata related to the response</span>
+    <span class="n">metadata</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span>
+        <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">description</span><span class="o">=</span><span class="s2">"Optional metadata related to the response for additional context"</span>
+    <span class="p">)</span></div>
+
+
+<span class="c1"># ——————————————————————————————————————————————————————————————</span>
+<span class="c1"># Workspace API Models</span>
+
+
+<div class="viewcode-block" id="ModelMetric">
+<a class="viewcode-back" href="../../../generated/squirrel_schemas_api.html#squirrel.schemas.api.ModelMetric">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">ModelMetric</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+    <span class="n">model_key</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">metric_name</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">mean</span><span class="p">:</span> <span class="nb">float</span>
+    <span class="n">std</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span></div>
+
+
+
+
+
+
+
+
+
+
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, Mazen Soliman.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

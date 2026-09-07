@@ -1,0 +1,731 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>squirrel.modules.providers.abstract.IProvider &mdash; squirrel  documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../../../../_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" type="text/css" href="../../../../../_static/css/custom.css?v=adc7883a" />
+
+  
+    <link rel="shortcut icon" href="../../../../../_static/sqrl.png"/>
+      <script src="../../../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../../../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../../../../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script src="../../../../../_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="../../../../../_static/copybutton.js?v=a46eff05"></script>
+    <script src="../../../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../../../index.html" class="icon icon-home">
+            squirrel
+              <img src="../../../../../_static/sqrl.png" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Python API Reference:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../api.html">Python API Reference</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../../index.html">squirrel</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">squirrel.modules.providers.abstract.IProvider</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for squirrel.modules.providers.abstract.IProvider</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/python</span>
+<span class="sd">"""</span>
+<span class="sd">Abstract Provider Module</span>
+<span class="sd">========================</span>
+
+<span class="sd">Overview</span>
+<span class="sd">--------</span>
+
+<span class="sd">This module defines the abstract IProvider class, </span>
+<span class="sd">which serves as a blueprint for various provider implementations.</span>
+
+<span class="sd">Features</span>
+<span class="sd">-------- </span>
+
+<span class="sd">- Defines the IProvider abstract class with essential methods for LLM providers.</span>
+<span class="sd">- Supports file uploads, response generation, structured responses, JSON generation, information extraction, table extraction, embeddings, and similarity calculations.</span>
+
+<span class="sd">Examples</span>
+<span class="sd">--------</span>
+
+<span class="sd">.. code-block:: python</span>
+
+<span class="sd">    # Imports</span>
+<span class="sd">    from orca.modules.providers.abstract.IProvider import IProvider, Provider</span>
+
+<span class="sd">    # Initialize a provider (example with OpenAI)</span>
+<span class="sd">    provider: IProvider = OpenAIProvider(model_name="gpt-4", config={})</span>
+
+<span class="sd">    # Generate a response</span>
+<span class="sd">    response = provider.generate_response(input={"prompt": "Hello, world!"})</span>
+<span class="sd">    print(response)</span>
+
+<span class="sd">"""</span>
+<span class="c1"># ——————————————————————————————————————————————————————————————</span>
+<span class="c1"># Imports</span>
+
+<span class="c1"># Standard Libraries</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">enum</span><span class="w"> </span><span class="kn">import</span> <span class="n">Enum</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">Any</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">ABC</span><span class="p">,</span> <span class="n">abstractmethod</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+
+<span class="c1"># Logging</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">squirrel.core.logging</span><span class="w"> </span><span class="kn">import</span> <span class="n">Loggable</span>
+
+<span class="c1"># ——————————————————————————————————————————————————————————————</span>
+<span class="c1"># Available Providers</span>
+<div class="viewcode-block" id="Provider">
+<a class="viewcode-back" href="../../../../../generated/squirrel_modules_providers_abstract_IProvider.html#squirrel.modules.providers.abstract.IProvider.Provider">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">Provider</span><span class="p">(</span><span class="n">Enum</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Provider Enum</span>
+<span class="sd">    -------------</span>
+<span class="sd">    </span>
+<span class="sd">    **Description:**</span>
+<span class="sd">    </span>
+<span class="sd">        This enum defines the different provider implementations supported by the system.</span>
+
+<span class="sd">    **Enum Values:**</span>
+<span class="sd">        </span>
+<span class="sd">        - **OPENAI (str):** OpenAI provider implementation.</span>
+<span class="sd">            *Value:* "openai"</span>
+<span class="sd">        - **GEMINI (str):** Google Gemini provider implementation.</span>
+<span class="sd">            *Value:* "gemini"</span>
+<span class="sd">        - **GROQ (str):** Groq provider implementation.</span>
+<span class="sd">            *Value:* "groq"</span>
+<span class="sd">    </span>
+<span class="sd">    """</span>
+    <span class="n">OPENAI</span> <span class="o">=</span> <span class="s2">"openai"</span>
+    <span class="n">GEMINI</span> <span class="o">=</span> <span class="s2">"gemini"</span>
+    <span class="n">GROQ</span> <span class="o">=</span> <span class="s2">"groq"</span>
+    <span class="n">OPENROUTER</span> <span class="o">=</span> <span class="s2">"openrouter"</span></div>
+
+
+<span class="c1"># ——————————————————————————————————————————————————————————————</span>
+<span class="c1"># Abstract Provider Class</span>
+<div class="viewcode-block" id="IProvider">
+<a class="viewcode-back" href="../../../../../generated/squirrel_modules_providers_abstract_IProvider.html#squirrel.modules.providers.abstract.IProvider.IProvider">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">IProvider</span><span class="p">(</span><span class="n">ABC</span><span class="p">,</span> <span class="n">Loggable</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Abstract Provider Class</span>
+<span class="sd">    -----------------------</span>
+<span class="sd">    </span>
+<span class="sd">    **Description:**</span>
+<span class="sd">    </span>
+<span class="sd">        This class defines the interface for various LLM provider implementations,</span>
+<span class="sd">        including methods for file uploads, response generation, structured responses,</span>
+<span class="sd">        JSON generation, information extraction, table extraction, embeddings, and similarity calculations.</span>
+
+<span class="sd">    **Attributes:**</span>
+<span class="sd">        </span>
+<span class="sd">        - **model_name (str):** The name of the model.</span>
+<span class="sd">        - **config (dict):** Configuration dictionary for the provider.</span>
+<span class="sd">        </span>
+<span class="sd">    **Methods:**</span>
+<span class="sd">        </span>
+<span class="sd">        - :meth:`generate_response`</span>
+<span class="sd">            Generate a response based on input</span>
+<span class="sd">        - :meth:`generate_structured_response`</span>
+<span class="sd">            Generate a pydantic structured response</span>
+<span class="sd">        - :meth:`generate_json`</span>
+<span class="sd">            Generate a JSON response</span>
+<span class="sd">        - :meth:`available_model_names`</span>
+<span class="sd">            Get list of available model names</span>
+
+<span class="sd">    """</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">model_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">config</span><span class="p">:</span> <span class="nb">dict</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Initialize the provider with model name and configuration.</span>
+<span class="sd">        </span>
+<span class="sd">        :param model_name: The name of the model</span>
+<span class="sd">        :type model_name: str</span>
+<span class="sd">        </span>
+<span class="sd">        :param config: Configuration dictionary for the provider</span>
+<span class="sd">        :type config: dict</span>
+<span class="sd">        </span>
+<span class="sd">        :return: None</span>
+<span class="sd">        :rtype: None</span>
+<span class="sd">        </span>
+<span class="sd">        **Example:**</span>
+<span class="sd">        </span>
+<span class="sd">        .. code-block:: python</span>
+
+<span class="sd">            from orca.modules.providers.abstract.IProvider import IProvider</span>
+<span class="sd">            </span>
+<span class="sd">            class MyProvider(IProvider):</span>
+<span class="sd">                def __init__(self):</span>
+<span class="sd">                    super().__init__(model_name="my-model", config={})</span>
+<span class="sd">                    </span>
+<span class="sd">                def upload_file(self, file_path: str) -&gt; str:</span>
+<span class="sd">                    pass</span>
+<span class="sd">                    </span>
+<span class="sd">                def generate_response(self, input: Dict[str, Any]) -&gt; str:</span>
+<span class="sd">                    pass</span>
+<span class="sd">        </span>
+<span class="sd">        """</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_model_name</span> <span class="o">=</span> <span class="n">model_name</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_config</span> <span class="o">=</span> <span class="n">config</span> <span class="ow">or</span> <span class="p">{}</span>
+        
+        <span class="c1"># Token tracking attributes</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_total_input_tokens</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_total_output_tokens</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_total_tokens</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_request_count</span> <span class="o">=</span> <span class="mi">0</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_last_input_tokens</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_last_output_tokens</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_last_request_tokens</span> <span class="o">=</span> <span class="mi">0</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">model_name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Get the model name.</span>
+<span class="sd">        </span>
+<span class="sd">        :return: The name of the model</span>
+<span class="sd">        :rtype: str</span>
+<span class="sd">        """</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_model_name</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">config</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Get the configuration dictionary.</span>
+<span class="sd">        </span>
+<span class="sd">        :return: The configuration dictionary</span>
+<span class="sd">        :rtype: dict</span>
+<span class="sd">        """</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_config</span>
+    
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">total_input_tokens</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Get the total input tokens used.</span>
+<span class="sd">        </span>
+<span class="sd">        :return: Total input tokens</span>
+<span class="sd">        :rtype: int</span>
+<span class="sd">        """</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_total_input_tokens</span>
+    
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">total_output_tokens</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Get the total output tokens used.</span>
+<span class="sd">        </span>
+<span class="sd">        :return: Total output tokens</span>
+<span class="sd">        :rtype: int</span>
+<span class="sd">        """</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_total_output_tokens</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">total_tokens</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Get the total tokens used.</span>
+<span class="sd">        </span>
+<span class="sd">        :return: Total tokens</span>
+<span class="sd">        :rtype: int</span>
+<span class="sd">        """</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_total_tokens</span>
+    
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">request_count</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Get the total number of requests made.</span>
+<span class="sd">        </span>
+<span class="sd">        :return: Total request count</span>
+<span class="sd">        :rtype: int</span>
+<span class="sd">        """</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_request_count</span>
+    
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">last_input_tokens</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Get the last input tokens used.</span>
+<span class="sd">        </span>
+<span class="sd">        :return: Last input tokens</span>
+<span class="sd">        :rtype: int</span>
+<span class="sd">        """</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_last_input_tokens</span>
+    
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">last_output_tokens</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Get the last output tokens used.</span>
+<span class="sd">        </span>
+<span class="sd">        :return: Last output tokens</span>
+<span class="sd">        :rtype: int</span>
+<span class="sd">        """</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_last_output_tokens</span>
+    
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">last_request_tokens</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Get the last request tokens used.</span>
+<span class="sd">        </span>
+<span class="sd">        :return: Last request tokens</span>
+<span class="sd">        :rtype: int</span>
+<span class="sd">        """</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_last_request_tokens</span>
+
+    <span class="nd">@model_name</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">model_name</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">value</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Set the model name.</span>
+
+<span class="sd">        :param value: The new model name</span>
+<span class="sd">        :type value: str</span>
+<span class="sd">        """</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_model_name</span> <span class="o">=</span> <span class="n">value</span>
+        
+    <span class="nd">@config</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">config</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">value</span><span class="p">:</span> <span class="nb">dict</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Set the configuration dictionary.</span>
+
+<span class="sd">        :param value: The new configuration dictionary</span>
+<span class="sd">        :type value: dict</span>
+<span class="sd">        </span>
+<span class="sd">        :raises ValueError: If config is not a dictionary</span>
+<span class="sd">        """</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"Config must be a dictionary."</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_config</span> <span class="o">=</span> <span class="n">value</span>
+    
+    <span class="nd">@total_input_tokens</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">total_input_tokens</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">value</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Set the total input tokens used.</span>
+
+<span class="sd">        :param value: The new total input tokens</span>
+<span class="sd">        :type value: int</span>
+<span class="sd">        </span>
+<span class="sd">        :raises ValueError: If total input tokens is not a non-negative integer</span>
+<span class="sd">        """</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span> <span class="ow">or</span> <span class="n">value</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"Total input tokens must be a non-negative integer."</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_total_input_tokens</span> <span class="o">=</span> <span class="n">value</span>
+
+    <span class="nd">@total_output_tokens</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">total_output_tokens</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">value</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Set the total output tokens used.</span>
+
+<span class="sd">        :param value: The new total output tokens</span>
+<span class="sd">        :type value: int</span>
+<span class="sd">        </span>
+<span class="sd">        :raises ValueError: If total output tokens is not a non-negative integer</span>
+<span class="sd">        """</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span> <span class="ow">or</span> <span class="n">value</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"Total output tokens must be a non-negative integer."</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_total_output_tokens</span> <span class="o">=</span> <span class="n">value</span>
+        
+    <span class="nd">@total_tokens</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">total_tokens</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">value</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Set the total tokens used.</span>
+
+<span class="sd">        :param value: The new total tokens</span>
+<span class="sd">        :type value: int</span>
+<span class="sd">        </span>
+<span class="sd">        :raises ValueError: If total tokens is not a non-negative integer</span>
+<span class="sd">        """</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span> <span class="ow">or</span> <span class="n">value</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"Total tokens must be a non-negative integer."</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_total_tokens</span> <span class="o">=</span> <span class="n">value</span>
+        
+    <span class="nd">@request_count</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">request_count</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">value</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Set the total number of requests made.</span>
+
+<span class="sd">        :param value: The new request count</span>
+<span class="sd">        :type value: int</span>
+<span class="sd">        </span>
+<span class="sd">        :raises ValueError: If request count is not a non-negative integer</span>
+<span class="sd">        """</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span> <span class="ow">or</span> <span class="n">value</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"Request count must be a non-negative integer."</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_request_count</span> <span class="o">=</span> <span class="n">value</span>
+
+    <span class="nd">@last_input_tokens</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">last_input_tokens</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">value</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Set the last input tokens used.</span>
+
+<span class="sd">        :param value: The new last input tokens</span>
+<span class="sd">        :type value: int</span>
+<span class="sd">        </span>
+<span class="sd">        :raises ValueError: If last input tokens is not a non-negative integer</span>
+<span class="sd">        """</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span> <span class="ow">or</span> <span class="n">value</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"Last input tokens must be a non-negative integer."</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_last_input_tokens</span> <span class="o">=</span> <span class="n">value</span>
+        
+    <span class="nd">@last_output_tokens</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">last_output_tokens</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">value</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Set the last output tokens used.</span>
+
+<span class="sd">        :param value: The new last output tokens</span>
+<span class="sd">        :type value: int</span>
+<span class="sd">        </span>
+<span class="sd">        :raises ValueError: If last output tokens is not a non-negative integer</span>
+<span class="sd">        """</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span> <span class="ow">or</span> <span class="n">value</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"Last output tokens must be a non-negative integer."</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_last_output_tokens</span> <span class="o">=</span> <span class="n">value</span>
+        
+    <span class="nd">@last_request_tokens</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">last_request_tokens</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">value</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Set the last request tokens used.</span>
+
+<span class="sd">        :param value: The new last request tokens</span>
+<span class="sd">        :type value: int</span>
+<span class="sd">        </span>
+<span class="sd">        :raises ValueError: If last request tokens is not a non-negative integer</span>
+<span class="sd">        """</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span> <span class="ow">or</span> <span class="n">value</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"Last request tokens must be a non-negative integer."</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_last_request_tokens</span> <span class="o">=</span> <span class="n">value</span>
+
+<div class="viewcode-block" id="IProvider.get_total_usage">
+<a class="viewcode-back" href="../../../../../generated/squirrel_modules_providers_abstract_IProvider.html#squirrel.modules.providers.abstract.IProvider.IProvider.get_total_usage">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_total_usage</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Get the total usage statistics for all API calls made through this provider instance.</span>
+<span class="sd">        </span>
+<span class="sd">        **Description:**</span>
+<span class="sd">        </span>
+<span class="sd">            This method returns a summary of token usage including input tokens, </span>
+<span class="sd">            output tokens, total tokens, and the number of requests made.</span>
+<span class="sd">        </span>
+<span class="sd">        :return: Dictionary containing token usage with keys:</span>
+<span class="sd">        </span>
+<span class="sd">                 - "input_tokens" (int): Total tokens used in inputs</span>
+<span class="sd">                 - "output_tokens" (int): Total tokens used in outputs</span>
+<span class="sd">                 - "total_tokens" (int): Total tokens used</span>
+<span class="sd">                 - "request_count" (int): Number of API requests made</span>
+<span class="sd">        </span>
+<span class="sd">        :rtype: Dict[str, int]</span>
+<span class="sd">        </span>
+<span class="sd">        **Example:**</span>
+<span class="sd">        </span>
+<span class="sd">        .. code-block:: python</span>
+<span class="sd">        </span>
+<span class="sd">            from orca.modules.providers.openai.OpenAIProvider import OpenAIProvider</span>
+<span class="sd">            </span>
+<span class="sd">            # Initialize OpenAI Provider            </span>
+<span class="sd">            provider = OpenAIProvider(</span>
+<span class="sd">                api_key="OPENAI_API_KEY",</span>
+<span class="sd">                model_name="gpt-4.1-2025-04-14"</span>
+<span class="sd">            )</span>
+<span class="sd">            </span>
+<span class="sd">            # Make some API calls...</span>
+<span class="sd">            provider.generate_response({"user_prompt": "Hello!"})</span>
+<span class="sd">            </span>
+<span class="sd">            # Get total usage</span>
+<span class="sd">            usage = provider.get_total_usage()</span>
+<span class="sd">            print(f"Total tokens used: {usage['total_tokens']}")</span>
+<span class="sd">            print(f"Requests made: {usage['request_count']}")</span>
+<span class="sd">        </span>
+<span class="sd">        """</span>
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s2">"input_tokens"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_total_input_tokens</span><span class="p">,</span>
+            <span class="s2">"output_tokens"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_total_output_tokens</span><span class="p">,</span>
+            <span class="s2">"total_tokens"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_total_tokens</span><span class="p">,</span>
+            <span class="s2">"request_count"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_request_count</span>
+        <span class="p">}</span></div>
+
+        
+<div class="viewcode-block" id="IProvider.previous_usage">
+<a class="viewcode-back" href="../../../../../generated/squirrel_modules_providers_abstract_IProvider.html#squirrel.modules.providers.abstract.IProvider.IProvider.previous_usage">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">previous_usage</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Get the usage statistics for the last API call made through this provider instance.</span>
+<span class="sd">        </span>
+<span class="sd">        **Description:**</span>
+<span class="sd">        </span>
+<span class="sd">            This method returns a summary of token usage for the most recent API call,</span>
+<span class="sd">            including input tokens, output tokens, and total tokens used.</span>
+<span class="sd">        </span>
+<span class="sd">        :return: Dictionary containing token usage for the last request with keys:</span>
+<span class="sd">        </span>
+<span class="sd">                    - "input_tokens" (int): Tokens used in the last input</span>
+<span class="sd">                    - "output_tokens" (int): Tokens used in the last output</span>
+<span class="sd">                    - "total_tokens" (int): Total tokens used in the last request</span>
+<span class="sd">        </span>
+<span class="sd">        :rtype: Dict[str, int]</span>
+<span class="sd">        """</span>
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s2">"input_tokens"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_last_input_tokens</span><span class="p">,</span>
+            <span class="s2">"output_tokens"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_last_output_tokens</span><span class="p">,</span>
+            <span class="s2">"total_tokens"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_last_request_tokens</span>
+        <span class="p">}</span></div>
+
+    
+<div class="viewcode-block" id="IProvider.reset_usage">
+<a class="viewcode-back" href="../../../../../generated/squirrel_modules_providers_abstract_IProvider.html#squirrel.modules.providers.abstract.IProvider.IProvider.reset_usage">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">reset_usage</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Reset all usage statistics.</span>
+<span class="sd">        </span>
+<span class="sd">        **Description:**</span>
+<span class="sd">        </span>
+<span class="sd">            This method clears the accumulated usage statistics, useful for tracking</span>
+<span class="sd">            usage per session or resetting before a new batch of requests.</span>
+<span class="sd">        </span>
+<span class="sd">        **Example:**</span>
+<span class="sd">        </span>
+<span class="sd">        .. code-block:: python</span>
+<span class="sd">        </span>
+<span class="sd">            from orca.modules.providers.openai.OpenAIProvider import OpenAIProvider</span>
+<span class="sd">        </span>
+<span class="sd">            # Initialize OpenAI Provider</span>
+<span class="sd">            provider = OpenAIProvider(</span>
+<span class="sd">                api_key="OPENAI_API_KEY",</span>
+<span class="sd">                model_name="gpt-4.1-2025-04-14"</span>
+<span class="sd">            )</span>
+<span class="sd">            </span>
+<span class="sd">            # Make some calls...</span>
+<span class="sd">            provider.generate_response({"user_prompt": "Hello!"})</span>
+<span class="sd">            usage = provider.get_total_usage()</span>
+<span class="sd">            print(f"Tokens in session 1: {usage['total_tokens']}")</span>
+<span class="sd">            </span>
+<span class="sd">            # Reset for new session</span>
+<span class="sd">            provider.reset_usage()</span>
+<span class="sd">            usage = provider.get_total_usage()</span>
+<span class="sd">            print(f"Tokens in session 2: {usage['total_tokens']}")  # Will be 0</span>
+<span class="sd">        </span>
+<span class="sd">        """</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_total_input_tokens</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_total_output_tokens</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_total_tokens</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_request_count</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_last_input_tokens</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_last_output_tokens</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_last_request_tokens</span> <span class="o">=</span> <span class="mi">0</span></div>
+
+        
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_update_token_usage</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">usage</span><span class="p">:</span> <span class="n">Any</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Update the token usage statistics based on the provided usage data.</span>
+<span class="sd">        </span>
+<span class="sd">        **Description:**</span>
+<span class="sd">        </span>
+<span class="sd">            This method updates the internal counters for prompt tokens, total tokens,</span>
+<span class="sd">            and request count based on the usage information received from API responses.</span>
+
+<span class="sd">        :param usage: Usage data containing token counts</span>
+<span class="sd">        :type usage: Any</span>
+<span class="sd">        </span>
+<span class="sd">        :return: None</span>
+<span class="sd">        :rtype: None</span>
+<span class="sd">        """</span>
+        <span class="k">pass</span>
+
+<div class="viewcode-block" id="IProvider.generate_response">
+<a class="viewcode-back" href="../../../../../generated/squirrel_modules_providers_abstract_IProvider.html#squirrel.modules.providers.abstract.IProvider.IProvider.generate_response">[docs]</a>
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">generate_response</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="nb">input</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Generate a response based on the input.</span>
+<span class="sd">        </span>
+<span class="sd">        **Description:**</span>
+<span class="sd">        </span>
+<span class="sd">            The method processes the input and generates a response</span>
+<span class="sd">            based on the provided prompt or data.</span>
+
+<span class="sd">        :param input: The input data for generating the response</span>
+<span class="sd">        :type input: Dict[str, Any]</span>
+<span class="sd">        </span>
+<span class="sd">        :return: The generated response</span>
+<span class="sd">        :rtype: str</span>
+<span class="sd">        """</span>
+        <span class="k">pass</span></div>
+
+
+<div class="viewcode-block" id="IProvider.generate_structured_response">
+<a class="viewcode-back" href="../../../../../generated/squirrel_modules_providers_abstract_IProvider.html#squirrel.modules.providers.abstract.IProvider.IProvider.generate_structured_response">[docs]</a>
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">generate_structured_response</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="nb">input</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Generate a pydantic structured response.</span>
+<span class="sd">        </span>
+<span class="sd">        **Description:**</span>
+<span class="sd">        </span>
+<span class="sd">            The method processes the input and generates a structured response</span>
+<span class="sd">            based on a pydantic model.</span>
+
+<span class="sd">        :param input: The input data for generating the structured response</span>
+<span class="sd">        :type input: Dict[str, Any]</span>
+<span class="sd">        </span>
+<span class="sd">        :return: The generated structured response based on pydantic model</span>
+<span class="sd">        :rtype: str</span>
+<span class="sd">        """</span>
+        <span class="k">pass</span></div>
+
+
+<div class="viewcode-block" id="IProvider.generate_json">
+<a class="viewcode-back" href="../../../../../generated/squirrel_modules_providers_abstract_IProvider.html#squirrel.modules.providers.abstract.IProvider.IProvider.generate_json">[docs]</a>
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">generate_json</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="nb">input</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Generate a JSON response based on the provided input.</span>
+<span class="sd">        </span>
+<span class="sd">        **Description:**</span>
+<span class="sd">        </span>
+<span class="sd">            The method processes the input and generates a JSON response</span>
+<span class="sd">            based on the provided user prompt.</span>
+
+<span class="sd">        :param input: Input dictionary containing file_path (str) and user_prompt (str) for guiding JSON generation</span>
+<span class="sd">        :type input: Dict[str, Any]</span>
+<span class="sd">        </span>
+<span class="sd">        :return: Generated JSON response</span>
+<span class="sd">        :rtype: Dict[str, Any]</span>
+<span class="sd">        """</span>
+        <span class="k">pass</span></div>
+
+
+<div class="viewcode-block" id="IProvider.available_model_names">
+<a class="viewcode-back" href="../../../../../generated/squirrel_modules_providers_abstract_IProvider.html#squirrel.modules.providers.abstract.IProvider.IProvider.available_model_names">[docs]</a>
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">available_model_names</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Get a list of available model names for the provider.</span>
+<span class="sd">        </span>
+<span class="sd">        **Description:**</span>
+
+<span class="sd">            The method retrieves and returns a list of model names</span>
+<span class="sd">            that are supported by the specific provider implementation.</span>
+<span class="sd">        </span>
+<span class="sd">        :return: List of available model names</span>
+<span class="sd">        :rtype: list</span>
+<span class="sd">        """</span>
+        <span class="k">pass</span></div>
+</div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, Mazen Soliman.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

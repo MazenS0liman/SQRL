@@ -1,0 +1,440 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>squirrel.schemas.file &mdash; squirrel  documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/custom.css?v=adc7883a" />
+
+  
+    <link rel="shortcut icon" href="../_static/sqrl.png"/>
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="../_static/copybutton.js?v=a46eff05"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="squirrel.schemas.notebook" href="squirrel_schemas_notebook.html" />
+    <link rel="prev" title="squirrel.schemas.error" href="squirrel_schemas_error.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            squirrel
+              <img src="../_static/sqrl.png" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Python API Reference:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="../api.html">Python API Reference</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="../generated_classes.html">Generated API classes</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="squirrel_constants_connector.html">squirrel.constants.connector</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_constants_workspace.html">squirrel.constants.workspace</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_core_config.html">squirrel.core.config</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_core_error_handlers.html">squirrel.core.error_handlers</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_core_logging.html">squirrel.core.logging</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_core_middleware.html">squirrel.core.middleware</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_models_classification.html">squirrel.models.classification</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_models_time_series.html">squirrel.models.time_series</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_modules_agents_abstract_IAgent.html">squirrel.modules.agents.abstract.IAgent</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_modules_agents_builder_TabularDataModelBuilderAgent.html">squirrel.modules.agents.builder.TabularDataModelBuilderAgent</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_modules_agents_exploratory_TabularDataExploratoryAgent.html">squirrel.modules.agents.exploratory.TabularDataExploratoryAgent</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_modules_agents_inspector_TabularDataInsepctorAgent.html">squirrel.modules.agents.inspector.TabularDataInsepctorAgent</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_modules_agents_orchestrator_OrchestratorAgent.html">squirrel.modules.agents.orchestrator.OrchestratorAgent</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_modules_agents_preprocessor_TabularDataProcessorAgent.html">squirrel.modules.agents.preprocessor.TabularDataProcessorAgent</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_modules_inspectors_tabular.html">squirrel.modules.inspectors.tabular</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_modules_preprocessors_cleaning_tabular.html">squirrel.modules.preprocessors.cleaning.tabular</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_modules_preprocessors_transformers_tabular.html">squirrel.modules.preprocessors.transformers.tabular</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_modules_prompts_abstract_IPromptGenerator.html">squirrel.modules.prompts.abstract.IPromptGenerator</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_modules_prompts_builder_TabularDataPromptGenerator.html">squirrel.modules.prompts.builder.TabularDataPromptGenerator</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_modules_prompts_exploratory_ExploratoryPromptGenerator.html">squirrel.modules.prompts.exploratory.ExploratoryPromptGenerator</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_modules_prompts_inspect_InspectPromptGenerator.html">squirrel.modules.prompts.inspect.InspectPromptGenerator</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_modules_prompts_orchestrator_OrchestratorPromptGenerator.html">squirrel.modules.prompts.orchestrator.OrchestratorPromptGenerator</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_modules_prompts_preprocess_PreprocessPromptGenerator.html">squirrel.modules.prompts.preprocess.PreprocessPromptGenerator</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_modules_providers_abstract_IProvider.html">squirrel.modules.providers.abstract.IProvider</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_modules_providers_gemini_GeminiProvider.html">squirrel.modules.providers.gemini.GeminiProvider</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_modules_providers_groq_GroqProvider.html">squirrel.modules.providers.groq.GroqProvider</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_modules_providers_openrouter_OpenRouterProvider.html">squirrel.modules.providers.openrouter.OpenRouterProvider</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_schemas_api.html">squirrel.schemas.api</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_schemas_argument_spec.html">squirrel.schemas.argument_spec</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_schemas_auth.html">squirrel.schemas.auth</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_schemas_connector.html">squirrel.schemas.connector</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_schemas_eda.html">squirrel.schemas.eda</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_schemas_error.html">squirrel.schemas.error</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">squirrel.schemas.file</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#squirrel.schemas.file.FileType"><code class="docutils literal notranslate"><span class="pre">FileType</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#squirrel.schemas.file.File"><code class="docutils literal notranslate"><span class="pre">File</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#squirrel.schemas.file.UploadedSourceOut"><code class="docutils literal notranslate"><span class="pre">UploadedSourceOut</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#squirrel.schemas.file.FileRequest"><code class="docutils literal notranslate"><span class="pre">FileRequest</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#squirrel.schemas.file.RenameFileRequest"><code class="docutils literal notranslate"><span class="pre">RenameFileRequest</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#squirrel.schemas.file.FileResponse"><code class="docutils literal notranslate"><span class="pre">FileResponse</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#squirrel.schemas.file.FilesResponse"><code class="docutils literal notranslate"><span class="pre">FilesResponse</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#squirrel.schemas.file.FileProcessingIssue"><code class="docutils literal notranslate"><span class="pre">FileProcessingIssue</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#squirrel.schemas.file.FileRecordNotFound"><code class="docutils literal notranslate"><span class="pre">FileRecordNotFound</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#squirrel.schemas.file.FileInUseError"><code class="docutils literal notranslate"><span class="pre">FileInUseError</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_schemas_notebook.html">squirrel.schemas.notebook</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_schemas_token.html">squirrel.schemas.token</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_schemas_workspace.html">squirrel.schemas.workspace</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_services_auth_AuthService.html">squirrel.services.auth.AuthService</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_services_auth_TokenService.html">squirrel.services.auth.TokenService</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_services_chat_MessagingService.html">squirrel.services.chat.MessagingService</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_services_data_connector_DataConnectorService.html">squirrel.services.data_connector.DataConnectorService</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_services_file_FileService.html">squirrel.services.file.FileService</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_services_notebook_NotebookService.html">squirrel.services.notebook.NotebookService</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_services_orchestrator_OrchestratorService.html">squirrel.services.orchestrator.OrchestratorService</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_services_storage_blob_IBlobStorageService.html">squirrel.services.storage.blob.IBlobStorageService</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_services_storage_blob_MinIOService.html">squirrel.services.storage.blob.MinIOService</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_services_storage_database_IDatabaseService.html">squirrel.services.storage.database.IDatabaseService</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_services_storage_database_PostgresService.html">squirrel.services.storage.database.PostgresService</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_services_workspace_WorkspaceService.html">squirrel.services.workspace.WorkspaceService</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">squirrel</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../api.html">Python API Reference</a></li>
+          <li class="breadcrumb-item"><a href="../generated_classes.html">Generated API classes</a></li>
+      <li class="breadcrumb-item active">squirrel.schemas.file</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/generated/squirrel_schemas_file.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="squirrel-schemas-file">
+<h1>squirrel.schemas.file<a class="headerlink" href="#squirrel-schemas-file" title="Link to this heading"></a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="squirrel.schemas.file.FileType">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">squirrel.schemas.file.</span></span><span class="sig-name descname"><span class="pre">FileType</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/schemas/file.html#FileType"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.schemas.file.FileType" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Enum</span></code></p>
+<section id="file-type-enumeration">
+<h2>File Type Enumeration<a class="headerlink" href="#file-type-enumeration" title="Link to this heading"></a></h2>
+<p><strong>Description:</strong></p>
+<blockquote>
+<div><p>Enumeration of supported file types that can be generated, uploaded,
+or handled by the system.</p>
+</div></blockquote>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Adding a new file type here does not by itself make it usable as an
+input source — a parser for it must also be registered wherever
+uploads are processed (see the <code class="docutils literal notranslate"><span class="pre">_SOURCE_PARSERS</span></code> registry in the
+workspace route). This enum is just the set of types the schema
+layer knows how to <em>describe</em>.</p>
+</div>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="squirrel.schemas.file.FileType.CSV">
+<span class="sig-name descname"><span class="pre">CSV</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'csv'</span></em><a class="headerlink" href="#squirrel.schemas.file.FileType.CSV" title="Link to this definition"></a></dt>
+<dd><p>Comma-separated values format (.csv)</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="squirrel.schemas.file.FileType.XLSX">
+<span class="sig-name descname"><span class="pre">XLSX</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'xlsx'</span></em><a class="headerlink" href="#squirrel.schemas.file.FileType.XLSX" title="Link to this definition"></a></dt>
+<dd><p>Microsoft Excel format (.xlsx)</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="squirrel.schemas.file.FileType.PDF">
+<span class="sig-name descname"><span class="pre">PDF</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'pdf'</span></em><a class="headerlink" href="#squirrel.schemas.file.FileType.PDF" title="Link to this definition"></a></dt>
+<dd><p>Portable Document Format (.pdf)</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="squirrel.schemas.file.FileType.TXT">
+<span class="sig-name descname"><span class="pre">TXT</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'txt'</span></em><a class="headerlink" href="#squirrel.schemas.file.FileType.TXT" title="Link to this definition"></a></dt>
+<dd><p>Plain text format (.txt)</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="squirrel.schemas.file.FileType.ZIP">
+<span class="sig-name descname"><span class="pre">ZIP</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'zip'</span></em><a class="headerlink" href="#squirrel.schemas.file.FileType.ZIP" title="Link to this definition"></a></dt>
+<dd><p>Zip archive, e.g. a bundle of files (.zip)</p>
+</dd></dl>
+
+</section>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="squirrel.schemas.file.File">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">squirrel.schemas.file.</span></span><span class="sig-name descname"><span class="pre">File</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">data</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/schemas/file.html#File"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.schemas.file.File" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">BaseModel</span></code></p>
+<p>Represents a single file reference including optional metadata.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>fileUrl</strong> (<em>str</em>)</p></li>
+<li><p><strong>fileName</strong> (<em>str</em><em> | </em><em>None</em>)</p></li>
+<li><p><strong>fileType</strong> (<a class="reference internal" href="#squirrel.schemas.file.FileType" title="squirrel.schemas.file.FileType"><em>FileType</em></a><em> | </em><em>None</em>)</p></li>
+<li><p><strong>fileByte</strong> (<em>bytes</em><em> | </em><em>None</em>)</p></li>
+<li><p><strong>size</strong> (<em>int</em><em> | </em><em>None</em>)</p></li>
+<li><p><strong>workspaceIds</strong> (<em>List</em><em>[</em><em>str</em><em>] </em><em>| </em><em>None</em>)</p></li>
+<li><p><strong>notebookIds</strong> (<em>List</em><em>[</em><em>str</em><em>] </em><em>| </em><em>None</em>)</p></li>
+<li><p><strong>ownerUserId</strong> (<em>str</em><em> | </em><em>None</em>)</p></li>
+<li><p><strong>checksum</strong> (<em>str</em><em> | </em><em>None</em>)</p></li>
+<li><p><strong>uploadedAt</strong> (<em>datetime</em><em> | </em><em>None</em>)</p></li>
+<li><p><strong>metadata</strong> (<em>Dict</em><em>[</em><em>str</em><em>, </em><em>Any</em><em>] </em><em>| </em><em>None</em>)</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="squirrel.schemas.file.File.model_config">
+<span class="sig-name descname"><span class="pre">model_config</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">ClassVar[ConfigDict]</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{}</span></em><a class="headerlink" href="#squirrel.schemas.file.File.model_config" title="Link to this definition"></a></dt>
+<dd><p>Configuration for the model, should be a dictionary conforming to [<cite>ConfigDict</cite>][pydantic.config.ConfigDict].</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="squirrel.schemas.file.UploadedSourceOut">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">squirrel.schemas.file.</span></span><span class="sig-name descname"><span class="pre">UploadedSourceOut</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">data</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/schemas/file.html#UploadedSourceOut"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.schemas.file.UploadedSourceOut" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">BaseModel</span></code></p>
+<p>Generic response describing a single uploaded input source, regardless
+of its underlying file type.</p>
+<p>Only the fields a given file type actually produces are populated —
+e.g. a CSV upload fills <code class="docutils literal notranslate"><span class="pre">columns</span></code>/<code class="docutils literal notranslate"><span class="pre">row_count</span></code>/<code class="docutils literal notranslate"><span class="pre">preview</span></code>, while a
+plain-text or zipped upload (once wired up) may only populate
+<code class="docutils literal notranslate"><span class="pre">metadata</span></code>. This is the one schema the upload endpoint returns for
+every file type so the frontend doesn’t need type-specific response
+handling.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>source_id</strong> (<em>str</em>)</p></li>
+<li><p><strong>file_name</strong> (<em>str</em>)</p></li>
+<li><p><strong>file_type</strong> (<em>str</em>)</p></li>
+<li><p><strong>row_count</strong> (<em>int</em><em> | </em><em>None</em>)</p></li>
+<li><p><strong>columns</strong> (<em>List</em><em>[</em><em>str</em><em>] </em><em>| </em><em>None</em>)</p></li>
+<li><p><strong>preview</strong> (<em>List</em><em>[</em><em>Dict</em><em>[</em><em>str</em><em>, </em><em>Any</em><em>]</em><em>] </em><em>| </em><em>None</em>)</p></li>
+<li><p><strong>metadata</strong> (<em>Dict</em><em>[</em><em>str</em><em>, </em><em>Any</em><em>] </em><em>| </em><em>None</em>)</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="squirrel.schemas.file.UploadedSourceOut.model_config">
+<span class="sig-name descname"><span class="pre">model_config</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">ClassVar[ConfigDict]</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{}</span></em><a class="headerlink" href="#squirrel.schemas.file.UploadedSourceOut.model_config" title="Link to this definition"></a></dt>
+<dd><p>Configuration for the model, should be a dictionary conforming to [<cite>ConfigDict</cite>][pydantic.config.ConfigDict].</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="squirrel.schemas.file.FileRequest">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">squirrel.schemas.file.</span></span><span class="sig-name descname"><span class="pre">FileRequest</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">data</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/schemas/file.html#FileRequest"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.schemas.file.FileRequest" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">BaseModel</span></code></p>
+<p>Represents a request to process a list of files, including the file references.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>file</strong> (<em>List</em><em>[</em><a class="reference internal" href="#squirrel.schemas.file.File" title="squirrel.schemas.file.File"><em>File</em></a><em>]</em>)</p>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="squirrel.schemas.file.FileRequest.model_config">
+<span class="sig-name descname"><span class="pre">model_config</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">ClassVar[ConfigDict]</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{}</span></em><a class="headerlink" href="#squirrel.schemas.file.FileRequest.model_config" title="Link to this definition"></a></dt>
+<dd><p>Configuration for the model, should be a dictionary conforming to [<cite>ConfigDict</cite>][pydantic.config.ConfigDict].</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="squirrel.schemas.file.RenameFileRequest">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">squirrel.schemas.file.</span></span><span class="sig-name descname"><span class="pre">RenameFileRequest</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">data</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/schemas/file.html#RenameFileRequest"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.schemas.file.RenameFileRequest" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">BaseModel</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>fileName</strong> (<em>str</em>)</p>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="squirrel.schemas.file.RenameFileRequest.model_config">
+<span class="sig-name descname"><span class="pre">model_config</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">ClassVar[ConfigDict]</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{}</span></em><a class="headerlink" href="#squirrel.schemas.file.RenameFileRequest.model_config" title="Link to this definition"></a></dt>
+<dd><p>Configuration for the model, should be a dictionary conforming to [<cite>ConfigDict</cite>][pydantic.config.ConfigDict].</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="squirrel.schemas.file.FileResponse">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">squirrel.schemas.file.</span></span><span class="sig-name descname"><span class="pre">FileResponse</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">data</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/schemas/file.html#FileResponse"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.schemas.file.FileResponse" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">BaseModel</span></code></p>
+<p>Represents the response after processing a file, including status and any output references.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>success</strong> (<em>bool</em>)</p></li>
+<li><p><strong>outputFiles</strong> (<em>Dict</em><em>[</em><em>str</em><em>, </em><a class="reference internal" href="#squirrel.schemas.file.File" title="squirrel.schemas.file.File"><em>File</em></a><em>] </em><em>| </em><em>None</em>)</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="squirrel.schemas.file.FileResponse.model_config">
+<span class="sig-name descname"><span class="pre">model_config</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">ClassVar[ConfigDict]</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{}</span></em><a class="headerlink" href="#squirrel.schemas.file.FileResponse.model_config" title="Link to this definition"></a></dt>
+<dd><p>Configuration for the model, should be a dictionary conforming to [<cite>ConfigDict</cite>][pydantic.config.ConfigDict].</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="squirrel.schemas.file.FilesResponse">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">squirrel.schemas.file.</span></span><span class="sig-name descname"><span class="pre">FilesResponse</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">data</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/schemas/file.html#FilesResponse"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.schemas.file.FilesResponse" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">BaseModel</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>success</strong> (<em>bool</em>)</p></li>
+<li><p><strong>files</strong> (<em>list</em><em>[</em><a class="reference internal" href="#squirrel.schemas.file.File" title="squirrel.schemas.file.File"><em>File</em></a><em>]</em>)</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="squirrel.schemas.file.FilesResponse.model_config">
+<span class="sig-name descname"><span class="pre">model_config</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">ClassVar[ConfigDict]</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{}</span></em><a class="headerlink" href="#squirrel.schemas.file.FilesResponse.model_config" title="Link to this definition"></a></dt>
+<dd><p>Configuration for the model, should be a dictionary conforming to [<cite>ConfigDict</cite>][pydantic.config.ConfigDict].</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="squirrel.schemas.file.FileProcessingIssue">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">squirrel.schemas.file.</span></span><span class="sig-name descname"><span class="pre">FileProcessingIssue</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">data</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/schemas/file.html#FileProcessingIssue"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.schemas.file.FileProcessingIssue" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">BaseModel</span></code></p>
+<section id="file-processing-issue-model">
+<h2>File Processing Issue Model<a class="headerlink" href="#file-processing-issue-model" title="Link to this heading"></a></h2>
+<p>Description:</p>
+<p>Represents a file that failed to process, including the file URL, name,
+type of issue encountered, and error message.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="squirrel.schemas.file.FileProcessingIssue.fileUrl">
+<span class="sig-name descname"><span class="pre">fileUrl</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">AnyUrl</span></em><a class="headerlink" href="#squirrel.schemas.file.FileProcessingIssue.fileUrl" title="Link to this definition"></a></dt>
+<dd><p>URL of the file that couldn’t be processed</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="squirrel.schemas.file.FileProcessingIssue.fileName">
+<span class="sig-name descname"><span class="pre">fileName</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="headerlink" href="#squirrel.schemas.file.FileProcessingIssue.fileName" title="Link to this definition"></a></dt>
+<dd><p>Name of the file that couldn’t be processed</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="squirrel.schemas.file.FileProcessingIssue.issue">
+<span class="sig-name descname"><span class="pre">issue</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="headerlink" href="#squirrel.schemas.file.FileProcessingIssue.issue" title="Link to this definition"></a></dt>
+<dd><p>Issue encountered during file processing</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="squirrel.schemas.file.FileProcessingIssue.message">
+<span class="sig-name descname"><span class="pre">message</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Optional[str]</span></em><a class="headerlink" href="#squirrel.schemas.file.FileProcessingIssue.message" title="Link to this definition"></a></dt>
+<dd><p>Detailed error message</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="squirrel.schemas.file.FileProcessingIssue.model_config">
+<span class="sig-name descname"><span class="pre">model_config</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">ClassVar[ConfigDict]</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{}</span></em><a class="headerlink" href="#squirrel.schemas.file.FileProcessingIssue.model_config" title="Link to this definition"></a></dt>
+<dd><p>Configuration for the model, should be a dictionary conforming to [<cite>ConfigDict</cite>][pydantic.config.ConfigDict].</p>
+</dd></dl>
+
+</section>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>fileUrl</strong> (<em>AnyUrl</em>)</p></li>
+<li><p><strong>fileName</strong> (<em>str</em>)</p></li>
+<li><p><strong>issue</strong> (<em>str</em>)</p></li>
+<li><p><strong>message</strong> (<em>str</em><em> | </em><em>None</em>)</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="squirrel.schemas.file.FileRecordNotFound">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">squirrel.schemas.file.</span></span><span class="sig-name descname"><span class="pre">FileRecordNotFound</span></span><a class="reference internal" href="../_modules/squirrel/schemas/file.html#FileRecordNotFound"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.schemas.file.FileRecordNotFound" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Exception</span></code></p>
+<p>Raised when a file_url has no row owned by the given user.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="squirrel.schemas.file.FileInUseError">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">squirrel.schemas.file.</span></span><span class="sig-name descname"><span class="pre">FileInUseError</span></span><a class="reference internal" href="../_modules/squirrel/schemas/file.html#FileInUseError"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.schemas.file.FileInUseError" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Exception</span></code></p>
+<p>Raised when trying to delete a file that’s attached to a workspace/notebook.</p>
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="squirrel_schemas_error.html" class="btn btn-neutral float-left" title="squirrel.schemas.error" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="squirrel_schemas_notebook.html" class="btn btn-neutral float-right" title="squirrel.schemas.notebook" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, Mazen Soliman.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

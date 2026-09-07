@@ -1,0 +1,1022 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>squirrel.modules.preprocessors.transformers.tabular &mdash; squirrel  documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/custom.css?v=adc7883a" />
+
+  
+    <link rel="shortcut icon" href="../_static/sqrl.png"/>
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="../_static/copybutton.js?v=a46eff05"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="squirrel.modules.prompts.abstract.IPromptGenerator" href="squirrel_modules_prompts_abstract_IPromptGenerator.html" />
+    <link rel="prev" title="squirrel.modules.preprocessors.cleaning.tabular" href="squirrel_modules_preprocessors_cleaning_tabular.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            squirrel
+              <img src="../_static/sqrl.png" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Python API Reference:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="../api.html">Python API Reference</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="../generated_classes.html">Generated API classes</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="squirrel_constants_connector.html">squirrel.constants.connector</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_constants_workspace.html">squirrel.constants.workspace</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_core_config.html">squirrel.core.config</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_core_error_handlers.html">squirrel.core.error_handlers</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_core_logging.html">squirrel.core.logging</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_core_middleware.html">squirrel.core.middleware</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_models_classification.html">squirrel.models.classification</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_models_time_series.html">squirrel.models.time_series</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_modules_agents_abstract_IAgent.html">squirrel.modules.agents.abstract.IAgent</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_modules_agents_builder_TabularDataModelBuilderAgent.html">squirrel.modules.agents.builder.TabularDataModelBuilderAgent</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_modules_agents_exploratory_TabularDataExploratoryAgent.html">squirrel.modules.agents.exploratory.TabularDataExploratoryAgent</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_modules_agents_inspector_TabularDataInsepctorAgent.html">squirrel.modules.agents.inspector.TabularDataInsepctorAgent</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_modules_agents_orchestrator_OrchestratorAgent.html">squirrel.modules.agents.orchestrator.OrchestratorAgent</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_modules_agents_preprocessor_TabularDataProcessorAgent.html">squirrel.modules.agents.preprocessor.TabularDataProcessorAgent</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_modules_inspectors_tabular.html">squirrel.modules.inspectors.tabular</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_modules_preprocessors_cleaning_tabular.html">squirrel.modules.preprocessors.cleaning.tabular</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">squirrel.modules.preprocessors.transformers.tabular</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#squirrel.modules.preprocessors.transformers.tabular.DataTransformStrategy"><code class="docutils literal notranslate"><span class="pre">DataTransformStrategy</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#squirrel.modules.preprocessors.transformers.tabular.BinNumericTransformStrategy"><code class="docutils literal notranslate"><span class="pre">BinNumericTransformStrategy</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#squirrel.modules.preprocessors.transformers.tabular.DatetimePartsTransformStrategy"><code class="docutils literal notranslate"><span class="pre">DatetimePartsTransformStrategy</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#squirrel.modules.preprocessors.transformers.tabular.InteractionTermsTransformStrategy"><code class="docutils literal notranslate"><span class="pre">InteractionTermsTransformStrategy</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#squirrel.modules.preprocessors.transformers.tabular.PolynomialFeaturesTransformStrategy"><code class="docutils literal notranslate"><span class="pre">PolynomialFeaturesTransformStrategy</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#squirrel.modules.preprocessors.transformers.tabular.AggregationFeaturesTransformStrategy"><code class="docutils literal notranslate"><span class="pre">AggregationFeaturesTransformStrategy</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#squirrel.modules.preprocessors.transformers.tabular.RatioFeaturesTransformStrategy"><code class="docutils literal notranslate"><span class="pre">RatioFeaturesTransformStrategy</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#squirrel.modules.preprocessors.transformers.tabular.OneHotEncodeTransformStrategy"><code class="docutils literal notranslate"><span class="pre">OneHotEncodeTransformStrategy</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#squirrel.modules.preprocessors.transformers.tabular.OrdinalEncodeTransformStrategy"><code class="docutils literal notranslate"><span class="pre">OrdinalEncodeTransformStrategy</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#squirrel.modules.preprocessors.transformers.tabular.TargetEncodeTransformStrategy"><code class="docutils literal notranslate"><span class="pre">TargetEncodeTransformStrategy</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#squirrel.modules.preprocessors.transformers.tabular.FrequencyEncodeTransformStrategy"><code class="docutils literal notranslate"><span class="pre">FrequencyEncodeTransformStrategy</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#squirrel.modules.preprocessors.transformers.tabular.BinaryEncodeTransformStrategy"><code class="docutils literal notranslate"><span class="pre">BinaryEncodeTransformStrategy</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#squirrel.modules.preprocessors.transformers.tabular.StandardScaleTransformStrategy"><code class="docutils literal notranslate"><span class="pre">StandardScaleTransformStrategy</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#squirrel.modules.preprocessors.transformers.tabular.MinMaxScaleTransformStrategy"><code class="docutils literal notranslate"><span class="pre">MinMaxScaleTransformStrategy</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#squirrel.modules.preprocessors.transformers.tabular.RobustScaleTransformStrategy"><code class="docutils literal notranslate"><span class="pre">RobustScaleTransformStrategy</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#squirrel.modules.preprocessors.transformers.tabular.LogTransformTransformStrategy"><code class="docutils literal notranslate"><span class="pre">LogTransformTransformStrategy</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#squirrel.modules.preprocessors.transformers.tabular.PowerTransformTransformStrategy"><code class="docutils literal notranslate"><span class="pre">PowerTransformTransformStrategy</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#squirrel.modules.preprocessors.transformers.tabular.TabularDataTransformer"><code class="docutils literal notranslate"><span class="pre">TabularDataTransformer</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_modules_prompts_abstract_IPromptGenerator.html">squirrel.modules.prompts.abstract.IPromptGenerator</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_modules_prompts_builder_TabularDataPromptGenerator.html">squirrel.modules.prompts.builder.TabularDataPromptGenerator</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_modules_prompts_exploratory_ExploratoryPromptGenerator.html">squirrel.modules.prompts.exploratory.ExploratoryPromptGenerator</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_modules_prompts_inspect_InspectPromptGenerator.html">squirrel.modules.prompts.inspect.InspectPromptGenerator</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_modules_prompts_orchestrator_OrchestratorPromptGenerator.html">squirrel.modules.prompts.orchestrator.OrchestratorPromptGenerator</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_modules_prompts_preprocess_PreprocessPromptGenerator.html">squirrel.modules.prompts.preprocess.PreprocessPromptGenerator</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_modules_providers_abstract_IProvider.html">squirrel.modules.providers.abstract.IProvider</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_modules_providers_gemini_GeminiProvider.html">squirrel.modules.providers.gemini.GeminiProvider</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_modules_providers_groq_GroqProvider.html">squirrel.modules.providers.groq.GroqProvider</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_modules_providers_openrouter_OpenRouterProvider.html">squirrel.modules.providers.openrouter.OpenRouterProvider</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_schemas_api.html">squirrel.schemas.api</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_schemas_argument_spec.html">squirrel.schemas.argument_spec</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_schemas_auth.html">squirrel.schemas.auth</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_schemas_connector.html">squirrel.schemas.connector</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_schemas_eda.html">squirrel.schemas.eda</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_schemas_error.html">squirrel.schemas.error</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_schemas_file.html">squirrel.schemas.file</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_schemas_notebook.html">squirrel.schemas.notebook</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_schemas_token.html">squirrel.schemas.token</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_schemas_workspace.html">squirrel.schemas.workspace</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_services_auth_AuthService.html">squirrel.services.auth.AuthService</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_services_auth_TokenService.html">squirrel.services.auth.TokenService</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_services_chat_MessagingService.html">squirrel.services.chat.MessagingService</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_services_data_connector_DataConnectorService.html">squirrel.services.data_connector.DataConnectorService</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_services_file_FileService.html">squirrel.services.file.FileService</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_services_notebook_NotebookService.html">squirrel.services.notebook.NotebookService</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_services_orchestrator_OrchestratorService.html">squirrel.services.orchestrator.OrchestratorService</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_services_storage_blob_IBlobStorageService.html">squirrel.services.storage.blob.IBlobStorageService</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_services_storage_blob_MinIOService.html">squirrel.services.storage.blob.MinIOService</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_services_storage_database_IDatabaseService.html">squirrel.services.storage.database.IDatabaseService</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_services_storage_database_PostgresService.html">squirrel.services.storage.database.PostgresService</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_services_workspace_WorkspaceService.html">squirrel.services.workspace.WorkspaceService</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">squirrel</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../api.html">Python API Reference</a></li>
+          <li class="breadcrumb-item"><a href="../generated_classes.html">Generated API classes</a></li>
+      <li class="breadcrumb-item active">squirrel.modules.preprocessors.transformers.tabular</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/generated/squirrel_modules_preprocessors_transformers_tabular.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="squirrel-modules-preprocessors-transformers-tabular">
+<h1>squirrel.modules.preprocessors.transformers.tabular<a class="headerlink" href="#squirrel-modules-preprocessors-transformers-tabular" title="Link to this heading"></a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="squirrel.modules.preprocessors.transformers.tabular.DataTransformStrategy">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">squirrel.modules.preprocessors.transformers.tabular.</span></span><span class="sig-name descname"><span class="pre">DataTransformStrategy</span></span><a class="reference internal" href="../_modules/squirrel/modules/preprocessors/transformers/tabular.html#DataTransformStrategy"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.modules.preprocessors.transformers.tabular.DataTransformStrategy" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">ABC</span></code></p>
+<p>Abstract base class for tabular data transformation strategies.
+Subclasses declare <code class="docutils literal notranslate"><span class="pre">argument_specs</span></code> to expose their accepted arguments
+to the catalog, prompt generator, and runtime validator.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="squirrel.modules.preprocessors.transformers.tabular.DataTransformStrategy.transform">
+<em class="property"><span class="pre">abstract</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">transform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fitted_state</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/modules/preprocessors/transformers/tabular.html#DataTransformStrategy.transform"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.modules.preprocessors.transformers.tabular.DataTransformStrategy.transform" title="Link to this definition"></a></dt>
+<dd><p>Apply the transformation to <em>data</em>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataFrame</span></code></span>) – DataFrame to transform.</p></li>
+<li><p><strong>fitted_state</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code>]</span>) – Optional <code class="docutils literal notranslate"><span class="pre">{column:</span> <span class="pre">{...params...}}</span></code> dict of
+previously-fitted parameters (that column’s <code class="docutils literal notranslate"><span class="pre">per_column</span></code> entry
+from a prior training-time report). When present, strategies
+with data-dependent parameters reuse the supplied values instead
+of recomputing them from <em>data</em> — this is the inference-time
+“apply” path. Strategies with no data-dependent parameters
+ignore this argument entirely.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">DataFrame</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code>]</span></p>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>(transformed_df, report_dict).  The report always contains at
+least <code class="docutils literal notranslate"><span class="pre">new_columns</span></code>, <code class="docutils literal notranslate"><span class="pre">dropped_columns</span></code>, and <code class="docutils literal notranslate"><span class="pre">rows_affected</span></code>.
+For strategies that support <code class="docutils literal notranslate"><span class="pre">fitted_state</span></code>, the report’s
+<code class="docutils literal notranslate"><span class="pre">per_column</span></code> block is exactly the shape to pass back in as
+<code class="docutils literal notranslate"><span class="pre">fitted_state</span></code> on a future call to replay this step.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="squirrel.modules.preprocessors.transformers.tabular.BinNumericTransformStrategy">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">squirrel.modules.preprocessors.transformers.tabular.</span></span><span class="sig-name descname"><span class="pre">BinNumericTransformStrategy</span></span><a class="reference internal" href="../_modules/squirrel/modules/preprocessors/transformers/tabular.html#BinNumericTransformStrategy"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.modules.preprocessors.transformers.tabular.BinNumericTransformStrategy" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#squirrel.modules.preprocessors.transformers.tabular.DataTransformStrategy" title="squirrel.modules.preprocessors.transformers.tabular.DataTransformStrategy"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataTransformStrategy</span></code></a></p>
+<p>Discretises one or more numeric columns into labelled bins using either
+equal-width or quantile-based (equal-frequency) binning, producing a new
+categorical column per source column.</p>
+<p><code class="docutils literal notranslate"><span class="pre">fitted_state</span></code> support: bin <em>edges</em> are data-dependent (<code class="docutils literal notranslate"><span class="pre">pd.qcut</span></code>/
+<code class="docutils literal notranslate"><span class="pre">pd.cut</span></code> compute them from the input), so at inference time we reuse
+the training-time edges via <code class="docutils literal notranslate"><span class="pre">pd.cut(...,</span> <span class="pre">bins=prior_edges)</span></code> rather than
+re-deriving quantile edges from a small/new inference batch — the latter
+would silently redefine what “high” or “bin 3” means between training
+and inference.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="squirrel.modules.preprocessors.transformers.tabular.BinNumericTransformStrategy.transform">
+<span class="sig-name descname"><span class="pre">transform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fitted_state</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/modules/preprocessors/transformers/tabular.html#BinNumericTransformStrategy.transform"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.modules.preprocessors.transformers.tabular.BinNumericTransformStrategy.transform" title="Link to this definition"></a></dt>
+<dd><p>Apply the transformation to <em>data</em>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataFrame</span></code></span>) – DataFrame to transform.</p></li>
+<li><p><strong>fitted_state</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code>]</span>) – Optional <code class="docutils literal notranslate"><span class="pre">{column:</span> <span class="pre">{...params...}}</span></code> dict of
+previously-fitted parameters (that column’s <code class="docutils literal notranslate"><span class="pre">per_column</span></code> entry
+from a prior training-time report). When present, strategies
+with data-dependent parameters reuse the supplied values instead
+of recomputing them from <em>data</em> — this is the inference-time
+“apply” path. Strategies with no data-dependent parameters
+ignore this argument entirely.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">DataFrame</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code>]</span></p>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>(transformed_df, report_dict).  The report always contains at
+least <code class="docutils literal notranslate"><span class="pre">new_columns</span></code>, <code class="docutils literal notranslate"><span class="pre">dropped_columns</span></code>, and <code class="docutils literal notranslate"><span class="pre">rows_affected</span></code>.
+For strategies that support <code class="docutils literal notranslate"><span class="pre">fitted_state</span></code>, the report’s
+<code class="docutils literal notranslate"><span class="pre">per_column</span></code> block is exactly the shape to pass back in as
+<code class="docutils literal notranslate"><span class="pre">fitted_state</span></code> on a future call to replay this step.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="squirrel.modules.preprocessors.transformers.tabular.DatetimePartsTransformStrategy">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">squirrel.modules.preprocessors.transformers.tabular.</span></span><span class="sig-name descname"><span class="pre">DatetimePartsTransformStrategy</span></span><a class="reference internal" href="../_modules/squirrel/modules/preprocessors/transformers/tabular.html#DatetimePartsTransformStrategy"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.modules.preprocessors.transformers.tabular.DatetimePartsTransformStrategy" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#squirrel.modules.preprocessors.transformers.tabular.DataTransformStrategy" title="squirrel.modules.preprocessors.transformers.tabular.DataTransformStrategy"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataTransformStrategy</span></code></a></p>
+<p>Extracts calendar and time components from one or more datetime columns,
+creating a configurable set of new integer columns (year, month, day,
+day_of_week, hour, minute, second, quarter, week_of_year, is_weekend).</p>
+<p>No data-dependent parameters — every extracted part is a deterministic
+function of the timestamp itself. <code class="docutils literal notranslate"><span class="pre">fitted_state</span></code> is accepted for
+interface consistency but unused; replay is identical to training.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="squirrel.modules.preprocessors.transformers.tabular.DatetimePartsTransformStrategy.transform">
+<span class="sig-name descname"><span class="pre">transform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fitted_state</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/modules/preprocessors/transformers/tabular.html#DatetimePartsTransformStrategy.transform"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.modules.preprocessors.transformers.tabular.DatetimePartsTransformStrategy.transform" title="Link to this definition"></a></dt>
+<dd><p>Apply the transformation to <em>data</em>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataFrame</span></code></span>) – DataFrame to transform.</p></li>
+<li><p><strong>fitted_state</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code>]</span>) – Optional <code class="docutils literal notranslate"><span class="pre">{column:</span> <span class="pre">{...params...}}</span></code> dict of
+previously-fitted parameters (that column’s <code class="docutils literal notranslate"><span class="pre">per_column</span></code> entry
+from a prior training-time report). When present, strategies
+with data-dependent parameters reuse the supplied values instead
+of recomputing them from <em>data</em> — this is the inference-time
+“apply” path. Strategies with no data-dependent parameters
+ignore this argument entirely.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">DataFrame</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code>]</span></p>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>(transformed_df, report_dict).  The report always contains at
+least <code class="docutils literal notranslate"><span class="pre">new_columns</span></code>, <code class="docutils literal notranslate"><span class="pre">dropped_columns</span></code>, and <code class="docutils literal notranslate"><span class="pre">rows_affected</span></code>.
+For strategies that support <code class="docutils literal notranslate"><span class="pre">fitted_state</span></code>, the report’s
+<code class="docutils literal notranslate"><span class="pre">per_column</span></code> block is exactly the shape to pass back in as
+<code class="docutils literal notranslate"><span class="pre">fitted_state</span></code> on a future call to replay this step.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="squirrel.modules.preprocessors.transformers.tabular.InteractionTermsTransformStrategy">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">squirrel.modules.preprocessors.transformers.tabular.</span></span><span class="sig-name descname"><span class="pre">InteractionTermsTransformStrategy</span></span><a class="reference internal" href="../_modules/squirrel/modules/preprocessors/transformers/tabular.html#InteractionTermsTransformStrategy"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.modules.preprocessors.transformers.tabular.InteractionTermsTransformStrategy" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#squirrel.modules.preprocessors.transformers.tabular.DataTransformStrategy" title="squirrel.modules.preprocessors.transformers.tabular.DataTransformStrategy"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataTransformStrategy</span></code></a></p>
+<p>Creates pairwise interaction features between specified numeric column pairs
+using multiplication, division, addition, or subtraction, storing results
+as new columns with auto-generated names.</p>
+<p>No data-dependent parameters — the operation is a fixed function of the
+two columns named in <code class="docutils literal notranslate"><span class="pre">pairs</span></code>. <code class="docutils literal notranslate"><span class="pre">fitted_state</span></code> is accepted for
+interface consistency but unused.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="squirrel.modules.preprocessors.transformers.tabular.InteractionTermsTransformStrategy.transform">
+<span class="sig-name descname"><span class="pre">transform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fitted_state</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/modules/preprocessors/transformers/tabular.html#InteractionTermsTransformStrategy.transform"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.modules.preprocessors.transformers.tabular.InteractionTermsTransformStrategy.transform" title="Link to this definition"></a></dt>
+<dd><p>Apply the transformation to <em>data</em>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataFrame</span></code></span>) – DataFrame to transform.</p></li>
+<li><p><strong>fitted_state</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code>]</span>) – Optional <code class="docutils literal notranslate"><span class="pre">{column:</span> <span class="pre">{...params...}}</span></code> dict of
+previously-fitted parameters (that column’s <code class="docutils literal notranslate"><span class="pre">per_column</span></code> entry
+from a prior training-time report). When present, strategies
+with data-dependent parameters reuse the supplied values instead
+of recomputing them from <em>data</em> — this is the inference-time
+“apply” path. Strategies with no data-dependent parameters
+ignore this argument entirely.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">DataFrame</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code>]</span></p>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>(transformed_df, report_dict).  The report always contains at
+least <code class="docutils literal notranslate"><span class="pre">new_columns</span></code>, <code class="docutils literal notranslate"><span class="pre">dropped_columns</span></code>, and <code class="docutils literal notranslate"><span class="pre">rows_affected</span></code>.
+For strategies that support <code class="docutils literal notranslate"><span class="pre">fitted_state</span></code>, the report’s
+<code class="docutils literal notranslate"><span class="pre">per_column</span></code> block is exactly the shape to pass back in as
+<code class="docutils literal notranslate"><span class="pre">fitted_state</span></code> on a future call to replay this step.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="squirrel.modules.preprocessors.transformers.tabular.PolynomialFeaturesTransformStrategy">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">squirrel.modules.preprocessors.transformers.tabular.</span></span><span class="sig-name descname"><span class="pre">PolynomialFeaturesTransformStrategy</span></span><a class="reference internal" href="../_modules/squirrel/modules/preprocessors/transformers/tabular.html#PolynomialFeaturesTransformStrategy"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.modules.preprocessors.transformers.tabular.PolynomialFeaturesTransformStrategy" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#squirrel.modules.preprocessors.transformers.tabular.DataTransformStrategy" title="squirrel.modules.preprocessors.transformers.tabular.DataTransformStrategy"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataTransformStrategy</span></code></a></p>
+<p>Generates polynomial and optional interaction features up to a specified
+degree for a list of numeric columns, without relying on scikit-learn.</p>
+<p>No data-dependent parameters — powers/cross-products are pure functions
+of each row’s own values. <code class="docutils literal notranslate"><span class="pre">fitted_state</span></code> is accepted for interface
+consistency but unused.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="squirrel.modules.preprocessors.transformers.tabular.PolynomialFeaturesTransformStrategy.transform">
+<span class="sig-name descname"><span class="pre">transform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fitted_state</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/modules/preprocessors/transformers/tabular.html#PolynomialFeaturesTransformStrategy.transform"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.modules.preprocessors.transformers.tabular.PolynomialFeaturesTransformStrategy.transform" title="Link to this definition"></a></dt>
+<dd><p>Apply the transformation to <em>data</em>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataFrame</span></code></span>) – DataFrame to transform.</p></li>
+<li><p><strong>fitted_state</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code>]</span>) – Optional <code class="docutils literal notranslate"><span class="pre">{column:</span> <span class="pre">{...params...}}</span></code> dict of
+previously-fitted parameters (that column’s <code class="docutils literal notranslate"><span class="pre">per_column</span></code> entry
+from a prior training-time report). When present, strategies
+with data-dependent parameters reuse the supplied values instead
+of recomputing them from <em>data</em> — this is the inference-time
+“apply” path. Strategies with no data-dependent parameters
+ignore this argument entirely.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">DataFrame</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code>]</span></p>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>(transformed_df, report_dict).  The report always contains at
+least <code class="docutils literal notranslate"><span class="pre">new_columns</span></code>, <code class="docutils literal notranslate"><span class="pre">dropped_columns</span></code>, and <code class="docutils literal notranslate"><span class="pre">rows_affected</span></code>.
+For strategies that support <code class="docutils literal notranslate"><span class="pre">fitted_state</span></code>, the report’s
+<code class="docutils literal notranslate"><span class="pre">per_column</span></code> block is exactly the shape to pass back in as
+<code class="docutils literal notranslate"><span class="pre">fitted_state</span></code> on a future call to replay this step.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="squirrel.modules.preprocessors.transformers.tabular.AggregationFeaturesTransformStrategy">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">squirrel.modules.preprocessors.transformers.tabular.</span></span><span class="sig-name descname"><span class="pre">AggregationFeaturesTransformStrategy</span></span><a class="reference internal" href="../_modules/squirrel/modules/preprocessors/transformers/tabular.html#AggregationFeaturesTransformStrategy"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.modules.preprocessors.transformers.tabular.AggregationFeaturesTransformStrategy" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#squirrel.modules.preprocessors.transformers.tabular.DataTransformStrategy" title="squirrel.modules.preprocessors.transformers.tabular.DataTransformStrategy"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataTransformStrategy</span></code></a></p>
+<p>Computes group-level aggregations (mean, std, min, max, count, median)
+for a numeric target column grouped by a categorical key column, then
+joins the results back as new columns on the original DataFrame.</p>
+<p><code class="docutils literal notranslate"><span class="pre">fitted_state</span></code> support: the group statistics (e.g. mean income per
+city) are computed from the training data and must NOT be recomputed
+from a small inference batch — a single new row has no meaningful
+“group mean”. When <code class="docutils literal notranslate"><span class="pre">fitted_state</span></code> supplies <code class="docutils literal notranslate"><span class="pre">group_stats</span></code> for a
+<code class="docutils literal notranslate"><span class="pre">(group_column,</span> <span class="pre">agg_column,</span> <span class="pre">agg_func)</span></code> combination, those training-time
+group values are mapped onto the new data; groups seen at inference but
+not during training map to NaN (there is no learned statistic for them).</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="squirrel.modules.preprocessors.transformers.tabular.AggregationFeaturesTransformStrategy.transform">
+<span class="sig-name descname"><span class="pre">transform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fitted_state</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/modules/preprocessors/transformers/tabular.html#AggregationFeaturesTransformStrategy.transform"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.modules.preprocessors.transformers.tabular.AggregationFeaturesTransformStrategy.transform" title="Link to this definition"></a></dt>
+<dd><p>Apply the transformation to <em>data</em>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataFrame</span></code></span>) – DataFrame to transform.</p></li>
+<li><p><strong>fitted_state</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code>]</span>) – Optional <code class="docutils literal notranslate"><span class="pre">{column:</span> <span class="pre">{...params...}}</span></code> dict of
+previously-fitted parameters (that column’s <code class="docutils literal notranslate"><span class="pre">per_column</span></code> entry
+from a prior training-time report). When present, strategies
+with data-dependent parameters reuse the supplied values instead
+of recomputing them from <em>data</em> — this is the inference-time
+“apply” path. Strategies with no data-dependent parameters
+ignore this argument entirely.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">DataFrame</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code>]</span></p>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>(transformed_df, report_dict).  The report always contains at
+least <code class="docutils literal notranslate"><span class="pre">new_columns</span></code>, <code class="docutils literal notranslate"><span class="pre">dropped_columns</span></code>, and <code class="docutils literal notranslate"><span class="pre">rows_affected</span></code>.
+For strategies that support <code class="docutils literal notranslate"><span class="pre">fitted_state</span></code>, the report’s
+<code class="docutils literal notranslate"><span class="pre">per_column</span></code> block is exactly the shape to pass back in as
+<code class="docutils literal notranslate"><span class="pre">fitted_state</span></code> on a future call to replay this step.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="squirrel.modules.preprocessors.transformers.tabular.RatioFeaturesTransformStrategy">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">squirrel.modules.preprocessors.transformers.tabular.</span></span><span class="sig-name descname"><span class="pre">RatioFeaturesTransformStrategy</span></span><a class="reference internal" href="../_modules/squirrel/modules/preprocessors/transformers/tabular.html#RatioFeaturesTransformStrategy"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.modules.preprocessors.transformers.tabular.RatioFeaturesTransformStrategy" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#squirrel.modules.preprocessors.transformers.tabular.DataTransformStrategy" title="squirrel.modules.preprocessors.transformers.tabular.DataTransformStrategy"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataTransformStrategy</span></code></a></p>
+<p>Computes ratio features between a list of numerator columns and a single
+denominator column (or the row-wise sum of all numerator columns), useful
+for compositional data such as spend breakdown or part-to-whole shares.</p>
+<p>No data-dependent parameters when an explicit <code class="docutils literal notranslate"><span class="pre">denominator_column</span></code> is
+given — the ratio is a pure per-row function. When the denominator is
+the row-wise sum of numerators (no <code class="docutils literal notranslate"><span class="pre">denominator_column</span></code>), it’s still
+computed per-row from that row’s own values, so it’s consistent between
+training and inference without needing <code class="docutils literal notranslate"><span class="pre">fitted_state</span></code>.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="squirrel.modules.preprocessors.transformers.tabular.RatioFeaturesTransformStrategy.transform">
+<span class="sig-name descname"><span class="pre">transform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fitted_state</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/modules/preprocessors/transformers/tabular.html#RatioFeaturesTransformStrategy.transform"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.modules.preprocessors.transformers.tabular.RatioFeaturesTransformStrategy.transform" title="Link to this definition"></a></dt>
+<dd><p>Apply the transformation to <em>data</em>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataFrame</span></code></span>) – DataFrame to transform.</p></li>
+<li><p><strong>fitted_state</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code>]</span>) – Optional <code class="docutils literal notranslate"><span class="pre">{column:</span> <span class="pre">{...params...}}</span></code> dict of
+previously-fitted parameters (that column’s <code class="docutils literal notranslate"><span class="pre">per_column</span></code> entry
+from a prior training-time report). When present, strategies
+with data-dependent parameters reuse the supplied values instead
+of recomputing them from <em>data</em> — this is the inference-time
+“apply” path. Strategies with no data-dependent parameters
+ignore this argument entirely.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">DataFrame</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code>]</span></p>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>(transformed_df, report_dict).  The report always contains at
+least <code class="docutils literal notranslate"><span class="pre">new_columns</span></code>, <code class="docutils literal notranslate"><span class="pre">dropped_columns</span></code>, and <code class="docutils literal notranslate"><span class="pre">rows_affected</span></code>.
+For strategies that support <code class="docutils literal notranslate"><span class="pre">fitted_state</span></code>, the report’s
+<code class="docutils literal notranslate"><span class="pre">per_column</span></code> block is exactly the shape to pass back in as
+<code class="docutils literal notranslate"><span class="pre">fitted_state</span></code> on a future call to replay this step.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="squirrel.modules.preprocessors.transformers.tabular.OneHotEncodeTransformStrategy">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">squirrel.modules.preprocessors.transformers.tabular.</span></span><span class="sig-name descname"><span class="pre">OneHotEncodeTransformStrategy</span></span><a class="reference internal" href="../_modules/squirrel/modules/preprocessors/transformers/tabular.html#OneHotEncodeTransformStrategy"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.modules.preprocessors.transformers.tabular.OneHotEncodeTransformStrategy" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#squirrel.modules.preprocessors.transformers.tabular.DataTransformStrategy" title="squirrel.modules.preprocessors.transformers.tabular.DataTransformStrategy"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataTransformStrategy</span></code></a></p>
+<p>Applies one-hot encoding to one or more categorical columns, optionally
+dropping the first dummy to avoid multicollinearity, and removes the
+source columns by default.</p>
+<p><code class="docutils literal notranslate"><span class="pre">fitted_state</span></code> support: the <em>set</em> of dummy columns (and their order)
+is data-dependent — <code class="docutils literal notranslate"><span class="pre">pd.get_dummies</span></code> on a new/small inference batch
+would produce a different (and misaligned) set of columns than training
+did. When <code class="docutils literal notranslate"><span class="pre">fitted_state</span></code> supplies <code class="docutils literal notranslate"><span class="pre">dummy_columns</span></code> for a column
+(produced during training), inference builds exactly that fixed set:
+a category seen at inference but not training contributes to no dummy
+column (all zeros); a category seen at training but absent at inference
+still gets its column, filled with zeros.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="squirrel.modules.preprocessors.transformers.tabular.OneHotEncodeTransformStrategy.transform">
+<span class="sig-name descname"><span class="pre">transform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fitted_state</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/modules/preprocessors/transformers/tabular.html#OneHotEncodeTransformStrategy.transform"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.modules.preprocessors.transformers.tabular.OneHotEncodeTransformStrategy.transform" title="Link to this definition"></a></dt>
+<dd><p>Apply the transformation to <em>data</em>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataFrame</span></code></span>) – DataFrame to transform.</p></li>
+<li><p><strong>fitted_state</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code>]</span>) – Optional <code class="docutils literal notranslate"><span class="pre">{column:</span> <span class="pre">{...params...}}</span></code> dict of
+previously-fitted parameters (that column’s <code class="docutils literal notranslate"><span class="pre">per_column</span></code> entry
+from a prior training-time report). When present, strategies
+with data-dependent parameters reuse the supplied values instead
+of recomputing them from <em>data</em> — this is the inference-time
+“apply” path. Strategies with no data-dependent parameters
+ignore this argument entirely.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">DataFrame</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code>]</span></p>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>(transformed_df, report_dict).  The report always contains at
+least <code class="docutils literal notranslate"><span class="pre">new_columns</span></code>, <code class="docutils literal notranslate"><span class="pre">dropped_columns</span></code>, and <code class="docutils literal notranslate"><span class="pre">rows_affected</span></code>.
+For strategies that support <code class="docutils literal notranslate"><span class="pre">fitted_state</span></code>, the report’s
+<code class="docutils literal notranslate"><span class="pre">per_column</span></code> block is exactly the shape to pass back in as
+<code class="docutils literal notranslate"><span class="pre">fitted_state</span></code> on a future call to replay this step.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="squirrel.modules.preprocessors.transformers.tabular.OrdinalEncodeTransformStrategy">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">squirrel.modules.preprocessors.transformers.tabular.</span></span><span class="sig-name descname"><span class="pre">OrdinalEncodeTransformStrategy</span></span><a class="reference internal" href="../_modules/squirrel/modules/preprocessors/transformers/tabular.html#OrdinalEncodeTransformStrategy"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.modules.preprocessors.transformers.tabular.OrdinalEncodeTransformStrategy" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#squirrel.modules.preprocessors.transformers.tabular.DataTransformStrategy" title="squirrel.modules.preprocessors.transformers.tabular.DataTransformStrategy"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataTransformStrategy</span></code></a></p>
+<p>Encodes one or more ordinal categorical columns as integers according to
+a caller-supplied ordering or, if none is given, lexicographic order,
+with optional handling for unseen categories.</p>
+<p><code class="docutils literal notranslate"><span class="pre">fitted_state</span></code> support: when no explicit <code class="docutils literal notranslate"><span class="pre">orderings</span></code> entry is given
+for a column, the ordering (and therefore the mapping) is derived from
+whichever categories happen to be present in the data — which must be
+the <em>training</em> categories, not whatever shows up in a later inference
+batch. When <code class="docutils literal notranslate"><span class="pre">fitted_state</span></code> supplies <code class="docutils literal notranslate"><span class="pre">mapping</span></code>/<code class="docutils literal notranslate"><span class="pre">ordering</span></code> for a
+column, that exact map is reused; categories unseen at training fall
+back to <code class="docutils literal notranslate"><span class="pre">unknown_value</span></code>, same as any category the trained mapping
+doesn’t recognise.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="squirrel.modules.preprocessors.transformers.tabular.OrdinalEncodeTransformStrategy.transform">
+<span class="sig-name descname"><span class="pre">transform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fitted_state</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/modules/preprocessors/transformers/tabular.html#OrdinalEncodeTransformStrategy.transform"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.modules.preprocessors.transformers.tabular.OrdinalEncodeTransformStrategy.transform" title="Link to this definition"></a></dt>
+<dd><p>Apply the transformation to <em>data</em>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataFrame</span></code></span>) – DataFrame to transform.</p></li>
+<li><p><strong>fitted_state</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code>]</span>) – Optional <code class="docutils literal notranslate"><span class="pre">{column:</span> <span class="pre">{...params...}}</span></code> dict of
+previously-fitted parameters (that column’s <code class="docutils literal notranslate"><span class="pre">per_column</span></code> entry
+from a prior training-time report). When present, strategies
+with data-dependent parameters reuse the supplied values instead
+of recomputing them from <em>data</em> — this is the inference-time
+“apply” path. Strategies with no data-dependent parameters
+ignore this argument entirely.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">DataFrame</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code>]</span></p>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>(transformed_df, report_dict).  The report always contains at
+least <code class="docutils literal notranslate"><span class="pre">new_columns</span></code>, <code class="docutils literal notranslate"><span class="pre">dropped_columns</span></code>, and <code class="docutils literal notranslate"><span class="pre">rows_affected</span></code>.
+For strategies that support <code class="docutils literal notranslate"><span class="pre">fitted_state</span></code>, the report’s
+<code class="docutils literal notranslate"><span class="pre">per_column</span></code> block is exactly the shape to pass back in as
+<code class="docutils literal notranslate"><span class="pre">fitted_state</span></code> on a future call to replay this step.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="squirrel.modules.preprocessors.transformers.tabular.TargetEncodeTransformStrategy">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">squirrel.modules.preprocessors.transformers.tabular.</span></span><span class="sig-name descname"><span class="pre">TargetEncodeTransformStrategy</span></span><a class="reference internal" href="../_modules/squirrel/modules/preprocessors/transformers/tabular.html#TargetEncodeTransformStrategy"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.modules.preprocessors.transformers.tabular.TargetEncodeTransformStrategy" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#squirrel.modules.preprocessors.transformers.tabular.DataTransformStrategy" title="squirrel.modules.preprocessors.transformers.tabular.DataTransformStrategy"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataTransformStrategy</span></code></a></p>
+<p>Replaces each category value with the mean of the target column within that
+category (target / mean encoding), with optional smoothing to shrink small
+groups towards the global mean and reduce overfitting.</p>
+<p><code class="docutils literal notranslate"><span class="pre">fitted_state</span></code> support: this is the strategy most sensitive to being
+re-fit at inference time — target encoding uses the target column, which
+generally is NOT available (or must not be used) at inference time at
+all. When <code class="docutils literal notranslate"><span class="pre">fitted_state</span></code> supplies <code class="docutils literal notranslate"><span class="pre">group_stats</span></code>/<code class="docutils literal notranslate"><span class="pre">global_mean</span></code> for a
+column (from training), those are reused directly and <code class="docutils literal notranslate"><span class="pre">target_column</span></code>
+is not required to be present in <em>data</em>; unseen categories map to the
+training-time <code class="docutils literal notranslate"><span class="pre">global_mean</span></code>, same as at training time.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="squirrel.modules.preprocessors.transformers.tabular.TargetEncodeTransformStrategy.transform">
+<span class="sig-name descname"><span class="pre">transform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fitted_state</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/modules/preprocessors/transformers/tabular.html#TargetEncodeTransformStrategy.transform"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.modules.preprocessors.transformers.tabular.TargetEncodeTransformStrategy.transform" title="Link to this definition"></a></dt>
+<dd><p>Apply the transformation to <em>data</em>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataFrame</span></code></span>) – DataFrame to transform.</p></li>
+<li><p><strong>fitted_state</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code>]</span>) – Optional <code class="docutils literal notranslate"><span class="pre">{column:</span> <span class="pre">{...params...}}</span></code> dict of
+previously-fitted parameters (that column’s <code class="docutils literal notranslate"><span class="pre">per_column</span></code> entry
+from a prior training-time report). When present, strategies
+with data-dependent parameters reuse the supplied values instead
+of recomputing them from <em>data</em> — this is the inference-time
+“apply” path. Strategies with no data-dependent parameters
+ignore this argument entirely.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">DataFrame</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code>]</span></p>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>(transformed_df, report_dict).  The report always contains at
+least <code class="docutils literal notranslate"><span class="pre">new_columns</span></code>, <code class="docutils literal notranslate"><span class="pre">dropped_columns</span></code>, and <code class="docutils literal notranslate"><span class="pre">rows_affected</span></code>.
+For strategies that support <code class="docutils literal notranslate"><span class="pre">fitted_state</span></code>, the report’s
+<code class="docutils literal notranslate"><span class="pre">per_column</span></code> block is exactly the shape to pass back in as
+<code class="docutils literal notranslate"><span class="pre">fitted_state</span></code> on a future call to replay this step.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="squirrel.modules.preprocessors.transformers.tabular.FrequencyEncodeTransformStrategy">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">squirrel.modules.preprocessors.transformers.tabular.</span></span><span class="sig-name descname"><span class="pre">FrequencyEncodeTransformStrategy</span></span><a class="reference internal" href="../_modules/squirrel/modules/preprocessors/transformers/tabular.html#FrequencyEncodeTransformStrategy"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.modules.preprocessors.transformers.tabular.FrequencyEncodeTransformStrategy" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#squirrel.modules.preprocessors.transformers.tabular.DataTransformStrategy" title="squirrel.modules.preprocessors.transformers.tabular.DataTransformStrategy"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataTransformStrategy</span></code></a></p>
+<p>Replaces each category value with its relative frequency (proportion)
+in the dataset — a lightweight, cardinality-safe alternative to one-hot
+encoding for high-cardinality categoricals.</p>
+<p><code class="docutils literal notranslate"><span class="pre">fitted_state</span></code> support: frequencies must come from the training
+distribution, not from an inference batch (which may be a single row,
+where every category would trivially have frequency 1.0). When
+<code class="docutils literal notranslate"><span class="pre">fitted_state</span></code> supplies <code class="docutils literal notranslate"><span class="pre">frequency_map</span></code> for a column, that map is
+reused; categories unseen at training map to 0.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="squirrel.modules.preprocessors.transformers.tabular.FrequencyEncodeTransformStrategy.transform">
+<span class="sig-name descname"><span class="pre">transform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fitted_state</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/modules/preprocessors/transformers/tabular.html#FrequencyEncodeTransformStrategy.transform"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.modules.preprocessors.transformers.tabular.FrequencyEncodeTransformStrategy.transform" title="Link to this definition"></a></dt>
+<dd><p>Apply the transformation to <em>data</em>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataFrame</span></code></span>) – DataFrame to transform.</p></li>
+<li><p><strong>fitted_state</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code>]</span>) – Optional <code class="docutils literal notranslate"><span class="pre">{column:</span> <span class="pre">{...params...}}</span></code> dict of
+previously-fitted parameters (that column’s <code class="docutils literal notranslate"><span class="pre">per_column</span></code> entry
+from a prior training-time report). When present, strategies
+with data-dependent parameters reuse the supplied values instead
+of recomputing them from <em>data</em> — this is the inference-time
+“apply” path. Strategies with no data-dependent parameters
+ignore this argument entirely.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">DataFrame</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code>]</span></p>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>(transformed_df, report_dict).  The report always contains at
+least <code class="docutils literal notranslate"><span class="pre">new_columns</span></code>, <code class="docutils literal notranslate"><span class="pre">dropped_columns</span></code>, and <code class="docutils literal notranslate"><span class="pre">rows_affected</span></code>.
+For strategies that support <code class="docutils literal notranslate"><span class="pre">fitted_state</span></code>, the report’s
+<code class="docutils literal notranslate"><span class="pre">per_column</span></code> block is exactly the shape to pass back in as
+<code class="docutils literal notranslate"><span class="pre">fitted_state</span></code> on a future call to replay this step.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="squirrel.modules.preprocessors.transformers.tabular.BinaryEncodeTransformStrategy">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">squirrel.modules.preprocessors.transformers.tabular.</span></span><span class="sig-name descname"><span class="pre">BinaryEncodeTransformStrategy</span></span><a class="reference internal" href="../_modules/squirrel/modules/preprocessors/transformers/tabular.html#BinaryEncodeTransformStrategy"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.modules.preprocessors.transformers.tabular.BinaryEncodeTransformStrategy" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#squirrel.modules.preprocessors.transformers.tabular.DataTransformStrategy" title="squirrel.modules.preprocessors.transformers.tabular.DataTransformStrategy"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataTransformStrategy</span></code></a></p>
+<p>Encodes each categorical column into binary digits: ordinal integer codes
+are converted to their binary representation, producing ceil(log2(k)) new
+bit columns per source column — more compact than one-hot for high-cardinality
+features while preserving more information than ordinal encoding.</p>
+<p><code class="docutils literal notranslate"><span class="pre">fitted_state</span></code> support: the category → integer-code mapping (and
+therefore the number of bit columns and their meaning) is data-dependent
+(<code class="docutils literal notranslate"><span class="pre">pandas</span></code> assigns codes based on whichever categories are present).
+When <code class="docutils literal notranslate"><span class="pre">fitted_state</span></code> supplies <code class="docutils literal notranslate"><span class="pre">category_map</span></code>/<code class="docutils literal notranslate"><span class="pre">n_bits</span></code> for a column,
+inference reuses that exact mapping; a category unseen at training gets
+code <code class="docutils literal notranslate"><span class="pre">-1</span></code> (all-zero bits), matching pandas’ own convention for
+unrecognised/NaN categories.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="squirrel.modules.preprocessors.transformers.tabular.BinaryEncodeTransformStrategy.transform">
+<span class="sig-name descname"><span class="pre">transform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fitted_state</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/modules/preprocessors/transformers/tabular.html#BinaryEncodeTransformStrategy.transform"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.modules.preprocessors.transformers.tabular.BinaryEncodeTransformStrategy.transform" title="Link to this definition"></a></dt>
+<dd><p>Apply the transformation to <em>data</em>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataFrame</span></code></span>) – DataFrame to transform.</p></li>
+<li><p><strong>fitted_state</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code>]</span>) – Optional <code class="docutils literal notranslate"><span class="pre">{column:</span> <span class="pre">{...params...}}</span></code> dict of
+previously-fitted parameters (that column’s <code class="docutils literal notranslate"><span class="pre">per_column</span></code> entry
+from a prior training-time report). When present, strategies
+with data-dependent parameters reuse the supplied values instead
+of recomputing them from <em>data</em> — this is the inference-time
+“apply” path. Strategies with no data-dependent parameters
+ignore this argument entirely.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">DataFrame</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code>]</span></p>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>(transformed_df, report_dict).  The report always contains at
+least <code class="docutils literal notranslate"><span class="pre">new_columns</span></code>, <code class="docutils literal notranslate"><span class="pre">dropped_columns</span></code>, and <code class="docutils literal notranslate"><span class="pre">rows_affected</span></code>.
+For strategies that support <code class="docutils literal notranslate"><span class="pre">fitted_state</span></code>, the report’s
+<code class="docutils literal notranslate"><span class="pre">per_column</span></code> block is exactly the shape to pass back in as
+<code class="docutils literal notranslate"><span class="pre">fitted_state</span></code> on a future call to replay this step.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="squirrel.modules.preprocessors.transformers.tabular.StandardScaleTransformStrategy">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">squirrel.modules.preprocessors.transformers.tabular.</span></span><span class="sig-name descname"><span class="pre">StandardScaleTransformStrategy</span></span><a class="reference internal" href="../_modules/squirrel/modules/preprocessors/transformers/tabular.html#StandardScaleTransformStrategy"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.modules.preprocessors.transformers.tabular.StandardScaleTransformStrategy" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#squirrel.modules.preprocessors.transformers.tabular.DataTransformStrategy" title="squirrel.modules.preprocessors.transformers.tabular.DataTransformStrategy"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataTransformStrategy</span></code></a></p>
+<p>Applies Z-score standardisation to numeric columns: (x - mean) / std,
+producing zero-mean unit-variance features. Fit statistics are included
+in the report for later inverse-transform or inference-time re-use.</p>
+<p><code class="docutils literal notranslate"><span class="pre">fitted_state</span></code> support: when a column has an entry in <code class="docutils literal notranslate"><span class="pre">fitted_state</span></code>
+(<code class="docutils literal notranslate"><span class="pre">{&quot;mean&quot;:</span> <span class="pre">...,</span> <span class="pre">&quot;std&quot;:</span> <span class="pre">...}</span></code>, as produced by this strategy’s own
+report), those exact values are reused instead of recomputed from
+<em>data</em> — the whole point of this hook, since scaling a single new row
+by its own “mean” and “std” is meaningless (both would trivially be the
+row’s own value and 0/NaN respectively).</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="squirrel.modules.preprocessors.transformers.tabular.StandardScaleTransformStrategy.transform">
+<span class="sig-name descname"><span class="pre">transform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fitted_state</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/modules/preprocessors/transformers/tabular.html#StandardScaleTransformStrategy.transform"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.modules.preprocessors.transformers.tabular.StandardScaleTransformStrategy.transform" title="Link to this definition"></a></dt>
+<dd><p>Apply the transformation to <em>data</em>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataFrame</span></code></span>) – DataFrame to transform.</p></li>
+<li><p><strong>fitted_state</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code>]</span>) – Optional <code class="docutils literal notranslate"><span class="pre">{column:</span> <span class="pre">{...params...}}</span></code> dict of
+previously-fitted parameters (that column’s <code class="docutils literal notranslate"><span class="pre">per_column</span></code> entry
+from a prior training-time report). When present, strategies
+with data-dependent parameters reuse the supplied values instead
+of recomputing them from <em>data</em> — this is the inference-time
+“apply” path. Strategies with no data-dependent parameters
+ignore this argument entirely.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">DataFrame</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code>]</span></p>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>(transformed_df, report_dict).  The report always contains at
+least <code class="docutils literal notranslate"><span class="pre">new_columns</span></code>, <code class="docutils literal notranslate"><span class="pre">dropped_columns</span></code>, and <code class="docutils literal notranslate"><span class="pre">rows_affected</span></code>.
+For strategies that support <code class="docutils literal notranslate"><span class="pre">fitted_state</span></code>, the report’s
+<code class="docutils literal notranslate"><span class="pre">per_column</span></code> block is exactly the shape to pass back in as
+<code class="docutils literal notranslate"><span class="pre">fitted_state</span></code> on a future call to replay this step.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="squirrel.modules.preprocessors.transformers.tabular.MinMaxScaleTransformStrategy">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">squirrel.modules.preprocessors.transformers.tabular.</span></span><span class="sig-name descname"><span class="pre">MinMaxScaleTransformStrategy</span></span><a class="reference internal" href="../_modules/squirrel/modules/preprocessors/transformers/tabular.html#MinMaxScaleTransformStrategy"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.modules.preprocessors.transformers.tabular.MinMaxScaleTransformStrategy" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#squirrel.modules.preprocessors.transformers.tabular.DataTransformStrategy" title="squirrel.modules.preprocessors.transformers.tabular.DataTransformStrategy"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataTransformStrategy</span></code></a></p>
+<p>Scales numeric columns to a [feature_min, feature_max] range (default [0, 1])
+using min-max normalisation: (x - min) / (max - min) * (max_val - min_val) + min_val.</p>
+<p><code class="docutils literal notranslate"><span class="pre">fitted_state</span></code> support: reuses training-time <code class="docutils literal notranslate"><span class="pre">data_min</span></code>/<code class="docutils literal notranslate"><span class="pre">data_max</span></code>
+(as produced by this strategy’s own report) instead of recomputing them
+from the inference batch, so a single new value isn’t trivially scaled
+to the target range’s minimum (or produce a divide-by-zero from a
+single-row min==max).</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="squirrel.modules.preprocessors.transformers.tabular.MinMaxScaleTransformStrategy.transform">
+<span class="sig-name descname"><span class="pre">transform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fitted_state</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/modules/preprocessors/transformers/tabular.html#MinMaxScaleTransformStrategy.transform"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.modules.preprocessors.transformers.tabular.MinMaxScaleTransformStrategy.transform" title="Link to this definition"></a></dt>
+<dd><p>Apply the transformation to <em>data</em>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataFrame</span></code></span>) – DataFrame to transform.</p></li>
+<li><p><strong>fitted_state</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code>]</span>) – Optional <code class="docutils literal notranslate"><span class="pre">{column:</span> <span class="pre">{...params...}}</span></code> dict of
+previously-fitted parameters (that column’s <code class="docutils literal notranslate"><span class="pre">per_column</span></code> entry
+from a prior training-time report). When present, strategies
+with data-dependent parameters reuse the supplied values instead
+of recomputing them from <em>data</em> — this is the inference-time
+“apply” path. Strategies with no data-dependent parameters
+ignore this argument entirely.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">DataFrame</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code>]</span></p>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>(transformed_df, report_dict).  The report always contains at
+least <code class="docutils literal notranslate"><span class="pre">new_columns</span></code>, <code class="docutils literal notranslate"><span class="pre">dropped_columns</span></code>, and <code class="docutils literal notranslate"><span class="pre">rows_affected</span></code>.
+For strategies that support <code class="docutils literal notranslate"><span class="pre">fitted_state</span></code>, the report’s
+<code class="docutils literal notranslate"><span class="pre">per_column</span></code> block is exactly the shape to pass back in as
+<code class="docutils literal notranslate"><span class="pre">fitted_state</span></code> on a future call to replay this step.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="squirrel.modules.preprocessors.transformers.tabular.RobustScaleTransformStrategy">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">squirrel.modules.preprocessors.transformers.tabular.</span></span><span class="sig-name descname"><span class="pre">RobustScaleTransformStrategy</span></span><a class="reference internal" href="../_modules/squirrel/modules/preprocessors/transformers/tabular.html#RobustScaleTransformStrategy"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.modules.preprocessors.transformers.tabular.RobustScaleTransformStrategy" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#squirrel.modules.preprocessors.transformers.tabular.DataTransformStrategy" title="squirrel.modules.preprocessors.transformers.tabular.DataTransformStrategy"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataTransformStrategy</span></code></a></p>
+<p>Scales numeric columns using statistics robust to outliers: centres on the
+median and scales by the interquartile range (IQR), making the transformation
+insensitive to extreme values — (x - median) / IQR.</p>
+<p><code class="docutils literal notranslate"><span class="pre">fitted_state</span></code> support: reuses training-time <code class="docutils literal notranslate"><span class="pre">median</span></code>/<code class="docutils literal notranslate"><span class="pre">iqr</span></code> (as
+produced by this strategy’s own report) rather than recomputing quantiles
+from the (possibly single-row) inference batch.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="squirrel.modules.preprocessors.transformers.tabular.RobustScaleTransformStrategy.transform">
+<span class="sig-name descname"><span class="pre">transform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fitted_state</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/modules/preprocessors/transformers/tabular.html#RobustScaleTransformStrategy.transform"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.modules.preprocessors.transformers.tabular.RobustScaleTransformStrategy.transform" title="Link to this definition"></a></dt>
+<dd><p>Apply the transformation to <em>data</em>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataFrame</span></code></span>) – DataFrame to transform.</p></li>
+<li><p><strong>fitted_state</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code>]</span>) – Optional <code class="docutils literal notranslate"><span class="pre">{column:</span> <span class="pre">{...params...}}</span></code> dict of
+previously-fitted parameters (that column’s <code class="docutils literal notranslate"><span class="pre">per_column</span></code> entry
+from a prior training-time report). When present, strategies
+with data-dependent parameters reuse the supplied values instead
+of recomputing them from <em>data</em> — this is the inference-time
+“apply” path. Strategies with no data-dependent parameters
+ignore this argument entirely.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">DataFrame</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code>]</span></p>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>(transformed_df, report_dict).  The report always contains at
+least <code class="docutils literal notranslate"><span class="pre">new_columns</span></code>, <code class="docutils literal notranslate"><span class="pre">dropped_columns</span></code>, and <code class="docutils literal notranslate"><span class="pre">rows_affected</span></code>.
+For strategies that support <code class="docutils literal notranslate"><span class="pre">fitted_state</span></code>, the report’s
+<code class="docutils literal notranslate"><span class="pre">per_column</span></code> block is exactly the shape to pass back in as
+<code class="docutils literal notranslate"><span class="pre">fitted_state</span></code> on a future call to replay this step.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="squirrel.modules.preprocessors.transformers.tabular.LogTransformTransformStrategy">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">squirrel.modules.preprocessors.transformers.tabular.</span></span><span class="sig-name descname"><span class="pre">LogTransformTransformStrategy</span></span><a class="reference internal" href="../_modules/squirrel/modules/preprocessors/transformers/tabular.html#LogTransformTransformStrategy"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.modules.preprocessors.transformers.tabular.LogTransformTransformStrategy" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#squirrel.modules.preprocessors.transformers.tabular.DataTransformStrategy" title="squirrel.modules.preprocessors.transformers.tabular.DataTransformStrategy"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataTransformStrategy</span></code></a></p>
+<p>Applies a logarithmic transformation to numeric columns to reduce right
+skewness, with configurable base (natural, log2, log10) and an optional
+constant shift to handle zero or negative values.</p>
+<p>No fitted parameters — <code class="docutils literal notranslate"><span class="pre">base</span></code> and <code class="docutils literal notranslate"><span class="pre">shift</span></code> are fixed arguments and
+the transform is applied per-value, so replay at inference time is
+identical to training. <code class="docutils literal notranslate"><span class="pre">fitted_state</span></code> is accepted for interface
+consistency but unused (the <code class="docutils literal notranslate"><span class="pre">skewness_before</span></code>/<code class="docutils literal notranslate"><span class="pre">skewness_after</span></code>
+values recorded are diagnostic only, not needed to reproduce the
+transform).</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="squirrel.modules.preprocessors.transformers.tabular.LogTransformTransformStrategy.transform">
+<span class="sig-name descname"><span class="pre">transform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fitted_state</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/modules/preprocessors/transformers/tabular.html#LogTransformTransformStrategy.transform"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.modules.preprocessors.transformers.tabular.LogTransformTransformStrategy.transform" title="Link to this definition"></a></dt>
+<dd><p>Apply the transformation to <em>data</em>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataFrame</span></code></span>) – DataFrame to transform.</p></li>
+<li><p><strong>fitted_state</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code>]</span>) – Optional <code class="docutils literal notranslate"><span class="pre">{column:</span> <span class="pre">{...params...}}</span></code> dict of
+previously-fitted parameters (that column’s <code class="docutils literal notranslate"><span class="pre">per_column</span></code> entry
+from a prior training-time report). When present, strategies
+with data-dependent parameters reuse the supplied values instead
+of recomputing them from <em>data</em> — this is the inference-time
+“apply” path. Strategies with no data-dependent parameters
+ignore this argument entirely.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">DataFrame</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code>]</span></p>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>(transformed_df, report_dict).  The report always contains at
+least <code class="docutils literal notranslate"><span class="pre">new_columns</span></code>, <code class="docutils literal notranslate"><span class="pre">dropped_columns</span></code>, and <code class="docutils literal notranslate"><span class="pre">rows_affected</span></code>.
+For strategies that support <code class="docutils literal notranslate"><span class="pre">fitted_state</span></code>, the report’s
+<code class="docutils literal notranslate"><span class="pre">per_column</span></code> block is exactly the shape to pass back in as
+<code class="docutils literal notranslate"><span class="pre">fitted_state</span></code> on a future call to replay this step.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="squirrel.modules.preprocessors.transformers.tabular.PowerTransformTransformStrategy">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">squirrel.modules.preprocessors.transformers.tabular.</span></span><span class="sig-name descname"><span class="pre">PowerTransformTransformStrategy</span></span><a class="reference internal" href="../_modules/squirrel/modules/preprocessors/transformers/tabular.html#PowerTransformTransformStrategy"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.modules.preprocessors.transformers.tabular.PowerTransformTransformStrategy" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#squirrel.modules.preprocessors.transformers.tabular.DataTransformStrategy" title="squirrel.modules.preprocessors.transformers.tabular.DataTransformStrategy"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataTransformStrategy</span></code></a></p>
+<p>Applies a Box-Cox (λ) or Yeo-Johnson power transformation to numeric columns
+to stabilise variance and approximate normality. Yeo-Johnson supports zero
+and negative values; Box-Cox requires strictly positive values.</p>
+<p><code class="docutils literal notranslate"><span class="pre">fitted_state</span></code> support: the fitted λ is the single most important
+parameter to persist here — <code class="docutils literal notranslate"><span class="pre">scipy.stats.yeojohnson</span></code>/<code class="docutils literal notranslate"><span class="pre">boxcox</span></code> without
+a fixed <code class="docutils literal notranslate"><span class="pre">lmbda</span></code> re-estimate λ to maximise normality <em>of whatever data
+is passed in</em>, which for a single inference row is undefined/meaningless.
+When <code class="docutils literal notranslate"><span class="pre">fitted_state</span></code> supplies <code class="docutils literal notranslate"><span class="pre">lambda</span></code> for a column, it’s passed as a
+fixed <code class="docutils literal notranslate"><span class="pre">lmbda</span></code> to the scipy functions so the exact training-time
+transform is replayed.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="squirrel.modules.preprocessors.transformers.tabular.PowerTransformTransformStrategy.transform">
+<span class="sig-name descname"><span class="pre">transform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fitted_state</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/modules/preprocessors/transformers/tabular.html#PowerTransformTransformStrategy.transform"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.modules.preprocessors.transformers.tabular.PowerTransformTransformStrategy.transform" title="Link to this definition"></a></dt>
+<dd><p>Apply the transformation to <em>data</em>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataFrame</span></code></span>) – DataFrame to transform.</p></li>
+<li><p><strong>fitted_state</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code>]</span>) – Optional <code class="docutils literal notranslate"><span class="pre">{column:</span> <span class="pre">{...params...}}</span></code> dict of
+previously-fitted parameters (that column’s <code class="docutils literal notranslate"><span class="pre">per_column</span></code> entry
+from a prior training-time report). When present, strategies
+with data-dependent parameters reuse the supplied values instead
+of recomputing them from <em>data</em> — this is the inference-time
+“apply” path. Strategies with no data-dependent parameters
+ignore this argument entirely.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">DataFrame</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code>]</span></p>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>(transformed_df, report_dict).  The report always contains at
+least <code class="docutils literal notranslate"><span class="pre">new_columns</span></code>, <code class="docutils literal notranslate"><span class="pre">dropped_columns</span></code>, and <code class="docutils literal notranslate"><span class="pre">rows_affected</span></code>.
+For strategies that support <code class="docutils literal notranslate"><span class="pre">fitted_state</span></code>, the report’s
+<code class="docutils literal notranslate"><span class="pre">per_column</span></code> block is exactly the shape to pass back in as
+<code class="docutils literal notranslate"><span class="pre">fitted_state</span></code> on a future call to replay this step.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="squirrel.modules.preprocessors.transformers.tabular.TabularDataTransformer">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">squirrel.modules.preprocessors.transformers.tabular.</span></span><span class="sig-name descname"><span class="pre">TabularDataTransformer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">strategy</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/modules/preprocessors/transformers/tabular.html#TabularDataTransformer"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.modules.preprocessors.transformers.tabular.TabularDataTransformer" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Applies a sequence of <code class="docutils literal notranslate"><span class="pre">DataTransformStrategy</span></code> instances to a DataFrame,
+accumulating reports from each step. API mirrors <code class="docutils literal notranslate"><span class="pre">TabularDataCleaner</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>strategy</strong> (<a class="reference internal" href="#squirrel.modules.preprocessors.transformers.tabular.DataTransformStrategy" title="squirrel.modules.preprocessors.transformers.tabular.DataTransformStrategy"><em>DataTransformStrategy</em></a><em> | </em><em>str</em>)</p>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="squirrel.modules.preprocessors.transformers.tabular.TabularDataTransformer.set_strategy">
+<span class="sig-name descname"><span class="pre">set_strategy</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">strategy</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/modules/preprocessors/transformers/tabular.html#TabularDataTransformer.set_strategy"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.modules.preprocessors.transformers.tabular.TabularDataTransformer.set_strategy" title="Link to this definition"></a></dt>
+<dd><p>Replace the current strategy.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></span></p>
+</dd>
+<dt class="field-even">Parameters<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>strategy</strong> (<a class="reference internal" href="#squirrel.modules.preprocessors.transformers.tabular.DataTransformStrategy" title="squirrel.modules.preprocessors.transformers.tabular.DataTransformStrategy"><em>DataTransformStrategy</em></a><em> | </em><em>str</em>)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="squirrel.modules.preprocessors.transformers.tabular.TabularDataTransformer.execute_strategy">
+<span class="sig-name descname"><span class="pre">execute_strategy</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fitted_state</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/modules/preprocessors/transformers/tabular.html#TabularDataTransformer.execute_strategy"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.modules.preprocessors.transformers.tabular.TabularDataTransformer.execute_strategy" title="Link to this definition"></a></dt>
+<dd><p>Run the current strategy and return <code class="docutils literal notranslate"><span class="pre">(transformed_df,</span> <span class="pre">report)</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataFrame</span></code></span>) – DataFrame to transform.</p></li>
+<li><p><strong>fitted_state</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code>]</span>) – Optional previously-fitted per-column parameters
+to replay instead of recomputing from <em>data</em> (inference mode).
+Ignored by strategies with no data-dependent parameters.</p></li>
+<li><p><strong>kwargs</strong> – Forwarded to the strategy’s <code class="docutils literal notranslate"><span class="pre">transform</span></code> method.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">DataFrame</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code>]</span></p>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Tuple of transformed DataFrame and report dict.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="squirrel.modules.preprocessors.transformers.tabular.TabularDataTransformer.run_pipeline">
+<span class="sig-name descname"><span class="pre">run_pipeline</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">steps</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fitted_states</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/modules/preprocessors/transformers/tabular.html#TabularDataTransformer.run_pipeline"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.modules.preprocessors.transformers.tabular.TabularDataTransformer.run_pipeline" title="Link to this definition"></a></dt>
+<dd><p>Execute a sequence of transformation steps, threading the DataFrame
+through each one and accumulating step-level reports.</p>
+<p>Each step dict must have:
+- <code class="docutils literal notranslate"><span class="pre">transform</span></code> (str or DataTransformStrategy): strategy identifier.
+- <code class="docutils literal notranslate"><span class="pre">arguments</span></code> (dict): kwargs forwarded to the strategy.
+- <code class="docutils literal notranslate"><span class="pre">name</span></code> (str, optional): human-readable step label.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataFrame</span></code></span>) – Input DataFrame.</p></li>
+<li><p><strong>steps</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code>]</span>) – Ordered list of step dicts.</p></li>
+<li><p><strong>fitted_states</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code>[<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code>]]]</span>) – Optional list, same length as <em>steps</em> (or
+<code class="docutils literal notranslate"><span class="pre">None</span></code>), of per-step <code class="docutils literal notranslate"><span class="pre">fitted_state</span></code> dicts to replay — pass
+each step’s own <code class="docutils literal notranslate"><span class="pre">per_column</span></code> block from a prior training-time
+report to run this pipeline in “apply” mode against new data
+instead of “fit” mode.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">DataFrame</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code>]]</span></p>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>(final_transformed_df, list_of_reports)</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="squirrel_modules_preprocessors_cleaning_tabular.html" class="btn btn-neutral float-left" title="squirrel.modules.preprocessors.cleaning.tabular" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="squirrel_modules_prompts_abstract_IPromptGenerator.html" class="btn btn-neutral float-right" title="squirrel.modules.prompts.abstract.IPromptGenerator" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, Mazen Soliman.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

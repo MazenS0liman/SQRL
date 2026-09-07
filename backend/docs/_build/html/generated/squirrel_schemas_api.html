@@ -1,0 +1,475 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>squirrel.schemas.api &mdash; squirrel  documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/custom.css?v=adc7883a" />
+
+  
+    <link rel="shortcut icon" href="../_static/sqrl.png"/>
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="../_static/copybutton.js?v=a46eff05"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="squirrel.schemas.argument_spec" href="squirrel_schemas_argument_spec.html" />
+    <link rel="prev" title="squirrel.modules.providers.openrouter.OpenRouterProvider" href="squirrel_modules_providers_openrouter_OpenRouterProvider.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            squirrel
+              <img src="../_static/sqrl.png" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Python API Reference:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="../api.html">Python API Reference</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="../generated_classes.html">Generated API classes</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="squirrel_constants_connector.html">squirrel.constants.connector</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_constants_workspace.html">squirrel.constants.workspace</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_core_config.html">squirrel.core.config</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_core_error_handlers.html">squirrel.core.error_handlers</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_core_logging.html">squirrel.core.logging</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_core_middleware.html">squirrel.core.middleware</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_models_classification.html">squirrel.models.classification</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_models_time_series.html">squirrel.models.time_series</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_modules_agents_abstract_IAgent.html">squirrel.modules.agents.abstract.IAgent</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_modules_agents_builder_TabularDataModelBuilderAgent.html">squirrel.modules.agents.builder.TabularDataModelBuilderAgent</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_modules_agents_exploratory_TabularDataExploratoryAgent.html">squirrel.modules.agents.exploratory.TabularDataExploratoryAgent</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_modules_agents_inspector_TabularDataInsepctorAgent.html">squirrel.modules.agents.inspector.TabularDataInsepctorAgent</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_modules_agents_orchestrator_OrchestratorAgent.html">squirrel.modules.agents.orchestrator.OrchestratorAgent</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_modules_agents_preprocessor_TabularDataProcessorAgent.html">squirrel.modules.agents.preprocessor.TabularDataProcessorAgent</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_modules_inspectors_tabular.html">squirrel.modules.inspectors.tabular</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_modules_preprocessors_cleaning_tabular.html">squirrel.modules.preprocessors.cleaning.tabular</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_modules_preprocessors_transformers_tabular.html">squirrel.modules.preprocessors.transformers.tabular</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_modules_prompts_abstract_IPromptGenerator.html">squirrel.modules.prompts.abstract.IPromptGenerator</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_modules_prompts_builder_TabularDataPromptGenerator.html">squirrel.modules.prompts.builder.TabularDataPromptGenerator</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_modules_prompts_exploratory_ExploratoryPromptGenerator.html">squirrel.modules.prompts.exploratory.ExploratoryPromptGenerator</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_modules_prompts_inspect_InspectPromptGenerator.html">squirrel.modules.prompts.inspect.InspectPromptGenerator</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_modules_prompts_orchestrator_OrchestratorPromptGenerator.html">squirrel.modules.prompts.orchestrator.OrchestratorPromptGenerator</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_modules_prompts_preprocess_PreprocessPromptGenerator.html">squirrel.modules.prompts.preprocess.PreprocessPromptGenerator</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_modules_providers_abstract_IProvider.html">squirrel.modules.providers.abstract.IProvider</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_modules_providers_gemini_GeminiProvider.html">squirrel.modules.providers.gemini.GeminiProvider</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_modules_providers_groq_GroqProvider.html">squirrel.modules.providers.groq.GroqProvider</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_modules_providers_openrouter_OpenRouterProvider.html">squirrel.modules.providers.openrouter.OpenRouterProvider</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">squirrel.schemas.api</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#squirrel.schemas.api.ConversationMessage"><code class="docutils literal notranslate"><span class="pre">ConversationMessage</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#squirrel.schemas.api.LLMTokens"><code class="docutils literal notranslate"><span class="pre">LLMTokens</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#squirrel.schemas.api.AgentRequest"><code class="docutils literal notranslate"><span class="pre">AgentRequest</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#squirrel.schemas.api.AgentResponse"><code class="docutils literal notranslate"><span class="pre">AgentResponse</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#squirrel.schemas.api.ModelMetric"><code class="docutils literal notranslate"><span class="pre">ModelMetric</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_schemas_argument_spec.html">squirrel.schemas.argument_spec</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_schemas_auth.html">squirrel.schemas.auth</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_schemas_connector.html">squirrel.schemas.connector</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_schemas_eda.html">squirrel.schemas.eda</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_schemas_error.html">squirrel.schemas.error</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_schemas_file.html">squirrel.schemas.file</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_schemas_notebook.html">squirrel.schemas.notebook</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_schemas_token.html">squirrel.schemas.token</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_schemas_workspace.html">squirrel.schemas.workspace</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_services_auth_AuthService.html">squirrel.services.auth.AuthService</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_services_auth_TokenService.html">squirrel.services.auth.TokenService</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_services_chat_MessagingService.html">squirrel.services.chat.MessagingService</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_services_data_connector_DataConnectorService.html">squirrel.services.data_connector.DataConnectorService</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_services_file_FileService.html">squirrel.services.file.FileService</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_services_notebook_NotebookService.html">squirrel.services.notebook.NotebookService</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_services_orchestrator_OrchestratorService.html">squirrel.services.orchestrator.OrchestratorService</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_services_storage_blob_IBlobStorageService.html">squirrel.services.storage.blob.IBlobStorageService</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_services_storage_blob_MinIOService.html">squirrel.services.storage.blob.MinIOService</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_services_storage_database_IDatabaseService.html">squirrel.services.storage.database.IDatabaseService</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_services_storage_database_PostgresService.html">squirrel.services.storage.database.PostgresService</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_services_workspace_WorkspaceService.html">squirrel.services.workspace.WorkspaceService</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">squirrel</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../api.html">Python API Reference</a></li>
+          <li class="breadcrumb-item"><a href="../generated_classes.html">Generated API classes</a></li>
+      <li class="breadcrumb-item active">squirrel.schemas.api</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/generated/squirrel_schemas_api.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="squirrel-schemas-api">
+<h1>squirrel.schemas.api<a class="headerlink" href="#squirrel-schemas-api" title="Link to this heading"></a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="squirrel.schemas.api.ConversationMessage">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">squirrel.schemas.api.</span></span><span class="sig-name descname"><span class="pre">ConversationMessage</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">data</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/schemas/api.html#ConversationMessage"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.schemas.api.ConversationMessage" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">BaseModel</span></code></p>
+<section id="conversation-message-model">
+<h2>Conversation Message Model<a class="headerlink" href="#conversation-message-model" title="Link to this heading"></a></h2>
+<p><strong>Description:</strong></p>
+<blockquote>
+<div><p>Represents a single message exchange in a conversation, tracking the speaker
+role (user or assistant), message content, and timestamp.</p>
+</div></blockquote>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="squirrel.schemas.api.ConversationMessage.model_config">
+<span class="sig-name descname"><span class="pre">model_config</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">ClassVar[ConfigDict]</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{}</span></em><a class="headerlink" href="#squirrel.schemas.api.ConversationMessage.model_config" title="Link to this definition"></a></dt>
+<dd><p>Configuration for the model, should be a dictionary conforming to [<cite>ConfigDict</cite>][pydantic.config.ConfigDict].</p>
+</dd></dl>
+
+</section>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>role</strong> (<em>Literal</em><em>[</em><em>'user'</em><em>, </em><em>'assistant'</em><em>]</em>)</p></li>
+<li><p><strong>content</strong> (<em>str</em>)</p></li>
+<li><p><strong>timestamp</strong> (<em>datetime</em>)</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="squirrel.schemas.api.LLMTokens">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">squirrel.schemas.api.</span></span><span class="sig-name descname"><span class="pre">LLMTokens</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">data</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/schemas/api.html#LLMTokens"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.schemas.api.LLMTokens" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">BaseModel</span></code></p>
+<section id="llm-tokens-model">
+<h2>LLM Tokens Model<a class="headerlink" href="#llm-tokens-model" title="Link to this heading"></a></h2>
+<p><strong>Description:</strong></p>
+<blockquote>
+<div><p>Represents the token usage details for a chat interaction, including the number
+of tokens used in the prompt, completion, and total.</p>
+</div></blockquote>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="squirrel.schemas.api.LLMTokens.promptTokens">
+<span class="sig-name descname"><span class="pre">promptTokens</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></em><a class="headerlink" href="#squirrel.schemas.api.LLMTokens.promptTokens" title="Link to this definition"></a></dt>
+<dd><p>Number of tokens used in the prompt</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="squirrel.schemas.api.LLMTokens.completionTokens">
+<span class="sig-name descname"><span class="pre">completionTokens</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></em><a class="headerlink" href="#squirrel.schemas.api.LLMTokens.completionTokens" title="Link to this definition"></a></dt>
+<dd><p>Number of tokens used in the completion</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="squirrel.schemas.api.LLMTokens.totalTokens">
+<span class="sig-name descname"><span class="pre">totalTokens</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></em><a class="headerlink" href="#squirrel.schemas.api.LLMTokens.totalTokens" title="Link to this definition"></a></dt>
+<dd><p>Total number of tokens used (prompt + completion)</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="squirrel.schemas.api.LLMTokens.model_config">
+<span class="sig-name descname"><span class="pre">model_config</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">ClassVar[ConfigDict]</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{}</span></em><a class="headerlink" href="#squirrel.schemas.api.LLMTokens.model_config" title="Link to this definition"></a></dt>
+<dd><p>Configuration for the model, should be a dictionary conforming to [<cite>ConfigDict</cite>][pydantic.config.ConfigDict].</p>
+</dd></dl>
+
+</section>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>promptTokens</strong> (<em>int</em>)</p></li>
+<li><p><strong>completionTokens</strong> (<em>int</em>)</p></li>
+<li><p><strong>totalTokens</strong> (<em>int</em>)</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="squirrel.schemas.api.AgentRequest">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">squirrel.schemas.api.</span></span><span class="sig-name descname"><span class="pre">AgentRequest</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">data</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/schemas/api.html#AgentRequest"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.schemas.api.AgentRequest" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">BaseModel</span></code></p>
+<section id="chat-request-model">
+<h2>Chat Request Model<a class="headerlink" href="#chat-request-model" title="Link to this heading"></a></h2>
+<p><strong>Description:</strong></p>
+<blockquote>
+<div><p>Represents the structure of a chat API request, including the user’s query,
+conversation history, and optional parameters for response generation.</p>
+</div></blockquote>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="squirrel.schemas.api.AgentRequest.query">
+<span class="sig-name descname"><span class="pre">query</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></em><a class="headerlink" href="#squirrel.schemas.api.AgentRequest.query" title="Link to this definition"></a></dt>
+<dd><p>The user’s query or message to the assistant</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="squirrel.schemas.api.AgentRequest.projectId">
+<span class="sig-name descname"><span class="pre">projectId</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></em><a class="headerlink" href="#squirrel.schemas.api.AgentRequest.projectId" title="Link to this definition"></a></dt>
+<dd><p>Unqiue project identifier</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="squirrel.schemas.api.AgentRequest.conversationId">
+<span class="sig-name descname"><span class="pre">conversationId</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></em><a class="headerlink" href="#squirrel.schemas.api.AgentRequest.conversationId" title="Link to this definition"></a></dt>
+<dd><p>Unique conversation identifier</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="squirrel.schemas.api.AgentRequest.body">
+<span class="sig-name descname"><span class="pre">body</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code><span class="pre">[</span><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code><span class="pre">[</span><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code><span class="pre">,</span> <code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code><span class="pre">]]</span></em><a class="headerlink" href="#squirrel.schemas.api.AgentRequest.body" title="Link to this definition"></a></dt>
+<dd><p>Optional request body content</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="squirrel.schemas.api.AgentRequest.fileUrls">
+<span class="sig-name descname"><span class="pre">fileUrls</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code><span class="pre">[</span><code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code><span class="pre">[</span><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code><span class="pre">]]</span></em><a class="headerlink" href="#squirrel.schemas.api.AgentRequest.fileUrls" title="Link to this definition"></a></dt>
+<dd><p>Block Storage URLs of files to be processed</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="squirrel.schemas.api.AgentRequest.conversationHistory">
+<span class="sig-name descname"><span class="pre">conversationHistory</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code><span class="pre">[</span><code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code><span class="pre">[</span><a class="reference internal" href="#squirrel.schemas.api.ConversationMessage" title="squirrel.schemas.api.ConversationMessage"><code class="xref py py-class docutils literal notranslate"><span class="pre">ConversationMessage</span></code></a><span class="pre">]]</span></em><a class="headerlink" href="#squirrel.schemas.api.AgentRequest.conversationHistory" title="Link to this definition"></a></dt>
+<dd><p>Optional recent conversation history for context (up to 10 messages)</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="squirrel.schemas.api.AgentRequest.metadata">
+<span class="sig-name descname"><span class="pre">metadata</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code><span class="pre">[</span><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code><span class="pre">[</span><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code><span class="pre">,</span> <code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code><span class="pre">]]</span></em><a class="headerlink" href="#squirrel.schemas.api.AgentRequest.metadata" title="Link to this definition"></a></dt>
+<dd><p>Optional additional parameters as metadata</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="squirrel.schemas.api.AgentRequest.requestId">
+<span class="sig-name descname"><span class="pre">requestId</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></em><a class="headerlink" href="#squirrel.schemas.api.AgentRequest.requestId" title="Link to this definition"></a></dt>
+<dd><p>Request identifier</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="squirrel.schemas.api.AgentRequest.convert_empty_strings_to_none">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">convert_empty_strings_to_none</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/schemas/api.html#AgentRequest.convert_empty_strings_to_none"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.schemas.api.AgentRequest.convert_empty_strings_to_none" title="Link to this definition"></a></dt>
+<dd><p>Convert empty strings to None for optional URL fields before validation</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code></span></p>
+</dd>
+<dt class="field-even">Parameters<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>data</strong> (<em>Any</em>)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="squirrel.schemas.api.AgentRequest.model_config">
+<span class="sig-name descname"><span class="pre">model_config</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">ClassVar[ConfigDict]</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{}</span></em><a class="headerlink" href="#squirrel.schemas.api.AgentRequest.model_config" title="Link to this definition"></a></dt>
+<dd><p>Configuration for the model, should be a dictionary conforming to [<cite>ConfigDict</cite>][pydantic.config.ConfigDict].</p>
+</dd></dl>
+
+</section>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>query</strong> (<em>str</em>)</p></li>
+<li><p><strong>projectId</strong> (<em>str</em>)</p></li>
+<li><p><strong>conversationId</strong> (<em>str</em>)</p></li>
+<li><p><strong>body</strong> (<em>Dict</em><em>[</em><em>str</em><em>, </em><em>Any</em><em>] </em><em>| </em><em>None</em>)</p></li>
+<li><p><strong>fileUrls</strong> (<em>List</em><em>[</em><em>str</em><em>] </em><em>| </em><em>None</em>)</p></li>
+<li><p><strong>conversationHistory</strong> (<em>List</em><em>[</em><a class="reference internal" href="#squirrel.schemas.api.ConversationMessage" title="squirrel.schemas.api.ConversationMessage"><em>ConversationMessage</em></a><em>] </em><em>| </em><em>None</em>)</p></li>
+<li><p><strong>metadata</strong> (<em>Dict</em><em>[</em><em>str</em><em>, </em><em>Any</em><em>] </em><em>| </em><em>None</em>)</p></li>
+<li><p><strong>requestId</strong> (<em>str</em>)</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="squirrel.schemas.api.AgentResponse">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">squirrel.schemas.api.</span></span><span class="sig-name descname"><span class="pre">AgentResponse</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">data</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/schemas/api.html#AgentResponse"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.schemas.api.AgentResponse" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">BaseModel</span></code></p>
+<section id="agent-response-data-model">
+<h2>Agent Response Data Model<a class="headerlink" href="#agent-response-data-model" title="Link to this heading"></a></h2>
+<p><strong>Description:</strong></p>
+<blockquote>
+<div><p>Represents the data structure of a chat API response, including the assistant’s
+reply, any generated files, and optional metadata.</p>
+</div></blockquote>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="squirrel.schemas.api.AgentResponse.reply">
+<span class="sig-name descname"><span class="pre">reply</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></em><a class="headerlink" href="#squirrel.schemas.api.AgentResponse.reply" title="Link to this definition"></a></dt>
+<dd><p>The assistant’s reply to the user’s query</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="squirrel.schemas.api.AgentResponse.action">
+<span class="sig-name descname"><span class="pre">action</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><code class="xref py py-data docutils literal notranslate"><span class="pre">Literal</span></code><span class="pre">[</span><code class="docutils literal notranslate"><span class="pre">'chat'</span></code><span class="pre">,</span> <code class="docutils literal notranslate"><span class="pre">'explore'</span></code><span class="pre">,</span> <code class="docutils literal notranslate"><span class="pre">'build'</span></code><span class="pre">]</span></em><a class="headerlink" href="#squirrel.schemas.api.AgentResponse.action" title="Link to this definition"></a></dt>
+<dd><p>The action taken by the agent</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="squirrel.schemas.api.AgentResponse.projectId">
+<span class="sig-name descname"><span class="pre">projectId</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></em><a class="headerlink" href="#squirrel.schemas.api.AgentResponse.projectId" title="Link to this definition"></a></dt>
+<dd><p>Unqiue project identifier</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="squirrel.schemas.api.AgentResponse.conversationId">
+<span class="sig-name descname"><span class="pre">conversationId</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></em><a class="headerlink" href="#squirrel.schemas.api.AgentResponse.conversationId" title="Link to this definition"></a></dt>
+<dd><p>Unique conversation identifier</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="squirrel.schemas.api.AgentResponse.fileUrls">
+<span class="sig-name descname"><span class="pre">fileUrls</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code><span class="pre">[</span><code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code><span class="pre">[</span><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code><span class="pre">]]</span></em><a class="headerlink" href="#squirrel.schemas.api.AgentResponse.fileUrls" title="Link to this definition"></a></dt>
+<dd><p>Block Storage URLs of files</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="squirrel.schemas.api.AgentResponse.body">
+<span class="sig-name descname"><span class="pre">body</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code><span class="pre">[</span><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code><span class="pre">[</span><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code><span class="pre">,</span> <code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code><span class="pre">]]</span></em><a class="headerlink" href="#squirrel.schemas.api.AgentResponse.body" title="Link to this definition"></a></dt>
+<dd><p>Optional response body content</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="squirrel.schemas.api.AgentResponse.timestamp">
+<span class="sig-name descname"><span class="pre">timestamp</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><code class="xref py py-class docutils literal notranslate"><span class="pre">datetime</span></code></em><a class="headerlink" href="#squirrel.schemas.api.AgentResponse.timestamp" title="Link to this definition"></a></dt>
+<dd><p>Timestamp when the response was generated</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="squirrel.schemas.api.AgentResponse.responseTime">
+<span class="sig-name descname"><span class="pre">responseTime</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></em><a class="headerlink" href="#squirrel.schemas.api.AgentResponse.responseTime" title="Link to this definition"></a></dt>
+<dd><p>Time taken to generate the response in seconds</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="squirrel.schemas.api.AgentResponse.llmTokens">
+<span class="sig-name descname"><span class="pre">llmTokens</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#squirrel.schemas.api.LLMTokens" title="squirrel.schemas.api.LLMTokens"><code class="xref py py-class docutils literal notranslate"><span class="pre">LLMTokens</span></code></a></em><a class="headerlink" href="#squirrel.schemas.api.AgentResponse.llmTokens" title="Link to this definition"></a></dt>
+<dd><p>LLM token usage details for the response</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="squirrel.schemas.api.AgentResponse.fileProcessingIssues">
+<span class="sig-name descname"><span class="pre">fileProcessingIssues</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code><span class="pre">[</span><code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code><span class="pre">[</span><a class="reference internal" href="squirrel_schemas_file.html#squirrel.schemas.file.FileProcessingIssue" title="squirrel.schemas.file.FileProcessingIssue"><code class="xref py py-class docutils literal notranslate"><span class="pre">FileProcessingIssue</span></code></a><span class="pre">]]</span></em><a class="headerlink" href="#squirrel.schemas.api.AgentResponse.fileProcessingIssues" title="Link to this definition"></a></dt>
+<dd><p>Optional list of files that could not be processed, including details about the issues encountered</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="squirrel.schemas.api.AgentResponse.metadata">
+<span class="sig-name descname"><span class="pre">metadata</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code><span class="pre">[</span><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code><span class="pre">[</span><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code><span class="pre">,</span> <code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code><span class="pre">]]</span></em><a class="headerlink" href="#squirrel.schemas.api.AgentResponse.metadata" title="Link to this definition"></a></dt>
+<dd><p>Optional metadata related to the response</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="squirrel.schemas.api.AgentResponse.model_config">
+<span class="sig-name descname"><span class="pre">model_config</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">ClassVar[ConfigDict]</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{}</span></em><a class="headerlink" href="#squirrel.schemas.api.AgentResponse.model_config" title="Link to this definition"></a></dt>
+<dd><p>Configuration for the model, should be a dictionary conforming to [<cite>ConfigDict</cite>][pydantic.config.ConfigDict].</p>
+</dd></dl>
+
+</section>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>reply</strong> (<em>str</em>)</p></li>
+<li><p><strong>action</strong> (<em>Literal</em><em>[</em><em>'chat'</em><em>, </em><em>'explore'</em><em>, </em><em>'build'</em><em>]</em>)</p></li>
+<li><p><strong>projectId</strong> (<em>str</em>)</p></li>
+<li><p><strong>conversationId</strong> (<em>str</em>)</p></li>
+<li><p><strong>fileUrls</strong> (<em>List</em><em>[</em><em>str</em><em>] </em><em>| </em><em>None</em>)</p></li>
+<li><p><strong>body</strong> (<em>Dict</em><em>[</em><em>str</em><em>, </em><em>Any</em><em>] </em><em>| </em><em>None</em>)</p></li>
+<li><p><strong>timestamp</strong> (<em>datetime</em>)</p></li>
+<li><p><strong>responseTime</strong> (<em>float</em>)</p></li>
+<li><p><strong>llmTokens</strong> (<a class="reference internal" href="#squirrel.schemas.api.LLMTokens" title="squirrel.schemas.api.LLMTokens"><em>LLMTokens</em></a>)</p></li>
+<li><p><strong>fileProcessingIssues</strong> (<em>List</em><em>[</em><a class="reference internal" href="squirrel_schemas_file.html#squirrel.schemas.file.FileProcessingIssue" title="squirrel.schemas.file.FileProcessingIssue"><em>FileProcessingIssue</em></a><em>] </em><em>| </em><em>None</em>)</p></li>
+<li><p><strong>metadata</strong> (<em>Dict</em><em>[</em><em>str</em><em>, </em><em>Any</em><em>] </em><em>| </em><em>None</em>)</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="squirrel.schemas.api.ModelMetric">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">squirrel.schemas.api.</span></span><span class="sig-name descname"><span class="pre">ModelMetric</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">data</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/schemas/api.html#ModelMetric"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.schemas.api.ModelMetric" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">BaseModel</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>model_key</strong> (<em>str</em>)</p></li>
+<li><p><strong>metric_name</strong> (<em>str</em>)</p></li>
+<li><p><strong>mean</strong> (<em>float</em>)</p></li>
+<li><p><strong>std</strong> (<em>float</em><em> | </em><em>None</em>)</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="squirrel.schemas.api.ModelMetric.model_config">
+<span class="sig-name descname"><span class="pre">model_config</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">ClassVar[ConfigDict]</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{}</span></em><a class="headerlink" href="#squirrel.schemas.api.ModelMetric.model_config" title="Link to this definition"></a></dt>
+<dd><p>Configuration for the model, should be a dictionary conforming to [<cite>ConfigDict</cite>][pydantic.config.ConfigDict].</p>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="squirrel_modules_providers_openrouter_OpenRouterProvider.html" class="btn btn-neutral float-left" title="squirrel.modules.providers.openrouter.OpenRouterProvider" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="squirrel_schemas_argument_spec.html" class="btn btn-neutral float-right" title="squirrel.schemas.argument_spec" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, Mazen Soliman.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

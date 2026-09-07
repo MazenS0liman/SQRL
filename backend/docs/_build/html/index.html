@@ -6,14 +6,14 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>TuneML documentation &mdash; tuneml  documentation</title>
+  <title>Squirrel Documentation &mdash; squirrel  documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="_static/copybutton.css?v=76b2166b" />
       <link rel="stylesheet" type="text/css" href="_static/css/custom.css?v=adc7883a" />
 
   
-    <link rel="shortcut icon" href="_static/tune-ml.png"/>
+    <link rel="shortcut icon" href="_static/sqrl.png"/>
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
       <script src="_static/documentation_options.js?v=5929fcd5"></script>
@@ -23,7 +23,8 @@
       <script src="_static/copybutton.js?v=a46eff05"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
-    <link rel="search" title="Search" href="search.html" /> 
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Python API Reference" href="api.html" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -35,8 +36,8 @@
           
           
           <a href="#" class="icon icon-home">
-            tuneml
-              <img src="_static/tune-ml.png" class="logo" alt="Logo"/>
+            squirrel
+              <img src="_static/sqrl.png" class="logo" alt="Logo"/>
           </a>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
@@ -46,18 +47,18 @@
   </form>
 </div>
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
-              <!-- Local TOC -->
-              <div class="local-toc"><ul>
-<li><a class="reference internal" href="#">TuneML documentation</a></li>
+              <p class="caption" role="heading"><span class="caption-text">Python API Reference:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="api.html">Python API Reference</a></li>
 </ul>
-</div>
+
         </div>
       </div>
     </nav>
 
     <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
           <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-          <a href="#">tuneml</a>
+          <a href="#">squirrel</a>
       </nav>
 
       <div class="wy-nav-content">
@@ -65,7 +66,7 @@
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
       <li><a href="#" class="icon icon-home" aria-label="Home"></a></li>
-      <li class="breadcrumb-item active">TuneML documentation</li>
+      <li class="breadcrumb-item active">Squirrel Documentation</li>
       <li class="wy-breadcrumbs-aside">
             <a href="_sources/index.rst.txt" rel="nofollow"> View page source</a>
       </li>
@@ -75,19 +76,116 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <section id="tuneml-documentation">
-<h1>TuneML documentation<a class="headerlink" href="#tuneml-documentation" title="Link to this heading"></a></h1>
-<p>Add your content using <code class="docutils literal notranslate"><span class="pre">reStructuredText</span></code> syntax. See the
-<a class="reference external" href="https://www.sphinx-doc.org/en/master/usage/restructuredtext/index.html">reStructuredText</a>
-documentation for details.</p>
-<div class="toctree-wrapper compound">
+  <section id="squirrel-documentation">
+<h1>Squirrel Documentation<a class="headerlink" href="#squirrel-documentation" title="Link to this heading"></a></h1>
+<p>Squirrel is a full-stack data workspace for uploading or connecting tabular
+data, preparing it for machine learning, and serving predictions through an
+API.</p>
+<section id="architecture">
+<h2>Architecture<a class="headerlink" href="#architecture" title="Link to this heading"></a></h2>
+<p>The application is composed of a React client and a FastAPI backend. The
+backend stores application metadata in PostgreSQL and uploaded files,
+processed datasets, pipelines, and model artifacts in MinIO.</p>
+<p>The production Docker image builds the frontend first, then serves the
+compiled single-page application and the API from the same container.</p>
+</section>
+<section id="quick-start">
+<h2>Quick start<a class="headerlink" href="#quick-start" title="Link to this heading"></a></h2>
+<p>From the repository root, create <code class="docutils literal notranslate"><span class="pre">.env</span></code> from <code class="docutils literal notranslate"><span class="pre">.env.example</span></code>, add the
+provider credentials required by the agents you plan to use, and start the
+services:</p>
+<div class="highlight-powershell notranslate"><div class="highlight"><pre><span></span><span class="nb">Copy-Item</span> <span class="p">.</span><span class="n">env</span><span class="p">.</span><span class="n">example</span> <span class="p">.</span><span class="n">env</span>
+<span class="n">docker</span> <span class="n">compose</span> <span class="n">up</span> <span class="p">-</span><span class="n">-build</span> <span class="n">-d</span>
+</pre></div>
 </div>
+<p>Open the application at <code class="docutils literal notranslate"><span class="pre">http://localhost:8000</span></code>. FastAPI’s interactive API
+reference is available at <code class="docutils literal notranslate"><span class="pre">http://localhost:8000/docs</span></code> outside production.</p>
+</section>
+<section id="workflow">
+<h2>Workflow<a class="headerlink" href="#workflow" title="Link to this heading"></a></h2>
+<ol class="arabic simple">
+<li><p>Register or log in.</p></li>
+<li><p>Create a workspace.</p></li>
+<li><p>Upload CSV data or configure a PostgreSQL connector.</p></li>
+<li><p>Inspect and preprocess the data with the assisted workflow.</p></li>
+<li><p>Train and compare models.</p></li>
+<li><p>Review metrics and use the prediction form or workspace prediction API.</p></li>
+</ol>
+</section>
+<section id="api-authentication">
+<h2>API authentication<a class="headerlink" href="#api-authentication" title="Link to this heading"></a></h2>
+<p>Protected API requests use a bearer token returned by
+<code class="docutils literal notranslate"><span class="pre">/api/auth/login</span></code> or <code class="docutils literal notranslate"><span class="pre">/api/auth/register</span></code>. A completed workspace can
+score rows with <code class="docutils literal notranslate"><span class="pre">POST</span> <span class="pre">/api/workspace/{workspace_id}/api/predict</span></code>.</p>
+<div class="toctree-wrapper compound">
+<p class="caption" role="heading"><span class="caption-text">Python API Reference:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="api.html">Python API Reference</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="generated_classes.html">Generated API classes</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="generated/squirrel_constants_connector.html">squirrel.constants.connector</a></li>
+<li class="toctree-l3"><a class="reference internal" href="generated/squirrel_constants_workspace.html">squirrel.constants.workspace</a></li>
+<li class="toctree-l3"><a class="reference internal" href="generated/squirrel_core_config.html">squirrel.core.config</a></li>
+<li class="toctree-l3"><a class="reference internal" href="generated/squirrel_core_error_handlers.html">squirrel.core.error_handlers</a></li>
+<li class="toctree-l3"><a class="reference internal" href="generated/squirrel_core_logging.html">squirrel.core.logging</a></li>
+<li class="toctree-l3"><a class="reference internal" href="generated/squirrel_core_middleware.html">squirrel.core.middleware</a></li>
+<li class="toctree-l3"><a class="reference internal" href="generated/squirrel_models_classification.html">squirrel.models.classification</a></li>
+<li class="toctree-l3"><a class="reference internal" href="generated/squirrel_models_time_series.html">squirrel.models.time_series</a></li>
+<li class="toctree-l3"><a class="reference internal" href="generated/squirrel_modules_agents_abstract_IAgent.html">squirrel.modules.agents.abstract.IAgent</a></li>
+<li class="toctree-l3"><a class="reference internal" href="generated/squirrel_modules_agents_builder_TabularDataModelBuilderAgent.html">squirrel.modules.agents.builder.TabularDataModelBuilderAgent</a></li>
+<li class="toctree-l3"><a class="reference internal" href="generated/squirrel_modules_agents_exploratory_TabularDataExploratoryAgent.html">squirrel.modules.agents.exploratory.TabularDataExploratoryAgent</a></li>
+<li class="toctree-l3"><a class="reference internal" href="generated/squirrel_modules_agents_inspector_TabularDataInsepctorAgent.html">squirrel.modules.agents.inspector.TabularDataInsepctorAgent</a></li>
+<li class="toctree-l3"><a class="reference internal" href="generated/squirrel_modules_agents_orchestrator_OrchestratorAgent.html">squirrel.modules.agents.orchestrator.OrchestratorAgent</a></li>
+<li class="toctree-l3"><a class="reference internal" href="generated/squirrel_modules_agents_preprocessor_TabularDataProcessorAgent.html">squirrel.modules.agents.preprocessor.TabularDataProcessorAgent</a></li>
+<li class="toctree-l3"><a class="reference internal" href="generated/squirrel_modules_inspectors_tabular.html">squirrel.modules.inspectors.tabular</a></li>
+<li class="toctree-l3"><a class="reference internal" href="generated/squirrel_modules_preprocessors_cleaning_tabular.html">squirrel.modules.preprocessors.cleaning.tabular</a></li>
+<li class="toctree-l3"><a class="reference internal" href="generated/squirrel_modules_preprocessors_transformers_tabular.html">squirrel.modules.preprocessors.transformers.tabular</a></li>
+<li class="toctree-l3"><a class="reference internal" href="generated/squirrel_modules_prompts_abstract_IPromptGenerator.html">squirrel.modules.prompts.abstract.IPromptGenerator</a></li>
+<li class="toctree-l3"><a class="reference internal" href="generated/squirrel_modules_prompts_builder_TabularDataPromptGenerator.html">squirrel.modules.prompts.builder.TabularDataPromptGenerator</a></li>
+<li class="toctree-l3"><a class="reference internal" href="generated/squirrel_modules_prompts_exploratory_ExploratoryPromptGenerator.html">squirrel.modules.prompts.exploratory.ExploratoryPromptGenerator</a></li>
+<li class="toctree-l3"><a class="reference internal" href="generated/squirrel_modules_prompts_inspect_InspectPromptGenerator.html">squirrel.modules.prompts.inspect.InspectPromptGenerator</a></li>
+<li class="toctree-l3"><a class="reference internal" href="generated/squirrel_modules_prompts_orchestrator_OrchestratorPromptGenerator.html">squirrel.modules.prompts.orchestrator.OrchestratorPromptGenerator</a></li>
+<li class="toctree-l3"><a class="reference internal" href="generated/squirrel_modules_prompts_preprocess_PreprocessPromptGenerator.html">squirrel.modules.prompts.preprocess.PreprocessPromptGenerator</a></li>
+<li class="toctree-l3"><a class="reference internal" href="generated/squirrel_modules_providers_abstract_IProvider.html">squirrel.modules.providers.abstract.IProvider</a></li>
+<li class="toctree-l3"><a class="reference internal" href="generated/squirrel_modules_providers_gemini_GeminiProvider.html">squirrel.modules.providers.gemini.GeminiProvider</a></li>
+<li class="toctree-l3"><a class="reference internal" href="generated/squirrel_modules_providers_groq_GroqProvider.html">squirrel.modules.providers.groq.GroqProvider</a></li>
+<li class="toctree-l3"><a class="reference internal" href="generated/squirrel_modules_providers_openrouter_OpenRouterProvider.html">squirrel.modules.providers.openrouter.OpenRouterProvider</a></li>
+<li class="toctree-l3"><a class="reference internal" href="generated/squirrel_schemas_api.html">squirrel.schemas.api</a></li>
+<li class="toctree-l3"><a class="reference internal" href="generated/squirrel_schemas_argument_spec.html">squirrel.schemas.argument_spec</a></li>
+<li class="toctree-l3"><a class="reference internal" href="generated/squirrel_schemas_auth.html">squirrel.schemas.auth</a></li>
+<li class="toctree-l3"><a class="reference internal" href="generated/squirrel_schemas_connector.html">squirrel.schemas.connector</a></li>
+<li class="toctree-l3"><a class="reference internal" href="generated/squirrel_schemas_eda.html">squirrel.schemas.eda</a></li>
+<li class="toctree-l3"><a class="reference internal" href="generated/squirrel_schemas_error.html">squirrel.schemas.error</a></li>
+<li class="toctree-l3"><a class="reference internal" href="generated/squirrel_schemas_file.html">squirrel.schemas.file</a></li>
+<li class="toctree-l3"><a class="reference internal" href="generated/squirrel_schemas_notebook.html">squirrel.schemas.notebook</a></li>
+<li class="toctree-l3"><a class="reference internal" href="generated/squirrel_schemas_token.html">squirrel.schemas.token</a></li>
+<li class="toctree-l3"><a class="reference internal" href="generated/squirrel_schemas_workspace.html">squirrel.schemas.workspace</a></li>
+<li class="toctree-l3"><a class="reference internal" href="generated/squirrel_services_auth_AuthService.html">squirrel.services.auth.AuthService</a></li>
+<li class="toctree-l3"><a class="reference internal" href="generated/squirrel_services_auth_TokenService.html">squirrel.services.auth.TokenService</a></li>
+<li class="toctree-l3"><a class="reference internal" href="generated/squirrel_services_chat_MessagingService.html">squirrel.services.chat.MessagingService</a></li>
+<li class="toctree-l3"><a class="reference internal" href="generated/squirrel_services_data_connector_DataConnectorService.html">squirrel.services.data_connector.DataConnectorService</a></li>
+<li class="toctree-l3"><a class="reference internal" href="generated/squirrel_services_file_FileService.html">squirrel.services.file.FileService</a></li>
+<li class="toctree-l3"><a class="reference internal" href="generated/squirrel_services_notebook_NotebookService.html">squirrel.services.notebook.NotebookService</a></li>
+<li class="toctree-l3"><a class="reference internal" href="generated/squirrel_services_orchestrator_OrchestratorService.html">squirrel.services.orchestrator.OrchestratorService</a></li>
+<li class="toctree-l3"><a class="reference internal" href="generated/squirrel_services_storage_blob_IBlobStorageService.html">squirrel.services.storage.blob.IBlobStorageService</a></li>
+<li class="toctree-l3"><a class="reference internal" href="generated/squirrel_services_storage_blob_MinIOService.html">squirrel.services.storage.blob.MinIOService</a></li>
+<li class="toctree-l3"><a class="reference internal" href="generated/squirrel_services_storage_database_IDatabaseService.html">squirrel.services.storage.database.IDatabaseService</a></li>
+<li class="toctree-l3"><a class="reference internal" href="generated/squirrel_services_storage_database_PostgresService.html">squirrel.services.storage.database.PostgresService</a></li>
+<li class="toctree-l3"><a class="reference internal" href="generated/squirrel_services_workspace_WorkspaceService.html">squirrel.services.workspace.WorkspaceService</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</div>
+</section>
 </section>
 
 
            </div>
           </div>
-          <footer>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="api.html" class="btn btn-neutral float-right" title="Python API Reference" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
 
   <hr/>
 

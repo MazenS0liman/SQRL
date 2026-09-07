@@ -11,7 +11,7 @@ Enables monitoring and verification of the SQRL application's availability and u
 
 Endpoints
 ---------
-.. code-block:: http
+.. code-block:: text
 
     GET /
 

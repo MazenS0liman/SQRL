@@ -1,0 +1,301 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>squirrel.models.classification &mdash; squirrel  documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/custom.css?v=adc7883a" />
+
+  
+    <link rel="shortcut icon" href="../../../_static/sqrl.png"/>
+      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="../../../_static/copybutton.js?v=a46eff05"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            squirrel
+              <img src="../../../_static/sqrl.png" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Python API Reference:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../api.html">Python API Reference</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">squirrel</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">squirrel.models.classification</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for squirrel.models.classification</h1><div class="highlight"><pre>
+<span></span><span class="sd">"""Sklearn-compatible tabular model classes.</span>
+
+<span class="sd">The classes in this module intentionally inherit from their sklearn</span>
+<span class="sd">counterparts. This keeps them compatible with ``clone``, ``cross_validate``</span>
+<span class="sd">and joblib while giving the application a stable model namespace.</span>
+<span class="sd">"""</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.ensemble</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+	<span class="n">AdaBoostClassifier</span><span class="p">,</span>
+	<span class="n">AdaBoostRegressor</span><span class="p">,</span>
+	<span class="n">ExtraTreesClassifier</span><span class="p">,</span>
+	<span class="n">ExtraTreesRegressor</span><span class="p">,</span>
+	<span class="n">GradientBoostingClassifier</span><span class="p">,</span>
+	<span class="n">GradientBoostingRegressor</span><span class="p">,</span>
+	<span class="n">RandomForestClassifier</span><span class="p">,</span>
+	<span class="n">RandomForestRegressor</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.linear_model</span><span class="w"> </span><span class="kn">import</span> <span class="n">Lasso</span><span class="p">,</span> <span class="n">LogisticRegression</span><span class="p">,</span> <span class="n">Ridge</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.neighbors</span><span class="w"> </span><span class="kn">import</span> <span class="n">KNeighborsClassifier</span><span class="p">,</span> <span class="n">KNeighborsRegressor</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.svm</span><span class="w"> </span><span class="kn">import</span> <span class="n">SVC</span><span class="p">,</span> <span class="n">SVR</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.tree</span><span class="w"> </span><span class="kn">import</span> <span class="n">DecisionTreeClassifier</span><span class="p">,</span> <span class="n">DecisionTreeRegressor</span>
+
+
+<div class="viewcode-block" id="LogisticRegressionModel">
+<a class="viewcode-back" href="../../../generated/squirrel_models_classification.html#squirrel.models.classification.LogisticRegressionModel">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">LogisticRegressionModel</span><span class="p">(</span><span class="n">LogisticRegression</span><span class="p">):</span>
+	<span class="k">pass</span></div>
+
+
+
+<div class="viewcode-block" id="RidgeModel">
+<a class="viewcode-back" href="../../../generated/squirrel_models_classification.html#squirrel.models.classification.RidgeModel">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">RidgeModel</span><span class="p">(</span><span class="n">Ridge</span><span class="p">):</span>
+	<span class="k">pass</span></div>
+
+
+
+<div class="viewcode-block" id="LassoModel">
+<a class="viewcode-back" href="../../../generated/squirrel_models_classification.html#squirrel.models.classification.LassoModel">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">LassoModel</span><span class="p">(</span><span class="n">Lasso</span><span class="p">):</span>
+	<span class="k">pass</span></div>
+
+
+
+<div class="viewcode-block" id="RandomForestClassifierModel">
+<a class="viewcode-back" href="../../../generated/squirrel_models_classification.html#squirrel.models.classification.RandomForestClassifierModel">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">RandomForestClassifierModel</span><span class="p">(</span><span class="n">RandomForestClassifier</span><span class="p">):</span>
+	<span class="k">pass</span></div>
+
+
+
+<div class="viewcode-block" id="RandomForestRegressorModel">
+<a class="viewcode-back" href="../../../generated/squirrel_models_classification.html#squirrel.models.classification.RandomForestRegressorModel">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">RandomForestRegressorModel</span><span class="p">(</span><span class="n">RandomForestRegressor</span><span class="p">):</span>
+	<span class="k">pass</span></div>
+
+
+
+<div class="viewcode-block" id="GradientBoostingClassifierModel">
+<a class="viewcode-back" href="../../../generated/squirrel_models_classification.html#squirrel.models.classification.GradientBoostingClassifierModel">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">GradientBoostingClassifierModel</span><span class="p">(</span><span class="n">GradientBoostingClassifier</span><span class="p">):</span>
+	<span class="k">pass</span></div>
+
+
+
+<div class="viewcode-block" id="GradientBoostingRegressorModel">
+<a class="viewcode-back" href="../../../generated/squirrel_models_classification.html#squirrel.models.classification.GradientBoostingRegressorModel">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">GradientBoostingRegressorModel</span><span class="p">(</span><span class="n">GradientBoostingRegressor</span><span class="p">):</span>
+	<span class="k">pass</span></div>
+
+
+
+<div class="viewcode-block" id="ExtraTreesClassifierModel">
+<a class="viewcode-back" href="../../../generated/squirrel_models_classification.html#squirrel.models.classification.ExtraTreesClassifierModel">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">ExtraTreesClassifierModel</span><span class="p">(</span><span class="n">ExtraTreesClassifier</span><span class="p">):</span>
+	<span class="k">pass</span></div>
+
+
+
+<div class="viewcode-block" id="ExtraTreesRegressorModel">
+<a class="viewcode-back" href="../../../generated/squirrel_models_classification.html#squirrel.models.classification.ExtraTreesRegressorModel">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">ExtraTreesRegressorModel</span><span class="p">(</span><span class="n">ExtraTreesRegressor</span><span class="p">):</span>
+	<span class="k">pass</span></div>
+
+
+
+<div class="viewcode-block" id="AdaBoostClassifierModel">
+<a class="viewcode-back" href="../../../generated/squirrel_models_classification.html#squirrel.models.classification.AdaBoostClassifierModel">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">AdaBoostClassifierModel</span><span class="p">(</span><span class="n">AdaBoostClassifier</span><span class="p">):</span>
+	<span class="k">pass</span></div>
+
+
+
+<div class="viewcode-block" id="AdaBoostRegressorModel">
+<a class="viewcode-back" href="../../../generated/squirrel_models_classification.html#squirrel.models.classification.AdaBoostRegressorModel">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">AdaBoostRegressorModel</span><span class="p">(</span><span class="n">AdaBoostRegressor</span><span class="p">):</span>
+	<span class="k">pass</span></div>
+
+
+
+<div class="viewcode-block" id="DecisionTreeClassifierModel">
+<a class="viewcode-back" href="../../../generated/squirrel_models_classification.html#squirrel.models.classification.DecisionTreeClassifierModel">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">DecisionTreeClassifierModel</span><span class="p">(</span><span class="n">DecisionTreeClassifier</span><span class="p">):</span>
+	<span class="k">pass</span></div>
+
+
+
+<div class="viewcode-block" id="DecisionTreeRegressorModel">
+<a class="viewcode-back" href="../../../generated/squirrel_models_classification.html#squirrel.models.classification.DecisionTreeRegressorModel">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">DecisionTreeRegressorModel</span><span class="p">(</span><span class="n">DecisionTreeRegressor</span><span class="p">):</span>
+	<span class="k">pass</span></div>
+
+
+
+<div class="viewcode-block" id="SVCModel">
+<a class="viewcode-back" href="../../../generated/squirrel_models_classification.html#squirrel.models.classification.SVCModel">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">SVCModel</span><span class="p">(</span><span class="n">SVC</span><span class="p">):</span>
+	<span class="k">pass</span></div>
+
+
+
+<div class="viewcode-block" id="SVRModel">
+<a class="viewcode-back" href="../../../generated/squirrel_models_classification.html#squirrel.models.classification.SVRModel">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">SVRModel</span><span class="p">(</span><span class="n">SVR</span><span class="p">):</span>
+	<span class="k">pass</span></div>
+
+
+
+<div class="viewcode-block" id="KNeighborsClassifierModel">
+<a class="viewcode-back" href="../../../generated/squirrel_models_classification.html#squirrel.models.classification.KNeighborsClassifierModel">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">KNeighborsClassifierModel</span><span class="p">(</span><span class="n">KNeighborsClassifier</span><span class="p">):</span>
+	<span class="k">pass</span></div>
+
+
+
+<div class="viewcode-block" id="KNeighborsRegressorModel">
+<a class="viewcode-back" href="../../../generated/squirrel_models_classification.html#squirrel.models.classification.KNeighborsRegressorModel">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">KNeighborsRegressorModel</span><span class="p">(</span><span class="n">KNeighborsRegressor</span><span class="p">):</span>
+	<span class="k">pass</span></div>
+
+
+
+<span class="k">try</span><span class="p">:</span>
+	<span class="kn">from</span><span class="w"> </span><span class="nn">xgboost</span><span class="w"> </span><span class="kn">import</span> <span class="n">XGBClassifier</span><span class="p">,</span> <span class="n">XGBRegressor</span>
+<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+	<span class="n">XGBClassifierModel</span> <span class="o">=</span> <span class="kc">None</span>
+	<span class="n">XGBRegressorModel</span> <span class="o">=</span> <span class="kc">None</span>
+<span class="k">else</span><span class="p">:</span>
+	<span class="k">class</span><span class="w"> </span><span class="nc">XGBClassifierModel</span><span class="p">(</span><span class="n">XGBClassifier</span><span class="p">):</span>
+		<span class="k">pass</span>
+
+	<span class="k">class</span><span class="w"> </span><span class="nc">XGBRegressorModel</span><span class="p">(</span><span class="n">XGBRegressor</span><span class="p">):</span>
+		<span class="k">pass</span>
+
+
+<span class="k">try</span><span class="p">:</span>
+	<span class="kn">from</span><span class="w"> </span><span class="nn">lightgbm</span><span class="w"> </span><span class="kn">import</span> <span class="n">LGBMClassifier</span><span class="p">,</span> <span class="n">LGBMRegressor</span>
+<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+	<span class="n">LGBMClassifierModel</span> <span class="o">=</span> <span class="kc">None</span>
+	<span class="n">LGBMRegressorModel</span> <span class="o">=</span> <span class="kc">None</span>
+<span class="k">else</span><span class="p">:</span>
+	<span class="k">class</span><span class="w"> </span><span class="nc">LGBMClassifierModel</span><span class="p">(</span><span class="n">LGBMClassifier</span><span class="p">):</span>
+		<span class="k">pass</span>
+
+	<span class="k">class</span><span class="w"> </span><span class="nc">LGBMRegressorModel</span><span class="p">(</span><span class="n">LGBMRegressor</span><span class="p">):</span>
+		<span class="k">pass</span>
+
+
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span>
+	<span class="s2">"LogisticRegressionModel"</span><span class="p">,</span>
+	<span class="s2">"RidgeModel"</span><span class="p">,</span>
+	<span class="s2">"LassoModel"</span><span class="p">,</span>
+	<span class="s2">"RandomForestClassifierModel"</span><span class="p">,</span>
+	<span class="s2">"RandomForestRegressorModel"</span><span class="p">,</span>
+	<span class="s2">"GradientBoostingClassifierModel"</span><span class="p">,</span>
+	<span class="s2">"GradientBoostingRegressorModel"</span><span class="p">,</span>
+	<span class="s2">"ExtraTreesClassifierModel"</span><span class="p">,</span>
+	<span class="s2">"ExtraTreesRegressorModel"</span><span class="p">,</span>
+	<span class="s2">"AdaBoostClassifierModel"</span><span class="p">,</span>
+	<span class="s2">"AdaBoostRegressorModel"</span><span class="p">,</span>
+	<span class="s2">"DecisionTreeClassifierModel"</span><span class="p">,</span>
+	<span class="s2">"DecisionTreeRegressorModel"</span><span class="p">,</span>
+	<span class="s2">"SVCModel"</span><span class="p">,</span>
+	<span class="s2">"SVRModel"</span><span class="p">,</span>
+	<span class="s2">"KNeighborsClassifierModel"</span><span class="p">,</span>
+	<span class="s2">"KNeighborsRegressorModel"</span><span class="p">,</span>
+	<span class="s2">"XGBClassifierModel"</span><span class="p">,</span>
+	<span class="s2">"XGBRegressorModel"</span><span class="p">,</span>
+	<span class="s2">"LGBMClassifierModel"</span><span class="p">,</span>
+	<span class="s2">"LGBMRegressorModel"</span><span class="p">,</span>
+<span class="p">]</span>
+
+
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, Mazen Soliman.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

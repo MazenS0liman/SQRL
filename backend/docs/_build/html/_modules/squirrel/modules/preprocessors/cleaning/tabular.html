@@ -1,0 +1,1527 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>squirrel.modules.preprocessors.cleaning.tabular &mdash; squirrel  documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../../../../_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" type="text/css" href="../../../../../_static/css/custom.css?v=adc7883a" />
+
+  
+    <link rel="shortcut icon" href="../../../../../_static/sqrl.png"/>
+      <script src="../../../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../../../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../../../../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script src="../../../../../_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="../../../../../_static/copybutton.js?v=a46eff05"></script>
+    <script src="../../../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../../../index.html" class="icon icon-home">
+            squirrel
+              <img src="../../../../../_static/sqrl.png" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Python API Reference:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../api.html">Python API Reference</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../../index.html">squirrel</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">squirrel.modules.preprocessors.cleaning.tabular</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for squirrel.modules.preprocessors.cleaning.tabular</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/python</span>
+<span class="sd">"""</span>
+<span class="sd">Tabular Data Cleaner Module</span>
+<span class="sd">===========================</span>
+
+<span class="sd">A module for performing data cleaning operations on tabular datasets. This module</span>
+<span class="sd">provides a base class `DataCleanStrategy` that can be extended to implement specific</span>
+<span class="sd">cleaning techniques. Each strategy exposes ``argument_specs`` so it can be catalogued,</span>
+<span class="sd">prompted, and validated in the same way as the inspection strategies it is designed</span>
+<span class="sd">to complement.</span>
+
+<span class="sd">Inference-time replay</span>
+<span class="sd">----------------------</span>
+<span class="sd">Some strategies compute parameters *from the data they're given*</span>
+<span class="sd">(``ImputeMissingValuesCleanStrategy``'s fill values, ``ClipOutliersCleanStrategy``'s</span>
+<span class="sd">bounds, ``ScaleNumericCleanStrategy``'s mean/std/min/max/median/iqr). At training</span>
+<span class="sd">time that's correct — the parameters are fit from the training frame. At inference</span>
+<span class="sd">time, re-fitting from a single new row (or a small new batch) would be wrong: you'd</span>
+<span class="sd">get nonsensical bounds/means computed from data that isn't the training distribution.</span>
+
+<span class="sd">Every strategy whose ``clean()`` computes such parameters now accepts an optional</span>
+<span class="sd">``fitted_state`` kwarg: a ``{column_name: {...params...}}`` dict, normally the</span>
+<span class="sd">``per_column`` block of that step's own report from a previous ``clean()`` call made</span>
+<span class="sd">during training. When ``fitted_state`` is supplied for a column, the strategy reuses</span>
+<span class="sd">those parameters instead of recomputing them from the DataFrame passed in — i.e.</span>
+<span class="sd">"apply mode" instead of "fit mode". When omitted (the default), behavior is</span>
+<span class="sd">byte-for-byte unchanged from before: the strategy fits from the given data, which is</span>
+<span class="sd">correct during training.</span>
+
+<span class="sd">``TabularDataCleaner.run_pipeline()`` accepts an optional parallel ``fitted_states``</span>
+<span class="sd">list (one dict per step, or ``None`` for steps with no persisted state) so an entire</span>
+<span class="sd">saved plan can be replayed against new data in one call — see</span>
+<span class="sd">``TabularDataProcessorAgent.apply_fitted_pipeline`` for how this is used end to end.</span>
+<span class="sd">"""</span>
+<span class="c1"># ——————————————————————————————————————————————————————————————</span>
+<span class="c1"># Imports</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">ABC</span><span class="p">,</span> <span class="n">abstractmethod</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Union</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+<span class="c1"># Schema</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">squirrel.schemas.argument_spec</span><span class="w"> </span><span class="kn">import</span> <span class="n">ArgumentSpec</span>
+
+
+<span class="c1"># ——— Data Cleaner Base Class ———————————————————————————————————————————————</span>
+<div class="viewcode-block" id="DataCleanStrategy">
+<a class="viewcode-back" href="../../../../../generated/squirrel_modules_preprocessors_cleaning_tabular.html#squirrel.modules.preprocessors.cleaning.tabular.DataCleanStrategy">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">DataCleanStrategy</span><span class="p">(</span><span class="n">ABC</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Abstract base class for tabular data cleaning strategies.</span>
+<span class="sd">    Subclasses declare ``argument_specs`` to expose their accepted arguments</span>
+<span class="sd">    to the catalog, prompt generator, and runtime validator.</span>
+<span class="sd">    """</span>
+
+    <span class="n">argument_specs</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">ArgumentSpec</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>  <span class="c1"># override in subclasses</span>
+
+<div class="viewcode-block" id="DataCleanStrategy.clean">
+<a class="viewcode-back" href="../../../../../generated/squirrel_modules_preprocessors_cleaning_tabular.html#squirrel.modules.preprocessors.cleaning.tabular.DataCleanStrategy.clean">[docs]</a>
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">clean</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">data</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span>
+        <span class="n">fitted_state</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">dict</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span> <span class="nb">dict</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Apply the cleaning operation to *data*.</span>
+
+<span class="sd">        :param data: DataFrame to clean.</span>
+<span class="sd">        :param fitted_state: Optional ``{column: {...params...}}`` dict of</span>
+<span class="sd">            previously-fitted parameters. When present for a given column,</span>
+<span class="sd">            strategies that would otherwise compute parameters from *data*</span>
+<span class="sd">            (means, bounds, fill values, ...) reuse the supplied values</span>
+<span class="sd">            instead — this is the "apply at inference time" path. Strategies</span>
+<span class="sd">            with no data-dependent parameters ignore this argument entirely.</span>
+<span class="sd">        :return: A tuple of (cleaned_dataframe, report_dict).  The report dict</span>
+<span class="sd">            always contains at least ``rows_affected`` and ``columns_affected``.</span>
+<span class="sd">            For strategies that support ``fitted_state``, the report's</span>
+<span class="sd">            ``per_column`` block is exactly the shape you should pass back in</span>
+<span class="sd">            as ``fitted_state`` on a future call to replay this step.</span>
+<span class="sd">        """</span></div>
+
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">to_catalog_entry</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+        <span class="n">first_doc_line</span> <span class="o">=</span> <span class="p">(</span><span class="bp">cls</span><span class="o">.</span><span class="vm">__doc__</span> <span class="ow">or</span> <span class="s2">""</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">splitlines</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s2">"name"</span><span class="p">:</span> <span class="bp">cls</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span>
+            <span class="s2">"description"</span><span class="p">:</span> <span class="n">first_doc_line</span><span class="p">,</span>
+            <span class="s2">"json_schema"</span><span class="p">:</span> <span class="bp">cls</span><span class="o">.</span><span class="n">to_json_schema</span><span class="p">(),</span>
+            <span class="s2">"arguments_schema"</span><span class="p">:</span> <span class="p">[</span>
+                <span class="p">{</span>
+                    <span class="s2">"name"</span><span class="p">:</span> <span class="n">spec</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+                    <span class="s2">"type"</span><span class="p">:</span> <span class="n">spec</span><span class="o">.</span><span class="n">type</span><span class="p">,</span>
+                    <span class="s2">"required"</span><span class="p">:</span> <span class="n">spec</span><span class="o">.</span><span class="n">required</span><span class="p">,</span>
+                    <span class="s2">"default"</span><span class="p">:</span> <span class="n">spec</span><span class="o">.</span><span class="n">default</span><span class="p">,</span>
+                    <span class="s2">"possible_values"</span><span class="p">:</span> <span class="n">spec</span><span class="o">.</span><span class="n">possible_values</span><span class="p">,</span>
+                    <span class="s2">"value_descriptions"</span><span class="p">:</span> <span class="n">spec</span><span class="o">.</span><span class="n">value_descriptions</span><span class="p">,</span>
+                    <span class="s2">"description"</span><span class="p">:</span> <span class="n">spec</span><span class="o">.</span><span class="n">description</span><span class="p">,</span>
+                    <span class="o">**</span><span class="p">({</span><span class="s2">"condition"</span><span class="p">:</span> <span class="n">spec</span><span class="o">.</span><span class="n">condition</span><span class="p">}</span> <span class="k">if</span> <span class="n">spec</span><span class="o">.</span><span class="n">condition</span> <span class="k">else</span> <span class="p">{}),</span>
+                <span class="p">}</span>
+                <span class="k">for</span> <span class="n">spec</span> <span class="ow">in</span> <span class="bp">cls</span><span class="o">.</span><span class="n">argument_specs</span>
+            <span class="p">],</span>
+            <span class="s2">"arguments_description"</span><span class="p">:</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_arguments_description</span><span class="p">(),</span>
+            <span class="s2">"example"</span><span class="p">:</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_example</span><span class="p">(),</span>
+        <span class="p">}</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">to_json_schema</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+        <span class="n">properties</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">required</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">spec</span> <span class="ow">in</span> <span class="bp">cls</span><span class="o">.</span><span class="n">argument_specs</span><span class="p">:</span>
+            <span class="n">properties</span><span class="p">[</span><span class="n">spec</span><span class="o">.</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_spec_to_json_schema</span><span class="p">(</span><span class="n">spec</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">spec</span><span class="o">.</span><span class="n">required</span><span class="p">:</span>
+                <span class="n">required</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">spec</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+        <span class="n">schema</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"type"</span><span class="p">:</span> <span class="s2">"object"</span><span class="p">,</span> <span class="s2">"properties"</span><span class="p">:</span> <span class="n">properties</span><span class="p">}</span>
+        <span class="k">if</span> <span class="n">required</span><span class="p">:</span>
+            <span class="n">schema</span><span class="p">[</span><span class="s2">"required"</span><span class="p">]</span> <span class="o">=</span> <span class="n">required</span>
+        <span class="k">return</span> <span class="n">schema</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_spec_to_json_schema</span><span class="p">(</span><span class="n">spec</span><span class="p">:</span> <span class="n">ArgumentSpec</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+        <span class="n">t</span> <span class="o">=</span> <span class="n">spec</span><span class="o">.</span><span class="n">type</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">t</span> <span class="ow">in</span> <span class="p">{</span><span class="s2">"str"</span><span class="p">,</span> <span class="s2">"string"</span><span class="p">}:</span>
+            <span class="n">s</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"type"</span><span class="p">:</span> <span class="s2">"string"</span><span class="p">}</span>
+        <span class="k">elif</span> <span class="n">t</span> <span class="ow">in</span> <span class="p">{</span><span class="s2">"int"</span><span class="p">,</span> <span class="s2">"integer"</span><span class="p">}:</span>
+            <span class="n">s</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"type"</span><span class="p">:</span> <span class="s2">"integer"</span><span class="p">}</span>
+        <span class="k">elif</span> <span class="n">t</span> <span class="ow">in</span> <span class="p">{</span><span class="s2">"float"</span><span class="p">,</span> <span class="s2">"number"</span><span class="p">,</span> <span class="s2">"double"</span><span class="p">}:</span>
+            <span class="n">s</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"type"</span><span class="p">:</span> <span class="s2">"number"</span><span class="p">}</span>
+        <span class="k">elif</span> <span class="n">t</span> <span class="ow">in</span> <span class="p">{</span><span class="s2">"bool"</span><span class="p">,</span> <span class="s2">"boolean"</span><span class="p">}:</span>
+            <span class="n">s</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"type"</span><span class="p">:</span> <span class="s2">"boolean"</span><span class="p">}</span>
+        <span class="k">elif</span> <span class="n">t</span> <span class="ow">in</span> <span class="p">{</span><span class="s2">"list"</span><span class="p">,</span> <span class="s2">"array"</span><span class="p">}:</span>
+            <span class="n">s</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"type"</span><span class="p">:</span> <span class="s2">"array"</span><span class="p">}</span>
+        <span class="k">elif</span> <span class="n">t</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">"list["</span><span class="p">)</span> <span class="ow">and</span> <span class="n">t</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s2">"]"</span><span class="p">):</span>
+            <span class="n">item_type</span> <span class="o">=</span> <span class="n">t</span><span class="p">[</span><span class="mi">5</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+            <span class="n">s</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="s2">"type"</span><span class="p">:</span> <span class="s2">"array"</span><span class="p">,</span>
+                <span class="s2">"items"</span><span class="p">:</span> <span class="n">DataCleanStrategy</span><span class="o">.</span><span class="n">_spec_to_json_schema</span><span class="p">(</span>
+                    <span class="n">ArgumentSpec</span><span class="p">(</span>
+                        <span class="n">name</span><span class="o">=</span><span class="n">spec</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="n">item_type</span><span class="p">,</span> <span class="n">required</span><span class="o">=</span><span class="n">spec</span><span class="o">.</span><span class="n">required</span><span class="p">,</span>
+                        <span class="n">default</span><span class="o">=</span><span class="n">spec</span><span class="o">.</span><span class="n">default</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="n">spec</span><span class="o">.</span><span class="n">description</span><span class="p">,</span>
+                        <span class="n">possible_values</span><span class="o">=</span><span class="n">spec</span><span class="o">.</span><span class="n">possible_values</span><span class="p">,</span>
+                        <span class="n">value_descriptions</span><span class="o">=</span><span class="n">spec</span><span class="o">.</span><span class="n">value_descriptions</span><span class="p">,</span>
+                        <span class="n">condition</span><span class="o">=</span><span class="n">spec</span><span class="o">.</span><span class="n">condition</span><span class="p">,</span>
+                    <span class="p">)</span>
+                <span class="p">),</span>
+            <span class="p">}</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">s</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"type"</span><span class="p">:</span> <span class="s2">"string"</span><span class="p">}</span>
+        <span class="k">if</span> <span class="n">spec</span><span class="o">.</span><span class="n">description</span><span class="p">:</span>
+            <span class="n">s</span><span class="p">[</span><span class="s2">"description"</span><span class="p">]</span> <span class="o">=</span> <span class="n">spec</span><span class="o">.</span><span class="n">description</span>
+        <span class="k">if</span> <span class="n">spec</span><span class="o">.</span><span class="n">default</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">s</span><span class="p">[</span><span class="s2">"default"</span><span class="p">]</span> <span class="o">=</span> <span class="n">spec</span><span class="o">.</span><span class="n">default</span>
+        <span class="k">return</span> <span class="n">s</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_arguments_description</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">cls</span><span class="o">.</span><span class="n">argument_specs</span><span class="p">:</span>
+            <span class="k">return</span> <span class="s2">"No arguments required."</span>
+        <span class="n">req</span> <span class="o">=</span> <span class="p">[</span><span class="n">s</span><span class="o">.</span><span class="n">name</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="bp">cls</span><span class="o">.</span><span class="n">argument_specs</span> <span class="k">if</span> <span class="n">s</span><span class="o">.</span><span class="n">required</span><span class="p">]</span>
+        <span class="n">opt</span> <span class="o">=</span> <span class="p">[</span><span class="n">s</span><span class="o">.</span><span class="n">name</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="bp">cls</span><span class="o">.</span><span class="n">argument_specs</span> <span class="k">if</span> <span class="ow">not</span> <span class="n">s</span><span class="o">.</span><span class="n">required</span><span class="p">]</span>
+        <span class="n">parts</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">if</span> <span class="n">req</span><span class="p">:</span>
+            <span class="n">parts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Required: </span><span class="si">{</span><span class="s1">', '</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">req</span><span class="p">)</span><span class="si">}</span><span class="s2">."</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">opt</span><span class="p">:</span>
+            <span class="n">parts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Optional: </span><span class="si">{</span><span class="s1">', '</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">opt</span><span class="p">)</span><span class="si">}</span><span class="s2">."</span><span class="p">)</span>
+        <span class="k">return</span> <span class="s2">" "</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">parts</span><span class="p">)</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_example</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s2">"step"</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+            <span class="s2">"name"</span><span class="p">:</span> <span class="bp">cls</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span>
+            <span class="s2">"cleaning"</span><span class="p">:</span> <span class="bp">cls</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span>
+            <span class="s2">"objective"</span><span class="p">:</span> <span class="s2">"(override _example() to provide a concrete objective)"</span><span class="p">,</span>
+            <span class="s2">"actions"</span><span class="p">:</span> <span class="p">[],</span>
+            <span class="s2">"arguments"</span><span class="p">:</span> <span class="p">{</span>
+                <span class="n">spec</span><span class="o">.</span><span class="n">name</span><span class="p">:</span> <span class="n">spec</span><span class="o">.</span><span class="n">default</span>
+                <span class="k">for</span> <span class="n">spec</span> <span class="ow">in</span> <span class="bp">cls</span><span class="o">.</span><span class="n">argument_specs</span>
+                <span class="k">if</span> <span class="n">spec</span><span class="o">.</span><span class="n">required</span>
+            <span class="p">},</span>
+            <span class="s2">"expected_output"</span><span class="p">:</span> <span class="p">[],</span>
+        <span class="p">}</span></div>
+
+
+
+<span class="c1"># ——————————————————————————————————————————————————————————————</span>
+<span class="c1"># 1. Drop Duplicate Rows</span>
+<div class="viewcode-block" id="DropDuplicatesCleanStrategy">
+<a class="viewcode-back" href="../../../../../generated/squirrel_modules_preprocessors_cleaning_tabular.html#squirrel.modules.preprocessors.cleaning.tabular.DropDuplicatesCleanStrategy">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">DropDuplicatesCleanStrategy</span><span class="p">(</span><span class="n">DataCleanStrategy</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Removes duplicate rows, optionally scoped to a subset of columns,</span>
+<span class="sd">    and returns a report of how many rows were dropped and which indices were affected.</span>
+
+<span class="sd">    No data-dependent parameters — ``fitted_state`` is accepted for interface</span>
+<span class="sd">    consistency but unused; behavior at inference time is identical to training.</span>
+<span class="sd">    """</span>
+
+    <span class="n">argument_specs</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">ArgumentSpec</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="n">ArgumentSpec</span><span class="p">(</span>
+            <span class="n">name</span><span class="o">=</span><span class="s2">"subset"</span><span class="p">,</span>
+            <span class="nb">type</span><span class="o">=</span><span class="s2">"list[str]"</span><span class="p">,</span>
+            <span class="n">required</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+            <span class="n">default</span><span class="o">=</span><span class="p">[],</span>
+            <span class="n">description</span><span class="o">=</span><span class="p">(</span>
+                <span class="s2">"Column names to consider when identifying duplicates. "</span>
+                <span class="s2">"An empty list (default) considers all columns."</span>
+            <span class="p">),</span>
+            <span class="n">possible_values</span><span class="o">=</span><span class="s2">"list of column names, or [] to use all columns"</span><span class="p">,</span>
+            <span class="n">value_descriptions</span><span class="o">=</span><span class="p">{</span>
+                <span class="s2">"[]"</span><span class="p">:</span> <span class="s2">"Default — all columns must match for a row to be considered duplicate."</span><span class="p">,</span>
+                <span class="s2">"[&lt;col&gt;, ...]"</span><span class="p">:</span> <span class="s2">"Only these columns are compared."</span><span class="p">,</span>
+            <span class="p">},</span>
+        <span class="p">),</span>
+        <span class="n">ArgumentSpec</span><span class="p">(</span>
+            <span class="n">name</span><span class="o">=</span><span class="s2">"keep"</span><span class="p">,</span>
+            <span class="nb">type</span><span class="o">=</span><span class="s2">"str"</span><span class="p">,</span>
+            <span class="n">required</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+            <span class="n">default</span><span class="o">=</span><span class="s2">"first"</span><span class="p">,</span>
+            <span class="n">description</span><span class="o">=</span><span class="s2">"Which occurrence of a duplicate to keep."</span><span class="p">,</span>
+            <span class="n">possible_values</span><span class="o">=</span><span class="s2">"first | last | false"</span><span class="p">,</span>
+            <span class="n">value_descriptions</span><span class="o">=</span><span class="p">{</span>
+                <span class="s2">"first"</span><span class="p">:</span> <span class="s2">"Keep the first occurrence; drop all subsequent duplicates."</span><span class="p">,</span>
+                <span class="s2">"last"</span><span class="p">:</span> <span class="s2">"Keep the last occurrence; drop all prior duplicates."</span><span class="p">,</span>
+                <span class="s2">"false"</span><span class="p">:</span> <span class="s2">"Drop ALL duplicate rows (no occurrence is kept)."</span><span class="p">,</span>
+            <span class="p">},</span>
+        <span class="p">),</span>
+    <span class="p">]</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_arguments_description</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">(</span>
+            <span class="s2">"Provide subset to scope deduplication to specific columns. "</span>
+            <span class="s2">"Use keep='false' to drop all copies of a duplicate group."</span>
+        <span class="p">)</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_example</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s2">"step"</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+            <span class="s2">"name"</span><span class="p">:</span> <span class="s2">"Drop duplicate rows"</span><span class="p">,</span>
+            <span class="s2">"cleaning"</span><span class="p">:</span> <span class="bp">cls</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span>
+            <span class="s2">"objective"</span><span class="p">:</span> <span class="s2">"Remove exact duplicate rows introduced by data pipeline errors."</span><span class="p">,</span>
+            <span class="s2">"actions"</span><span class="p">:</span> <span class="p">[</span>
+                <span class="s2">"Identify duplicate rows across all columns."</span><span class="p">,</span>
+                <span class="s2">"Keep the first occurrence of each duplicate group."</span><span class="p">,</span>
+                <span class="s2">"Report dropped indices."</span><span class="p">,</span>
+            <span class="p">],</span>
+            <span class="s2">"arguments"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"keep"</span><span class="p">:</span> <span class="s2">"first"</span><span class="p">},</span>
+            <span class="s2">"expected_output"</span><span class="p">:</span> <span class="p">[</span>
+                <span class="s2">"Cleaned DataFrame with duplicates removed"</span><span class="p">,</span>
+                <span class="s2">"Count and indices of dropped rows"</span><span class="p">,</span>
+            <span class="p">],</span>
+        <span class="p">}</span>
+
+<div class="viewcode-block" id="DropDuplicatesCleanStrategy.clean">
+<a class="viewcode-back" href="../../../../../generated/squirrel_modules_preprocessors_cleaning_tabular.html#squirrel.modules.preprocessors.cleaning.tabular.DropDuplicatesCleanStrategy.clean">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">clean</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">data</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span>
+        <span class="n">fitted_state</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">dict</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span> <span class="nb">dict</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        :param data: Input DataFrame.</span>
+<span class="sd">        :param fitted_state: Unused — no data-dependent parameters.</span>
+<span class="sd">        :param kwargs:</span>
+<span class="sd">            - ``subset`` (list[str]): columns to check; default all.</span>
+<span class="sd">            - ``keep`` (str): ``'first'``, ``'last'``, or ``'false'``; default ``'first'``.</span>
+<span class="sd">        :return: (cleaned_df, report)</span>
+<span class="sd">        """</span>
+        <span class="n">subset</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"subset"</span><span class="p">)</span> <span class="ow">or</span> <span class="kc">None</span>
+        <span class="n">keep_arg</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"keep"</span><span class="p">,</span> <span class="s2">"first"</span><span class="p">)</span>
+        <span class="n">keep</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span> <span class="k">if</span> <span class="n">keep_arg</span> <span class="o">==</span> <span class="s2">"false"</span> <span class="k">else</span> <span class="n">keep_arg</span>
+
+        <span class="n">before</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+        <span class="n">duplicate_mask</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">duplicated</span><span class="p">(</span><span class="n">subset</span><span class="o">=</span><span class="n">subset</span><span class="p">,</span> <span class="n">keep</span><span class="o">=</span><span class="n">keep</span><span class="p">)</span>
+        <span class="n">dropped_indices</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">index</span><span class="p">[</span><span class="n">duplicate_mask</span><span class="p">]</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+        <span class="n">cleaned</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="o">~</span><span class="n">duplicate_mask</span><span class="p">]</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="n">after</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">cleaned</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">cleaned</span><span class="p">,</span> <span class="p">{</span>
+            <span class="s2">"rows_before"</span><span class="p">:</span> <span class="n">before</span><span class="p">,</span>
+            <span class="s2">"rows_after"</span><span class="p">:</span> <span class="n">after</span><span class="p">,</span>
+            <span class="s2">"rows_affected"</span><span class="p">:</span> <span class="n">before</span> <span class="o">-</span> <span class="n">after</span><span class="p">,</span>
+            <span class="s2">"columns_affected"</span><span class="p">:</span> <span class="p">[],</span>
+            <span class="s2">"dropped_indices"</span><span class="p">:</span> <span class="n">dropped_indices</span><span class="p">,</span>
+            <span class="s2">"subset_used"</span><span class="p">:</span> <span class="n">subset</span> <span class="k">if</span> <span class="n">subset</span> <span class="k">else</span> <span class="s2">"all"</span><span class="p">,</span>
+        <span class="p">}</span></div>
+</div>
+
+
+
+<span class="c1"># ——————————————————————————————————————————————————————————————</span>
+<span class="c1"># 2. Drop Columns</span>
+<div class="viewcode-block" id="DropColumnsCleanStrategy">
+<a class="viewcode-back" href="../../../../../generated/squirrel_modules_preprocessors_cleaning_tabular.html#squirrel.modules.preprocessors.cleaning.tabular.DropColumnsCleanStrategy">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">DropColumnsCleanStrategy</span><span class="p">(</span><span class="n">DataCleanStrategy</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Drops one or more columns from the DataFrame, with optional safety checks</span>
+<span class="sd">    that prevent dropping columns with low missing ratios or high variance.</span>
+
+<span class="sd">    No data-dependent parameters — ``fitted_state`` is accepted for interface</span>
+<span class="sd">    consistency but unused.</span>
+<span class="sd">    """</span>
+
+    <span class="n">argument_specs</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">ArgumentSpec</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="n">ArgumentSpec</span><span class="p">(</span>
+            <span class="n">name</span><span class="o">=</span><span class="s2">"columns"</span><span class="p">,</span>
+            <span class="nb">type</span><span class="o">=</span><span class="s2">"list[str]"</span><span class="p">,</span>
+            <span class="n">required</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+            <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+            <span class="n">description</span><span class="o">=</span><span class="s2">"List of column names to drop."</span><span class="p">,</span>
+            <span class="n">possible_values</span><span class="o">=</span><span class="s2">"list of column names present in the dataset"</span><span class="p">,</span>
+            <span class="n">value_descriptions</span><span class="o">=</span><span class="p">{</span>
+                <span class="s2">"[&lt;col&gt;, ...]"</span><span class="p">:</span> <span class="s2">"Every named column will be removed from the DataFrame."</span><span class="p">,</span>
+            <span class="p">},</span>
+        <span class="p">),</span>
+        <span class="n">ArgumentSpec</span><span class="p">(</span>
+            <span class="n">name</span><span class="o">=</span><span class="s2">"errors"</span><span class="p">,</span>
+            <span class="nb">type</span><span class="o">=</span><span class="s2">"str"</span><span class="p">,</span>
+            <span class="n">required</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+            <span class="n">default</span><span class="o">=</span><span class="s2">"raise"</span><span class="p">,</span>
+            <span class="n">description</span><span class="o">=</span><span class="s2">"How to handle missing column names."</span><span class="p">,</span>
+            <span class="n">possible_values</span><span class="o">=</span><span class="s2">"raise | ignore"</span><span class="p">,</span>
+            <span class="n">value_descriptions</span><span class="o">=</span><span class="p">{</span>
+                <span class="s2">"raise"</span><span class="p">:</span> <span class="s2">"Raise a KeyError if any named column does not exist."</span><span class="p">,</span>
+                <span class="s2">"ignore"</span><span class="p">:</span> <span class="s2">"Silently skip column names that are not found."</span><span class="p">,</span>
+            <span class="p">},</span>
+        <span class="p">),</span>
+    <span class="p">]</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_example</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s2">"step"</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span>
+            <span class="s2">"name"</span><span class="p">:</span> <span class="s2">"Drop identifier and constant columns"</span><span class="p">,</span>
+            <span class="s2">"cleaning"</span><span class="p">:</span> <span class="bp">cls</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span>
+            <span class="s2">"objective"</span><span class="p">:</span> <span class="s2">"Remove columns flagged as identifiers or constants by the type inspection."</span><span class="p">,</span>
+            <span class="s2">"actions"</span><span class="p">:</span> <span class="p">[</span><span class="s2">"Drop columns: ['id', 'record_hash']"</span><span class="p">],</span>
+            <span class="s2">"arguments"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"columns"</span><span class="p">:</span> <span class="p">[</span><span class="s2">"id"</span><span class="p">,</span> <span class="s2">"record_hash"</span><span class="p">]},</span>
+            <span class="s2">"expected_output"</span><span class="p">:</span> <span class="p">[</span><span class="s2">"DataFrame with specified columns removed"</span><span class="p">,</span> <span class="s2">"List of actually dropped columns"</span><span class="p">],</span>
+        <span class="p">}</span>
+
+<div class="viewcode-block" id="DropColumnsCleanStrategy.clean">
+<a class="viewcode-back" href="../../../../../generated/squirrel_modules_preprocessors_cleaning_tabular.html#squirrel.modules.preprocessors.cleaning.tabular.DropColumnsCleanStrategy.clean">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">clean</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">data</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span>
+        <span class="n">fitted_state</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">dict</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span> <span class="nb">dict</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        :param data: Input DataFrame.</span>
+<span class="sd">        :param fitted_state: Unused — no data-dependent parameters.</span>
+<span class="sd">        :param kwargs:</span>
+<span class="sd">            - ``columns`` (list[str]): columns to drop (required).</span>
+<span class="sd">            - ``errors`` (str): ``'raise'`` or ``'ignore'``; default ``'raise'``.</span>
+<span class="sd">        :return: (cleaned_df, report)</span>
+<span class="sd">        """</span>
+        <span class="n">columns</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"columns"</span><span class="p">)</span> <span class="ow">or</span> <span class="p">[]</span>
+        <span class="n">errors</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"errors"</span><span class="p">,</span> <span class="s2">"raise"</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">columns</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"'columns' must be a non-empty list of column names."</span><span class="p">)</span>
+
+        <span class="n">existing</span> <span class="o">=</span> <span class="p">[</span><span class="n">c</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">columns</span> <span class="k">if</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">data</span><span class="o">.</span><span class="n">columns</span><span class="p">]</span>
+        <span class="n">missing</span> <span class="o">=</span> <span class="p">[</span><span class="n">c</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">columns</span> <span class="k">if</span> <span class="n">c</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">data</span><span class="o">.</span><span class="n">columns</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="n">missing</span> <span class="ow">and</span> <span class="n">errors</span> <span class="o">==</span> <span class="s2">"raise"</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Columns not found in DataFrame: </span><span class="si">{</span><span class="n">missing</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+
+        <span class="n">cleaned</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">drop</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="n">existing</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">cleaned</span><span class="p">,</span> <span class="p">{</span>
+            <span class="s2">"rows_affected"</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+            <span class="s2">"columns_affected"</span><span class="p">:</span> <span class="n">existing</span><span class="p">,</span>
+            <span class="s2">"columns_not_found"</span><span class="p">:</span> <span class="n">missing</span><span class="p">,</span>
+            <span class="s2">"columns_before"</span><span class="p">:</span> <span class="nb">list</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">columns</span><span class="p">),</span>
+            <span class="s2">"columns_after"</span><span class="p">:</span> <span class="nb">list</span><span class="p">(</span><span class="n">cleaned</span><span class="o">.</span><span class="n">columns</span><span class="p">),</span>
+        <span class="p">}</span></div>
+</div>
+
+
+
+<span class="c1"># ——————————————————————————————————————————————————————————————</span>
+<span class="c1"># 3. Impute Missing Values</span>
+<div class="viewcode-block" id="ImputeMissingValuesCleanStrategy">
+<a class="viewcode-back" href="../../../../../generated/squirrel_modules_preprocessors_cleaning_tabular.html#squirrel.modules.preprocessors.cleaning.tabular.ImputeMissingValuesCleanStrategy">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">ImputeMissingValuesCleanStrategy</span><span class="p">(</span><span class="n">DataCleanStrategy</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Imputes missing values in one or more columns using a chosen strategy</span>
+<span class="sd">    (mean, median, mode, constant, or forward/backward fill),</span>
+<span class="sd">    selected per column or applied uniformly.</span>
+
+<span class="sd">    ``fitted_state`` support: when a column has an entry in ``fitted_state``</span>
+<span class="sd">    (shape ``{"fill_value": ..., "method": ...}``, as produced by this</span>
+<span class="sd">    strategy's own report), that exact fill value is reused instead of being</span>
+<span class="sd">    recomputed from *data* — e.g. the training-set mean/median/mode is</span>
+<span class="sd">    applied to new rows rather than the (statistically meaningless) mean of</span>
+<span class="sd">    a single new row. ``ffill``/``bfill`` cannot be replayed this way since</span>
+<span class="sd">    they depend on row order/neighbours, not a single scalar; they always</span>
+<span class="sd">    recompute from the data given, same as before, regardless of</span>
+<span class="sd">    ``fitted_state``.</span>
+<span class="sd">    """</span>
+
+    <span class="n">argument_specs</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">ArgumentSpec</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="n">ArgumentSpec</span><span class="p">(</span>
+            <span class="n">name</span><span class="o">=</span><span class="s2">"columns"</span><span class="p">,</span>
+            <span class="nb">type</span><span class="o">=</span><span class="s2">"list[str]"</span><span class="p">,</span>
+            <span class="n">required</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+            <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+            <span class="n">description</span><span class="o">=</span><span class="s2">"Columns to impute."</span><span class="p">,</span>
+            <span class="n">possible_values</span><span class="o">=</span><span class="s2">"list of column names present in the dataset"</span><span class="p">,</span>
+            <span class="n">value_descriptions</span><span class="o">=</span><span class="p">{</span><span class="s2">"[&lt;col&gt;, ...]"</span><span class="p">:</span> <span class="s2">"Each named column will be imputed."</span><span class="p">},</span>
+        <span class="p">),</span>
+        <span class="n">ArgumentSpec</span><span class="p">(</span>
+            <span class="n">name</span><span class="o">=</span><span class="s2">"method"</span><span class="p">,</span>
+            <span class="nb">type</span><span class="o">=</span><span class="s2">"str"</span><span class="p">,</span>
+            <span class="n">required</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+            <span class="n">default</span><span class="o">=</span><span class="s2">"mean"</span><span class="p">,</span>
+            <span class="n">description</span><span class="o">=</span><span class="s2">"Imputation method applied to all listed columns unless overridden by column_methods."</span><span class="p">,</span>
+            <span class="n">possible_values</span><span class="o">=</span><span class="s2">"mean | median | mode | constant | ffill | bfill"</span><span class="p">,</span>
+            <span class="n">value_descriptions</span><span class="o">=</span><span class="p">{</span>
+                <span class="s2">"mean"</span><span class="p">:</span> <span class="s2">"Replace with column mean (numeric only)."</span><span class="p">,</span>
+                <span class="s2">"median"</span><span class="p">:</span> <span class="s2">"Replace with column median (numeric only)."</span><span class="p">,</span>
+                <span class="s2">"mode"</span><span class="p">:</span> <span class="s2">"Replace with most frequent value (any dtype)."</span><span class="p">,</span>
+                <span class="s2">"constant"</span><span class="p">:</span> <span class="s2">"Replace with the value supplied in fill_value."</span><span class="p">,</span>
+                <span class="s2">"ffill"</span><span class="p">:</span> <span class="s2">"Forward-fill from the preceding non-null value."</span><span class="p">,</span>
+                <span class="s2">"bfill"</span><span class="p">:</span> <span class="s2">"Backward-fill from the next non-null value."</span><span class="p">,</span>
+            <span class="p">},</span>
+        <span class="p">),</span>
+        <span class="n">ArgumentSpec</span><span class="p">(</span>
+            <span class="n">name</span><span class="o">=</span><span class="s2">"fill_value"</span><span class="p">,</span>
+            <span class="nb">type</span><span class="o">=</span><span class="s2">"str"</span><span class="p">,</span>
+            <span class="n">required</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+            <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+            <span class="n">description</span><span class="o">=</span><span class="s2">"Value used when method is 'constant'. Cast to the column dtype at runtime."</span><span class="p">,</span>
+            <span class="n">possible_values</span><span class="o">=</span><span class="s2">"any scalar value"</span><span class="p">,</span>
+            <span class="n">value_descriptions</span><span class="o">=</span><span class="p">{</span><span class="s2">"&lt;scalar&gt;"</span><span class="p">:</span> <span class="s2">"Will be cast to match the column dtype."</span><span class="p">},</span>
+            <span class="n">condition</span><span class="o">=</span><span class="s2">"only used when method == 'constant'"</span><span class="p">,</span>
+        <span class="p">),</span>
+        <span class="n">ArgumentSpec</span><span class="p">(</span>
+            <span class="n">name</span><span class="o">=</span><span class="s2">"column_methods"</span><span class="p">,</span>
+            <span class="nb">type</span><span class="o">=</span><span class="s2">"dict"</span><span class="p">,</span>
+            <span class="n">required</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+            <span class="n">default</span><span class="o">=</span><span class="p">{},</span>
+            <span class="n">description</span><span class="o">=</span><span class="p">(</span>
+                <span class="s2">"Per-column method overrides, e.g. {'age': 'median', 'city': 'mode'}. "</span>
+                <span class="s2">"Any column not listed here falls back to ``method``."</span>
+            <span class="p">),</span>
+            <span class="n">possible_values</span><span class="o">=</span><span class="s2">"dict mapping column names to method strings"</span><span class="p">,</span>
+            <span class="n">value_descriptions</span><span class="o">=</span><span class="p">{},</span>
+        <span class="p">),</span>
+    <span class="p">]</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_arguments_description</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">(</span>
+            <span class="s2">"Always provide columns. Use method for a uniform strategy. "</span>
+            <span class="s2">"Use column_methods to override individual columns. "</span>
+            <span class="s2">"Provide fill_value only when method or a column override is 'constant'."</span>
+        <span class="p">)</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_example</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s2">"step"</span><span class="p">:</span> <span class="mi">3</span><span class="p">,</span>
+            <span class="s2">"name"</span><span class="p">:</span> <span class="s2">"Impute missing numeric and categorical values"</span><span class="p">,</span>
+            <span class="s2">"cleaning"</span><span class="p">:</span> <span class="bp">cls</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span>
+            <span class="s2">"objective"</span><span class="p">:</span> <span class="s2">"Fill missing values in 'age' (median) and 'city' (mode) before modelling."</span><span class="p">,</span>
+            <span class="s2">"actions"</span><span class="p">:</span> <span class="p">[</span>
+                <span class="s2">"Impute 'age' with median."</span><span class="p">,</span>
+                <span class="s2">"Impute 'city' with mode."</span><span class="p">,</span>
+                <span class="s2">"Report fill values used and count of cells imputed."</span><span class="p">,</span>
+            <span class="p">],</span>
+            <span class="s2">"arguments"</span><span class="p">:</span> <span class="p">{</span>
+                <span class="s2">"columns"</span><span class="p">:</span> <span class="p">[</span><span class="s2">"age"</span><span class="p">,</span> <span class="s2">"city"</span><span class="p">],</span>
+                <span class="s2">"method"</span><span class="p">:</span> <span class="s2">"median"</span><span class="p">,</span>
+                <span class="s2">"column_methods"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"city"</span><span class="p">:</span> <span class="s2">"mode"</span><span class="p">},</span>
+            <span class="p">},</span>
+            <span class="s2">"expected_output"</span><span class="p">:</span> <span class="p">[</span>
+                <span class="s2">"DataFrame with no missing values in specified columns"</span><span class="p">,</span>
+                <span class="s2">"Per-column fill values and imputed cell counts"</span><span class="p">,</span>
+            <span class="p">],</span>
+        <span class="p">}</span>
+
+<div class="viewcode-block" id="ImputeMissingValuesCleanStrategy.clean">
+<a class="viewcode-back" href="../../../../../generated/squirrel_modules_preprocessors_cleaning_tabular.html#squirrel.modules.preprocessors.cleaning.tabular.ImputeMissingValuesCleanStrategy.clean">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">clean</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">data</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span>
+        <span class="n">fitted_state</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">dict</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span> <span class="nb">dict</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        :param data: Input DataFrame.</span>
+<span class="sd">        :param fitted_state: Optional ``{col: {"fill_value": ..., "method": ...}}``</span>
+<span class="sd">            from a previous training-time call. When present for a column</span>
+<span class="sd">            (and its method isn't ffill/bfill), the recorded ``fill_value``</span>
+<span class="sd">            is reused verbatim instead of recomputed from *data*.</span>
+<span class="sd">        :param kwargs:</span>
+<span class="sd">            - ``columns`` (list[str]): columns to impute (required).</span>
+<span class="sd">            - ``method`` (str): default imputation method; default ``'mean'``.</span>
+<span class="sd">            - ``fill_value``: used when method is ``'constant'``.</span>
+<span class="sd">            - ``column_methods`` (dict): per-column overrides.</span>
+<span class="sd">        :return: (cleaned_df, report)</span>
+<span class="sd">        """</span>
+        <span class="n">columns</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"columns"</span><span class="p">)</span> <span class="ow">or</span> <span class="p">[]</span>
+        <span class="n">default_method</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"method"</span><span class="p">,</span> <span class="s2">"mean"</span><span class="p">)</span>
+        <span class="n">fill_value</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"fill_value"</span><span class="p">)</span>
+        <span class="n">column_methods</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"column_methods"</span><span class="p">)</span> <span class="ow">or</span> <span class="p">{}</span>
+        <span class="n">fitted_state</span> <span class="o">=</span> <span class="n">fitted_state</span> <span class="ow">or</span> <span class="p">{}</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">columns</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"'columns' must be a non-empty list."</span><span class="p">)</span>
+
+        <span class="n">cleaned</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="n">report_per_column</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">total_cells_imputed</span> <span class="o">=</span> <span class="mi">0</span>
+
+        <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">columns</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">col</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">cleaned</span><span class="o">.</span><span class="n">columns</span><span class="p">:</span>
+                <span class="n">report_per_column</span><span class="p">[</span><span class="n">col</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"error"</span><span class="p">:</span> <span class="s2">"column_not_found"</span><span class="p">}</span>
+                <span class="k">continue</span>
+
+            <span class="n">method</span> <span class="o">=</span> <span class="n">column_methods</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">col</span><span class="p">,</span> <span class="n">default_method</span><span class="p">)</span>
+            <span class="n">series</span> <span class="o">=</span> <span class="n">cleaned</span><span class="p">[</span><span class="n">col</span><span class="p">]</span>
+            <span class="n">missing_before</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">series</span><span class="o">.</span><span class="n">isna</span><span class="p">()</span><span class="o">.</span><span class="n">sum</span><span class="p">())</span>
+
+            <span class="k">if</span> <span class="n">missing_before</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">report_per_column</span><span class="p">[</span><span class="n">col</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"cells_imputed"</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="s2">"fill_value"</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span> <span class="s2">"method"</span><span class="p">:</span> <span class="n">method</span><span class="p">}</span>
+                <span class="k">continue</span>
+
+            <span class="n">prior</span> <span class="o">=</span> <span class="n">fitted_state</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">col</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">prior</span> <span class="ow">and</span> <span class="n">method</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">"ffill"</span><span class="p">,</span> <span class="s2">"bfill"</span><span class="p">)</span> <span class="ow">and</span> <span class="n">prior</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"fill_value"</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="c1"># ── INFERENCE: reuse the fill value learned during training ──</span>
+                <span class="n">computed_fill</span> <span class="o">=</span> <span class="n">prior</span><span class="p">[</span><span class="s2">"fill_value"</span><span class="p">]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="c1"># ── TRAINING (or ffill/bfill, which can't be "fitted") ──────</span>
+                <span class="n">computed_fill</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_compute_fill</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="n">method</span><span class="p">,</span> <span class="n">fill_value</span><span class="p">)</span>
+
+            <span class="n">cleaned</span><span class="p">[</span><span class="n">col</span><span class="p">]</span> <span class="o">=</span> <span class="n">series</span><span class="o">.</span><span class="n">fillna</span><span class="p">(</span><span class="n">computed_fill</span><span class="p">)</span> <span class="k">if</span> <span class="n">method</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">"ffill"</span><span class="p">,</span> <span class="s2">"bfill"</span><span class="p">)</span> <span class="k">else</span> <span class="p">(</span>
+                <span class="n">series</span><span class="o">.</span><span class="n">ffill</span><span class="p">()</span> <span class="k">if</span> <span class="n">method</span> <span class="o">==</span> <span class="s2">"ffill"</span> <span class="k">else</span> <span class="n">series</span><span class="o">.</span><span class="n">bfill</span><span class="p">()</span>
+            <span class="p">)</span>
+            <span class="n">cells_imputed</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">missing_before</span> <span class="o">-</span> <span class="n">cleaned</span><span class="p">[</span><span class="n">col</span><span class="p">]</span><span class="o">.</span><span class="n">isna</span><span class="p">()</span><span class="o">.</span><span class="n">sum</span><span class="p">())</span>
+            <span class="n">total_cells_imputed</span> <span class="o">+=</span> <span class="n">cells_imputed</span>
+            <span class="n">report_per_column</span><span class="p">[</span><span class="n">col</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="s2">"method"</span><span class="p">:</span> <span class="n">method</span><span class="p">,</span>
+                <span class="s2">"fill_value"</span><span class="p">:</span> <span class="n">computed_fill</span> <span class="k">if</span> <span class="n">method</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">"ffill"</span><span class="p">,</span> <span class="s2">"bfill"</span><span class="p">)</span> <span class="k">else</span> <span class="n">method</span><span class="p">,</span>
+                <span class="s2">"cells_imputed"</span><span class="p">:</span> <span class="n">cells_imputed</span><span class="p">,</span>
+            <span class="p">}</span>
+
+        <span class="k">return</span> <span class="n">cleaned</span><span class="p">,</span> <span class="p">{</span>
+            <span class="s2">"rows_affected"</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+            <span class="s2">"columns_affected"</span><span class="p">:</span> <span class="n">columns</span><span class="p">,</span>
+            <span class="s2">"total_cells_imputed"</span><span class="p">:</span> <span class="n">total_cells_imputed</span><span class="p">,</span>
+            <span class="s2">"per_column"</span><span class="p">:</span> <span class="n">report_per_column</span><span class="p">,</span>
+        <span class="p">}</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_compute_fill</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">series</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">,</span>
+        <span class="n">method</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">fill_value</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">method</span> <span class="o">==</span> <span class="s2">"mean"</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">series</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">method</span> <span class="o">==</span> <span class="s2">"median"</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">series</span><span class="o">.</span><span class="n">median</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">method</span> <span class="o">==</span> <span class="s2">"mode"</span><span class="p">:</span>
+            <span class="n">mode</span> <span class="o">=</span> <span class="n">series</span><span class="o">.</span><span class="n">mode</span><span class="p">()</span>
+            <span class="k">return</span> <span class="n">mode</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">if</span> <span class="ow">not</span> <span class="n">mode</span><span class="o">.</span><span class="n">empty</span> <span class="k">else</span> <span class="kc">None</span>
+        <span class="k">if</span> <span class="n">method</span> <span class="o">==</span> <span class="s2">"constant"</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">fill_value</span>
+        <span class="k">return</span> <span class="kc">None</span>  <span class="c1"># ffill / bfill handled inline</span></div>
+
+
+
+<span class="c1"># ——————————————————————————————————————————————————————————————</span>
+<span class="c1"># 4. Cast Column Dtypes</span>
+<div class="viewcode-block" id="CastDtypesCleanStrategy">
+<a class="viewcode-back" href="../../../../../generated/squirrel_modules_preprocessors_cleaning_tabular.html#squirrel.modules.preprocessors.cleaning.tabular.CastDtypesCleanStrategy">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">CastDtypesCleanStrategy</span><span class="p">(</span><span class="n">DataCleanStrategy</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Casts one or more columns to specified dtypes, with configurable error</span>
+<span class="sd">    handling and optional coercion (invalid values become NaN instead of raising).</span>
+
+<span class="sd">    No data-dependent parameters — the target dtype is a fixed argument, not</span>
+<span class="sd">    something fit from the data. ``fitted_state`` is accepted for interface</span>
+<span class="sd">    consistency but unused.</span>
+<span class="sd">    """</span>
+
+    <span class="n">argument_specs</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">ArgumentSpec</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="n">ArgumentSpec</span><span class="p">(</span>
+            <span class="n">name</span><span class="o">=</span><span class="s2">"column_dtypes"</span><span class="p">,</span>
+            <span class="nb">type</span><span class="o">=</span><span class="s2">"dict"</span><span class="p">,</span>
+            <span class="n">required</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+            <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+            <span class="n">description</span><span class="o">=</span><span class="p">(</span>
+                <span class="s2">"Mapping of column name → target dtype string. "</span>
+                <span class="s2">"Examples: {'age': 'int64', 'signup_date': 'datetime64[ns]', 'score': 'float32'}."</span>
+            <span class="p">),</span>
+            <span class="n">possible_values</span><span class="o">=</span><span class="s2">"dict with column names as keys and pandas dtype strings as values"</span><span class="p">,</span>
+            <span class="n">value_descriptions</span><span class="o">=</span><span class="p">{</span>
+                <span class="s2">"int64 / int32"</span><span class="p">:</span> <span class="s2">"Integer cast; fails on non-numeric strings unless errors='coerce'."</span><span class="p">,</span>
+                <span class="s2">"float64 / float32"</span><span class="p">:</span> <span class="s2">"Float cast."</span><span class="p">,</span>
+                <span class="s2">"str / object"</span><span class="p">:</span> <span class="s2">"String cast."</span><span class="p">,</span>
+                <span class="s2">"category"</span><span class="p">:</span> <span class="s2">"Memory-efficient categorical."</span><span class="p">,</span>
+                <span class="s2">"bool"</span><span class="p">:</span> <span class="s2">"Boolean cast."</span><span class="p">,</span>
+                <span class="s2">"datetime64[ns]"</span><span class="p">:</span> <span class="s2">"Datetime cast via pd.to_datetime (errors respected)."</span><span class="p">,</span>
+            <span class="p">},</span>
+        <span class="p">),</span>
+        <span class="n">ArgumentSpec</span><span class="p">(</span>
+            <span class="n">name</span><span class="o">=</span><span class="s2">"errors"</span><span class="p">,</span>
+            <span class="nb">type</span><span class="o">=</span><span class="s2">"str"</span><span class="p">,</span>
+            <span class="n">required</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+            <span class="n">default</span><span class="o">=</span><span class="s2">"coerce"</span><span class="p">,</span>
+            <span class="n">description</span><span class="o">=</span><span class="s2">"Behaviour when a value cannot be cast."</span><span class="p">,</span>
+            <span class="n">possible_values</span><span class="o">=</span><span class="s2">"raise | coerce | ignore"</span><span class="p">,</span>
+            <span class="n">value_descriptions</span><span class="o">=</span><span class="p">{</span>
+                <span class="s2">"raise"</span><span class="p">:</span> <span class="s2">"Raise on first bad value."</span><span class="p">,</span>
+                <span class="s2">"coerce"</span><span class="p">:</span> <span class="s2">"Set bad values to NaN / NaT."</span><span class="p">,</span>
+                <span class="s2">"ignore"</span><span class="p">:</span> <span class="s2">"Leave bad values unchanged (only valid for numeric casts)."</span><span class="p">,</span>
+            <span class="p">},</span>
+        <span class="p">),</span>
+    <span class="p">]</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_arguments_description</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">(</span>
+            <span class="s2">"Always provide column_dtypes. The default errors='coerce' is recommended "</span>
+            <span class="s2">"to avoid pipeline failures on dirty data."</span>
+        <span class="p">)</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_example</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s2">"step"</span><span class="p">:</span> <span class="mi">4</span><span class="p">,</span>
+            <span class="s2">"name"</span><span class="p">:</span> <span class="s2">"Cast signup_date to datetime and age to int"</span><span class="p">,</span>
+            <span class="s2">"cleaning"</span><span class="p">:</span> <span class="bp">cls</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span>
+            <span class="s2">"objective"</span><span class="p">:</span> <span class="s2">"Correct dtypes identified by the type inspection step."</span><span class="p">,</span>
+            <span class="s2">"actions"</span><span class="p">:</span> <span class="p">[</span>
+                <span class="s2">"Cast 'signup_date' from object to datetime64[ns] with coerce."</span><span class="p">,</span>
+                <span class="s2">"Cast 'age' from object to int64."</span><span class="p">,</span>
+            <span class="p">],</span>
+            <span class="s2">"arguments"</span><span class="p">:</span> <span class="p">{</span>
+                <span class="s2">"column_dtypes"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"signup_date"</span><span class="p">:</span> <span class="s2">"datetime64[ns]"</span><span class="p">,</span> <span class="s2">"age"</span><span class="p">:</span> <span class="s2">"int64"</span><span class="p">},</span>
+                <span class="s2">"errors"</span><span class="p">:</span> <span class="s2">"coerce"</span><span class="p">,</span>
+            <span class="p">},</span>
+            <span class="s2">"expected_output"</span><span class="p">:</span> <span class="p">[</span>
+                <span class="s2">"Columns with corrected dtypes"</span><span class="p">,</span>
+                <span class="s2">"Count of values coerced to NaN per column"</span><span class="p">,</span>
+            <span class="p">],</span>
+        <span class="p">}</span>
+
+<div class="viewcode-block" id="CastDtypesCleanStrategy.clean">
+<a class="viewcode-back" href="../../../../../generated/squirrel_modules_preprocessors_cleaning_tabular.html#squirrel.modules.preprocessors.cleaning.tabular.CastDtypesCleanStrategy.clean">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">clean</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">data</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span>
+        <span class="n">fitted_state</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">dict</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span> <span class="nb">dict</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        :param data: Input DataFrame.</span>
+<span class="sd">        :param fitted_state: Unused — no data-dependent parameters.</span>
+<span class="sd">        :param kwargs:</span>
+<span class="sd">            - ``column_dtypes`` (dict): col → dtype mapping (required).</span>
+<span class="sd">            - ``errors`` (str): ``'raise'``, ``'coerce'``, or ``'ignore'``; default ``'coerce'``.</span>
+<span class="sd">        :return: (cleaned_df, report)</span>
+<span class="sd">        """</span>
+        <span class="n">column_dtypes</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"column_dtypes"</span><span class="p">)</span> <span class="ow">or</span> <span class="p">{}</span>
+        <span class="n">errors</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"errors"</span><span class="p">,</span> <span class="s2">"coerce"</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">column_dtypes</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"'column_dtypes' must be a non-empty dict."</span><span class="p">)</span>
+
+        <span class="n">cleaned</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="n">per_column</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="p">{}</span>
+
+        <span class="k">for</span> <span class="n">col</span><span class="p">,</span> <span class="n">dtype</span> <span class="ow">in</span> <span class="n">column_dtypes</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">col</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">cleaned</span><span class="o">.</span><span class="n">columns</span><span class="p">:</span>
+                <span class="n">per_column</span><span class="p">[</span><span class="n">col</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"error"</span><span class="p">:</span> <span class="s2">"column_not_found"</span><span class="p">}</span>
+                <span class="k">continue</span>
+
+            <span class="n">null_before</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">cleaned</span><span class="p">[</span><span class="n">col</span><span class="p">]</span><span class="o">.</span><span class="n">isna</span><span class="p">()</span><span class="o">.</span><span class="n">sum</span><span class="p">())</span>
+            <span class="n">dtype_lower</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">dtype</span><span class="p">)</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+
+            <span class="k">try</span><span class="p">:</span>
+                <span class="k">if</span> <span class="s2">"datetime"</span> <span class="ow">in</span> <span class="n">dtype_lower</span><span class="p">:</span>
+                    <span class="n">cleaned</span><span class="p">[</span><span class="n">col</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">to_datetime</span><span class="p">(</span><span class="n">cleaned</span><span class="p">[</span><span class="n">col</span><span class="p">],</span> <span class="n">errors</span><span class="o">=</span><span class="n">errors</span><span class="p">)</span>
+                <span class="k">elif</span> <span class="n">dtype_lower</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">"int"</span><span class="p">,</span> <span class="s2">"int32"</span><span class="p">,</span> <span class="s2">"int64"</span><span class="p">):</span>
+                    <span class="n">cleaned</span><span class="p">[</span><span class="n">col</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">to_numeric</span><span class="p">(</span><span class="n">cleaned</span><span class="p">[</span><span class="n">col</span><span class="p">],</span> <span class="n">errors</span><span class="o">=</span><span class="n">errors</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span>
+                        <span class="s2">"Int64"</span>  <span class="c1"># nullable integer</span>
+                    <span class="p">)</span>
+                <span class="k">elif</span> <span class="n">dtype_lower</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">"float"</span><span class="p">,</span> <span class="s2">"float32"</span><span class="p">,</span> <span class="s2">"float64"</span><span class="p">):</span>
+                    <span class="n">cleaned</span><span class="p">[</span><span class="n">col</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">to_numeric</span><span class="p">(</span><span class="n">cleaned</span><span class="p">[</span><span class="n">col</span><span class="p">],</span> <span class="n">errors</span><span class="o">=</span><span class="n">errors</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">dtype</span><span class="p">)</span>
+                <span class="k">elif</span> <span class="n">dtype_lower</span> <span class="o">==</span> <span class="s2">"bool"</span><span class="p">:</span>
+                    <span class="n">cleaned</span><span class="p">[</span><span class="n">col</span><span class="p">]</span> <span class="o">=</span> <span class="n">cleaned</span><span class="p">[</span><span class="n">col</span><span class="p">]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">bool</span><span class="p">)</span>
+                <span class="k">elif</span> <span class="n">dtype_lower</span> <span class="o">==</span> <span class="s2">"category"</span><span class="p">:</span>
+                    <span class="n">cleaned</span><span class="p">[</span><span class="n">col</span><span class="p">]</span> <span class="o">=</span> <span class="n">cleaned</span><span class="p">[</span><span class="n">col</span><span class="p">]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="s2">"category"</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">cleaned</span><span class="p">[</span><span class="n">col</span><span class="p">]</span> <span class="o">=</span> <span class="n">cleaned</span><span class="p">[</span><span class="n">col</span><span class="p">]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">dtype</span><span class="p">)</span>
+
+                <span class="n">null_after</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">cleaned</span><span class="p">[</span><span class="n">col</span><span class="p">]</span><span class="o">.</span><span class="n">isna</span><span class="p">()</span><span class="o">.</span><span class="n">sum</span><span class="p">())</span>
+                <span class="n">per_column</span><span class="p">[</span><span class="n">col</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+                    <span class="s2">"target_dtype"</span><span class="p">:</span> <span class="n">dtype</span><span class="p">,</span>
+                    <span class="s2">"actual_dtype"</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">cleaned</span><span class="p">[</span><span class="n">col</span><span class="p">]</span><span class="o">.</span><span class="n">dtype</span><span class="p">),</span>
+                    <span class="s2">"null_before"</span><span class="p">:</span> <span class="n">null_before</span><span class="p">,</span>
+                    <span class="s2">"null_after"</span><span class="p">:</span> <span class="n">null_after</span><span class="p">,</span>
+                    <span class="s2">"values_coerced"</span><span class="p">:</span> <span class="n">null_after</span> <span class="o">-</span> <span class="n">null_before</span><span class="p">,</span>
+                <span class="p">}</span>
+            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+                <span class="n">per_column</span><span class="p">[</span><span class="n">col</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"error"</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">exc</span><span class="p">)}</span>
+
+        <span class="k">return</span> <span class="n">cleaned</span><span class="p">,</span> <span class="p">{</span>
+            <span class="s2">"rows_affected"</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+            <span class="s2">"columns_affected"</span><span class="p">:</span> <span class="nb">list</span><span class="p">(</span><span class="n">column_dtypes</span><span class="o">.</span><span class="n">keys</span><span class="p">()),</span>
+            <span class="s2">"per_column"</span><span class="p">:</span> <span class="n">per_column</span><span class="p">,</span>
+        <span class="p">}</span></div>
+</div>
+
+
+
+<span class="c1"># ——————————————————————————————————————————————————————————————</span>
+<span class="c1"># 5. Rename Columns</span>
+<div class="viewcode-block" id="RenameColumnsCleanStrategy">
+<a class="viewcode-back" href="../../../../../generated/squirrel_modules_preprocessors_cleaning_tabular.html#squirrel.modules.preprocessors.cleaning.tabular.RenameColumnsCleanStrategy">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">RenameColumnsCleanStrategy</span><span class="p">(</span><span class="n">DataCleanStrategy</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Renames columns according to a mapping and optionally normalises all names</span>
+<span class="sd">    to snake_case (lowercase, spaces and hyphens replaced with underscores).</span>
+
+<span class="sd">    No data-dependent parameters — ``fitted_state`` is accepted for interface</span>
+<span class="sd">    consistency but unused.</span>
+<span class="sd">    """</span>
+
+    <span class="n">argument_specs</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">ArgumentSpec</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="n">ArgumentSpec</span><span class="p">(</span>
+            <span class="n">name</span><span class="o">=</span><span class="s2">"rename_map"</span><span class="p">,</span>
+            <span class="nb">type</span><span class="o">=</span><span class="s2">"dict"</span><span class="p">,</span>
+            <span class="n">required</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+            <span class="n">default</span><span class="o">=</span><span class="p">{},</span>
+            <span class="n">description</span><span class="o">=</span><span class="s2">"Old-name → new-name mapping, e.g. {'Full Name': 'full_name'}."</span><span class="p">,</span>
+            <span class="n">possible_values</span><span class="o">=</span><span class="s2">"dict with existing column names as keys"</span><span class="p">,</span>
+            <span class="n">value_descriptions</span><span class="o">=</span><span class="p">{</span>
+                <span class="s2">"{'old': 'new'}"</span><span class="p">:</span> <span class="s2">"Rename 'old' to 'new'."</span><span class="p">,</span>
+                <span class="s2">"</span><span class="si">{}</span><span class="s2">"</span><span class="p">:</span> <span class="s2">"No explicit renames; combine with normalise=true for automatic normalisation."</span><span class="p">,</span>
+            <span class="p">},</span>
+        <span class="p">),</span>
+        <span class="n">ArgumentSpec</span><span class="p">(</span>
+            <span class="n">name</span><span class="o">=</span><span class="s2">"normalise"</span><span class="p">,</span>
+            <span class="nb">type</span><span class="o">=</span><span class="s2">"bool"</span><span class="p">,</span>
+            <span class="n">required</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+            <span class="n">default</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+            <span class="n">description</span><span class="o">=</span><span class="p">(</span>
+                <span class="s2">"If true, after applying rename_map, convert all column names to "</span>
+                <span class="s2">"snake_case: lowercase, strip leading/trailing whitespace, replace "</span>
+                <span class="s2">"spaces and hyphens with underscores."</span>
+            <span class="p">),</span>
+            <span class="n">possible_values</span><span class="o">=</span><span class="s2">"true | false"</span><span class="p">,</span>
+            <span class="n">value_descriptions</span><span class="o">=</span><span class="p">{</span>
+                <span class="s2">"true"</span><span class="p">:</span> <span class="s2">"Normalise all names after renaming."</span><span class="p">,</span>
+                <span class="s2">"false"</span><span class="p">:</span> <span class="s2">"Only apply explicit rename_map entries."</span><span class="p">,</span>
+            <span class="p">},</span>
+        <span class="p">),</span>
+    <span class="p">]</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_example</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s2">"step"</span><span class="p">:</span> <span class="mi">5</span><span class="p">,</span>
+            <span class="s2">"name"</span><span class="p">:</span> <span class="s2">"Rename and normalise column names"</span><span class="p">,</span>
+            <span class="s2">"cleaning"</span><span class="p">:</span> <span class="bp">cls</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span>
+            <span class="s2">"objective"</span><span class="p">:</span> <span class="s2">"Standardise column names for downstream processing."</span><span class="p">,</span>
+            <span class="s2">"actions"</span><span class="p">:</span> <span class="p">[</span>
+                <span class="s2">"Rename 'Customer ID' to 'customer_id'."</span><span class="p">,</span>
+                <span class="s2">"Normalise remaining names to snake_case."</span><span class="p">,</span>
+            <span class="p">],</span>
+            <span class="s2">"arguments"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"rename_map"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"Customer ID"</span><span class="p">:</span> <span class="s2">"customer_id"</span><span class="p">},</span> <span class="s2">"normalise"</span><span class="p">:</span> <span class="kc">True</span><span class="p">},</span>
+            <span class="s2">"expected_output"</span><span class="p">:</span> <span class="p">[</span>
+                <span class="s2">"DataFrame with standardised column names"</span><span class="p">,</span>
+                <span class="s2">"Before/after name mapping"</span><span class="p">,</span>
+            <span class="p">],</span>
+        <span class="p">}</span>
+
+<div class="viewcode-block" id="RenameColumnsCleanStrategy.clean">
+<a class="viewcode-back" href="../../../../../generated/squirrel_modules_preprocessors_cleaning_tabular.html#squirrel.modules.preprocessors.cleaning.tabular.RenameColumnsCleanStrategy.clean">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">clean</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">data</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span>
+        <span class="n">fitted_state</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">dict</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span> <span class="nb">dict</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        :param data: Input DataFrame.</span>
+<span class="sd">        :param fitted_state: Unused — no data-dependent parameters.</span>
+<span class="sd">        :param kwargs:</span>
+<span class="sd">            - ``rename_map`` (dict): explicit old → new; default ``{}``.</span>
+<span class="sd">            - ``normalise`` (bool): auto-snake_case; default ``False``.</span>
+<span class="sd">        :return: (cleaned_df, report)</span>
+<span class="sd">        """</span>
+        <span class="n">rename_map</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"rename_map"</span><span class="p">)</span> <span class="ow">or</span> <span class="p">{}</span>
+        <span class="n">normalise</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="nb">bool</span><span class="p">(</span><span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"normalise"</span><span class="p">,</span> <span class="kc">False</span><span class="p">))</span>
+
+        <span class="n">cleaned</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="n">rename_map</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">normalise</span><span class="p">:</span>
+            <span class="n">cleaned</span><span class="o">.</span><span class="n">columns</span> <span class="o">=</span> <span class="p">[</span>
+                <span class="n">col</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">" "</span><span class="p">,</span> <span class="s2">"_"</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">"-"</span><span class="p">,</span> <span class="s2">"_"</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">cleaned</span><span class="o">.</span><span class="n">columns</span>
+            <span class="p">]</span>
+
+        <span class="n">original</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">columns</span><span class="p">)</span>
+        <span class="n">final</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">cleaned</span><span class="o">.</span><span class="n">columns</span><span class="p">)</span>
+        <span class="n">before_after</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">original</span><span class="p">,</span> <span class="n">final</span><span class="p">))</span>
+        <span class="n">changed</span> <span class="o">=</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="n">v</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">before_after</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">k</span> <span class="o">!=</span> <span class="n">v</span><span class="p">}</span>
+
+        <span class="k">return</span> <span class="n">cleaned</span><span class="p">,</span> <span class="p">{</span>
+            <span class="s2">"rows_affected"</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+            <span class="s2">"columns_affected"</span><span class="p">:</span> <span class="nb">list</span><span class="p">(</span><span class="n">changed</span><span class="o">.</span><span class="n">keys</span><span class="p">()),</span>
+            <span class="s2">"rename_map_applied"</span><span class="p">:</span> <span class="n">rename_map</span><span class="p">,</span>
+            <span class="s2">"normalised"</span><span class="p">:</span> <span class="n">normalise</span><span class="p">,</span>
+            <span class="s2">"column_name_changes"</span><span class="p">:</span> <span class="n">changed</span><span class="p">,</span>
+        <span class="p">}</span></div>
+</div>
+
+
+
+<span class="c1"># ——————————————————————————————————————————————————————————————</span>
+<span class="c1"># 6. Clip / Cap Outliers</span>
+<div class="viewcode-block" id="ClipOutliersCleanStrategy">
+<a class="viewcode-back" href="../../../../../generated/squirrel_modules_preprocessors_cleaning_tabular.html#squirrel.modules.preprocessors.cleaning.tabular.ClipOutliersCleanStrategy">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">ClipOutliersCleanStrategy</span><span class="p">(</span><span class="n">DataCleanStrategy</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Clips extreme values in numeric columns to a specified range, using either</span>
+<span class="sd">    explicit bounds or IQR-derived fences, replacing values outside the range</span>
+<span class="sd">    with the boundary value (Winsorisation).</span>
+
+<span class="sd">    ``fitted_state`` support: when a column has an entry in ``fitted_state``</span>
+<span class="sd">    (shape ``{"lower_bound": ..., "upper_bound": ...}``, as produced by this</span>
+<span class="sd">    strategy's own report), those exact bounds are reused instead of being</span>
+<span class="sd">    recomputed from *data* — i.e. new rows are clipped against the training</span>
+<span class="sd">    distribution's fences, not fences derived from the (possibly tiny,</span>
+<span class="sd">    possibly single-row) inference batch.</span>
+<span class="sd">    """</span>
+
+    <span class="n">argument_specs</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">ArgumentSpec</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="n">ArgumentSpec</span><span class="p">(</span>
+            <span class="n">name</span><span class="o">=</span><span class="s2">"columns"</span><span class="p">,</span>
+            <span class="nb">type</span><span class="o">=</span><span class="s2">"list[str]"</span><span class="p">,</span>
+            <span class="n">required</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+            <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+            <span class="n">description</span><span class="o">=</span><span class="s2">"Numeric columns to clip."</span><span class="p">,</span>
+            <span class="n">possible_values</span><span class="o">=</span><span class="s2">"list of numeric column names"</span><span class="p">,</span>
+            <span class="n">value_descriptions</span><span class="o">=</span><span class="p">{</span><span class="s2">"[&lt;col&gt;, ...]"</span><span class="p">:</span> <span class="s2">"Each column is clipped independently."</span><span class="p">},</span>
+        <span class="p">),</span>
+        <span class="n">ArgumentSpec</span><span class="p">(</span>
+            <span class="n">name</span><span class="o">=</span><span class="s2">"method"</span><span class="p">,</span>
+            <span class="nb">type</span><span class="o">=</span><span class="s2">"str"</span><span class="p">,</span>
+            <span class="n">required</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+            <span class="n">default</span><span class="o">=</span><span class="s2">"iqr"</span><span class="p">,</span>
+            <span class="n">description</span><span class="o">=</span><span class="s2">"Strategy for computing bounds when lower/upper are not supplied."</span><span class="p">,</span>
+            <span class="n">possible_values</span><span class="o">=</span><span class="s2">"iqr | percentile"</span><span class="p">,</span>
+            <span class="n">value_descriptions</span><span class="o">=</span><span class="p">{</span>
+                <span class="s2">"iqr"</span><span class="p">:</span> <span class="s2">"Bounds = Q1 - 1.5×IQR and Q3 + 1.5×IQR (same as outlier detection)."</span><span class="p">,</span>
+                <span class="s2">"percentile"</span><span class="p">:</span> <span class="s2">"Bounds = lower_percentile and upper_percentile of the data."</span><span class="p">,</span>
+            <span class="p">},</span>
+        <span class="p">),</span>
+        <span class="n">ArgumentSpec</span><span class="p">(</span>
+            <span class="n">name</span><span class="o">=</span><span class="s2">"lower"</span><span class="p">,</span>
+            <span class="nb">type</span><span class="o">=</span><span class="s2">"float"</span><span class="p">,</span>
+            <span class="n">required</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+            <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+            <span class="n">description</span><span class="o">=</span><span class="s2">"Explicit lower clip bound. Overrides method-derived lower bound."</span><span class="p">,</span>
+            <span class="n">possible_values</span><span class="o">=</span><span class="s2">"any float, or omit to compute from method"</span><span class="p">,</span>
+            <span class="n">value_descriptions</span><span class="o">=</span><span class="p">{},</span>
+        <span class="p">),</span>
+        <span class="n">ArgumentSpec</span><span class="p">(</span>
+            <span class="n">name</span><span class="o">=</span><span class="s2">"upper"</span><span class="p">,</span>
+            <span class="nb">type</span><span class="o">=</span><span class="s2">"float"</span><span class="p">,</span>
+            <span class="n">required</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+            <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+            <span class="n">description</span><span class="o">=</span><span class="s2">"Explicit upper clip bound. Overrides method-derived upper bound."</span><span class="p">,</span>
+            <span class="n">possible_values</span><span class="o">=</span><span class="s2">"any float, or omit to compute from method"</span><span class="p">,</span>
+            <span class="n">value_descriptions</span><span class="o">=</span><span class="p">{},</span>
+        <span class="p">),</span>
+        <span class="n">ArgumentSpec</span><span class="p">(</span>
+            <span class="n">name</span><span class="o">=</span><span class="s2">"lower_percentile"</span><span class="p">,</span>
+            <span class="nb">type</span><span class="o">=</span><span class="s2">"float"</span><span class="p">,</span>
+            <span class="n">required</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+            <span class="n">default</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span>
+            <span class="n">description</span><span class="o">=</span><span class="s2">"Lower percentile used when method='percentile'. Default 1.0 (1st percentile)."</span><span class="p">,</span>
+            <span class="n">possible_values</span><span class="o">=</span><span class="s2">"float in (0, 50)"</span><span class="p">,</span>
+            <span class="n">value_descriptions</span><span class="o">=</span><span class="p">{},</span>
+            <span class="n">condition</span><span class="o">=</span><span class="s2">"only used when method == 'percentile'"</span><span class="p">,</span>
+        <span class="p">),</span>
+        <span class="n">ArgumentSpec</span><span class="p">(</span>
+            <span class="n">name</span><span class="o">=</span><span class="s2">"upper_percentile"</span><span class="p">,</span>
+            <span class="nb">type</span><span class="o">=</span><span class="s2">"float"</span><span class="p">,</span>
+            <span class="n">required</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+            <span class="n">default</span><span class="o">=</span><span class="mf">99.0</span><span class="p">,</span>
+            <span class="n">description</span><span class="o">=</span><span class="s2">"Upper percentile used when method='percentile'. Default 99.0 (99th percentile)."</span><span class="p">,</span>
+            <span class="n">possible_values</span><span class="o">=</span><span class="s2">"float in (50, 100)"</span><span class="p">,</span>
+            <span class="n">value_descriptions</span><span class="o">=</span><span class="p">{},</span>
+            <span class="n">condition</span><span class="o">=</span><span class="s2">"only used when method == 'percentile'"</span><span class="p">,</span>
+        <span class="p">),</span>
+    <span class="p">]</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_example</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s2">"step"</span><span class="p">:</span> <span class="mi">6</span><span class="p">,</span>
+            <span class="s2">"name"</span><span class="p">:</span> <span class="s2">"Clip outliers in income using IQR"</span><span class="p">,</span>
+            <span class="s2">"cleaning"</span><span class="p">:</span> <span class="bp">cls</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span>
+            <span class="s2">"objective"</span><span class="p">:</span> <span class="s2">"Winsorise extreme income values flagged as high-severity by outlier detection."</span><span class="p">,</span>
+            <span class="s2">"actions"</span><span class="p">:</span> <span class="p">[</span>
+                <span class="s2">"Compute Q1, Q3, IQR for 'income'."</span><span class="p">,</span>
+                <span class="s2">"Clip values below Q1-1.5×IQR and above Q3+1.5×IQR."</span><span class="p">,</span>
+            <span class="p">],</span>
+            <span class="s2">"arguments"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"columns"</span><span class="p">:</span> <span class="p">[</span><span class="s2">"income"</span><span class="p">],</span> <span class="s2">"method"</span><span class="p">:</span> <span class="s2">"iqr"</span><span class="p">},</span>
+            <span class="s2">"expected_output"</span><span class="p">:</span> <span class="p">[</span>
+                <span class="s2">"DataFrame with clipped values"</span><span class="p">,</span>
+                <span class="s2">"Per-column bounds and cell-level clip counts"</span><span class="p">,</span>
+            <span class="p">],</span>
+        <span class="p">}</span>
+
+<div class="viewcode-block" id="ClipOutliersCleanStrategy.clean">
+<a class="viewcode-back" href="../../../../../generated/squirrel_modules_preprocessors_cleaning_tabular.html#squirrel.modules.preprocessors.cleaning.tabular.ClipOutliersCleanStrategy.clean">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">clean</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">data</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span>
+        <span class="n">fitted_state</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">dict</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span> <span class="nb">dict</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        :param data: Input DataFrame.</span>
+<span class="sd">        :param fitted_state: Optional ``{col: {"lower_bound": ..., "upper_bound": ...}}``</span>
+<span class="sd">            from a previous training-time call. When present for a column,</span>
+<span class="sd">            those bounds are reused verbatim instead of recomputed from</span>
+<span class="sd">            *data*.</span>
+<span class="sd">        :param kwargs:</span>
+<span class="sd">            - ``columns`` (list[str]): required.</span>
+<span class="sd">            - ``method`` (str): ``'iqr'`` or ``'percentile'``; default ``'iqr'``.</span>
+<span class="sd">            - ``lower``, ``upper`` (float): explicit bounds; override method.</span>
+<span class="sd">            - ``lower_percentile``, ``upper_percentile`` (float): for percentile method.</span>
+<span class="sd">        :return: (cleaned_df, report)</span>
+<span class="sd">        """</span>
+        <span class="n">columns</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"columns"</span><span class="p">)</span> <span class="ow">or</span> <span class="p">[]</span>
+        <span class="n">method</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"method"</span><span class="p">,</span> <span class="s2">"iqr"</span><span class="p">)</span>
+        <span class="n">explicit_lower</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"lower"</span><span class="p">)</span>
+        <span class="n">explicit_upper</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"upper"</span><span class="p">)</span>
+        <span class="n">lower_pct</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"lower_percentile"</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">))</span>
+        <span class="n">upper_pct</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"upper_percentile"</span><span class="p">,</span> <span class="mf">99.0</span><span class="p">))</span>
+        <span class="n">fitted_state</span> <span class="o">=</span> <span class="n">fitted_state</span> <span class="ow">or</span> <span class="p">{}</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">columns</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"'columns' must be a non-empty list."</span><span class="p">)</span>
+
+        <span class="n">cleaned</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="n">per_column</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">total_clipped</span> <span class="o">=</span> <span class="mi">0</span>
+
+        <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">columns</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">col</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">cleaned</span><span class="o">.</span><span class="n">columns</span><span class="p">:</span>
+                <span class="n">per_column</span><span class="p">[</span><span class="n">col</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"error"</span><span class="p">:</span> <span class="s2">"column_not_found"</span><span class="p">}</span>
+                <span class="k">continue</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">pd</span><span class="o">.</span><span class="n">api</span><span class="o">.</span><span class="n">types</span><span class="o">.</span><span class="n">is_numeric_dtype</span><span class="p">(</span><span class="n">cleaned</span><span class="p">[</span><span class="n">col</span><span class="p">]):</span>
+                <span class="n">per_column</span><span class="p">[</span><span class="n">col</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"error"</span><span class="p">:</span> <span class="s2">"non_numeric_column"</span><span class="p">}</span>
+                <span class="k">continue</span>
+
+            <span class="n">prior</span> <span class="o">=</span> <span class="n">fitted_state</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">col</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">prior</span> <span class="ow">and</span> <span class="n">prior</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"lower_bound"</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">prior</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"upper_bound"</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="c1"># ── INFERENCE: reuse bounds fit at training time ──</span>
+                <span class="n">lower</span><span class="p">,</span> <span class="n">upper</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">prior</span><span class="p">[</span><span class="s2">"lower_bound"</span><span class="p">]),</span> <span class="nb">float</span><span class="p">(</span><span class="n">prior</span><span class="p">[</span><span class="s2">"upper_bound"</span><span class="p">])</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="c1"># ── TRAINING: derive bounds from this data ──</span>
+                <span class="n">series</span> <span class="o">=</span> <span class="n">cleaned</span><span class="p">[</span><span class="n">col</span><span class="p">]</span><span class="o">.</span><span class="n">dropna</span><span class="p">()</span>
+                <span class="n">lower</span><span class="p">,</span> <span class="n">upper</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_compute_bounds</span><span class="p">(</span>
+                    <span class="n">series</span><span class="p">,</span> <span class="n">method</span><span class="p">,</span> <span class="n">explicit_lower</span><span class="p">,</span> <span class="n">explicit_upper</span><span class="p">,</span> <span class="n">lower_pct</span><span class="p">,</span> <span class="n">upper_pct</span>
+                <span class="p">)</span>
+
+            <span class="n">clipped_mask</span> <span class="o">=</span> <span class="p">(</span><span class="n">cleaned</span><span class="p">[</span><span class="n">col</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">lower</span><span class="p">)</span> <span class="o">|</span> <span class="p">(</span><span class="n">cleaned</span><span class="p">[</span><span class="n">col</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">upper</span><span class="p">)</span>
+            <span class="n">n_clipped</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">clipped_mask</span><span class="o">.</span><span class="n">sum</span><span class="p">())</span>
+            <span class="n">cleaned</span><span class="p">[</span><span class="n">col</span><span class="p">]</span> <span class="o">=</span> <span class="n">cleaned</span><span class="p">[</span><span class="n">col</span><span class="p">]</span><span class="o">.</span><span class="n">clip</span><span class="p">(</span><span class="n">lower</span><span class="o">=</span><span class="n">lower</span><span class="p">,</span> <span class="n">upper</span><span class="o">=</span><span class="n">upper</span><span class="p">)</span>
+            <span class="n">total_clipped</span> <span class="o">+=</span> <span class="n">n_clipped</span>
+
+            <span class="n">per_column</span><span class="p">[</span><span class="n">col</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="s2">"lower_bound"</span><span class="p">:</span> <span class="nb">round</span><span class="p">(</span><span class="n">lower</span><span class="p">,</span> <span class="mi">6</span><span class="p">),</span>
+                <span class="s2">"upper_bound"</span><span class="p">:</span> <span class="nb">round</span><span class="p">(</span><span class="n">upper</span><span class="p">,</span> <span class="mi">6</span><span class="p">),</span>
+                <span class="s2">"cells_clipped"</span><span class="p">:</span> <span class="n">n_clipped</span><span class="p">,</span>
+                <span class="s2">"method"</span><span class="p">:</span> <span class="n">method</span><span class="p">,</span>
+            <span class="p">}</span>
+
+        <span class="k">return</span> <span class="n">cleaned</span><span class="p">,</span> <span class="p">{</span>
+            <span class="s2">"rows_affected"</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+            <span class="s2">"columns_affected"</span><span class="p">:</span> <span class="n">columns</span><span class="p">,</span>
+            <span class="s2">"total_cells_clipped"</span><span class="p">:</span> <span class="n">total_clipped</span><span class="p">,</span>
+            <span class="s2">"per_column"</span><span class="p">:</span> <span class="n">per_column</span><span class="p">,</span>
+        <span class="p">}</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_compute_bounds</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">series</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">,</span>
+        <span class="n">method</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">explicit_lower</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
+        <span class="n">explicit_upper</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
+        <span class="n">lower_pct</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+        <span class="n">upper_pct</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">]:</span>
+        <span class="k">if</span> <span class="n">method</span> <span class="o">==</span> <span class="s2">"iqr"</span><span class="p">:</span>
+            <span class="n">q1</span><span class="p">,</span> <span class="n">q3</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">series</span><span class="o">.</span><span class="n">quantile</span><span class="p">(</span><span class="mf">0.25</span><span class="p">)),</span> <span class="nb">float</span><span class="p">(</span><span class="n">series</span><span class="o">.</span><span class="n">quantile</span><span class="p">(</span><span class="mf">0.75</span><span class="p">))</span>
+            <span class="n">iqr</span> <span class="o">=</span> <span class="n">q3</span> <span class="o">-</span> <span class="n">q1</span>
+            <span class="n">derived_lower</span> <span class="o">=</span> <span class="n">q1</span> <span class="o">-</span> <span class="mf">1.5</span> <span class="o">*</span> <span class="n">iqr</span>
+            <span class="n">derived_upper</span> <span class="o">=</span> <span class="n">q3</span> <span class="o">+</span> <span class="mf">1.5</span> <span class="o">*</span> <span class="n">iqr</span>
+        <span class="k">else</span><span class="p">:</span>  <span class="c1"># percentile</span>
+            <span class="n">derived_lower</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">percentile</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="n">lower_pct</span><span class="p">))</span>
+            <span class="n">derived_upper</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">percentile</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="n">upper_pct</span><span class="p">))</span>
+
+        <span class="n">lower</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">explicit_lower</span><span class="p">)</span> <span class="k">if</span> <span class="n">explicit_lower</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">derived_lower</span>
+        <span class="n">upper</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">explicit_upper</span><span class="p">)</span> <span class="k">if</span> <span class="n">explicit_upper</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">derived_upper</span>
+        <span class="k">return</span> <span class="n">lower</span><span class="p">,</span> <span class="n">upper</span></div>
+
+
+
+<span class="c1"># ——————————————————————————————————————————————————————————————</span>
+<span class="c1"># 7. Filter Rows</span>
+<div class="viewcode-block" id="FilterRowsCleanStrategy">
+<a class="viewcode-back" href="../../../../../generated/squirrel_modules_preprocessors_cleaning_tabular.html#squirrel.modules.preprocessors.cleaning.tabular.FilterRowsCleanStrategy">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">FilterRowsCleanStrategy</span><span class="p">(</span><span class="n">DataCleanStrategy</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Removes rows that do not satisfy one or more column-level conditions,</span>
+<span class="sd">    supporting numeric comparisons and categorical membership checks.</span>
+
+<span class="sd">    No data-dependent parameters — conditions are fixed arguments.</span>
+<span class="sd">    ``fitted_state`` is accepted for interface consistency but unused.</span>
+<span class="sd">    """</span>
+
+    <span class="n">argument_specs</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">ArgumentSpec</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="n">ArgumentSpec</span><span class="p">(</span>
+            <span class="n">name</span><span class="o">=</span><span class="s2">"conditions"</span><span class="p">,</span>
+            <span class="nb">type</span><span class="o">=</span><span class="s2">"list"</span><span class="p">,</span>
+            <span class="n">required</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+            <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+            <span class="n">description</span><span class="o">=</span><span class="p">(</span>
+                <span class="s2">"List of condition dicts. Each dict has: "</span>
+                <span class="s2">"'column' (str), 'operator' (str), 'value' (scalar or list). "</span>
+                <span class="s2">"Rows failing any condition are removed."</span>
+            <span class="p">),</span>
+            <span class="n">possible_values</span><span class="o">=</span><span class="p">(</span>
+                <span class="s2">"list of dicts, each with keys: column, operator, value. "</span>
+                <span class="s2">"Operators: '&gt;', '&gt;=', '&lt;', '&lt;=', '==', '!=', 'in', 'not_in', 'notnull', 'isnull'."</span>
+            <span class="p">),</span>
+            <span class="n">value_descriptions</span><span class="o">=</span><span class="p">{</span>
+                <span class="s2">"{'column': 'age', 'operator': '&gt;=', 'value': 18}"</span><span class="p">:</span> <span class="s2">"Keep rows where age &gt;= 18."</span><span class="p">,</span>
+                <span class="s2">"{'column': 'status', 'operator': 'in', 'value': ['active', 'pending']}"</span><span class="p">:</span> <span class="s2">"Keep rows with listed status values."</span><span class="p">,</span>
+                <span class="s2">"{'column': 'email', 'operator': 'notnull'}"</span><span class="p">:</span> <span class="s2">"Keep rows where email is not null."</span><span class="p">,</span>
+            <span class="p">},</span>
+        <span class="p">),</span>
+    <span class="p">]</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_example</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s2">"step"</span><span class="p">:</span> <span class="mi">7</span><span class="p">,</span>
+            <span class="s2">"name"</span><span class="p">:</span> <span class="s2">"Filter out underage and inactive users"</span><span class="p">,</span>
+            <span class="s2">"cleaning"</span><span class="p">:</span> <span class="bp">cls</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span>
+            <span class="s2">"objective"</span><span class="p">:</span> <span class="s2">"Restrict dataset to active users aged 18 or over."</span><span class="p">,</span>
+            <span class="s2">"actions"</span><span class="p">:</span> <span class="p">[</span>
+                <span class="s2">"Keep rows where age &gt;= 18."</span><span class="p">,</span>
+                <span class="s2">"Keep rows where status in ['active', 'pending']."</span><span class="p">,</span>
+            <span class="p">],</span>
+            <span class="s2">"arguments"</span><span class="p">:</span> <span class="p">{</span>
+                <span class="s2">"conditions"</span><span class="p">:</span> <span class="p">[</span>
+                    <span class="p">{</span><span class="s2">"column"</span><span class="p">:</span> <span class="s2">"age"</span><span class="p">,</span> <span class="s2">"operator"</span><span class="p">:</span> <span class="s2">"&gt;="</span><span class="p">,</span> <span class="s2">"value"</span><span class="p">:</span> <span class="mi">18</span><span class="p">},</span>
+                    <span class="p">{</span><span class="s2">"column"</span><span class="p">:</span> <span class="s2">"status"</span><span class="p">,</span> <span class="s2">"operator"</span><span class="p">:</span> <span class="s2">"in"</span><span class="p">,</span> <span class="s2">"value"</span><span class="p">:</span> <span class="p">[</span><span class="s2">"active"</span><span class="p">,</span> <span class="s2">"pending"</span><span class="p">]},</span>
+                <span class="p">]</span>
+            <span class="p">},</span>
+            <span class="s2">"expected_output"</span><span class="p">:</span> <span class="p">[</span>
+                <span class="s2">"Filtered DataFrame"</span><span class="p">,</span>
+                <span class="s2">"Count of rows removed per condition"</span><span class="p">,</span>
+            <span class="p">],</span>
+        <span class="p">}</span>
+
+<div class="viewcode-block" id="FilterRowsCleanStrategy.clean">
+<a class="viewcode-back" href="../../../../../generated/squirrel_modules_preprocessors_cleaning_tabular.html#squirrel.modules.preprocessors.cleaning.tabular.FilterRowsCleanStrategy.clean">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">clean</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">data</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span>
+        <span class="n">fitted_state</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">dict</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span> <span class="nb">dict</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        :param data: Input DataFrame.</span>
+<span class="sd">        :param fitted_state: Unused — no data-dependent parameters.</span>
+<span class="sd">        :param kwargs:</span>
+<span class="sd">            - ``conditions`` (list[dict]): required.</span>
+<span class="sd">        :return: (cleaned_df, report)</span>
+<span class="sd">        """</span>
+        <span class="n">conditions</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">]</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"conditions"</span><span class="p">)</span> <span class="ow">or</span> <span class="p">[]</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">conditions</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"'conditions' must be a non-empty list of condition dicts."</span><span class="p">)</span>
+
+        <span class="n">cleaned</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="n">condition_reports</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="k">for</span> <span class="n">cond</span> <span class="ow">in</span> <span class="n">conditions</span><span class="p">:</span>
+            <span class="n">col</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">cond</span><span class="p">[</span><span class="s2">"column"</span><span class="p">]</span>
+            <span class="n">op</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">cond</span><span class="p">[</span><span class="s2">"operator"</span><span class="p">]</span>
+            <span class="n">val</span> <span class="o">=</span> <span class="n">cond</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"value"</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">col</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">cleaned</span><span class="o">.</span><span class="n">columns</span><span class="p">:</span>
+                <span class="n">condition_reports</span><span class="o">.</span><span class="n">append</span><span class="p">({</span><span class="s2">"column"</span><span class="p">:</span> <span class="n">col</span><span class="p">,</span> <span class="s2">"error"</span><span class="p">:</span> <span class="s2">"column_not_found"</span><span class="p">})</span>
+                <span class="k">continue</span>
+
+            <span class="n">before</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">cleaned</span><span class="p">)</span>
+            <span class="n">mask</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_build_mask</span><span class="p">(</span><span class="n">cleaned</span><span class="p">[</span><span class="n">col</span><span class="p">],</span> <span class="n">op</span><span class="p">,</span> <span class="n">val</span><span class="p">)</span>
+            <span class="n">cleaned</span> <span class="o">=</span> <span class="n">cleaned</span><span class="p">[</span><span class="n">mask</span><span class="p">]</span>
+            <span class="n">after</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">cleaned</span><span class="p">)</span>
+            <span class="n">condition_reports</span><span class="o">.</span><span class="n">append</span><span class="p">({</span>
+                <span class="s2">"column"</span><span class="p">:</span> <span class="n">col</span><span class="p">,</span> <span class="s2">"operator"</span><span class="p">:</span> <span class="n">op</span><span class="p">,</span> <span class="s2">"value"</span><span class="p">:</span> <span class="n">val</span><span class="p">,</span>
+                <span class="s2">"rows_removed"</span><span class="p">:</span> <span class="n">before</span> <span class="o">-</span> <span class="n">after</span><span class="p">,</span>
+            <span class="p">})</span>
+
+        <span class="k">return</span> <span class="n">cleaned</span><span class="p">,</span> <span class="p">{</span>
+            <span class="s2">"rows_before"</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">),</span>
+            <span class="s2">"rows_after"</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">cleaned</span><span class="p">),</span>
+            <span class="s2">"rows_affected"</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">)</span> <span class="o">-</span> <span class="nb">len</span><span class="p">(</span><span class="n">cleaned</span><span class="p">),</span>
+            <span class="s2">"columns_affected"</span><span class="p">:</span> <span class="p">[],</span>
+            <span class="s2">"condition_reports"</span><span class="p">:</span> <span class="n">condition_reports</span><span class="p">,</span>
+        <span class="p">}</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_build_mask</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">series</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">,</span> <span class="n">op</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">val</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">op</span> <span class="o">==</span> <span class="s2">"&gt;"</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">series</span> <span class="o">&gt;</span> <span class="n">val</span>
+        <span class="k">if</span> <span class="n">op</span> <span class="o">==</span> <span class="s2">"&gt;="</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">series</span> <span class="o">&gt;=</span> <span class="n">val</span>
+        <span class="k">if</span> <span class="n">op</span> <span class="o">==</span> <span class="s2">"&lt;"</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">series</span> <span class="o">&lt;</span> <span class="n">val</span>
+        <span class="k">if</span> <span class="n">op</span> <span class="o">==</span> <span class="s2">"&lt;="</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">series</span> <span class="o">&lt;=</span> <span class="n">val</span>
+        <span class="k">if</span> <span class="n">op</span> <span class="o">==</span> <span class="s2">"=="</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">series</span> <span class="o">==</span> <span class="n">val</span>
+        <span class="k">if</span> <span class="n">op</span> <span class="o">==</span> <span class="s2">"!="</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">series</span> <span class="o">!=</span> <span class="n">val</span>
+        <span class="k">if</span> <span class="n">op</span> <span class="o">==</span> <span class="s2">"in"</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">series</span><span class="o">.</span><span class="n">isin</span><span class="p">(</span><span class="n">val</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">op</span> <span class="o">==</span> <span class="s2">"not_in"</span><span class="p">:</span>
+            <span class="k">return</span> <span class="o">~</span><span class="n">series</span><span class="o">.</span><span class="n">isin</span><span class="p">(</span><span class="n">val</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">op</span> <span class="o">==</span> <span class="s2">"notnull"</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">series</span><span class="o">.</span><span class="n">notna</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">op</span> <span class="o">==</span> <span class="s2">"isnull"</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">series</span><span class="o">.</span><span class="n">isna</span><span class="p">()</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Unknown operator: </span><span class="si">{</span><span class="n">op</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span></div>
+
+
+
+<span class="c1"># ——————————————————————————————————————————————————————————————</span>
+<span class="c1"># 8. Standardise / Normalise Numeric Columns</span>
+<div class="viewcode-block" id="ScaleNumericCleanStrategy">
+<a class="viewcode-back" href="../../../../../generated/squirrel_modules_preprocessors_cleaning_tabular.html#squirrel.modules.preprocessors.cleaning.tabular.ScaleNumericCleanStrategy">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">ScaleNumericCleanStrategy</span><span class="p">(</span><span class="n">DataCleanStrategy</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Scales numeric columns using standard scaling (Z-score), min-max normalisation,</span>
+<span class="sd">    or robust scaling (IQR-based), fitting on the provided data in place.</span>
+
+<span class="sd">    ``fitted_state`` support: when a column has an entry in ``fitted_state``</span>
+<span class="sd">    (shape depends on ``method`` — e.g. ``{"mean": ..., "std": ...}`` for</span>
+<span class="sd">    standard, ``{"min": ..., "max": ...}`` for minmax, ``{"median": ...,</span>
+<span class="sd">    "iqr": ...}`` for robust — as produced by this strategy's own report),</span>
+<span class="sd">    those exact parameters are reused instead of being recomputed from</span>
+<span class="sd">    *data*. This is what lets a single new row be scaled consistently with</span>
+<span class="sd">    the training distribution instead of trivially becoming 0 (its own mean).</span>
+<span class="sd">    """</span>
+
+    <span class="n">argument_specs</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">ArgumentSpec</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="n">ArgumentSpec</span><span class="p">(</span>
+            <span class="n">name</span><span class="o">=</span><span class="s2">"columns"</span><span class="p">,</span>
+            <span class="nb">type</span><span class="o">=</span><span class="s2">"list[str]"</span><span class="p">,</span>
+            <span class="n">required</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+            <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+            <span class="n">description</span><span class="o">=</span><span class="s2">"Numeric columns to scale."</span><span class="p">,</span>
+            <span class="n">possible_values</span><span class="o">=</span><span class="s2">"list of numeric column names"</span><span class="p">,</span>
+            <span class="n">value_descriptions</span><span class="o">=</span><span class="p">{</span><span class="s2">"[&lt;col&gt;, ...]"</span><span class="p">:</span> <span class="s2">"Each column is scaled independently."</span><span class="p">},</span>
+        <span class="p">),</span>
+        <span class="n">ArgumentSpec</span><span class="p">(</span>
+            <span class="n">name</span><span class="o">=</span><span class="s2">"method"</span><span class="p">,</span>
+            <span class="nb">type</span><span class="o">=</span><span class="s2">"str"</span><span class="p">,</span>
+            <span class="n">required</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+            <span class="n">default</span><span class="o">=</span><span class="s2">"standard"</span><span class="p">,</span>
+            <span class="n">description</span><span class="o">=</span><span class="s2">"Scaling method."</span><span class="p">,</span>
+            <span class="n">possible_values</span><span class="o">=</span><span class="s2">"standard | minmax | robust"</span><span class="p">,</span>
+            <span class="n">value_descriptions</span><span class="o">=</span><span class="p">{</span>
+                <span class="s2">"standard"</span><span class="p">:</span> <span class="s2">"Z-score: (x - mean) / std. Mean ≈ 0, std ≈ 1."</span><span class="p">,</span>
+                <span class="s2">"minmax"</span><span class="p">:</span> <span class="s2">"Min-max: (x - min) / (max - min). Range [0, 1]."</span><span class="p">,</span>
+                <span class="s2">"robust"</span><span class="p">:</span> <span class="s2">"Robust: (x - median) / IQR. Less sensitive to outliers."</span><span class="p">,</span>
+            <span class="p">},</span>
+        <span class="p">),</span>
+    <span class="p">]</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_example</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s2">"step"</span><span class="p">:</span> <span class="mi">8</span><span class="p">,</span>
+            <span class="s2">"name"</span><span class="p">:</span> <span class="s2">"Standard-scale age and income"</span><span class="p">,</span>
+            <span class="s2">"cleaning"</span><span class="p">:</span> <span class="bp">cls</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span>
+            <span class="s2">"objective"</span><span class="p">:</span> <span class="s2">"Normalise numeric features before feeding into a distance-based model."</span><span class="p">,</span>
+            <span class="s2">"actions"</span><span class="p">:</span> <span class="p">[</span><span class="s2">"Apply Z-score scaling to 'age' and 'income'."</span><span class="p">],</span>
+            <span class="s2">"arguments"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"columns"</span><span class="p">:</span> <span class="p">[</span><span class="s2">"age"</span><span class="p">,</span> <span class="s2">"income"</span><span class="p">],</span> <span class="s2">"method"</span><span class="p">:</span> <span class="s2">"standard"</span><span class="p">},</span>
+            <span class="s2">"expected_output"</span><span class="p">:</span> <span class="p">[</span>
+                <span class="s2">"DataFrame with scaled numeric columns"</span><span class="p">,</span>
+                <span class="s2">"Per-column scaling parameters (mean/std or min/max)"</span><span class="p">,</span>
+            <span class="p">],</span>
+        <span class="p">}</span>
+
+<div class="viewcode-block" id="ScaleNumericCleanStrategy.clean">
+<a class="viewcode-back" href="../../../../../generated/squirrel_modules_preprocessors_cleaning_tabular.html#squirrel.modules.preprocessors.cleaning.tabular.ScaleNumericCleanStrategy.clean">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">clean</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">data</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span>
+        <span class="n">fitted_state</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">dict</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span> <span class="nb">dict</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        :param data: Input DataFrame.</span>
+<span class="sd">        :param fitted_state: Optional ``{col: {...method-specific params...}}``</span>
+<span class="sd">            from a previous training-time call. When present and complete</span>
+<span class="sd">            for a column's method, those parameters are reused verbatim</span>
+<span class="sd">            instead of recomputed from *data*.</span>
+<span class="sd">        :param kwargs:</span>
+<span class="sd">            - ``columns`` (list[str]): required.</span>
+<span class="sd">            - ``method`` (str): ``'standard'``, ``'minmax'``, or ``'robust'``; default ``'standard'``.</span>
+<span class="sd">        :return: (cleaned_df, report)</span>
+<span class="sd">        """</span>
+        <span class="n">columns</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"columns"</span><span class="p">)</span> <span class="ow">or</span> <span class="p">[]</span>
+        <span class="n">method</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"method"</span><span class="p">,</span> <span class="s2">"standard"</span><span class="p">)</span>
+        <span class="n">fitted_state</span> <span class="o">=</span> <span class="n">fitted_state</span> <span class="ow">or</span> <span class="p">{}</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">columns</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"'columns' must be a non-empty list."</span><span class="p">)</span>
+
+        <span class="n">cleaned</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="n">per_column</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="p">{}</span>
+
+        <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">columns</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">col</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">cleaned</span><span class="o">.</span><span class="n">columns</span><span class="p">:</span>
+                <span class="n">per_column</span><span class="p">[</span><span class="n">col</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"error"</span><span class="p">:</span> <span class="s2">"column_not_found"</span><span class="p">}</span>
+                <span class="k">continue</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">pd</span><span class="o">.</span><span class="n">api</span><span class="o">.</span><span class="n">types</span><span class="o">.</span><span class="n">is_numeric_dtype</span><span class="p">(</span><span class="n">cleaned</span><span class="p">[</span><span class="n">col</span><span class="p">]):</span>
+                <span class="n">per_column</span><span class="p">[</span><span class="n">col</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"error"</span><span class="p">:</span> <span class="s2">"non_numeric_column"</span><span class="p">}</span>
+                <span class="k">continue</span>
+
+            <span class="n">series</span> <span class="o">=</span> <span class="n">cleaned</span><span class="p">[</span><span class="n">col</span><span class="p">]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">float</span><span class="p">)</span>
+            <span class="n">prior</span> <span class="o">=</span> <span class="n">fitted_state</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">col</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">method</span> <span class="o">==</span> <span class="s2">"standard"</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">prior</span> <span class="ow">and</span> <span class="n">prior</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"mean"</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">prior</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"std"</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="n">mean</span><span class="p">,</span> <span class="n">std</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">prior</span><span class="p">[</span><span class="s2">"mean"</span><span class="p">]),</span> <span class="nb">float</span><span class="p">(</span><span class="n">prior</span><span class="p">[</span><span class="s2">"std"</span><span class="p">])</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">mean</span><span class="p">,</span> <span class="n">std</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">series</span><span class="o">.</span><span class="n">mean</span><span class="p">()),</span> <span class="nb">float</span><span class="p">(</span><span class="n">series</span><span class="o">.</span><span class="n">std</span><span class="p">())</span>
+                <span class="n">cleaned</span><span class="p">[</span><span class="n">col</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">series</span> <span class="o">-</span> <span class="n">mean</span><span class="p">)</span> <span class="o">/</span> <span class="n">std</span> <span class="k">if</span> <span class="n">std</span> <span class="k">else</span> <span class="n">series</span> <span class="o">-</span> <span class="n">mean</span>
+                <span class="n">per_column</span><span class="p">[</span><span class="n">col</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"method"</span><span class="p">:</span> <span class="n">method</span><span class="p">,</span> <span class="s2">"mean"</span><span class="p">:</span> <span class="n">mean</span><span class="p">,</span> <span class="s2">"std"</span><span class="p">:</span> <span class="n">std</span><span class="p">}</span>
+
+            <span class="k">elif</span> <span class="n">method</span> <span class="o">==</span> <span class="s2">"minmax"</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">prior</span> <span class="ow">and</span> <span class="n">prior</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"min"</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">prior</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"max"</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="n">mn</span><span class="p">,</span> <span class="n">mx</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">prior</span><span class="p">[</span><span class="s2">"min"</span><span class="p">]),</span> <span class="nb">float</span><span class="p">(</span><span class="n">prior</span><span class="p">[</span><span class="s2">"max"</span><span class="p">])</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">mn</span><span class="p">,</span> <span class="n">mx</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">series</span><span class="o">.</span><span class="n">min</span><span class="p">()),</span> <span class="nb">float</span><span class="p">(</span><span class="n">series</span><span class="o">.</span><span class="n">max</span><span class="p">())</span>
+                <span class="n">cleaned</span><span class="p">[</span><span class="n">col</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">series</span> <span class="o">-</span> <span class="n">mn</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">mx</span> <span class="o">-</span> <span class="n">mn</span><span class="p">)</span> <span class="k">if</span> <span class="n">mx</span> <span class="o">!=</span> <span class="n">mn</span> <span class="k">else</span> <span class="n">series</span> <span class="o">-</span> <span class="n">mn</span>
+                <span class="n">per_column</span><span class="p">[</span><span class="n">col</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"method"</span><span class="p">:</span> <span class="n">method</span><span class="p">,</span> <span class="s2">"min"</span><span class="p">:</span> <span class="n">mn</span><span class="p">,</span> <span class="s2">"max"</span><span class="p">:</span> <span class="n">mx</span><span class="p">}</span>
+
+            <span class="k">elif</span> <span class="n">method</span> <span class="o">==</span> <span class="s2">"robust"</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">prior</span> <span class="ow">and</span> <span class="n">prior</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"median"</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">prior</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"iqr"</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="n">median</span><span class="p">,</span> <span class="n">iqr</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">prior</span><span class="p">[</span><span class="s2">"median"</span><span class="p">]),</span> <span class="nb">float</span><span class="p">(</span><span class="n">prior</span><span class="p">[</span><span class="s2">"iqr"</span><span class="p">])</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">median</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">series</span><span class="o">.</span><span class="n">median</span><span class="p">())</span>
+                    <span class="n">q1</span><span class="p">,</span> <span class="n">q3</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">series</span><span class="o">.</span><span class="n">quantile</span><span class="p">(</span><span class="mf">0.25</span><span class="p">)),</span> <span class="nb">float</span><span class="p">(</span><span class="n">series</span><span class="o">.</span><span class="n">quantile</span><span class="p">(</span><span class="mf">0.75</span><span class="p">))</span>
+                    <span class="n">iqr</span> <span class="o">=</span> <span class="n">q3</span> <span class="o">-</span> <span class="n">q1</span>
+                <span class="n">cleaned</span><span class="p">[</span><span class="n">col</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">series</span> <span class="o">-</span> <span class="n">median</span><span class="p">)</span> <span class="o">/</span> <span class="n">iqr</span> <span class="k">if</span> <span class="n">iqr</span> <span class="k">else</span> <span class="n">series</span> <span class="o">-</span> <span class="n">median</span>
+                <span class="n">per_column</span><span class="p">[</span><span class="n">col</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"method"</span><span class="p">:</span> <span class="n">method</span><span class="p">,</span> <span class="s2">"median"</span><span class="p">:</span> <span class="n">median</span><span class="p">,</span> <span class="s2">"iqr"</span><span class="p">:</span> <span class="n">iqr</span><span class="p">}</span>
+
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">per_column</span><span class="p">[</span><span class="n">col</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"error"</span><span class="p">:</span> <span class="sa">f</span><span class="s2">"unknown_method: </span><span class="si">{</span><span class="n">method</span><span class="si">}</span><span class="s2">"</span><span class="p">}</span>
+
+        <span class="k">return</span> <span class="n">cleaned</span><span class="p">,</span> <span class="p">{</span>
+            <span class="s2">"rows_affected"</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+            <span class="s2">"columns_affected"</span><span class="p">:</span> <span class="n">columns</span><span class="p">,</span>
+            <span class="s2">"per_column"</span><span class="p">:</span> <span class="n">per_column</span><span class="p">,</span>
+        <span class="p">}</span></div>
+</div>
+
+
+
+<span class="c1"># ——————————————————————————————————————————————————————————————</span>
+<span class="c1"># Tabular Data Cleaner (Orchestrator)</span>
+<div class="viewcode-block" id="TabularDataCleaner">
+<a class="viewcode-back" href="../../../../../generated/squirrel_modules_preprocessors_cleaning_tabular.html#squirrel.modules.preprocessors.cleaning.tabular.TabularDataCleaner">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">TabularDataCleaner</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Applies a sequence of ``DataCleanStrategy`` instances to a DataFrame,</span>
+<span class="sd">    accumulating reports from each step. Mirrors the TabularDataInpsector API.</span>
+<span class="sd">    """</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">strategy</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">DataCleanStrategy</span><span class="p">,</span> <span class="nb">str</span><span class="p">],</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        :param strategy: A DataCleanStrategy instance or string identifier.</span>
+<span class="sd">        :raises ValueError: For unrecognised string identifiers.</span>
+<span class="sd">        """</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">strategy</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_resolve</span><span class="p">(</span><span class="n">strategy</span><span class="p">)</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_resolve</span><span class="p">(</span><span class="n">strategy</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">DataCleanStrategy</span><span class="p">,</span> <span class="nb">str</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">DataCleanStrategy</span><span class="p">:</span>
+        <span class="n">_registry</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">type</span><span class="p">[</span><span class="n">DataCleanStrategy</span><span class="p">]]</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">"drop_duplicates"</span><span class="p">:</span> <span class="n">DropDuplicatesCleanStrategy</span><span class="p">,</span>
+            <span class="s2">"drop_columns"</span><span class="p">:</span> <span class="n">DropColumnsCleanStrategy</span><span class="p">,</span>
+            <span class="s2">"impute_missing"</span><span class="p">:</span> <span class="n">ImputeMissingValuesCleanStrategy</span><span class="p">,</span>
+            <span class="s2">"cast_dtypes"</span><span class="p">:</span> <span class="n">CastDtypesCleanStrategy</span><span class="p">,</span>
+            <span class="s2">"rename_columns"</span><span class="p">:</span> <span class="n">RenameColumnsCleanStrategy</span><span class="p">,</span>
+            <span class="s2">"clip_outliers"</span><span class="p">:</span> <span class="n">ClipOutliersCleanStrategy</span><span class="p">,</span>
+            <span class="s2">"filter_rows"</span><span class="p">:</span> <span class="n">FilterRowsCleanStrategy</span><span class="p">,</span>
+            <span class="s2">"scale_numeric"</span><span class="p">:</span> <span class="n">ScaleNumericCleanStrategy</span><span class="p">,</span>
+        <span class="p">}</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">strategy</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">strategy</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">_registry</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">"Unknown strategy: '</span><span class="si">{</span><span class="n">strategy</span><span class="si">}</span><span class="s2">'. "</span>
+                    <span class="sa">f</span><span class="s2">"Available: </span><span class="si">{</span><span class="nb">list</span><span class="p">(</span><span class="n">_registry</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span><span class="si">}</span><span class="s2">"</span>
+                <span class="p">)</span>
+            <span class="k">return</span> <span class="n">_registry</span><span class="p">[</span><span class="n">strategy</span><span class="p">]()</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">strategy</span><span class="p">,</span> <span class="n">DataCleanStrategy</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">strategy</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="s2">"strategy must be a string identifier or a DataCleanStrategy instance."</span>
+        <span class="p">)</span>
+
+<div class="viewcode-block" id="TabularDataCleaner.set_strategy">
+<a class="viewcode-back" href="../../../../../generated/squirrel_modules_preprocessors_cleaning_tabular.html#squirrel.modules.preprocessors.cleaning.tabular.TabularDataCleaner.set_strategy">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">set_strategy</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">strategy</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">DataCleanStrategy</span><span class="p">,</span> <span class="nb">str</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Replace the current strategy."""</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">strategy</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_resolve</span><span class="p">(</span><span class="n">strategy</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="TabularDataCleaner.execute_strategy">
+<a class="viewcode-back" href="../../../../../generated/squirrel_modules_preprocessors_cleaning_tabular.html#squirrel.modules.preprocessors.cleaning.tabular.TabularDataCleaner.execute_strategy">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">execute_strategy</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">data</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span>
+        <span class="n">fitted_state</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">dict</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span> <span class="nb">dict</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Run the current strategy and return ``(cleaned_df, report)``.</span>
+
+<span class="sd">        :param data: DataFrame to clean.</span>
+<span class="sd">        :param fitted_state: Optional previously-fitted per-column parameters</span>
+<span class="sd">            to replay instead of recomputing from *data* (inference mode).</span>
+<span class="sd">            Ignored by strategies with no data-dependent parameters.</span>
+<span class="sd">        :param kwargs: Forwarded to the strategy's ``clean`` method.</span>
+<span class="sd">        :return: Tuple of cleaned DataFrame and report dict.</span>
+<span class="sd">        """</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">strategy</span><span class="o">.</span><span class="n">clean</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">fitted_state</span><span class="o">=</span><span class="n">fitted_state</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="TabularDataCleaner.run_pipeline">
+<a class="viewcode-back" href="../../../../../generated/squirrel_modules_preprocessors_cleaning_tabular.html#squirrel.modules.preprocessors.cleaning.tabular.TabularDataCleaner.run_pipeline">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">run_pipeline</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">data</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span>
+        <span class="n">steps</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">],</span>
+        <span class="n">fitted_states</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">list</span><span class="p">[</span><span class="n">Optional</span><span class="p">[</span><span class="nb">dict</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">]]:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Execute a sequence of cleaning steps, threading the DataFrame through each.</span>
+
+<span class="sd">        Each step dict must have:</span>
+<span class="sd">        - ``cleaning`` (str or DataCleanStrategy): strategy identifier.</span>
+<span class="sd">        - ``arguments`` (dict): kwargs forwarded to the strategy.</span>
+<span class="sd">        - ``name`` (str, optional): human-readable step label.</span>
+
+<span class="sd">        :param data: Input DataFrame.</span>
+<span class="sd">        :param steps: List of step dicts.</span>
+<span class="sd">        :param fitted_states: Optional list, same length as *steps* (or</span>
+<span class="sd">            ``None``), of per-step ``fitted_state`` dicts to replay — pass</span>
+<span class="sd">            each step's own ``per_column`` block from a prior training-time</span>
+<span class="sd">            report to run this pipeline in "apply" mode against new data</span>
+<span class="sd">            instead of "fit" mode.</span>
+<span class="sd">        :return: (final_cleaned_df, list_of_reports)</span>
+<span class="sd">        """</span>
+        <span class="n">current</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="n">reports</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">fitted_states</span> <span class="o">=</span> <span class="n">fitted_states</span> <span class="ow">or</span> <span class="p">[</span><span class="kc">None</span><span class="p">]</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">steps</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">step</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">steps</span><span class="p">):</span>
+            <span class="n">strategy_id</span> <span class="o">=</span> <span class="n">step</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"cleaning"</span><span class="p">)</span>
+            <span class="n">arguments</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="n">step</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"arguments"</span><span class="p">)</span> <span class="ow">or</span> <span class="p">{}</span>
+            <span class="n">label</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">step</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"name"</span><span class="p">,</span> <span class="sa">f</span><span class="s2">"step_</span><span class="si">{</span><span class="n">i</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+            <span class="n">step_fitted_state</span> <span class="o">=</span> <span class="n">fitted_states</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">if</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">fitted_states</span><span class="p">)</span> <span class="k">else</span> <span class="kc">None</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">set_strategy</span><span class="p">(</span><span class="n">strategy_id</span><span class="p">)</span>
+            <span class="n">current</span><span class="p">,</span> <span class="n">report</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">strategy</span><span class="o">.</span><span class="n">clean</span><span class="p">(</span><span class="n">current</span><span class="p">,</span> <span class="n">fitted_state</span><span class="o">=</span><span class="n">step_fitted_state</span><span class="p">,</span> <span class="o">**</span><span class="n">arguments</span><span class="p">)</span>
+
+            <span class="n">reports</span><span class="o">.</span><span class="n">append</span><span class="p">({</span>
+                <span class="s2">"step"</span><span class="p">:</span> <span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span>
+                <span class="s2">"name"</span><span class="p">:</span> <span class="n">label</span><span class="p">,</span>
+                <span class="s2">"cleaning"</span><span class="p">:</span> <span class="n">strategy_id</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">strategy_id</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="k">else</span> <span class="nb">type</span><span class="p">(</span><span class="n">strategy_id</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span>
+                <span class="o">**</span><span class="n">report</span><span class="p">,</span>
+            <span class="p">})</span>
+
+        <span class="k">return</span> <span class="n">current</span><span class="p">,</span> <span class="n">reports</span></div>
+</div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, Mazen Soliman.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

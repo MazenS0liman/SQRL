@@ -1,0 +1,580 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>squirrel.modules.providers.abstract.IProvider &mdash; squirrel  documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/custom.css?v=adc7883a" />
+
+  
+    <link rel="shortcut icon" href="../_static/sqrl.png"/>
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="../_static/copybutton.js?v=a46eff05"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="squirrel.modules.providers.gemini.GeminiProvider" href="squirrel_modules_providers_gemini_GeminiProvider.html" />
+    <link rel="prev" title="squirrel.modules.prompts.preprocess.PreprocessPromptGenerator" href="squirrel_modules_prompts_preprocess_PreprocessPromptGenerator.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            squirrel
+              <img src="../_static/sqrl.png" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Python API Reference:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="../api.html">Python API Reference</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="../generated_classes.html">Generated API classes</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="squirrel_constants_connector.html">squirrel.constants.connector</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_constants_workspace.html">squirrel.constants.workspace</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_core_config.html">squirrel.core.config</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_core_error_handlers.html">squirrel.core.error_handlers</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_core_logging.html">squirrel.core.logging</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_core_middleware.html">squirrel.core.middleware</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_models_classification.html">squirrel.models.classification</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_models_time_series.html">squirrel.models.time_series</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_modules_agents_abstract_IAgent.html">squirrel.modules.agents.abstract.IAgent</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_modules_agents_builder_TabularDataModelBuilderAgent.html">squirrel.modules.agents.builder.TabularDataModelBuilderAgent</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_modules_agents_exploratory_TabularDataExploratoryAgent.html">squirrel.modules.agents.exploratory.TabularDataExploratoryAgent</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_modules_agents_inspector_TabularDataInsepctorAgent.html">squirrel.modules.agents.inspector.TabularDataInsepctorAgent</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_modules_agents_orchestrator_OrchestratorAgent.html">squirrel.modules.agents.orchestrator.OrchestratorAgent</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_modules_agents_preprocessor_TabularDataProcessorAgent.html">squirrel.modules.agents.preprocessor.TabularDataProcessorAgent</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_modules_inspectors_tabular.html">squirrel.modules.inspectors.tabular</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_modules_preprocessors_cleaning_tabular.html">squirrel.modules.preprocessors.cleaning.tabular</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_modules_preprocessors_transformers_tabular.html">squirrel.modules.preprocessors.transformers.tabular</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_modules_prompts_abstract_IPromptGenerator.html">squirrel.modules.prompts.abstract.IPromptGenerator</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_modules_prompts_builder_TabularDataPromptGenerator.html">squirrel.modules.prompts.builder.TabularDataPromptGenerator</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_modules_prompts_exploratory_ExploratoryPromptGenerator.html">squirrel.modules.prompts.exploratory.ExploratoryPromptGenerator</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_modules_prompts_inspect_InspectPromptGenerator.html">squirrel.modules.prompts.inspect.InspectPromptGenerator</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_modules_prompts_orchestrator_OrchestratorPromptGenerator.html">squirrel.modules.prompts.orchestrator.OrchestratorPromptGenerator</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_modules_prompts_preprocess_PreprocessPromptGenerator.html">squirrel.modules.prompts.preprocess.PreprocessPromptGenerator</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">squirrel.modules.providers.abstract.IProvider</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#squirrel.modules.providers.abstract.IProvider.Provider"><code class="docutils literal notranslate"><span class="pre">Provider</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#squirrel.modules.providers.abstract.IProvider.IProvider"><code class="docutils literal notranslate"><span class="pre">IProvider</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_modules_providers_gemini_GeminiProvider.html">squirrel.modules.providers.gemini.GeminiProvider</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_modules_providers_groq_GroqProvider.html">squirrel.modules.providers.groq.GroqProvider</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_modules_providers_openrouter_OpenRouterProvider.html">squirrel.modules.providers.openrouter.OpenRouterProvider</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_schemas_api.html">squirrel.schemas.api</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_schemas_argument_spec.html">squirrel.schemas.argument_spec</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_schemas_auth.html">squirrel.schemas.auth</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_schemas_connector.html">squirrel.schemas.connector</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_schemas_eda.html">squirrel.schemas.eda</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_schemas_error.html">squirrel.schemas.error</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_schemas_file.html">squirrel.schemas.file</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_schemas_notebook.html">squirrel.schemas.notebook</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_schemas_token.html">squirrel.schemas.token</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_schemas_workspace.html">squirrel.schemas.workspace</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_services_auth_AuthService.html">squirrel.services.auth.AuthService</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_services_auth_TokenService.html">squirrel.services.auth.TokenService</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_services_chat_MessagingService.html">squirrel.services.chat.MessagingService</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_services_data_connector_DataConnectorService.html">squirrel.services.data_connector.DataConnectorService</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_services_file_FileService.html">squirrel.services.file.FileService</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_services_notebook_NotebookService.html">squirrel.services.notebook.NotebookService</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_services_orchestrator_OrchestratorService.html">squirrel.services.orchestrator.OrchestratorService</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_services_storage_blob_IBlobStorageService.html">squirrel.services.storage.blob.IBlobStorageService</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_services_storage_blob_MinIOService.html">squirrel.services.storage.blob.MinIOService</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_services_storage_database_IDatabaseService.html">squirrel.services.storage.database.IDatabaseService</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_services_storage_database_PostgresService.html">squirrel.services.storage.database.PostgresService</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_services_workspace_WorkspaceService.html">squirrel.services.workspace.WorkspaceService</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">squirrel</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../api.html">Python API Reference</a></li>
+          <li class="breadcrumb-item"><a href="../generated_classes.html">Generated API classes</a></li>
+      <li class="breadcrumb-item active">squirrel.modules.providers.abstract.IProvider</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/generated/squirrel_modules_providers_abstract_IProvider.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="squirrel-modules-providers-abstract-iprovider">
+<h1>squirrel.modules.providers.abstract.IProvider<a class="headerlink" href="#squirrel-modules-providers-abstract-iprovider" title="Link to this heading"></a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="squirrel.modules.providers.abstract.IProvider.Provider">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">squirrel.modules.providers.abstract.IProvider.</span></span><span class="sig-name descname"><span class="pre">Provider</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/modules/providers/abstract/IProvider.html#Provider"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.modules.providers.abstract.IProvider.Provider" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Enum</span></code></p>
+<section id="provider-enum">
+<h2>Provider Enum<a class="headerlink" href="#provider-enum" title="Link to this heading"></a></h2>
+<p><strong>Description:</strong></p>
+<blockquote>
+<div><p>This enum defines the different provider implementations supported by the system.</p>
+</div></blockquote>
+<p><strong>Enum Values:</strong></p>
+<blockquote>
+<div><ul class="simple">
+<li><dl class="simple">
+<dt><strong>OPENAI (str):</strong> OpenAI provider implementation.</dt><dd><p><em>Value:</em> “openai”</p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt><strong>GEMINI (str):</strong> Google Gemini provider implementation.</dt><dd><p><em>Value:</em> “gemini”</p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt><strong>GROQ (str):</strong> Groq provider implementation.</dt><dd><p><em>Value:</em> “groq”</p>
+</dd>
+</dl>
+</li>
+</ul>
+</div></blockquote>
+</section>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="squirrel.modules.providers.abstract.IProvider.IProvider">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">squirrel.modules.providers.abstract.IProvider.</span></span><span class="sig-name descname"><span class="pre">IProvider</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">config</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/modules/providers/abstract/IProvider.html#IProvider"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.modules.providers.abstract.IProvider.IProvider" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">ABC</span></code>, <a class="reference internal" href="squirrel_core_logging.html#squirrel.core.logging.Loggable" title="squirrel.core.logging.Loggable"><code class="xref py py-class docutils literal notranslate"><span class="pre">Loggable</span></code></a></p>
+<section id="abstract-provider-class">
+<h2>Abstract Provider Class<a class="headerlink" href="#abstract-provider-class" title="Link to this heading"></a></h2>
+<p><strong>Description:</strong></p>
+<blockquote>
+<div><p>This class defines the interface for various LLM provider implementations,
+including methods for file uploads, response generation, structured responses,
+JSON generation, information extraction, table extraction, embeddings, and similarity calculations.</p>
+</div></blockquote>
+<p><strong>Attributes:</strong></p>
+<blockquote>
+<div><ul class="simple">
+<li><p><strong>model_name (str):</strong> The name of the model.</p></li>
+<li><p><strong>config (dict):</strong> Configuration dictionary for the provider.</p></li>
+</ul>
+</div></blockquote>
+<p><strong>Methods:</strong></p>
+<blockquote>
+<div><ul class="simple">
+<li><dl class="simple">
+<dt><a class="reference internal" href="#squirrel.modules.providers.abstract.IProvider.IProvider.generate_response" title="squirrel.modules.providers.abstract.IProvider.IProvider.generate_response"><code class="xref py py-meth docutils literal notranslate"><span class="pre">generate_response()</span></code></a></dt><dd><p>Generate a response based on input</p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt><a class="reference internal" href="#squirrel.modules.providers.abstract.IProvider.IProvider.generate_structured_response" title="squirrel.modules.providers.abstract.IProvider.IProvider.generate_structured_response"><code class="xref py py-meth docutils literal notranslate"><span class="pre">generate_structured_response()</span></code></a></dt><dd><p>Generate a pydantic structured response</p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt><a class="reference internal" href="#squirrel.modules.providers.abstract.IProvider.IProvider.generate_json" title="squirrel.modules.providers.abstract.IProvider.IProvider.generate_json"><code class="xref py py-meth docutils literal notranslate"><span class="pre">generate_json()</span></code></a></dt><dd><p>Generate a JSON response</p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt><a class="reference internal" href="#squirrel.modules.providers.abstract.IProvider.IProvider.available_model_names" title="squirrel.modules.providers.abstract.IProvider.IProvider.available_model_names"><code class="xref py py-meth docutils literal notranslate"><span class="pre">available_model_names()</span></code></a></dt><dd><p>Get list of available model names</p>
+</dd>
+</dl>
+</li>
+</ul>
+</div></blockquote>
+<dl class="py property">
+<dt class="sig sig-object py" id="squirrel.modules.providers.abstract.IProvider.IProvider.model_name">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">model_name</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="headerlink" href="#squirrel.modules.providers.abstract.IProvider.IProvider.model_name" title="Link to this definition"></a></dt>
+<dd><p>Get the model name.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The name of the model</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="squirrel.modules.providers.abstract.IProvider.IProvider.config">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">config</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">dict</span></em><a class="headerlink" href="#squirrel.modules.providers.abstract.IProvider.IProvider.config" title="Link to this definition"></a></dt>
+<dd><p>Get the configuration dictionary.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The configuration dictionary</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>dict</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="squirrel.modules.providers.abstract.IProvider.IProvider.total_input_tokens">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">total_input_tokens</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><a class="headerlink" href="#squirrel.modules.providers.abstract.IProvider.IProvider.total_input_tokens" title="Link to this definition"></a></dt>
+<dd><p>Get the total input tokens used.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Total input tokens</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="squirrel.modules.providers.abstract.IProvider.IProvider.total_output_tokens">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">total_output_tokens</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><a class="headerlink" href="#squirrel.modules.providers.abstract.IProvider.IProvider.total_output_tokens" title="Link to this definition"></a></dt>
+<dd><p>Get the total output tokens used.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Total output tokens</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="squirrel.modules.providers.abstract.IProvider.IProvider.total_tokens">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">total_tokens</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><a class="headerlink" href="#squirrel.modules.providers.abstract.IProvider.IProvider.total_tokens" title="Link to this definition"></a></dt>
+<dd><p>Get the total tokens used.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Total tokens</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="squirrel.modules.providers.abstract.IProvider.IProvider.request_count">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">request_count</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><a class="headerlink" href="#squirrel.modules.providers.abstract.IProvider.IProvider.request_count" title="Link to this definition"></a></dt>
+<dd><p>Get the total number of requests made.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Total request count</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="squirrel.modules.providers.abstract.IProvider.IProvider.last_input_tokens">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">last_input_tokens</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><a class="headerlink" href="#squirrel.modules.providers.abstract.IProvider.IProvider.last_input_tokens" title="Link to this definition"></a></dt>
+<dd><p>Get the last input tokens used.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Last input tokens</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="squirrel.modules.providers.abstract.IProvider.IProvider.last_output_tokens">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">last_output_tokens</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><a class="headerlink" href="#squirrel.modules.providers.abstract.IProvider.IProvider.last_output_tokens" title="Link to this definition"></a></dt>
+<dd><p>Get the last output tokens used.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Last output tokens</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="squirrel.modules.providers.abstract.IProvider.IProvider.last_request_tokens">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">last_request_tokens</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><a class="headerlink" href="#squirrel.modules.providers.abstract.IProvider.IProvider.last_request_tokens" title="Link to this definition"></a></dt>
+<dd><p>Get the last request tokens used.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Last request tokens</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="squirrel.modules.providers.abstract.IProvider.IProvider.get_total_usage">
+<span class="sig-name descname"><span class="pre">get_total_usage</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/modules/providers/abstract/IProvider.html#IProvider.get_total_usage"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.modules.providers.abstract.IProvider.IProvider.get_total_usage" title="Link to this definition"></a></dt>
+<dd><p>Get the total usage statistics for all API calls made through this provider instance.</p>
+<p><strong>Description:</strong></p>
+<blockquote>
+<div><p>This method returns a summary of token usage including input tokens,
+output tokens, total tokens, and the number of requests made.</p>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p><p>Dictionary containing token usage with keys:</p>
+<ul class="simple">
+<li><p>”input_tokens” (int): Total tokens used in inputs</p></li>
+<li><p>”output_tokens” (int): Total tokens used in outputs</p></li>
+<li><p>”total_tokens” (int): Total tokens used</p></li>
+<li><p>”request_count” (int): Number of API requests made</p></li>
+</ul>
+</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>Dict[str, int]</p>
+</dd>
+</dl>
+<p><strong>Example:</strong></p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">orca.modules.providers.openai.OpenAIProvider</span><span class="w"> </span><span class="kn">import</span> <span class="n">OpenAIProvider</span>
+
+<span class="c1"># Initialize OpenAI Provider</span>
+<span class="n">provider</span> <span class="o">=</span> <span class="n">OpenAIProvider</span><span class="p">(</span>
+    <span class="n">api_key</span><span class="o">=</span><span class="s2">"OPENAI_API_KEY"</span><span class="p">,</span>
+    <span class="n">model_name</span><span class="o">=</span><span class="s2">"gpt-4.1-2025-04-14"</span>
+<span class="p">)</span>
+
+<span class="c1"># Make some API calls...</span>
+<span class="n">provider</span><span class="o">.</span><span class="n">generate_response</span><span class="p">({</span><span class="s2">"user_prompt"</span><span class="p">:</span> <span class="s2">"Hello!"</span><span class="p">})</span>
+
+<span class="c1"># Get total usage</span>
+<span class="n">usage</span> <span class="o">=</span> <span class="n">provider</span><span class="o">.</span><span class="n">get_total_usage</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Total tokens used: </span><span class="si">{</span><span class="n">usage</span><span class="p">[</span><span class="s1">'total_tokens'</span><span class="p">]</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Requests made: </span><span class="si">{</span><span class="n">usage</span><span class="p">[</span><span class="s1">'request_count'</span><span class="p">]</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="squirrel.modules.providers.abstract.IProvider.IProvider.previous_usage">
+<span class="sig-name descname"><span class="pre">previous_usage</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/modules/providers/abstract/IProvider.html#IProvider.previous_usage"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.modules.providers.abstract.IProvider.IProvider.previous_usage" title="Link to this definition"></a></dt>
+<dd><p>Get the usage statistics for the last API call made through this provider instance.</p>
+<p><strong>Description:</strong></p>
+<blockquote>
+<div><p>This method returns a summary of token usage for the most recent API call,
+including input tokens, output tokens, and total tokens used.</p>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p><p>Dictionary containing token usage for the last request with keys:</p>
+<ul class="simple">
+<li><p>”input_tokens” (int): Tokens used in the last input</p></li>
+<li><p>”output_tokens” (int): Tokens used in the last output</p></li>
+<li><p>”total_tokens” (int): Total tokens used in the last request</p></li>
+</ul>
+</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>Dict[str, int]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="squirrel.modules.providers.abstract.IProvider.IProvider.reset_usage">
+<span class="sig-name descname"><span class="pre">reset_usage</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/modules/providers/abstract/IProvider.html#IProvider.reset_usage"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.modules.providers.abstract.IProvider.IProvider.reset_usage" title="Link to this definition"></a></dt>
+<dd><p>Reset all usage statistics.</p>
+<p><strong>Description:</strong>
+:rtype: <span class="sphinx_autodoc_typehints-type"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></span></p>
+<blockquote>
+<div><p>This method clears the accumulated usage statistics, useful for tracking
+usage per session or resetting before a new batch of requests.</p>
+</div></blockquote>
+<p><strong>Example:</strong></p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">orca.modules.providers.openai.OpenAIProvider</span><span class="w"> </span><span class="kn">import</span> <span class="n">OpenAIProvider</span>
+
+<span class="c1"># Initialize OpenAI Provider</span>
+<span class="n">provider</span> <span class="o">=</span> <span class="n">OpenAIProvider</span><span class="p">(</span>
+    <span class="n">api_key</span><span class="o">=</span><span class="s2">"OPENAI_API_KEY"</span><span class="p">,</span>
+    <span class="n">model_name</span><span class="o">=</span><span class="s2">"gpt-4.1-2025-04-14"</span>
+<span class="p">)</span>
+
+<span class="c1"># Make some calls...</span>
+<span class="n">provider</span><span class="o">.</span><span class="n">generate_response</span><span class="p">({</span><span class="s2">"user_prompt"</span><span class="p">:</span> <span class="s2">"Hello!"</span><span class="p">})</span>
+<span class="n">usage</span> <span class="o">=</span> <span class="n">provider</span><span class="o">.</span><span class="n">get_total_usage</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Tokens in session 1: </span><span class="si">{</span><span class="n">usage</span><span class="p">[</span><span class="s1">'total_tokens'</span><span class="p">]</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+
+<span class="c1"># Reset for new session</span>
+<span class="n">provider</span><span class="o">.</span><span class="n">reset_usage</span><span class="p">()</span>
+<span class="n">usage</span> <span class="o">=</span> <span class="n">provider</span><span class="o">.</span><span class="n">get_total_usage</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Tokens in session 2: </span><span class="si">{</span><span class="n">usage</span><span class="p">[</span><span class="s1">'total_tokens'</span><span class="p">]</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>  <span class="c1"># Will be 0</span>
+</pre></div>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="squirrel.modules.providers.abstract.IProvider.IProvider.generate_response">
+<em class="property"><span class="pre">abstract</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">generate_response</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">input</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/modules/providers/abstract/IProvider.html#IProvider.generate_response"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.modules.providers.abstract.IProvider.IProvider.generate_response" title="Link to this definition"></a></dt>
+<dd><p>Generate a response based on the input.</p>
+<p><strong>Description:</strong></p>
+<blockquote>
+<div><p>The method processes the input and generates a response
+based on the provided prompt or data.</p>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>input</strong> (<em>Dict</em><em>[</em><em>str</em><em>, </em><em>Any</em><em>]</em>) – The input data for generating the response</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The generated response</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="squirrel.modules.providers.abstract.IProvider.IProvider.generate_structured_response">
+<em class="property"><span class="pre">abstract</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">generate_structured_response</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">input</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/modules/providers/abstract/IProvider.html#IProvider.generate_structured_response"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.modules.providers.abstract.IProvider.IProvider.generate_structured_response" title="Link to this definition"></a></dt>
+<dd><p>Generate a pydantic structured response.</p>
+<p><strong>Description:</strong></p>
+<blockquote>
+<div><p>The method processes the input and generates a structured response
+based on a pydantic model.</p>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>input</strong> (<em>Dict</em><em>[</em><em>str</em><em>, </em><em>Any</em><em>]</em>) – The input data for generating the structured response</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The generated structured response based on pydantic model</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="squirrel.modules.providers.abstract.IProvider.IProvider.generate_json">
+<em class="property"><span class="pre">abstract</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">generate_json</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">input</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/modules/providers/abstract/IProvider.html#IProvider.generate_json"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.modules.providers.abstract.IProvider.IProvider.generate_json" title="Link to this definition"></a></dt>
+<dd><p>Generate a JSON response based on the provided input.</p>
+<p><strong>Description:</strong></p>
+<blockquote>
+<div><p>The method processes the input and generates a JSON response
+based on the provided user prompt.</p>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>input</strong> (<em>Dict</em><em>[</em><em>str</em><em>, </em><em>Any</em><em>]</em>) – Input dictionary containing file_path (str) and user_prompt (str) for guiding JSON generation</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Generated JSON response</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Dict[str, Any]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="squirrel.modules.providers.abstract.IProvider.IProvider.available_model_names">
+<em class="property"><span class="pre">abstract</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">available_model_names</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/modules/providers/abstract/IProvider.html#IProvider.available_model_names"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.modules.providers.abstract.IProvider.IProvider.available_model_names" title="Link to this definition"></a></dt>
+<dd><p>Get a list of available model names for the provider.</p>
+<p><strong>Description:</strong></p>
+<blockquote>
+<div><p>The method retrieves and returns a list of model names
+that are supported by the specific provider implementation.</p>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>List of available model names</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>list</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>model_name</strong> (<em>str</em>)</p></li>
+<li><p><strong>config</strong> (<em>dict</em>)</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="squirrel_modules_prompts_preprocess_PreprocessPromptGenerator.html" class="btn btn-neutral float-left" title="squirrel.modules.prompts.preprocess.PreprocessPromptGenerator" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="squirrel_modules_providers_gemini_GeminiProvider.html" class="btn btn-neutral float-right" title="squirrel.modules.providers.gemini.GeminiProvider" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, Mazen Soliman.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

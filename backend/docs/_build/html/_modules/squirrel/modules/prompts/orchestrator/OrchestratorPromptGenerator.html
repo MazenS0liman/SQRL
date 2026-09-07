@@ -1,0 +1,377 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>squirrel.modules.prompts.orchestrator.OrchestratorPromptGenerator &mdash; squirrel  documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../../../../_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" type="text/css" href="../../../../../_static/css/custom.css?v=adc7883a" />
+
+  
+    <link rel="shortcut icon" href="../../../../../_static/sqrl.png"/>
+      <script src="../../../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../../../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../../../../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script src="../../../../../_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="../../../../../_static/copybutton.js?v=a46eff05"></script>
+    <script src="../../../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../../../index.html" class="icon icon-home">
+            squirrel
+              <img src="../../../../../_static/sqrl.png" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Python API Reference:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../api.html">Python API Reference</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../../index.html">squirrel</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">squirrel.modules.prompts.orchestrator.OrchestratorPromptGenerator</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for squirrel.modules.prompts.orchestrator.OrchestratorPromptGenerator</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/python</span>
+<span class="sd">"""</span>
+<span class="sd">Orchestrator Prompt Generator Module</span>
+<span class="sd">======================================</span>
+
+<span class="sd">Overview</span>
+<span class="sd">--------</span>
+
+<span class="sd">This module provides prompt generation capabilities for the orchestrator</span>
+<span class="sd">agent's routing task: classifying an incoming chat request into exactly one</span>
+<span class="sd">of three execution routes:</span>
+
+<span class="sd">``chat``</span>
+<span class="sd">    General conversation — no specialised data pipeline applies.</span>
+
+<span class="sd">``explore``</span>
+<span class="sd">    Hypothesis-driven EDA — the user wants to understand, analyse, or query</span>
+<span class="sd">    their data.</span>
+
+<span class="sd">``build``</span>
+<span class="sd">    Full ML pipeline — the user wants to predict, classify, or forecast a</span>
+<span class="sd">    specific target variable, i.e. they want a trained model.</span>
+
+<span class="sd">Prompts</span>
+<span class="sd">-------</span>
+
+<span class="sd">- :class:`OrchestratorPromptGenerator`</span>
+<span class="sd">    Class for generating system and user prompts that drive the LLM-based</span>
+<span class="sd">    ``chat`` vs ``explore`` vs ``build`` classification call made by</span>
+<span class="sd">    :class:`~squirrel.modules.agents.OrchestratorAgent`.</span>
+
+<span class="sd">"""</span>
+<span class="c1"># ——————————————————————————————————————————————————————————————</span>
+<span class="c1"># Imports</span>
+
+<span class="c1"># Standard Libraries</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">enum</span><span class="w"> </span><span class="kn">import</span> <span class="n">Enum</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Optional</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing_extensions</span><span class="w"> </span><span class="kn">import</span> <span class="n">override</span>
+
+<span class="c1"># Abstract Classes</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">squirrel.modules.prompts.abstract.IPromptGenerator</span><span class="w"> </span><span class="kn">import</span> <span class="n">IPromptGenerator</span>
+
+<span class="c1"># ——————————————————————————————————————————————————————————————</span>
+<span class="c1"># Orchestrator Prompt Type Enum</span>
+
+
+<div class="viewcode-block" id="OrchestratorPromptType">
+<a class="viewcode-back" href="../../../../../generated/squirrel_modules_prompts_orchestrator_OrchestratorPromptGenerator.html#squirrel.modules.prompts.orchestrator.OrchestratorPromptGenerator.OrchestratorPromptType">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">OrchestratorPromptType</span><span class="p">(</span><span class="n">Enum</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Orchestrator Prompt Type Enum</span>
+<span class="sd">    -----------------------------</span>
+
+<span class="sd">    **Description:**</span>
+
+<span class="sd">        Defines the types of prompts that :class:`OrchestratorPromptGenerator`</span>
+<span class="sd">        can create. Each type corresponds to a specific orchestration task.</span>
+
+<span class="sd">    **Enum Values:**</span>
+
+<span class="sd">        - **CLASSIFY_ROUTE:** Classify a chat request as ``chat``, ``explore``,</span>
+<span class="sd">          or ``build``.</span>
+
+<span class="sd">    """</span>
+    <span class="n">CLASSIFY_ROUTE</span> <span class="o">=</span> <span class="s2">"classify_route"</span>
+<span class="w">    </span><span class="sd">"""Classify a chat request as 'chat', 'explore', or 'build'."""</span></div>
+
+
+
+<span class="c1"># ——————————————————————————————————————————————————————————————</span>
+<span class="c1"># Orchestrator Prompt Generator Class</span>
+
+
+<div class="viewcode-block" id="OrchestratorPromptGenerator">
+<a class="viewcode-back" href="../../../../../generated/squirrel_modules_prompts_orchestrator_OrchestratorPromptGenerator.html#squirrel.modules.prompts.orchestrator.OrchestratorPromptGenerator.OrchestratorPromptGenerator">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">OrchestratorPromptGenerator</span><span class="p">(</span><span class="n">IPromptGenerator</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Orchestrator Prompt Generator Class</span>
+<span class="sd">    -----------------------------------</span>
+
+<span class="sd">    **Description:**</span>
+
+<span class="sd">        Implements the :class:`IPromptGenerator` interface and provides methods</span>
+<span class="sd">        to generate system and user prompts for the orchestrator's single LLM</span>
+<span class="sd">        routing call.</span>
+
+<span class="sd">    **Methods:**</span>
+
+<span class="sd">        - :meth:`generate_system_prompt`</span>
+<span class="sd">            Create the system-level prompt that defines the classifier's role,</span>
+<span class="sd">            the two routes, and the response contract.</span>
+<span class="sd">        - :meth:`generate_user_prompt`</span>
+<span class="sd">            Dispatch to the appropriate prompt builder based on ``prompt_type``.</span>
+<span class="sd">        - :meth:`classify_route_prompt`</span>
+<span class="sd">            Build the user-facing prompt containing the request to classify.</span>
+
+<span class="sd">    """</span>
+
+    <span class="c1"># ── System prompts ────────────────────────────────────────────────────────</span>
+
+<div class="viewcode-block" id="OrchestratorPromptGenerator.generate_system_prompt">
+<a class="viewcode-back" href="../../../../../generated/squirrel_modules_prompts_orchestrator_OrchestratorPromptGenerator.html#squirrel.modules.prompts.orchestrator.OrchestratorPromptGenerator.OrchestratorPromptGenerator.generate_system_prompt">[docs]</a>
+    <span class="nd">@override</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">generate_system_prompt</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">prompt_type</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">OrchestratorPromptType</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Generate a system-level prompt.</span>
+
+<span class="sd">        **Description:**</span>
+
+<span class="sd">            Creates the system prompt that defines the classifier's role, the</span>
+<span class="sd">            three available routes (``chat`` / ``explore`` / ``build``), and</span>
+<span class="sd">            the rules for extracting a target column when the route is</span>
+<span class="sd">            ``build``.</span>
+
+<span class="sd">        :param prompt_type: The type of system prompt to generate. Currently</span>
+<span class="sd">            only :attr:`OrchestratorPromptType.CLASSIFY_ROUTE` is supported;</span>
+<span class="sd">            other values fall back to the same prompt since the orchestrator</span>
+<span class="sd">            has a single responsibility.</span>
+<span class="sd">        :type prompt_type: Optional[OrchestratorPromptType]</span>
+
+<span class="sd">        :return: A system prompt string that describes the model's role,</span>
+<span class="sd">            the routing rules, and the response contract.</span>
+<span class="sd">        :rtype: str</span>
+<span class="sd">        """</span>
+        <span class="k">return</span> <span class="p">(</span>
+            <span class="s2">"You are a routing classifier for a tabular-data analysis assistant. "</span>
+            <span class="s2">"Given a user's request (plus any attached files and structured "</span>
+            <span class="s2">"metadata), decide whether the request should be handled by exactly "</span>
+            <span class="s2">"one of three pipelines:</span><span class="se">\n\n</span><span class="s2">"</span>
+            <span class="s2">"1. </span><span class="se">\"</span><span class="s2">chat</span><span class="se">\"</span><span class="s2"> — the request is general conversation, a greeting, a "</span>
+            <span class="s2">"clarifying question, or anything that does not require a "</span>
+            <span class="s2">"specialised data-analysis or modelling pipeline. Use this as the "</span>
+            <span class="s2">"default when neither </span><span class="se">\"</span><span class="s2">explore</span><span class="se">\"</span><span class="s2"> nor </span><span class="se">\"</span><span class="s2">build</span><span class="se">\"</span><span class="s2"> clearly applies.</span><span class="se">\n\n</span><span class="s2">"</span>
+            <span class="s2">"2. </span><span class="se">\"</span><span class="s2">explore</span><span class="se">\"</span><span class="s2"> — the user wants to understand, analyse, query, or "</span>
+            <span class="s2">"visualise their data: find patterns, trends, correlations, "</span>
+            <span class="s2">"anomalies, segments, or ask open-ended analytical questions. No "</span>
+            <span class="s2">"specific target variable to predict is implied by the request.</span><span class="se">\n\n</span><span class="s2">"</span>
+            <span class="s2">"3. </span><span class="se">\"</span><span class="s2">build</span><span class="se">\"</span><span class="s2"> — the user wants to predict, classify, forecast, or "</span>
+            <span class="s2">"model a specific outcome, e.g. </span><span class="se">\"</span><span class="s2">predict churn</span><span class="se">\"</span><span class="s2">, </span><span class="se">\"</span><span class="s2">classify these "</span>
+            <span class="s2">"transactions as fraud or not</span><span class="se">\"</span><span class="s2">, </span><span class="se">\"</span><span class="s2">build a model to forecast sales</span><span class="se">\"</span><span class="s2">. "</span>
+            <span class="s2">"This implies training a machine-learning model against a target "</span>
+            <span class="s2">"column.</span><span class="se">\n\n</span><span class="s2">"</span>
+            <span class="s2">"Rules:</span><span class="se">\n</span><span class="s2">"</span>
+            <span class="s2">"- Choose exactly one route: </span><span class="se">\"</span><span class="s2">chat</span><span class="se">\"</span><span class="s2">, </span><span class="se">\"</span><span class="s2">explore</span><span class="se">\"</span><span class="s2">, or </span><span class="se">\"</span><span class="s2">build</span><span class="se">\"</span><span class="s2">.</span><span class="se">\n</span><span class="s2">"</span>
+            <span class="s2">"- If the route is </span><span class="se">\"</span><span class="s2">build</span><span class="se">\"</span><span class="s2">, extract the target column name when it "</span>
+            <span class="s2">"is explicitly mentioned or clearly inferable from the request "</span>
+            <span class="s2">"(e.g. </span><span class="se">\"</span><span class="s2">predict whether a customer churns</span><span class="se">\"</span><span class="s2"> implies a target column "</span>
+            <span class="s2">"like 'churn'). If no target column can be confidently determined, "</span>
+            <span class="s2">"set target_column to null — do not guess wildly.</span><span class="se">\n</span><span class="s2">"</span>
+            <span class="s2">"- If the route is </span><span class="se">\"</span><span class="s2">chat</span><span class="se">\"</span><span class="s2"> or </span><span class="se">\"</span><span class="s2">explore</span><span class="se">\"</span><span class="s2">, target_column must be null.</span><span class="se">\n</span><span class="s2">"</span>
+            <span class="s2">"- confidence is a float between 0 and 1 reflecting how certain you "</span>
+            <span class="s2">"are in the chosen route.</span><span class="se">\n</span><span class="s2">"</span>
+            <span class="s2">"- reasoning is a single concise sentence explaining the decision.</span><span class="se">\n\n</span><span class="s2">"</span>
+            <span class="s2">"Respond only with the requested JSON object — no extra commentary, "</span>
+            <span class="s2">"no markdown fences."</span>
+        <span class="p">)</span></div>
+
+
+    <span class="c1"># ── User prompts ──────────────────────────────────────────────────────────</span>
+
+<div class="viewcode-block" id="OrchestratorPromptGenerator.generate_user_prompt">
+<a class="viewcode-back" href="../../../../../generated/squirrel_modules_prompts_orchestrator_OrchestratorPromptGenerator.html#squirrel.modules.prompts.orchestrator.OrchestratorPromptGenerator.OrchestratorPromptGenerator.generate_user_prompt">[docs]</a>
+    <span class="nd">@override</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">generate_user_prompt</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">prompt_type</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">OrchestratorPromptType</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Generates a user prompt based on the specified type.</span>
+
+<span class="sd">        **Description:**</span>
+
+<span class="sd">            Routes prompt generation to the appropriate specialised builder</span>
+<span class="sd">            based on the ``prompt_type`` parameter.</span>
+
+<span class="sd">        :param prompt_type: The type of user prompt to generate.</span>
+<span class="sd">        :type prompt_type: Optional[OrchestratorPromptType]</span>
+<span class="sd">        :param kwargs: Additional parameters forwarded to the builder. Expected</span>
+<span class="sd">            keys for :attr:`OrchestratorPromptType.CLASSIFY_ROUTE`: ``query``,</span>
+<span class="sd">            ``body``, ``file_urls``, ``metadata``.</span>
+<span class="sd">        :type kwargs: dict</span>
+
+<span class="sd">        :return: Generated user prompt string.</span>
+<span class="sd">        :rtype: str</span>
+
+<span class="sd">        :raises ValueError: If an invalid or missing prompt type is specified.</span>
+<span class="sd">        """</span>
+        <span class="k">if</span> <span class="n">prompt_type</span> <span class="o">==</span> <span class="n">OrchestratorPromptType</span><span class="o">.</span><span class="n">CLASSIFY_ROUTE</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">classify_route_prompt</span><span class="p">(</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"Invalid prompt type specified."</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="OrchestratorPromptGenerator.classify_route_prompt">
+<a class="viewcode-back" href="../../../../../generated/squirrel_modules_prompts_orchestrator_OrchestratorPromptGenerator.html#squirrel.modules.prompts.orchestrator.OrchestratorPromptGenerator.OrchestratorPromptGenerator.classify_route_prompt">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">classify_route_prompt</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">input</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Build the user-facing prompt for the ``explore`` vs ``build`` classification.</span>
+
+<span class="sd">        **Description:**</span>
+
+<span class="sd">            Renders the user's query alongside attached files and any structured</span>
+<span class="sd">            request body / metadata so the LLM has full context for the routing</span>
+<span class="sd">            decision.</span>
+
+<span class="sd">        :param input: Dictionary with the following expected keys:</span>
+
+<span class="sd">            - ``query`` (str): The user's natural-language instruction.</span>
+<span class="sd">            - ``body`` (dict, optional): Structured request payload (may already</span>
+<span class="sd">              contain ``targetColumn`` / ``target_column``).</span>
+<span class="sd">            - ``file_urls`` (list, optional): Attached ``s3://`` or HTTP URLs.</span>
+<span class="sd">            - ``metadata`` (dict, optional): Ambient metadata from the chat layer.</span>
+
+<span class="sd">        :type input: Dict[str, Any]</span>
+
+<span class="sd">        :return: Prompt to feed to the orchestrator's classification call.</span>
+<span class="sd">        :rtype: str</span>
+
+<span class="sd">        **Example:**</span>
+
+<span class="sd">        .. code-block:: python</span>
+
+<span class="sd">            from squirrel.modules.prompts.orchestrator import (</span>
+<span class="sd">                OrchestratorPromptGenerator,</span>
+<span class="sd">                OrchestratorPromptType,</span>
+<span class="sd">            )</span>
+
+<span class="sd">            generator = OrchestratorPromptGenerator()</span>
+
+<span class="sd">            user_prompt = generator.generate_user_prompt(</span>
+<span class="sd">                prompt_type=OrchestratorPromptType.CLASSIFY_ROUTE,</span>
+<span class="sd">                query="Predict whether a customer will churn next month.",</span>
+<span class="sd">                body={},</span>
+<span class="sd">                file_urls=["s3://bucket/customers.csv"],</span>
+<span class="sd">                metadata={},</span>
+<span class="sd">            )</span>
+
+<span class="sd">        """</span>
+        <span class="n">query</span><span class="p">:</span>     <span class="nb">str</span>            <span class="o">=</span> <span class="nb">input</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"query"</span><span class="p">,</span> <span class="s2">""</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">""</span>
+        <span class="n">body</span><span class="p">:</span>      <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="nb">input</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"body"</span><span class="p">,</span> <span class="p">{})</span> <span class="ow">or</span> <span class="p">{}</span>
+        <span class="n">file_urls</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Any</span><span class="p">]</span>      <span class="o">=</span> <span class="nb">input</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"file_urls"</span><span class="p">,</span> <span class="p">[])</span> <span class="ow">or</span> <span class="p">[]</span>
+        <span class="n">metadata</span><span class="p">:</span>  <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="nb">input</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"metadata"</span><span class="p">,</span> <span class="p">{})</span> <span class="ow">or</span> <span class="p">{}</span>
+
+        <span class="n">prompt</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"""</span>
+<span class="s2">        # USER QUERY:</span>
+<span class="s2">        </span><span class="si">{</span><span class="n">query</span><span class="w"> </span><span class="ow">or</span><span class="w"> </span><span class="s2">"(empty)"</span><span class="si">}</span>
+
+<span class="s2">        # ATTACHED FILES:</span>
+<span class="s2">        </span><span class="si">{</span><span class="n">file_urls</span><span class="w"> </span><span class="ow">or</span><span class="w"> </span><span class="s2">"none"</span><span class="si">}</span>
+
+<span class="s2">        # REQUEST BODY:</span>
+<span class="s2">        </span><span class="si">{</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">body</span><span class="p">,</span><span class="w"> </span><span class="n">default</span><span class="o">=</span><span class="nb">str</span><span class="p">)</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="n">body</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="s2">"none"</span><span class="si">}</span>
+
+<span class="s2">        # METADATA:</span>
+<span class="s2">        </span><span class="si">{</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">metadata</span><span class="p">,</span><span class="w"> </span><span class="n">default</span><span class="o">=</span><span class="nb">str</span><span class="p">)</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="n">metadata</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="s2">"none"</span><span class="si">}</span>
+
+<span class="s2">        # TASK:</span>
+<span class="s2">        Classify this request as "chat", "explore", or "build" following the</span>
+<span class="s2">        rules in the system prompt, and return the JSON object with fields:</span>
+<span class="s2">        route, target_column, confidence, reasoning.</span>
+<span class="s2">        """</span>
+
+        <span class="k">return</span> <span class="n">prompt</span></div>
+</div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, Mazen Soliman.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -1,0 +1,349 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>squirrel.modules.agents.orchestrator.OrchestratorAgent &mdash; squirrel  documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../../../../_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" type="text/css" href="../../../../../_static/css/custom.css?v=adc7883a" />
+
+  
+    <link rel="shortcut icon" href="../../../../../_static/sqrl.png"/>
+      <script src="../../../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../../../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../../../../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script src="../../../../../_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="../../../../../_static/copybutton.js?v=a46eff05"></script>
+    <script src="../../../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../../../index.html" class="icon icon-home">
+            squirrel
+              <img src="../../../../../_static/sqrl.png" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Python API Reference:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../api.html">Python API Reference</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../../index.html">squirrel</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">squirrel.modules.agents.orchestrator.OrchestratorAgent</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for squirrel.modules.agents.orchestrator.OrchestratorAgent</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/python</span>
+<span class="sd">"""</span>
+<span class="sd">Orchestrator Agent Module</span>
+<span class="sd">=========================</span>
+
+<span class="sd">Classifies incoming chat requests into one of three execution routes using a</span>
+<span class="sd">single LLM call:</span>
+
+<span class="sd">``chat``</span>
+<span class="sd">    General conversation — no specialised data pipeline applies.</span>
+
+<span class="sd">``explore``</span>
+<span class="sd">    Hypothesis-driven EDA — the user wants to understand, analyse, or query</span>
+<span class="sd">    their data (find patterns, trends, anomalies, relationships) without</span>
+<span class="sd">    necessarily training a predictive model.</span>
+
+<span class="sd">``build``</span>
+<span class="sd">    Full ML pipeline — the user wants to predict, classify, or forecast a</span>
+<span class="sd">    specific target variable, i.e. they want a trained model.</span>
+
+<span class="sd">The classification asks the LLM to return structured JSON (route + target</span>
+<span class="sd">column + confidence + reasoning) rather than parsing free text, so the</span>
+<span class="sd">result is deterministic to consume downstream.</span>
+
+<span class="sd">"""</span>
+<span class="c1"># ——————————————————————————————————————————————————————————————</span>
+<span class="c1"># Imports</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
+
+<span class="c1"># Standard Libraries</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span>
+
+<span class="c1"># Abstract classes</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">squirrel.modules.agents.abstract.IAgent</span><span class="w"> </span><span class="kn">import</span> <span class="n">IAgent</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">squirrel.modules.providers.abstract.IProvider</span><span class="w"> </span><span class="kn">import</span> <span class="n">Provider</span>
+
+<span class="c1"># Prompts</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">squirrel.modules.prompts.orchestrator.OrchestratorPromptGenerator</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">OrchestratorPromptGenerator</span><span class="p">,</span>
+    <span class="n">OrchestratorPromptType</span>
+<span class="p">)</span>
+
+<span class="c1"># Logging</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">loguru</span><span class="w"> </span><span class="kn">import</span> <span class="n">logger</span>
+
+<span class="c1"># ——————————————————————————————————————————————————————————————</span>
+<span class="c1"># Orchestrator Agent</span>
+<div class="viewcode-block" id="OrchestratorAgent">
+<a class="viewcode-back" href="../../../../../generated/squirrel_modules_agents_orchestrator_OrchestratorAgent.html#squirrel.modules.agents.orchestrator.OrchestratorAgent.OrchestratorAgent">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">OrchestratorAgent</span><span class="p">(</span><span class="n">IAgent</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Classify a request and return the route the service should execute.</span>
+<span class="sd">    """</span>
+
+    <span class="n">_VALID_ROUTES</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"chat"</span><span class="p">,</span> <span class="s2">"explore"</span><span class="p">,</span> <span class="s2">"build"</span><span class="p">}</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">api_key</span><span class="p">:</span>          <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>                        <span class="o">=</span> <span class="s2">"GEMINI_API_KEY_V1"</span><span class="p">,</span>
+        <span class="n">provider</span><span class="p">:</span>         <span class="n">Optional</span><span class="p">[</span><span class="n">Provider</span><span class="p">]</span>                   <span class="o">=</span> <span class="n">Provider</span><span class="o">.</span><span class="n">GEMINI</span><span class="p">,</span>
+        <span class="n">model_name</span><span class="p">:</span>       <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>                        <span class="o">=</span> <span class="s2">"models/gemini-2.5-flash"</span><span class="p">,</span>
+        <span class="n">prompt_generator</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">OrchestratorPromptGenerator</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">config</span><span class="p">:</span>           <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span>              <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="n">api_key</span><span class="p">,</span>
+            <span class="n">provider</span><span class="p">,</span>
+            <span class="n">model_name</span><span class="p">,</span>
+            <span class="n">prompt_generator</span><span class="o">=</span><span class="n">prompt_generator</span> <span class="ow">or</span> <span class="n">OrchestratorPromptGenerator</span><span class="p">(),</span>
+            <span class="n">config</span><span class="o">=</span><span class="n">config</span> <span class="ow">or</span> <span class="p">{}</span>
+        <span class="p">)</span>
+
+    <span class="c1"># ── Public API ────────────────────────────────────────────────────────────</span>
+
+<div class="viewcode-block" id="OrchestratorAgent.orchestrate">
+<a class="viewcode-back" href="../../../../../generated/squirrel_modules_agents_orchestrator_OrchestratorAgent.html#squirrel.modules.agents.orchestrator.OrchestratorAgent.OrchestratorAgent.orchestrate">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">orchestrate</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">query</span><span class="p">:</span>     <span class="nb">str</span><span class="p">,</span>
+        <span class="n">body</span><span class="p">:</span>      <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">file_urls</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="n">Any</span><span class="p">]]</span>      <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">metadata</span><span class="p">:</span>  <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Ask the LLM to classify *query*.</span>
+
+<span class="sd">        :param query:     User's natural-language instruction.</span>
+<span class="sd">        :param body:      Optional structured payload.</span>
+<span class="sd">        :param file_urls: Attached ``s3://`` or HTTP URLs (included in the</span>
+<span class="sd">                          prompt for context only).</span>
+<span class="sd">        :param metadata:  Ambient metadata forwarded from the chat layer.</span>
+<span class="sd">        :return:          Route-decision dict — see :meth:`_decision`.</span>
+<span class="sd">        """</span>
+        <span class="n">body</span>      <span class="o">=</span> <span class="n">body</span>      <span class="ow">or</span> <span class="p">{}</span>
+        <span class="n">metadata</span>  <span class="o">=</span> <span class="n">metadata</span>  <span class="ow">or</span> <span class="p">{}</span>
+        <span class="n">file_urls</span> <span class="o">=</span> <span class="n">file_urls</span> <span class="ow">or</span> <span class="p">[]</span>
+
+        <span class="n">system_prompt</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">prompt_generator</span><span class="o">.</span><span class="n">generate_system_prompt</span><span class="p">(</span>
+            <span class="n">prompt_type</span><span class="o">=</span><span class="n">OrchestratorPromptType</span><span class="o">.</span><span class="n">CLASSIFY_ROUTE</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">user_prompt</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">prompt_generator</span><span class="o">.</span><span class="n">generate_user_prompt</span><span class="p">(</span>
+            <span class="n">prompt_type</span><span class="o">=</span><span class="n">OrchestratorPromptType</span><span class="o">.</span><span class="n">CLASSIFY_ROUTE</span><span class="p">,</span>
+            <span class="n">query</span><span class="o">=</span><span class="n">query</span><span class="p">,</span>
+            <span class="n">body</span><span class="o">=</span><span class="n">body</span><span class="p">,</span>
+            <span class="n">file_urls</span><span class="o">=</span><span class="n">file_urls</span><span class="p">,</span>
+            <span class="n">metadata</span><span class="o">=</span><span class="n">metadata</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="n">response</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_response</span><span class="p">(</span>
+            <span class="n">fn_name</span><span class="o">=</span><span class="s2">"generate_json"</span><span class="p">,</span>
+            <span class="n">model_input</span><span class="o">=</span><span class="p">{</span>
+                <span class="s2">"system_prompt"</span><span class="p">:</span> <span class="n">system_prompt</span><span class="p">,</span>
+                <span class="s2">"user_prompt"</span><span class="p">:</span> <span class="n">user_prompt</span><span class="p">,</span>
+                <span class="s2">"schema"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_classification_schema</span><span class="p">(),</span>
+            <span class="p">},</span>
+            <span class="n">strict</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+            <span class="n">provider_order</span><span class="o">=</span><span class="p">[</span><span class="n">Provider</span><span class="o">.</span><span class="n">GROQ</span><span class="p">,</span> <span class="n">Provider</span><span class="o">.</span><span class="n">GEMINI</span><span class="p">],</span>
+            <span class="n">preference_model_names</span><span class="o">=</span><span class="p">[</span>
+                <span class="s2">"llama-3.3-70b-versatile"</span><span class="p">,</span>
+                <span class="s2">"models/gemini-2.5-flash"</span><span class="p">,</span>
+            <span class="p">],</span>
+        <span class="p">)</span>
+
+        <span class="n">parsed</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_parse_response</span><span class="p">(</span><span class="n">response</span><span class="p">)</span>
+
+        <span class="n">route</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">parsed</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"route"</span><span class="p">,</span> <span class="s2">""</span><span class="p">))</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">route</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_VALID_ROUTES</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                <span class="s2">"OrchestratorAgent: LLM returned invalid route '</span><span class="si">{}</span><span class="s2">', defaulting to 'chat'."</span><span class="p">,</span>
+                <span class="n">route</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="n">route</span> <span class="o">=</span> <span class="s2">"chat"</span>
+
+        <span class="n">confidence</span> <span class="o">=</span> <span class="n">parsed</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"confidence"</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">confidence</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">confidence</span><span class="p">)</span>
+        <span class="k">except</span> <span class="p">(</span><span class="ne">TypeError</span><span class="p">,</span> <span class="ne">ValueError</span><span class="p">):</span>
+            <span class="n">confidence</span> <span class="o">=</span> <span class="mf">0.5</span>
+        <span class="n">confidence</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="nb">min</span><span class="p">(</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">confidence</span><span class="p">))</span>
+
+        <span class="n">target_column</span> <span class="o">=</span> <span class="n">parsed</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"target_column"</span><span class="p">)</span> <span class="ow">or</span> <span class="kc">None</span>
+        <span class="n">reasoning</span> <span class="o">=</span> <span class="n">parsed</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"reasoning"</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">"LLM classification."</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_decision</span><span class="p">(</span>
+            <span class="n">route_key</span><span class="o">=</span><span class="n">route</span><span class="p">,</span>
+            <span class="n">target_column</span><span class="o">=</span><span class="n">target_column</span><span class="p">,</span>
+            <span class="n">confidence</span><span class="o">=</span><span class="n">confidence</span><span class="p">,</span>
+            <span class="n">reasoning</span><span class="o">=</span><span class="n">reasoning</span><span class="p">,</span>
+        <span class="p">)</span></div>
+
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_classification_schema</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s2">"type"</span><span class="p">:</span> <span class="s2">"object"</span><span class="p">,</span>
+            <span class="s2">"properties"</span><span class="p">:</span> <span class="p">{</span>
+                <span class="s2">"route"</span><span class="p">:</span> <span class="p">{</span>
+                    <span class="s2">"type"</span><span class="p">:</span> <span class="s2">"string"</span><span class="p">,</span>
+                    <span class="s2">"enum"</span><span class="p">:</span> <span class="p">[</span><span class="s2">"chat"</span><span class="p">,</span> <span class="s2">"explore"</span><span class="p">,</span> <span class="s2">"build"</span><span class="p">],</span>
+                    <span class="s2">"description"</span><span class="p">:</span> <span class="s2">"The chosen route."</span><span class="p">,</span>
+                <span class="p">},</span>
+                <span class="s2">"target_column"</span><span class="p">:</span> <span class="p">{</span>
+                    <span class="s2">"type"</span><span class="p">:</span> <span class="p">[</span><span class="s2">"string"</span><span class="p">,</span> <span class="s2">"null"</span><span class="p">],</span>
+                    <span class="s2">"description"</span><span class="p">:</span> <span class="p">(</span>
+                        <span class="s2">"Name of the target column to predict, if route is 'build' "</span>
+                        <span class="s2">"and a target can be confidently inferred. Otherwise null."</span>
+                    <span class="p">),</span>
+                <span class="p">},</span>
+                <span class="s2">"confidence"</span><span class="p">:</span> <span class="p">{</span>
+                    <span class="s2">"type"</span><span class="p">:</span> <span class="s2">"number"</span><span class="p">,</span>
+                    <span class="s2">"description"</span><span class="p">:</span> <span class="s2">"Confidence in the classification, between 0 and 1."</span><span class="p">,</span>
+                <span class="p">},</span>
+                <span class="s2">"reasoning"</span><span class="p">:</span> <span class="p">{</span>
+                    <span class="s2">"type"</span><span class="p">:</span> <span class="s2">"string"</span><span class="p">,</span>
+                    <span class="s2">"description"</span><span class="p">:</span> <span class="s2">"One-sentence explanation for the routing decision."</span><span class="p">,</span>
+                <span class="p">},</span>
+            <span class="p">},</span>
+            <span class="s2">"required"</span><span class="p">:</span> <span class="p">[</span><span class="s2">"route"</span><span class="p">,</span> <span class="s2">"target_column"</span><span class="p">,</span> <span class="s2">"confidence"</span><span class="p">,</span> <span class="s2">"reasoning"</span><span class="p">],</span>
+        <span class="p">}</span>
+
+    <span class="c1"># ── Parsing ───────────────────────────────────────────────────────────────</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_parse_response</span><span class="p">(</span><span class="n">response</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Coerce the raw LLM response into a dict, tolerating string/None.</span>
+<span class="sd">        """</span>
+        <span class="k">if</span> <span class="n">response</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">"OrchestratorAgent: LLM returned no response."</span><span class="p">)</span>
+            <span class="k">return</span> <span class="p">{}</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">response</span><span class="p">,</span> <span class="n">Dict</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">response</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">response</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">parsed</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">response</span><span class="p">)</span>
+                <span class="k">return</span> <span class="n">parsed</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">parsed</span><span class="p">,</span> <span class="n">Dict</span><span class="p">)</span> <span class="k">else</span> <span class="p">{}</span>
+            <span class="k">except</span> <span class="n">json</span><span class="o">.</span><span class="n">JSONDecodeError</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                    <span class="s2">"OrchestratorAgent: could not parse LLM response as JSON: </span><span class="si">{}</span><span class="s2">"</span><span class="p">,</span>
+                    <span class="n">response</span><span class="p">,</span>
+                <span class="p">)</span>
+                <span class="k">return</span> <span class="p">{}</span>
+        <span class="k">return</span> <span class="p">{}</span>
+
+    <span class="c1"># ── Decision assembly ────────────────────────────────────────────────────</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_decision</span><span class="p">(</span>
+        <span class="n">route_key</span><span class="p">:</span>     <span class="nb">str</span><span class="p">,</span>
+        <span class="n">target_column</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
+        <span class="n">confidence</span><span class="p">:</span>    <span class="nb">float</span><span class="p">,</span>
+        <span class="n">reasoning</span><span class="p">:</span>     <span class="nb">str</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Assemble the canonical route-decision dict consumed by</span>
+<span class="sd">        :class:`OrchestratorService`.</span>
+
+<span class="sd">        :param route_key:     ``'chat'``, ``'explore'``, or ``'build'``.</span>
+<span class="sd">        :param target_column: Target column name, or ``None``.</span>
+<span class="sd">        :param confidence:    Classifier confidence in [0, 1].</span>
+<span class="sd">        :param reasoning:     Human-readable explanation.</span>
+<span class="sd">        </span>
+<span class="sd">        :return:               Route-decision dict.</span>
+<span class="sd">        """</span>
+        <span class="n">agent_name</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="s2">"TabularDataModelBuilderAgent"</span>
+            <span class="k">if</span> <span class="n">route_key</span> <span class="o">==</span> <span class="s2">"build"</span>
+            <span class="k">else</span> <span class="s2">"TabularDataExploratoryAgent"</span>
+            <span class="k">if</span> <span class="n">route_key</span> <span class="o">==</span> <span class="s2">"explore"</span>
+            <span class="k">else</span> <span class="s2">"GeneralPurposeAgent"</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s2">"route_key"</span><span class="p">:</span>     <span class="n">route_key</span><span class="p">,</span>
+            <span class="s2">"agent_name"</span><span class="p">:</span>    <span class="n">agent_name</span><span class="p">,</span>
+            <span class="s2">"target_column"</span><span class="p">:</span> <span class="n">target_column</span><span class="p">,</span>
+            <span class="s2">"confidence"</span><span class="p">:</span>    <span class="n">confidence</span><span class="p">,</span>
+            <span class="s2">"observations"</span><span class="p">:</span>  <span class="p">[</span><span class="n">reasoning</span><span class="p">],</span>
+            <span class="s2">"reason"</span><span class="p">:</span>        <span class="n">reasoning</span><span class="p">,</span>
+        <span class="p">}</span></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, Mazen Soliman.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

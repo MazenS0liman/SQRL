@@ -1,0 +1,293 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>squirrel.schemas.file &mdash; squirrel  documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/custom.css?v=adc7883a" />
+
+  
+    <link rel="shortcut icon" href="../../../_static/sqrl.png"/>
+      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="../../../_static/copybutton.js?v=a46eff05"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            squirrel
+              <img src="../../../_static/sqrl.png" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Python API Reference:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../api.html">Python API Reference</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">squirrel</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">squirrel.schemas.file</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for squirrel.schemas.file</h1><div class="highlight"><pre>
+<span></span><span class="sd">"""</span>
+<span class="sd">File schema module</span>
+<span class="sd">==================</span>
+
+<span class="sd">Provides Pydantic models used to describe files passed into or produced by</span>
+<span class="sd">the API (URLs, metadata, processing status).</span>
+
+<span class="sd">These models are intentionally **file-type agnostic**: a workspace input</span>
+<span class="sd">source may be a CSV today and a plain-text document or a zipped dataset</span>
+<span class="sd">tomorrow, so the shapes below use optional fields rather than baking in</span>
+<span class="sd">CSV-specific columns/row_count/preview assumptions. Anything type-specific</span>
+<span class="sd">(e.g. CSV column names) is optional and simply left unset for file types</span>
+<span class="sd">that don't have it.</span>
+<span class="sd">"""</span>
+<span class="c1"># ——————————————————————————————————————————————————————————————</span>
+<span class="c1"># Imports</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
+
+<span class="c1"># Standard Libraries</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">enum</span><span class="w"> </span><span class="kn">import</span> <span class="n">Enum</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="kn">import</span> <span class="n">datetime</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Optional</span>
+
+<span class="c1"># Pydantic</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pydantic</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseModel</span><span class="p">,</span> <span class="n">Field</span><span class="p">,</span> <span class="n">AnyUrl</span><span class="p">,</span> <span class="n">model_validator</span>
+
+<span class="c1"># --- File Type Model ---</span>
+<div class="viewcode-block" id="FileType">
+<a class="viewcode-back" href="../../../generated/squirrel_schemas_file.html#squirrel.schemas.file.FileType">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">FileType</span><span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="n">Enum</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    File Type Enumeration</span>
+<span class="sd">    ---------------------</span>
+
+<span class="sd">    **Description:**</span>
+
+<span class="sd">        Enumeration of supported file types that can be generated, uploaded,</span>
+<span class="sd">        or handled by the system.</span>
+
+<span class="sd">    .. note::</span>
+<span class="sd">        Adding a new file type here does not by itself make it usable as an</span>
+<span class="sd">        input source — a parser for it must also be registered wherever</span>
+<span class="sd">        uploads are processed (see the ``_SOURCE_PARSERS`` registry in the</span>
+<span class="sd">        workspace route). This enum is just the set of types the schema</span>
+<span class="sd">        layer knows how to *describe*.</span>
+<span class="sd">    """</span>
+    <span class="c1">#: Comma-separated values format (.csv)</span>
+    <span class="n">CSV</span> <span class="o">=</span> <span class="s2">"csv"</span>
+    <span class="c1">#: Microsoft Excel format (.xlsx)</span>
+    <span class="n">XLSX</span> <span class="o">=</span> <span class="s2">"xlsx"</span>
+    <span class="c1">#: Portable Document Format (.pdf)</span>
+    <span class="n">PDF</span> <span class="o">=</span> <span class="s2">"pdf"</span>
+    <span class="c1">#: Plain text format (.txt)</span>
+    <span class="n">TXT</span> <span class="o">=</span> <span class="s2">"txt"</span>
+    <span class="c1">#: Zip archive, e.g. a bundle of files (.zip)</span>
+    <span class="n">ZIP</span> <span class="o">=</span> <span class="s2">"zip"</span></div>
+
+
+
+<span class="c1"># ——————————————————————————————————————————————————————————————</span>
+<span class="c1"># File Models</span>
+<div class="viewcode-block" id="File">
+<a class="viewcode-back" href="../../../generated/squirrel_schemas_file.html#squirrel.schemas.file.File">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">File</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Represents a single file reference including optional metadata.</span>
+<span class="sd">    """</span>
+    <span class="n">fileUrl</span><span class="p">:</span>      <span class="nb">str</span>                         <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="o">...</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">"Public or internal URL referencing the file"</span><span class="p">)</span>
+    <span class="n">fileName</span><span class="p">:</span>     <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>               <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">"Friendly file name or object key"</span><span class="p">)</span>
+    <span class="n">fileType</span><span class="p">:</span>     <span class="n">Optional</span><span class="p">[</span><span class="n">FileType</span><span class="p">]</span>          <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">"File type/extension (csv, xlsx, pdf, txt, zip, etc)"</span><span class="p">)</span>
+    <span class="n">fileByte</span><span class="p">:</span>     <span class="n">Optional</span><span class="p">[</span><span class="nb">bytes</span><span class="p">]</span>             <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">"Optional file content as bytes (for uploads)"</span><span class="p">)</span>
+    <span class="n">size</span><span class="p">:</span>         <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span>               <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">"File size in bytes, when known"</span><span class="p">)</span>
+    <span class="n">workspaceIds</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span>         <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">"Optional list of workspace IDs the file is associated with"</span><span class="p">)</span>
+    <span class="n">notebookIds</span><span class="p">:</span>  <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span>         <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">"Optional list of notebook IDs the file is associated with"</span><span class="p">)</span>
+    <span class="n">ownerUserId</span><span class="p">:</span>  <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>               <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">"Optional user ID of the file owner"</span><span class="p">)</span>
+    <span class="n">checksum</span><span class="p">:</span>     <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>               <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">"Optional checksum for integrity checks"</span><span class="p">)</span>
+    <span class="n">uploadedAt</span><span class="p">:</span>   <span class="n">Optional</span><span class="p">[</span><span class="n">datetime</span><span class="p">]</span>          <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">"Optional upload timestamp"</span><span class="p">)</span>
+    <span class="n">metadata</span><span class="p">:</span>     <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span>    <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">"Free-form metadata about the file"</span><span class="p">)</span>
+
+    <span class="nd">@model_validator</span><span class="p">(</span><span class="n">mode</span><span class="o">=</span><span class="s2">"before"</span><span class="p">)</span>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_normalize_empty_strings</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">values</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+        <span class="c1"># Convert empty-string fields to None for optional URL/name fields</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">values</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="n">values</span><span class="o">.</span><span class="n">items</span><span class="p">()):</span>
+                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="ow">and</span> <span class="n">v</span> <span class="o">==</span> <span class="s2">""</span><span class="p">:</span>
+                    <span class="n">values</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">return</span> <span class="n">values</span></div>
+
+
+
+<div class="viewcode-block" id="UploadedSourceOut">
+<a class="viewcode-back" href="../../../generated/squirrel_schemas_file.html#squirrel.schemas.file.UploadedSourceOut">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">UploadedSourceOut</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Generic response describing a single uploaded input source, regardless</span>
+<span class="sd">    of its underlying file type.</span>
+
+<span class="sd">    Only the fields a given file type actually produces are populated —</span>
+<span class="sd">    e.g. a CSV upload fills ``columns``/``row_count``/``preview``, while a</span>
+<span class="sd">    plain-text or zipped upload (once wired up) may only populate</span>
+<span class="sd">    ``metadata``. This is the one schema the upload endpoint returns for</span>
+<span class="sd">    every file type so the frontend doesn't need type-specific response</span>
+<span class="sd">    handling.</span>
+<span class="sd">    """</span>
+    <span class="n">source_id</span><span class="p">:</span>  <span class="nb">str</span>
+    <span class="n">file_name</span><span class="p">:</span>  <span class="nb">str</span>
+    <span class="n">file_type</span><span class="p">:</span>  <span class="nb">str</span>                         <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="o">...</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">"Lowercase extension the file was uploaded as, e.g. 'csv'."</span><span class="p">)</span>
+    <span class="n">row_count</span><span class="p">:</span>  <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span>                <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">"Row count, for tabular file types."</span><span class="p">)</span>
+    <span class="n">columns</span><span class="p">:</span>    <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span>          <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">"Column names, for tabular file types."</span><span class="p">)</span>
+    <span class="n">preview</span><span class="p">:</span>    <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">"Small sample of parsed rows, for tabular file types."</span><span class="p">)</span>
+    <span class="n">metadata</span><span class="p">:</span>   <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span>     <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">"Free-form metadata for non-tabular file types."</span><span class="p">)</span></div>
+
+
+<span class="c1"># ——————————————————————————————————————————————————————————————</span>
+<span class="c1"># File API Request Model</span>
+<div class="viewcode-block" id="FileRequest">
+<a class="viewcode-back" href="../../../generated/squirrel_schemas_file.html#squirrel.schemas.file.FileRequest">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">FileRequest</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Represents a request to process a list of files, including the file references."""</span>
+    <span class="n">file</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">File</span><span class="p">]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="o">...</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">"The file reference to be processed"</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="RenameFileRequest">
+<a class="viewcode-back" href="../../../generated/squirrel_schemas_file.html#squirrel.schemas.file.RenameFileRequest">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">RenameFileRequest</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+    <span class="n">fileName</span><span class="p">:</span> <span class="nb">str</span></div>
+
+
+<span class="c1"># ——————————————————————————————————————————————————————————————</span>
+<span class="c1"># File API Response Model</span>
+<div class="viewcode-block" id="FileResponse">
+<a class="viewcode-back" href="../../../generated/squirrel_schemas_file.html#squirrel.schemas.file.FileResponse">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">FileResponse</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Represents the response after processing a file, including status and any output references."""</span>
+    <span class="n">success</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="o">...</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">"Indicates whether the file was processed successfully"</span><span class="p">)</span>
+    <span class="n">outputFiles</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">File</span><span class="p">]]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">"Optional dictionary of output files generated from processing, keyed by identifier"</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="FilesResponse">
+<a class="viewcode-back" href="../../../generated/squirrel_schemas_file.html#squirrel.schemas.file.FilesResponse">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">FilesResponse</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+    <span class="n">success</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="o">...</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">"Indicates whether the file was processed successfully"</span><span class="p">)</span>
+    <span class="n">files</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">File</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span></div>
+
+
+<span class="c1"># ——————————————————————————————————————————————————————————————</span>
+<span class="c1"># File Processing Issue Model</span>
+<div class="viewcode-block" id="FileProcessingIssue">
+<a class="viewcode-back" href="../../../generated/squirrel_schemas_file.html#squirrel.schemas.file.FileProcessingIssue">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">FileProcessingIssue</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    File Processing Issue Model</span>
+<span class="sd">    ---------------------------</span>
+
+<span class="sd">    Description:</span>
+
+<span class="sd">    Represents a file that failed to process, including the file URL, name,</span>
+<span class="sd">    type of issue encountered, and error message.</span>
+
+<span class="sd">    """</span>
+    <span class="c1">#: URL of the file that couldn't be processed</span>
+    <span class="n">fileUrl</span><span class="p">:</span> <span class="n">AnyUrl</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="o">...</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">"URL of the file that couldn't be processed"</span><span class="p">)</span>
+    <span class="c1">#: Name of the file that couldn't be processed</span>
+    <span class="n">fileName</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="o">...</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">"Name of the file that couldn't be processed"</span><span class="p">)</span>
+    <span class="c1">#: Issue encountered during file processing</span>
+    <span class="n">issue</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="o">...</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">"Type of issue encountered during file processing (e.g., 'unreadable', 'unsupported format')"</span><span class="p">)</span>
+    <span class="c1">#: Detailed error message</span>
+    <span class="n">message</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">"Detailed error message about the processing issue"</span><span class="p">)</span></div>
+
+    
+<span class="c1"># —————————————————————————————————————————————————————————————</span>
+<span class="c1"># Exceptions</span>
+
+<div class="viewcode-block" id="FileRecordNotFound">
+<a class="viewcode-back" href="../../../generated/squirrel_schemas_file.html#squirrel.schemas.file.FileRecordNotFound">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">FileRecordNotFound</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Raised when a file_url has no row owned by the given user."""</span></div>
+
+
+
+<div class="viewcode-block" id="FileInUseError">
+<a class="viewcode-back" href="../../../generated/squirrel_schemas_file.html#squirrel.schemas.file.FileInUseError">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">FileInUseError</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Raised when trying to delete a file that's attached to a workspace/notebook."""</span></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, Mazen Soliman.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

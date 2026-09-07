@@ -1,0 +1,354 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>squirrel.services.auth.TokenService &mdash; squirrel  documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../../../_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" type="text/css" href="../../../../_static/css/custom.css?v=adc7883a" />
+
+  
+    <link rel="shortcut icon" href="../../../../_static/sqrl.png"/>
+      <script src="../../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../../../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script src="../../../../_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="../../../../_static/copybutton.js?v=a46eff05"></script>
+    <script src="../../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../../index.html" class="icon icon-home">
+            squirrel
+              <img src="../../../../_static/sqrl.png" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Python API Reference:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../api.html">Python API Reference</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../index.html">squirrel</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">squirrel.services.auth.TokenService</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for squirrel.services.auth.TokenService</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/python</span>
+<span class="sd">"""</span>
+<span class="sd">Token Service</span>
+<span class="sd">=============</span>
+
+<span class="sd">Lets an authenticated user store third-party provider tokens (LLM API keys,</span>
+<span class="sd">etc.) so they can be reused later without re-entering them. Tokens are</span>
+<span class="sd">encrypted at rest with Fernet (AES128-CBC + HMAC) - the plaintext value is</span>
+<span class="sd">never persisted and is only ever returned to the *owning* user via the</span>
+<span class="sd">`get_decrypted_token` method used internally by other services (never</span>
+<span class="sd">exposed over the API).</span>
+
+<span class="sd">Requires a ``TOKEN_ENCRYPTION_KEY`` environment variable. Generate one with</span>
+<span class="sd">``python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"``</span>
+<span class="sd">and add it to your ``.env`` file (never commit it, same as the other secrets).</span>
+<span class="sd">"""</span>
+<span class="c1"># ------------------------------------------------------------------------------</span>
+<span class="c1"># Imports</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">dataclass</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="kn">import</span> <span class="n">datetime</span><span class="p">,</span> <span class="n">timezone</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">secrets</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">threading</span><span class="w"> </span><span class="kn">import</span> <span class="n">Lock</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Optional</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">cryptography.fernet</span><span class="w"> </span><span class="kn">import</span> <span class="n">Fernet</span><span class="p">,</span> <span class="n">InvalidToken</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">squirrel.schemas.token</span><span class="w"> </span><span class="kn">import</span> <span class="n">TokenRead</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">squirrel.services.storage.database.PostgresService</span><span class="w"> </span><span class="kn">import</span> <span class="n">PostgresService</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">loguru</span><span class="w"> </span><span class="kn">import</span> <span class="n">logger</span>
+
+
+<div class="viewcode-block" id="TokenRecord">
+<a class="viewcode-back" href="../../../../generated/squirrel_services_auth_TokenService.html#squirrel.services.auth.TokenService.TokenRecord">[docs]</a>
+<span class="nd">@dataclass</span><span class="p">(</span><span class="n">slots</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">TokenRecord</span><span class="p">:</span>
+    <span class="nb">id</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">user_id</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">provider</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">label</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>
+    <span class="n">ciphertext</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">created_at</span><span class="p">:</span> <span class="n">datetime</span>
+    <span class="n">last_used_at</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">datetime</span><span class="p">]</span></div>
+
+
+
+<div class="viewcode-block" id="TokenService">
+<a class="viewcode-back" href="../../../../generated/squirrel_services_auth_TokenService.html#squirrel.services.auth.TokenService.TokenService">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">TokenService</span><span class="p">:</span>
+    <span class="n">_TABLE</span> <span class="o">=</span> <span class="s2">"user_provider_tokens"</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">db</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">PostgresService</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_lock</span> <span class="o">=</span> <span class="n">Lock</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_db</span> <span class="o">=</span> <span class="n">db</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_tables_ready</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_fernet</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Fernet</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="c1"># -- setup -----------------------------------------------------------</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_fernet</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Fernet</span><span class="p">:</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_fernet</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">key</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"TOKEN_ENCRYPTION_KEY"</span><span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">key</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
+                    <span class="s2">"TOKEN_ENCRYPTION_KEY is not set. Generate one with "</span>
+                    <span class="s2">"`python -c </span><span class="se">\"</span><span class="s2">from cryptography.fernet import Fernet; "</span>
+                    <span class="s2">"print(Fernet.generate_key().decode())</span><span class="se">\"</span><span class="s2">` and add it to your .env."</span>
+                <span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_fernet</span> <span class="o">=</span> <span class="n">Fernet</span><span class="p">(</span><span class="n">key</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="s2">"utf-8"</span><span class="p">))</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_fernet</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_db</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PostgresService</span><span class="p">:</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_db</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_db</span> <span class="o">=</span> <span class="n">PostgresService</span><span class="p">()</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tables_ready</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_ensure_tables</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_db</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_tables_ready</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_db</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_ensure_tables</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">db</span><span class="p">:</span> <span class="n">PostgresService</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">db</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">"""</span>
+<span class="s2">            CREATE TABLE IF NOT EXISTS </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_TABLE</span><span class="si">}</span><span class="s2"> (</span>
+<span class="s2">                id              TEXT PRIMARY KEY,</span>
+<span class="s2">                user_id         TEXT NOT NULL REFERENCES auth_users(id) ON DELETE CASCADE,</span>
+<span class="s2">                provider        TEXT NOT NULL,</span>
+<span class="s2">                label           TEXT,</span>
+<span class="s2">                ciphertext      TEXT NOT NULL,</span>
+<span class="s2">                created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),</span>
+<span class="s2">                last_used_at    TIMESTAMPTZ,</span>
+<span class="s2">                UNIQUE (user_id, provider, label)</span>
+<span class="s2">            );</span>
+<span class="s2">            """</span><span class="p">,</span>
+            <span class="n">params</span><span class="o">=</span><span class="p">{},</span>
+            <span class="n">fetch</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="c1"># -- helpers -----------------------------------------------------------</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_mask</span><span class="p">(</span><span class="n">token</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="n">token</span> <span class="o">=</span> <span class="n">token</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">token</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="mi">10</span><span class="p">:</span>
+            <span class="k">return</span> <span class="s2">"•"</span> <span class="o">*</span> <span class="nb">max</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">token</span><span class="p">)</span> <span class="o">-</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span> <span class="o">+</span> <span class="n">token</span><span class="p">[</span><span class="o">-</span><span class="mi">2</span><span class="p">:]</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">token</span><span class="p">[:</span><span class="mi">6</span><span class="p">]</span><span class="si">}</span><span class="s2">...</span><span class="si">{</span><span class="n">token</span><span class="p">[</span><span class="o">-</span><span class="mi">6</span><span class="p">:]</span><span class="si">}</span><span class="s2">"</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_row_to_read</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">row</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TokenRead</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">TokenRead</span><span class="p">(</span>
+            <span class="nb">id</span><span class="o">=</span><span class="n">row</span><span class="p">[</span><span class="s2">"id"</span><span class="p">],</span>
+            <span class="n">provider</span><span class="o">=</span><span class="n">row</span><span class="p">[</span><span class="s2">"provider"</span><span class="p">],</span>
+            <span class="n">label</span><span class="o">=</span><span class="n">row</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"label"</span><span class="p">),</span>
+            <span class="n">token_preview</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_mask</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_decrypt</span><span class="p">(</span><span class="n">row</span><span class="p">[</span><span class="s2">"ciphertext"</span><span class="p">])),</span>
+            <span class="n">created_at</span><span class="o">=</span><span class="n">row</span><span class="p">[</span><span class="s2">"created_at"</span><span class="p">],</span>
+            <span class="n">last_used_at</span><span class="o">=</span><span class="n">row</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"last_used_at"</span><span class="p">),</span>
+        <span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_encrypt</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">plaintext</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_fernet</span><span class="p">()</span><span class="o">.</span><span class="n">encrypt</span><span class="p">(</span><span class="n">plaintext</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="s2">"utf-8"</span><span class="p">))</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s2">"ascii"</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_decrypt</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ciphertext</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_fernet</span><span class="p">()</span><span class="o">.</span><span class="n">decrypt</span><span class="p">(</span><span class="n">ciphertext</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="s2">"ascii"</span><span class="p">))</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s2">"utf-8"</span><span class="p">)</span>
+        <span class="k">except</span> <span class="n">InvalidToken</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">"Stored token could not be decrypted"</span><span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">exc</span>
+
+    <span class="c1"># -- public API -----------------------------------------------------------</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">add_token</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">user_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">provider</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">token</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">label</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TokenRead</span><span class="p">:</span>
+        <span class="n">db</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_db</span><span class="p">()</span>
+        <span class="n">token_id</span> <span class="o">=</span> <span class="n">secrets</span><span class="o">.</span><span class="n">token_urlsafe</span><span class="p">(</span><span class="mi">12</span><span class="p">)</span>
+        <span class="n">created_at</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">(</span><span class="n">timezone</span><span class="o">.</span><span class="n">utc</span><span class="p">)</span>
+
+        <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">_lock</span><span class="p">:</span>
+            <span class="n">existing</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">query</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"""</span>
+<span class="s2">                SELECT id FROM </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_TABLE</span><span class="si">}</span>
+<span class="s2">                WHERE user_id = %(user_id)s AND provider = %(provider)s</span>
+<span class="s2">                  AND label IS NOT DISTINCT FROM %(label)s</span>
+<span class="s2">                LIMIT 1</span>
+<span class="s2">                """</span><span class="p">,</span>
+                <span class="n">params</span><span class="o">=</span><span class="p">{</span><span class="s2">"user_id"</span><span class="p">:</span> <span class="n">user_id</span><span class="p">,</span> <span class="s2">"provider"</span><span class="p">:</span> <span class="n">provider</span><span class="p">,</span> <span class="s2">"label"</span><span class="p">:</span> <span class="n">label</span><span class="p">},</span>
+            <span class="p">)</span>
+            <span class="n">rows</span> <span class="o">=</span> <span class="p">(</span><span class="n">existing</span> <span class="ow">or</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"rows"</span><span class="p">)</span> <span class="ow">or</span> <span class="p">[]</span>
+
+            <span class="k">if</span> <span class="n">rows</span><span class="p">:</span>
+                <span class="c1"># Update in place instead of erroring, so re-saving a key is idempotent</span>
+                <span class="n">updated</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">query</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">"""</span>
+<span class="s2">                    UPDATE </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_TABLE</span><span class="si">}</span>
+<span class="s2">                    SET ciphertext = %(ciphertext)s, created_at = %(created_at)s</span>
+<span class="s2">                    WHERE id = %(id)s</span>
+<span class="s2">                    RETURNING id, provider, label, ciphertext, created_at, last_used_at</span>
+<span class="s2">                    """</span><span class="p">,</span>
+                    <span class="n">params</span><span class="o">=</span><span class="p">{</span>
+                        <span class="s2">"ciphertext"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_encrypt</span><span class="p">(</span><span class="n">token</span><span class="p">),</span>
+                        <span class="s2">"created_at"</span><span class="p">:</span> <span class="n">created_at</span><span class="p">,</span>
+                        <span class="s2">"id"</span><span class="p">:</span> <span class="n">rows</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s2">"id"</span><span class="p">],</span>
+                    <span class="p">},</span>
+                <span class="p">)</span>
+                <span class="n">result_rows</span> <span class="o">=</span> <span class="p">(</span><span class="n">updated</span> <span class="ow">or</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"rows"</span><span class="p">)</span> <span class="ow">or</span> <span class="p">[]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">inserted</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span>
+                    <span class="p">{</span>
+                        <span class="s2">"sql"</span><span class="p">:</span> <span class="sa">f</span><span class="s2">"""</span>
+<span class="s2">                            INSERT INTO </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_TABLE</span><span class="si">}</span><span class="s2"> (</span>
+<span class="s2">                                id, user_id, provider, label, ciphertext, created_at</span>
+<span class="s2">                            ) VALUES (</span>
+<span class="s2">                                %(id)s, %(user_id)s, %(provider)s, %(label)s, %(ciphertext)s, %(created_at)s</span>
+<span class="s2">                            )</span>
+<span class="s2">                            RETURNING id, provider, label, ciphertext, created_at, last_used_at</span>
+<span class="s2">                        """</span><span class="p">,</span>
+                        <span class="s2">"params"</span><span class="p">:</span> <span class="p">{</span>
+                            <span class="s2">"id"</span><span class="p">:</span> <span class="n">token_id</span><span class="p">,</span>
+                            <span class="s2">"user_id"</span><span class="p">:</span> <span class="n">user_id</span><span class="p">,</span>
+                            <span class="s2">"provider"</span><span class="p">:</span> <span class="n">provider</span><span class="p">,</span>
+                            <span class="s2">"label"</span><span class="p">:</span> <span class="n">label</span><span class="p">,</span>
+                            <span class="s2">"ciphertext"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_encrypt</span><span class="p">(</span><span class="n">token</span><span class="p">),</span>
+                            <span class="s2">"created_at"</span><span class="p">:</span> <span class="n">created_at</span><span class="p">,</span>
+                        <span class="p">},</span>
+                    <span class="p">}</span>
+                <span class="p">)</span>
+                <span class="n">result_rows</span> <span class="o">=</span> <span class="n">inserted</span> <span class="ow">or</span> <span class="p">[]</span>
+
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">result_rows</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">"Failed to save token"</span><span class="p">)</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_row_to_read</span><span class="p">(</span><span class="n">result_rows</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">list_tokens</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">user_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">TokenRead</span><span class="p">]:</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_db</span><span class="p">()</span><span class="o">.</span><span class="n">query</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">"""</span>
+<span class="s2">            SELECT id, provider, label, ciphertext, created_at, last_used_at</span>
+<span class="s2">            FROM </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_TABLE</span><span class="si">}</span>
+<span class="s2">            WHERE user_id = %(user_id)s</span>
+<span class="s2">            ORDER BY created_at DESC</span>
+<span class="s2">            """</span><span class="p">,</span>
+            <span class="n">params</span><span class="o">=</span><span class="p">{</span><span class="s2">"user_id"</span><span class="p">:</span> <span class="n">user_id</span><span class="p">},</span>
+        <span class="p">)</span>
+        <span class="n">rows</span> <span class="o">=</span> <span class="p">(</span><span class="n">result</span> <span class="ow">or</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"rows"</span><span class="p">)</span> <span class="ow">or</span> <span class="p">[]</span>
+        <span class="k">return</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_row_to_read</span><span class="p">(</span><span class="n">row</span><span class="p">)</span> <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">rows</span><span class="p">]</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">delete_token</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">user_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">token_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_db</span><span class="p">()</span><span class="o">.</span><span class="n">query</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">"""</span>
+<span class="s2">            DELETE FROM </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_TABLE</span><span class="si">}</span>
+<span class="s2">            WHERE id = %(id)s AND user_id = %(user_id)s</span>
+<span class="s2">            """</span><span class="p">,</span>
+            <span class="n">params</span><span class="o">=</span><span class="p">{</span><span class="s2">"id"</span><span class="p">:</span> <span class="n">token_id</span><span class="p">,</span> <span class="s2">"user_id"</span><span class="p">:</span> <span class="n">user_id</span><span class="p">},</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="nb">bool</span><span class="p">(</span><span class="n">result</span> <span class="ow">and</span> <span class="n">result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"success"</span><span class="p">))</span>
+
+<div class="viewcode-block" id="TokenService.get_decrypted_token">
+<a class="viewcode-back" href="../../../../generated/squirrel_services_auth_TokenService.html#squirrel.services.auth.TokenService.TokenService.get_decrypted_token">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_decrypted_token</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> 
+        <span class="n">user_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> 
+        <span class="n">provider</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> 
+        <span class="n">label</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">"""Internal use only (e.g. by other backend services that need to call</span>
+<span class="sd">        out to a provider on the user's behalf). Never expose this over the API."""</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_db</span><span class="p">()</span><span class="o">.</span><span class="n">query</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">"""</span>
+<span class="s2">            SELECT id, ciphertext FROM </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_TABLE</span><span class="si">}</span>
+<span class="s2">            WHERE user_id = %(user_id)s AND provider = %(provider)s</span>
+<span class="s2">            LIMIT 1</span>
+<span class="s2">            """</span><span class="p">,</span>
+            <span class="n">params</span><span class="o">=</span><span class="p">{</span><span class="s2">"user_id"</span><span class="p">:</span> <span class="n">user_id</span><span class="p">,</span> <span class="s2">"provider"</span><span class="p">:</span> <span class="n">provider</span><span class="p">},</span>
+        <span class="p">)</span>
+        <span class="n">rows</span> <span class="o">=</span> <span class="p">(</span><span class="n">result</span> <span class="ow">or</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"rows"</span><span class="p">)</span> <span class="ow">or</span> <span class="p">[]</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Retrieved token for user_id=</span><span class="si">{</span><span class="n">user_id</span><span class="si">}</span><span class="s2">, provider=</span><span class="si">{</span><span class="n">provider</span><span class="si">}</span><span class="s2">, label=</span><span class="si">{</span><span class="n">label</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="s1">'found'</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="n">rows</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="s1">'not found'</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">rows</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span>
+
+        <span class="n">row</span> <span class="o">=</span> <span class="n">rows</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_get_db</span><span class="p">()</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">"UPDATE </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_TABLE</span><span class="si">}</span><span class="s2"> SET last_used_at = %(now)s WHERE id = %(id)s"</span><span class="p">,</span>
+            <span class="n">params</span><span class="o">=</span><span class="p">{</span><span class="s2">"now"</span><span class="p">:</span> <span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">(</span><span class="n">timezone</span><span class="o">.</span><span class="n">utc</span><span class="p">),</span> <span class="s2">"id"</span><span class="p">:</span> <span class="n">row</span><span class="p">[</span><span class="s2">"id"</span><span class="p">]},</span>
+            <span class="n">fetch</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_decrypt</span><span class="p">(</span><span class="n">row</span><span class="p">[</span><span class="s2">"ciphertext"</span><span class="p">])</span></div>
+</div>
+
+
+
+<span class="n">token_service</span> <span class="o">=</span> <span class="n">TokenService</span><span class="p">()</span>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, Mazen Soliman.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

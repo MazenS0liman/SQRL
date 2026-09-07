@@ -813,15 +813,11 @@ class TabularDataProcessorAgent(IAgent):
         already-fitted parameters instead of recomputing them.
 
         This walks ``execution_report["steps"]`` in the same order they ran
-        at training time. For each step whose original status was
-        ``"completed"``:
-          - The same strategy + arguments are re-applied to *new_data*.
-          - That step's recorded ``per_column`` block (the fitted state —
-            means, bounds, encoding maps, fitted λ, dummy-column sets, ...)
-            is passed through as ``fitted_state``, so every strategy with a
-            data-dependent parameter reuses the training-time value instead
-            of re-fitting from *new_data* (which, at inference time, may be
-            a single row — meaningless to "fit" anything from).
+        at training time. Completed steps are re-applied to *new_data* with
+        their recorded ``per_column`` fitted state, including means, bounds,
+        encoding maps, fitted lambda values, and dummy-column sets. Each
+        data-dependent strategy therefore reuses its training-time value
+        instead of re-fitting from *new_data*.
         Steps that were ``"failed"`` or ``"skipped"`` during training are
         skipped here too, since they never touched the training frame either.
 

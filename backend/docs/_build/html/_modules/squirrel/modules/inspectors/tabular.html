@@ -1,0 +1,1479 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>squirrel.modules.inspectors.tabular &mdash; squirrel  documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../../../_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" type="text/css" href="../../../../_static/css/custom.css?v=adc7883a" />
+
+  
+    <link rel="shortcut icon" href="../../../../_static/sqrl.png"/>
+      <script src="../../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../../../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script src="../../../../_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="../../../../_static/copybutton.js?v=a46eff05"></script>
+    <script src="../../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../../index.html" class="icon icon-home">
+            squirrel
+              <img src="../../../../_static/sqrl.png" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Python API Reference:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../api.html">Python API Reference</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../index.html">squirrel</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">squirrel.modules.inspectors.tabular</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for squirrel.modules.inspectors.tabular</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/python</span>
+<span class="sd">"""</span>
+<span class="sd">Tabular Data Inspector Module</span>
+
+<span class="sd">A module for performing explanatory data analysis (EDA) on tabular datasets. This module provides a base class `TabularDataInspector` that can be extended to implement specific EDA techniques for analyzing and summarizing tabular data. The `inspect` method is an abstract method that must be implemented by any subclass, allowing for customized analysis based on the specific requirements of the dataset being analyzed.</span>
+
+<span class="sd">"""</span>
+<span class="c1"># ——————————————————————————————————————————————————————————————</span>
+<span class="c1"># Imports</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">ABC</span><span class="p">,</span> <span class="n">abstractmethod</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Union</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+
+<span class="c1"># Schema</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">squirrel.schemas.argument_spec</span><span class="w"> </span><span class="kn">import</span> <span class="n">ArgumentSpec</span>
+
+<span class="c1"># ——— Data Inspector Base Class —————————————————————————————————————————</span>
+<div class="viewcode-block" id="DataInspectStrategy">
+<a class="viewcode-back" href="../../../../generated/squirrel_modules_inspectors_tabular.html#squirrel.modules.inspectors.tabular.DataInspectStrategy">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">DataInspectStrategy</span><span class="p">(</span><span class="n">ABC</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Abstract base class for tabular data inspection strategies.</span>
+<span class="sd">    Subclasses declare ``argument_specs`` to expose their accepted arguments</span>
+<span class="sd">    to the catalog, prompt generator, and runtime validator.</span>
+<span class="sd">    """</span>
+
+    <span class="n">argument_specs</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">ArgumentSpec</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>   <span class="c1"># override in subclasses</span>
+
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">inspect</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+        <span class="k">pass</span>
+
+<div class="viewcode-block" id="DataInspectStrategy.to_catalog_entry">
+<a class="viewcode-back" href="../../../../generated/squirrel_modules_inspectors_tabular.html#squirrel.modules.inspectors.tabular.DataInspectStrategy.to_catalog_entry">[docs]</a>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">to_catalog_entry</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Build a catalog entry dict from the class itself.</span>
+<span class="sd">        Called by ``build_inspection_catalog()`` — no manual catalog needed.</span>
+<span class="sd">        """</span>
+        <span class="n">first_doc_line</span> <span class="o">=</span> <span class="p">(</span><span class="bp">cls</span><span class="o">.</span><span class="vm">__doc__</span> <span class="ow">or</span> <span class="s2">""</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">splitlines</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span>
+
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s2">"name"</span><span class="p">:</span> <span class="bp">cls</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span>
+            <span class="s2">"description"</span><span class="p">:</span> <span class="n">first_doc_line</span><span class="p">,</span>
+            <span class="s2">"json_schema"</span><span class="p">:</span> <span class="bp">cls</span><span class="o">.</span><span class="n">to_json_schema</span><span class="p">(),</span>
+            <span class="s2">"arguments_schema"</span><span class="p">:</span> <span class="p">[</span>
+                <span class="p">{</span>
+                    <span class="s2">"name"</span><span class="p">:</span> <span class="n">spec</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+                    <span class="s2">"type"</span><span class="p">:</span> <span class="n">spec</span><span class="o">.</span><span class="n">type</span><span class="p">,</span>
+                    <span class="s2">"required"</span><span class="p">:</span> <span class="n">spec</span><span class="o">.</span><span class="n">required</span><span class="p">,</span>
+                    <span class="s2">"default"</span><span class="p">:</span> <span class="n">spec</span><span class="o">.</span><span class="n">default</span><span class="p">,</span>
+                    <span class="s2">"possible_values"</span><span class="p">:</span> <span class="n">spec</span><span class="o">.</span><span class="n">possible_values</span><span class="p">,</span>
+                    <span class="s2">"value_descriptions"</span><span class="p">:</span> <span class="n">spec</span><span class="o">.</span><span class="n">value_descriptions</span><span class="p">,</span>
+                    <span class="s2">"description"</span><span class="p">:</span> <span class="n">spec</span><span class="o">.</span><span class="n">description</span><span class="p">,</span>
+                    <span class="o">**</span><span class="p">({</span><span class="s2">"condition"</span><span class="p">:</span> <span class="n">spec</span><span class="o">.</span><span class="n">condition</span><span class="p">}</span> <span class="k">if</span> <span class="n">spec</span><span class="o">.</span><span class="n">condition</span> <span class="k">else</span> <span class="p">{}),</span>
+                <span class="p">}</span>
+                <span class="k">for</span> <span class="n">spec</span> <span class="ow">in</span> <span class="bp">cls</span><span class="o">.</span><span class="n">argument_specs</span>
+            <span class="p">],</span>
+            <span class="s2">"arguments_description"</span><span class="p">:</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_arguments_description</span><span class="p">(),</span>
+            <span class="s2">"example"</span><span class="p">:</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_example</span><span class="p">(),</span>
+        <span class="p">}</span></div>
+
+
+<div class="viewcode-block" id="DataInspectStrategy.to_json_schema">
+<a class="viewcode-back" href="../../../../generated/squirrel_modules_inspectors_tabular.html#squirrel.modules.inspectors.tabular.DataInspectStrategy.to_json_schema">[docs]</a>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">to_json_schema</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Return a JSON Schema object describing this inspection's arguments.</span>
+
+<span class="sd">        The schema is intended for LLM tool prompting and runtime validation.</span>
+<span class="sd">        """</span>
+        <span class="n">properties</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">required</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="k">for</span> <span class="n">spec</span> <span class="ow">in</span> <span class="bp">cls</span><span class="o">.</span><span class="n">argument_specs</span><span class="p">:</span>
+            <span class="n">properties</span><span class="p">[</span><span class="n">spec</span><span class="o">.</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_argument_spec_to_json_schema</span><span class="p">(</span><span class="n">spec</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">spec</span><span class="o">.</span><span class="n">required</span><span class="p">:</span>
+                <span class="n">required</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">spec</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+
+        <span class="n">schema</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">"type"</span><span class="p">:</span> <span class="s2">"object"</span><span class="p">,</span>
+            <span class="s2">"properties"</span><span class="p">:</span> <span class="n">properties</span><span class="p">,</span>
+        <span class="p">}</span>
+        <span class="k">if</span> <span class="n">required</span><span class="p">:</span>
+            <span class="n">schema</span><span class="p">[</span><span class="s2">"required"</span><span class="p">]</span> <span class="o">=</span> <span class="n">required</span>
+        <span class="k">return</span> <span class="n">schema</span></div>
+
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_argument_spec_to_json_schema</span><span class="p">(</span><span class="n">spec</span><span class="p">:</span> <span class="n">ArgumentSpec</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">"""Convert one ``ArgumentSpec`` into a JSON Schema property."""</span>
+        <span class="n">type_name</span> <span class="o">=</span> <span class="n">spec</span><span class="o">.</span><span class="n">type</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="n">type_name</span> <span class="ow">in</span> <span class="p">{</span><span class="s2">"str"</span><span class="p">,</span> <span class="s2">"string"</span><span class="p">}:</span>
+            <span class="n">schema</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"type"</span><span class="p">:</span> <span class="s2">"string"</span><span class="p">}</span>
+        <span class="k">elif</span> <span class="n">type_name</span> <span class="ow">in</span> <span class="p">{</span><span class="s2">"int"</span><span class="p">,</span> <span class="s2">"integer"</span><span class="p">}:</span>
+            <span class="n">schema</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"type"</span><span class="p">:</span> <span class="s2">"integer"</span><span class="p">}</span>
+        <span class="k">elif</span> <span class="n">type_name</span> <span class="ow">in</span> <span class="p">{</span><span class="s2">"float"</span><span class="p">,</span> <span class="s2">"number"</span><span class="p">,</span> <span class="s2">"double"</span><span class="p">}:</span>
+            <span class="n">schema</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"type"</span><span class="p">:</span> <span class="s2">"number"</span><span class="p">}</span>
+        <span class="k">elif</span> <span class="n">type_name</span> <span class="ow">in</span> <span class="p">{</span><span class="s2">"bool"</span><span class="p">,</span> <span class="s2">"boolean"</span><span class="p">}:</span>
+            <span class="n">schema</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"type"</span><span class="p">:</span> <span class="s2">"boolean"</span><span class="p">}</span>
+        <span class="k">elif</span> <span class="n">type_name</span> <span class="ow">in</span> <span class="p">{</span><span class="s2">"dict"</span><span class="p">,</span> <span class="s2">"object"</span><span class="p">,</span> <span class="s2">"mapping"</span><span class="p">}:</span>
+            <span class="n">schema</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"type"</span><span class="p">:</span> <span class="s2">"object"</span><span class="p">}</span>
+        <span class="k">elif</span> <span class="n">type_name</span> <span class="ow">in</span> <span class="p">{</span><span class="s2">"list"</span><span class="p">,</span> <span class="s2">"array"</span><span class="p">}:</span>
+            <span class="n">schema</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"type"</span><span class="p">:</span> <span class="s2">"array"</span><span class="p">}</span>
+        <span class="k">elif</span> <span class="n">type_name</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">"list["</span><span class="p">)</span> <span class="ow">and</span> <span class="n">type_name</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s2">"]"</span><span class="p">):</span>
+            <span class="n">item_type</span> <span class="o">=</span> <span class="n">type_name</span><span class="p">[</span><span class="mi">5</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+            <span class="n">item_schema</span> <span class="o">=</span> <span class="n">DataInspectStrategy</span><span class="o">.</span><span class="n">_argument_spec_to_json_schema</span><span class="p">(</span>
+                <span class="n">ArgumentSpec</span><span class="p">(</span>
+                    <span class="n">name</span><span class="o">=</span><span class="n">spec</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+                    <span class="nb">type</span><span class="o">=</span><span class="n">item_type</span><span class="p">,</span>
+                    <span class="n">required</span><span class="o">=</span><span class="n">spec</span><span class="o">.</span><span class="n">required</span><span class="p">,</span>
+                    <span class="n">default</span><span class="o">=</span><span class="n">spec</span><span class="o">.</span><span class="n">default</span><span class="p">,</span>
+                    <span class="n">description</span><span class="o">=</span><span class="n">spec</span><span class="o">.</span><span class="n">description</span><span class="p">,</span>
+                    <span class="n">possible_values</span><span class="o">=</span><span class="n">spec</span><span class="o">.</span><span class="n">possible_values</span><span class="p">,</span>
+                    <span class="n">value_descriptions</span><span class="o">=</span><span class="n">spec</span><span class="o">.</span><span class="n">value_descriptions</span><span class="p">,</span>
+                    <span class="n">condition</span><span class="o">=</span><span class="n">spec</span><span class="o">.</span><span class="n">condition</span><span class="p">,</span>
+                <span class="p">)</span>
+            <span class="p">)</span>
+            <span class="n">schema</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"type"</span><span class="p">:</span> <span class="s2">"array"</span><span class="p">,</span> <span class="s2">"items"</span><span class="p">:</span> <span class="n">item_schema</span><span class="p">}</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">schema</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"type"</span><span class="p">:</span> <span class="s2">"string"</span><span class="p">}</span>
+
+        <span class="k">if</span> <span class="n">spec</span><span class="o">.</span><span class="n">description</span><span class="p">:</span>
+            <span class="n">schema</span><span class="p">[</span><span class="s2">"description"</span><span class="p">]</span> <span class="o">=</span> <span class="n">spec</span><span class="o">.</span><span class="n">description</span>
+        <span class="k">if</span> <span class="n">spec</span><span class="o">.</span><span class="n">default</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">schema</span><span class="p">[</span><span class="s2">"default"</span><span class="p">]</span> <span class="o">=</span> <span class="n">spec</span><span class="o">.</span><span class="n">default</span>
+
+        <span class="k">return</span> <span class="n">schema</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_arguments_description</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Override in subclasses to provide usage guidance beyond the schema."""</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">cls</span><span class="o">.</span><span class="n">argument_specs</span><span class="p">:</span>
+            <span class="k">return</span> <span class="s2">"No arguments required."</span>
+        <span class="n">required</span> <span class="o">=</span> <span class="p">[</span><span class="n">s</span><span class="o">.</span><span class="n">name</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="bp">cls</span><span class="o">.</span><span class="n">argument_specs</span> <span class="k">if</span> <span class="n">s</span><span class="o">.</span><span class="n">required</span><span class="p">]</span>
+        <span class="n">optional</span> <span class="o">=</span> <span class="p">[</span><span class="n">s</span><span class="o">.</span><span class="n">name</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="bp">cls</span><span class="o">.</span><span class="n">argument_specs</span> <span class="k">if</span> <span class="ow">not</span> <span class="n">s</span><span class="o">.</span><span class="n">required</span><span class="p">]</span>
+        <span class="n">parts</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">if</span> <span class="n">required</span><span class="p">:</span>
+            <span class="n">parts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Required: </span><span class="si">{</span><span class="s1">', '</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">required</span><span class="p">)</span><span class="si">}</span><span class="s2">."</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">optional</span><span class="p">:</span>
+            <span class="n">parts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Optional: </span><span class="si">{</span><span class="s1">', '</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">optional</span><span class="p">)</span><span class="si">}</span><span class="s2">."</span><span class="p">)</span>
+        <span class="k">return</span> <span class="s2">" "</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">parts</span><span class="p">)</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_example</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Override in subclasses to provide a complete example plan step."""</span>
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s2">"step"</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+            <span class="s2">"name"</span><span class="p">:</span> <span class="bp">cls</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span>
+            <span class="s2">"inspection"</span><span class="p">:</span> <span class="bp">cls</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span>
+            <span class="s2">"objective"</span><span class="p">:</span> <span class="s2">"(override _example() to provide a concrete objective)"</span><span class="p">,</span>
+            <span class="s2">"actions"</span><span class="p">:</span> <span class="p">[],</span>
+            <span class="s2">"arguments"</span><span class="p">:</span> <span class="p">{</span>
+                <span class="n">spec</span><span class="o">.</span><span class="n">name</span><span class="p">:</span> <span class="n">spec</span><span class="o">.</span><span class="n">default</span>
+                <span class="k">for</span> <span class="n">spec</span> <span class="ow">in</span> <span class="bp">cls</span><span class="o">.</span><span class="n">argument_specs</span>
+                <span class="k">if</span> <span class="n">spec</span><span class="o">.</span><span class="n">required</span>
+            <span class="p">},</span>
+            <span class="s2">"expected_output"</span><span class="p">:</span> <span class="p">[],</span>
+        <span class="p">}</span></div>
+
+
+<span class="c1"># ——————————————————————————————————————————————————————————————</span>
+<span class="c1"># Data Type Inspector with Semantic Classification and Recommendations</span>
+<div class="viewcode-block" id="DataTypeInspectionStrategy">
+<a class="viewcode-back" href="../../../../generated/squirrel_modules_inspectors_tabular.html#squirrel.modules.inspectors.tabular.DataTypeInspectionStrategy">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">DataTypeInspectionStrategy</span><span class="p">(</span><span class="n">DataInspectStrategy</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    A concrete implementation of DataInspectStrategy that inspects the data types</span>
+<span class="sd">    of each column and enriches the result with semantic type classification,</span>
+<span class="sd">    cardinality, and agent-facing recommendations.</span>
+<span class="sd">    """</span>
+
+    <span class="c1"># Cardinality threshold below which a numeric column is flagged as likely ordinal/categorical.</span>
+    <span class="n">_LOW_CARDINALITY_THRESHOLD</span> <span class="o">=</span> <span class="mi">10</span>
+
+    <span class="n">argument_specs</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">ArgumentSpec</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>   <span class="c1"># no arguments</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_arguments_description</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">return</span> <span class="s2">"No arguments required. Inspects all columns automatically."</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_example</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s2">"step"</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+            <span class="s2">"name"</span><span class="p">:</span> <span class="s2">"Inspect column types"</span><span class="p">,</span>
+            <span class="s2">"inspection"</span><span class="p">:</span> <span class="bp">cls</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span>
+            <span class="s2">"objective"</span><span class="p">:</span> <span class="s2">"Identify raw and semantic dtype of each column and flag columns needing casting or dropping."</span><span class="p">,</span>
+            <span class="s2">"actions"</span><span class="p">:</span> <span class="p">[</span>
+                <span class="s2">"Classify each column as numeric, categorical, boolean, datetime, or datetime_string."</span><span class="p">,</span>
+                <span class="s2">"Flag low-cardinality numeric columns as likely categorical."</span><span class="p">,</span>
+                <span class="s2">"Flag constant columns and likely identifiers for removal."</span><span class="p">,</span>
+            <span class="p">],</span>
+            <span class="s2">"arguments"</span><span class="p">:</span> <span class="p">{},</span>
+            <span class="s2">"expected_output"</span><span class="p">:</span> <span class="p">[</span>
+                <span class="s2">"Per-column semantic type"</span><span class="p">,</span>
+                <span class="s2">"List of columns requiring attention"</span><span class="p">,</span>
+                <span class="s2">"Recommended casting or dropping actions"</span><span class="p">,</span>
+            <span class="p">],</span>
+        <span class="p">}</span>
+
+<div class="viewcode-block" id="DataTypeInspectionStrategy.inspect">
+<a class="viewcode-back" href="../../../../generated/squirrel_modules_inspectors_tabular.html#squirrel.modules.inspectors.tabular.DataTypeInspectionStrategy.inspect">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">inspect</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Inspect the data types of each column and return a structured, agent-ready summary.</span>
+
+<span class="sd">        :param data: DataFrame to inspect.</span>
+<span class="sd">        :type data: pd.DataFrame</span>
+<span class="sd">        :return: Per-column type profile plus a dataset-level summary.</span>
+<span class="sd">        :rtype: dict</span>
+<span class="sd">        """</span>
+        <span class="n">columns</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">data</span><span class="o">.</span><span class="n">columns</span><span class="p">:</span>
+            <span class="n">series</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">col</span><span class="p">]</span>
+            <span class="n">raw_dtype</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">series</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
+            <span class="n">semantic_type</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_semantic_type</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="n">col</span><span class="p">)</span>
+            <span class="n">n_unique</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">series</span><span class="o">.</span><span class="n">nunique</span><span class="p">(</span><span class="n">dropna</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>
+            <span class="n">n_missing</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">series</span><span class="o">.</span><span class="n">isna</span><span class="p">()</span><span class="o">.</span><span class="n">sum</span><span class="p">())</span>
+            <span class="n">total</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">series</span><span class="p">)</span>
+
+            <span class="n">columns</span><span class="p">[</span><span class="n">col</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="s2">"raw_dtype"</span><span class="p">:</span> <span class="n">raw_dtype</span><span class="p">,</span>
+                <span class="s2">"semantic_type"</span><span class="p">:</span> <span class="n">semantic_type</span><span class="p">,</span>
+                <span class="s2">"n_unique"</span><span class="p">:</span> <span class="n">n_unique</span><span class="p">,</span>
+                <span class="s2">"n_missing"</span><span class="p">:</span> <span class="n">n_missing</span><span class="p">,</span>
+                <span class="s2">"missing_ratio"</span><span class="p">:</span> <span class="nb">round</span><span class="p">(</span><span class="n">n_missing</span> <span class="o">/</span> <span class="n">total</span><span class="p">,</span> <span class="mi">4</span><span class="p">)</span> <span class="k">if</span> <span class="n">total</span> <span class="k">else</span> <span class="mf">0.0</span><span class="p">,</span>
+                <span class="s2">"recommended_action"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_recommend</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="n">semantic_type</span><span class="p">,</span> <span class="n">n_unique</span><span class="p">,</span> <span class="n">n_missing</span><span class="p">,</span> <span class="n">total</span><span class="p">),</span>
+            <span class="p">}</span>
+
+        <span class="n">numeric_cols</span> <span class="o">=</span> <span class="p">[</span><span class="n">c</span> <span class="k">for</span> <span class="n">c</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">columns</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">v</span><span class="p">[</span><span class="s2">"semantic_type"</span><span class="p">]</span> <span class="o">==</span> <span class="s2">"numeric"</span><span class="p">]</span>
+        <span class="n">categorical_cols</span> <span class="o">=</span> <span class="p">[</span><span class="n">c</span> <span class="k">for</span> <span class="n">c</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">columns</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">v</span><span class="p">[</span><span class="s2">"semantic_type"</span><span class="p">]</span> <span class="o">==</span> <span class="s2">"categorical"</span><span class="p">]</span>
+        <span class="n">datetime_cols</span> <span class="o">=</span> <span class="p">[</span><span class="n">c</span> <span class="k">for</span> <span class="n">c</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">columns</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">v</span><span class="p">[</span><span class="s2">"semantic_type"</span><span class="p">]</span> <span class="o">==</span> <span class="s2">"datetime"</span><span class="p">]</span>
+        <span class="n">flag_cols</span> <span class="o">=</span> <span class="p">[</span><span class="n">c</span> <span class="k">for</span> <span class="n">c</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">columns</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">v</span><span class="p">[</span><span class="s2">"recommended_action"</span><span class="p">]</span> <span class="o">!=</span> <span class="s2">"none"</span><span class="p">]</span>
+
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s2">"columns"</span><span class="p">:</span> <span class="n">columns</span><span class="p">,</span>
+            <span class="s2">"summary"</span><span class="p">:</span> <span class="p">{</span>
+                <span class="s2">"total_columns"</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">columns</span><span class="p">),</span>
+                <span class="s2">"numeric_columns"</span><span class="p">:</span> <span class="n">numeric_cols</span><span class="p">,</span>
+                <span class="s2">"categorical_columns"</span><span class="p">:</span> <span class="n">categorical_cols</span><span class="p">,</span>
+                <span class="s2">"datetime_columns"</span><span class="p">:</span> <span class="n">datetime_cols</span><span class="p">,</span>
+                <span class="s2">"columns_requiring_attention"</span><span class="p">:</span> <span class="n">flag_cols</span><span class="p">,</span>
+            <span class="p">},</span>
+        <span class="p">}</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_semantic_type</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">series</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Classify a column into a semantic type beyond the raw pandas dtype."""</span>
+        <span class="k">if</span> <span class="n">pd</span><span class="o">.</span><span class="n">api</span><span class="o">.</span><span class="n">types</span><span class="o">.</span><span class="n">is_datetime64_any_dtype</span><span class="p">(</span><span class="n">series</span><span class="p">):</span>
+            <span class="k">return</span> <span class="s2">"datetime"</span>
+        <span class="k">if</span> <span class="n">pd</span><span class="o">.</span><span class="n">api</span><span class="o">.</span><span class="n">types</span><span class="o">.</span><span class="n">is_bool_dtype</span><span class="p">(</span><span class="n">series</span><span class="p">):</span>
+            <span class="k">return</span> <span class="s2">"boolean"</span>
+        <span class="k">if</span> <span class="n">pd</span><span class="o">.</span><span class="n">api</span><span class="o">.</span><span class="n">types</span><span class="o">.</span><span class="n">is_numeric_dtype</span><span class="p">(</span><span class="n">series</span><span class="p">):</span>
+            <span class="k">return</span> <span class="s2">"numeric"</span>
+        <span class="c1"># Attempt datetime parse on object columns.</span>
+        <span class="k">if</span> <span class="n">series</span><span class="o">.</span><span class="n">dtype</span> <span class="o">==</span> <span class="nb">object</span><span class="p">:</span>
+            <span class="n">sample</span> <span class="o">=</span> <span class="n">series</span><span class="o">.</span><span class="n">dropna</span><span class="p">()</span><span class="o">.</span><span class="n">head</span><span class="p">(</span><span class="mi">50</span><span class="p">)</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">pd</span><span class="o">.</span><span class="n">to_datetime</span><span class="p">(</span><span class="n">sample</span><span class="p">,</span> <span class="n">infer_datetime_format</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+                <span class="k">return</span> <span class="s2">"datetime_string"</span>  <span class="c1"># parseable but not yet cast</span>
+            <span class="k">except</span> <span class="p">(</span><span class="ne">ValueError</span><span class="p">,</span> <span class="ne">TypeError</span><span class="p">):</span>
+                <span class="k">pass</span>
+        <span class="k">return</span> <span class="s2">"categorical"</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_recommend</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">series</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">,</span>
+        <span class="n">semantic_type</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">n_unique</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">n_missing</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">total</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">semantic_type</span> <span class="o">==</span> <span class="s2">"datetime_string"</span><span class="p">:</span>
+            <span class="k">return</span> <span class="s2">"cast_to_datetime"</span>
+        <span class="k">if</span> <span class="n">semantic_type</span> <span class="o">==</span> <span class="s2">"numeric"</span> <span class="ow">and</span> <span class="n">n_unique</span> <span class="o">&lt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_LOW_CARDINALITY_THRESHOLD</span><span class="p">:</span>
+            <span class="k">return</span> <span class="s2">"consider_casting_to_categorical"</span>
+        <span class="k">if</span> <span class="n">semantic_type</span> <span class="o">==</span> <span class="s2">"categorical"</span> <span class="ow">and</span> <span class="n">n_unique</span> <span class="o">==</span> <span class="n">total</span> <span class="ow">and</span> <span class="n">total</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">return</span> <span class="s2">"likely_identifier_consider_dropping"</span>
+        <span class="k">if</span> <span class="n">semantic_type</span> <span class="o">==</span> <span class="s2">"categorical"</span> <span class="ow">and</span> <span class="n">n_unique</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">return</span> <span class="s2">"constant_column_consider_dropping"</span>
+        <span class="k">if</span> <span class="n">n_missing</span> <span class="o">/</span> <span class="n">total</span> <span class="o">&gt;</span> <span class="mf">0.5</span> <span class="k">if</span> <span class="n">total</span> <span class="k">else</span> <span class="kc">False</span><span class="p">:</span>
+            <span class="k">return</span> <span class="s2">"high_missingness_review_before_use"</span>
+        <span class="k">return</span> <span class="s2">"none"</span></div>
+
+
+
+<span class="c1"># ——————————————————————————————————————————————————————————————</span>
+<span class="c1"># Summary Statistics Inspector with Distribution Shape Indicators</span>
+<div class="viewcode-block" id="SummaryStatisticsInspectionStrategy">
+<a class="viewcode-back" href="../../../../generated/squirrel_modules_inspectors_tabular.html#squirrel.modules.inspectors.tabular.SummaryStatisticsInspectionStrategy">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">SummaryStatisticsInspectionStrategy</span><span class="p">(</span><span class="n">DataInspectStrategy</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    A concrete implementation of DataInspectStrategy that computes per-column</span>
+<span class="sd">    summary statistics as structured dicts, separated by column type and enriched</span>
+<span class="sd">    with distribution shape indicators for agent consumption.</span>
+<span class="sd">    """</span>
+
+    <span class="n">argument_specs</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">ArgumentSpec</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_arguments_description</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">return</span> <span class="s2">"No arguments required. Covers all numeric and categorical columns automatically."</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_example</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s2">"step"</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span>
+            <span class="s2">"name"</span><span class="p">:</span> <span class="s2">"Compute summary statistics"</span><span class="p">,</span>
+            <span class="s2">"inspection"</span><span class="p">:</span> <span class="bp">cls</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span>
+            <span class="s2">"objective"</span><span class="p">:</span> <span class="s2">"Understand the distribution, central tendency, and spread of each column."</span><span class="p">,</span>
+            <span class="s2">"actions"</span><span class="p">:</span> <span class="p">[</span>
+                <span class="s2">"Compute mean, std, min, max, quartiles for numeric columns."</span><span class="p">,</span>
+                <span class="s2">"Compute skewness and kurtosis and classify distribution shape."</span><span class="p">,</span>
+                <span class="s2">"Compute mode, cardinality ratio, and top-5 values for categorical columns."</span><span class="p">,</span>
+            <span class="p">],</span>
+            <span class="s2">"arguments"</span><span class="p">:</span> <span class="p">{},</span>
+            <span class="s2">"expected_output"</span><span class="p">:</span> <span class="p">[</span>
+                <span class="s2">"Per-column descriptive statistics"</span><span class="p">,</span>
+                <span class="s2">"Distribution shape labels (e.g. highly_right_skewed_leptokurtic)"</span><span class="p">,</span>
+                <span class="s2">"High-cardinality categorical columns"</span><span class="p">,</span>
+            <span class="p">],</span>
+        <span class="p">}</span>
+
+<div class="viewcode-block" id="SummaryStatisticsInspectionStrategy.inspect">
+<a class="viewcode-back" href="../../../../generated/squirrel_modules_inspectors_tabular.html#squirrel.modules.inspectors.tabular.SummaryStatisticsInspectionStrategy.inspect">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">inspect</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Compute summary statistics for each column, structured for agent use.</span>
+
+<span class="sd">        :param data: DataFrame to inspect.</span>
+<span class="sd">        :type data: pd.DataFrame</span>
+<span class="sd">        :return: Structured per-column statistics split by column type.</span>
+<span class="sd">        :rtype: dict</span>
+<span class="sd">        """</span>
+        <span class="n">numeric_stats</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_numeric_summary</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+        <span class="n">categorical_stats</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_categorical_summary</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s2">"numeric"</span><span class="p">:</span> <span class="n">numeric_stats</span><span class="p">,</span>
+            <span class="s2">"categorical"</span><span class="p">:</span> <span class="n">categorical_stats</span><span class="p">,</span>
+            <span class="s2">"summary"</span><span class="p">:</span> <span class="p">{</span>
+                <span class="s2">"numeric_columns"</span><span class="p">:</span> <span class="nb">list</span><span class="p">(</span><span class="n">numeric_stats</span><span class="o">.</span><span class="n">keys</span><span class="p">()),</span>
+                <span class="s2">"categorical_columns"</span><span class="p">:</span> <span class="nb">list</span><span class="p">(</span><span class="n">categorical_stats</span><span class="o">.</span><span class="n">keys</span><span class="p">()),</span>
+                <span class="s2">"columns_with_skew"</span><span class="p">:</span> <span class="p">[</span>
+                    <span class="n">col</span> <span class="k">for</span> <span class="n">col</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">numeric_stats</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+                    <span class="k">if</span> <span class="nb">abs</span><span class="p">(</span><span class="n">v</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"skewness"</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span> <span class="ow">or</span> <span class="mi">0</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mf">1.0</span>
+                <span class="p">],</span>
+                <span class="s2">"columns_with_high_cardinality"</span><span class="p">:</span> <span class="p">[</span>
+                    <span class="n">col</span> <span class="k">for</span> <span class="n">col</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">categorical_stats</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+                    <span class="k">if</span> <span class="n">v</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"cardinality_ratio"</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mf">0.5</span>
+                <span class="p">],</span>
+            <span class="p">},</span>
+        <span class="p">}</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_numeric_summary</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Per-column descriptive stats plus skewness and kurtosis."""</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">data</span><span class="o">.</span><span class="n">select_dtypes</span><span class="p">(</span><span class="n">include</span><span class="o">=</span><span class="s2">"number"</span><span class="p">)</span><span class="o">.</span><span class="n">columns</span><span class="p">:</span>
+            <span class="n">series</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">col</span><span class="p">]</span><span class="o">.</span><span class="n">dropna</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">series</span><span class="o">.</span><span class="n">empty</span><span class="p">:</span>
+                <span class="n">result</span><span class="p">[</span><span class="n">col</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"error"</span><span class="p">:</span> <span class="s2">"all_missing"</span><span class="p">}</span>
+                <span class="k">continue</span>
+            <span class="n">result</span><span class="p">[</span><span class="n">col</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="s2">"count"</span><span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="n">series</span><span class="o">.</span><span class="n">count</span><span class="p">()),</span>
+                <span class="s2">"mean"</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="n">series</span><span class="o">.</span><span class="n">mean</span><span class="p">()),</span>
+                <span class="s2">"std"</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="n">series</span><span class="o">.</span><span class="n">std</span><span class="p">()),</span>
+                <span class="s2">"min"</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="n">series</span><span class="o">.</span><span class="n">min</span><span class="p">()),</span>
+                <span class="s2">"q25"</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="n">series</span><span class="o">.</span><span class="n">quantile</span><span class="p">(</span><span class="mf">0.25</span><span class="p">)),</span>
+                <span class="s2">"median"</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="n">series</span><span class="o">.</span><span class="n">median</span><span class="p">()),</span>
+                <span class="s2">"q75"</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="n">series</span><span class="o">.</span><span class="n">quantile</span><span class="p">(</span><span class="mf">0.75</span><span class="p">)),</span>
+                <span class="s2">"max"</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="n">series</span><span class="o">.</span><span class="n">max</span><span class="p">()),</span>
+                <span class="s2">"skewness"</span><span class="p">:</span> <span class="nb">round</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">series</span><span class="o">.</span><span class="n">skew</span><span class="p">()),</span> <span class="mi">4</span><span class="p">),</span>
+                <span class="s2">"kurtosis"</span><span class="p">:</span> <span class="nb">round</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">series</span><span class="o">.</span><span class="n">kurt</span><span class="p">()),</span> <span class="mi">4</span><span class="p">),</span>
+                <span class="s2">"n_missing"</span><span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">col</span><span class="p">]</span><span class="o">.</span><span class="n">isna</span><span class="p">()</span><span class="o">.</span><span class="n">sum</span><span class="p">()),</span>
+                <span class="s2">"distribution_shape"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_shape_label</span><span class="p">(</span><span class="n">series</span><span class="o">.</span><span class="n">skew</span><span class="p">(),</span> <span class="n">series</span><span class="o">.</span><span class="n">kurt</span><span class="p">()),</span>
+            <span class="p">}</span>
+        <span class="k">return</span> <span class="n">result</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_categorical_summary</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Per-column frequency profile for categorical and object columns."""</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">data</span><span class="o">.</span><span class="n">select_dtypes</span><span class="p">(</span><span class="n">include</span><span class="o">=</span><span class="p">[</span><span class="s2">"object"</span><span class="p">,</span> <span class="s2">"category"</span><span class="p">])</span><span class="o">.</span><span class="n">columns</span><span class="p">:</span>
+            <span class="n">series</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">col</span><span class="p">]</span>
+            <span class="n">n_total</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">series</span><span class="p">)</span>
+            <span class="n">n_missing</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">series</span><span class="o">.</span><span class="n">isna</span><span class="p">()</span><span class="o">.</span><span class="n">sum</span><span class="p">())</span>
+            <span class="n">value_counts</span> <span class="o">=</span> <span class="n">series</span><span class="o">.</span><span class="n">value_counts</span><span class="p">(</span><span class="n">dropna</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+            <span class="n">n_unique</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">value_counts</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+            <span class="n">result</span><span class="p">[</span><span class="n">col</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="s2">"count"</span><span class="p">:</span> <span class="n">n_total</span> <span class="o">-</span> <span class="n">n_missing</span><span class="p">,</span>
+                <span class="s2">"n_unique"</span><span class="p">:</span> <span class="n">n_unique</span><span class="p">,</span>
+                <span class="s2">"n_missing"</span><span class="p">:</span> <span class="n">n_missing</span><span class="p">,</span>
+                <span class="s2">"missing_ratio"</span><span class="p">:</span> <span class="nb">round</span><span class="p">(</span><span class="n">n_missing</span> <span class="o">/</span> <span class="n">n_total</span><span class="p">,</span> <span class="mi">4</span><span class="p">)</span> <span class="k">if</span> <span class="n">n_total</span> <span class="k">else</span> <span class="mf">0.0</span><span class="p">,</span>
+                <span class="s2">"cardinality_ratio"</span><span class="p">:</span> <span class="nb">round</span><span class="p">(</span><span class="n">n_unique</span> <span class="o">/</span> <span class="n">n_total</span><span class="p">,</span> <span class="mi">4</span><span class="p">)</span> <span class="k">if</span> <span class="n">n_total</span> <span class="k">else</span> <span class="mf">0.0</span><span class="p">,</span>
+                <span class="s2">"top_values"</span><span class="p">:</span> <span class="n">value_counts</span><span class="o">.</span><span class="n">head</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span><span class="o">.</span><span class="n">to_dict</span><span class="p">(),</span>
+                <span class="s2">"mode"</span><span class="p">:</span> <span class="n">value_counts</span><span class="o">.</span><span class="n">index</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">if</span> <span class="ow">not</span> <span class="n">value_counts</span><span class="o">.</span><span class="n">empty</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+                <span class="s2">"mode_frequency"</span><span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="n">value_counts</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="k">if</span> <span class="ow">not</span> <span class="n">value_counts</span><span class="o">.</span><span class="n">empty</span> <span class="k">else</span> <span class="mi">0</span><span class="p">,</span>
+                <span class="s2">"mode_ratio"</span><span class="p">:</span> <span class="nb">round</span><span class="p">(</span><span class="n">value_counts</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">/</span> <span class="p">(</span><span class="n">n_total</span> <span class="o">-</span> <span class="n">n_missing</span><span class="p">),</span> <span class="mi">4</span><span class="p">)</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">value_counts</span><span class="o">.</span><span class="n">empty</span> <span class="ow">and</span> <span class="p">(</span><span class="n">n_total</span> <span class="o">-</span> <span class="n">n_missing</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="k">else</span> <span class="mf">0.0</span><span class="p">,</span>
+            <span class="p">}</span>
+        <span class="k">return</span> <span class="n">result</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_shape_label</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">skew</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">kurt</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Heuristic label describing the distribution shape."""</span>
+        <span class="k">if</span> <span class="nb">abs</span><span class="p">(</span><span class="n">skew</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mf">0.5</span><span class="p">:</span>
+            <span class="n">shape</span> <span class="o">=</span> <span class="s2">"approximately_normal"</span>
+        <span class="k">elif</span> <span class="n">skew</span> <span class="o">&gt;</span> <span class="mf">1.0</span><span class="p">:</span>
+            <span class="n">shape</span> <span class="o">=</span> <span class="s2">"highly_right_skewed"</span>
+        <span class="k">elif</span> <span class="n">skew</span> <span class="o">&gt;</span> <span class="mf">0.5</span><span class="p">:</span>
+            <span class="n">shape</span> <span class="o">=</span> <span class="s2">"moderately_right_skewed"</span>
+        <span class="k">elif</span> <span class="n">skew</span> <span class="o">&lt;</span> <span class="o">-</span><span class="mf">1.0</span><span class="p">:</span>
+            <span class="n">shape</span> <span class="o">=</span> <span class="s2">"highly_left_skewed"</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">shape</span> <span class="o">=</span> <span class="s2">"moderately_left_skewed"</span>
+
+        <span class="k">if</span> <span class="n">kurt</span> <span class="o">&gt;</span> <span class="mf">3.0</span><span class="p">:</span>
+            <span class="n">shape</span> <span class="o">+=</span> <span class="s2">"_leptokurtic"</span>
+        <span class="k">elif</span> <span class="n">kurt</span> <span class="o">&lt;</span> <span class="o">-</span><span class="mf">1.0</span><span class="p">:</span>
+            <span class="n">shape</span> <span class="o">+=</span> <span class="s2">"_platykurtic"</span>
+
+        <span class="k">return</span> <span class="n">shape</span></div>
+
+
+
+<span class="c1"># ——————————————————————————————————————————————————————————————</span>
+<span class="c1"># Outlier Detection Inspector with Severity Classification and Recommendations</span>
+<div class="viewcode-block" id="DetectOutliersInspectionStrategy">
+<a class="viewcode-back" href="../../../../generated/squirrel_modules_inspectors_tabular.html#squirrel.modules.inspectors.tabular.DetectOutliersInspectionStrategy">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">DetectOutliersInspectionStrategy</span><span class="p">(</span><span class="n">DataInspectStrategy</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    A concrete implementation of DataInspectStrategy that detects outliers using</span>
+<span class="sd">    IQR (default) or Z-score, with per-column severity classification and</span>
+<span class="sd">    agent-facing recommended actions.</span>
+<span class="sd">    """</span>
+
+    <span class="n">_SEVERITY_THRESHOLDS</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">"high"</span><span class="p">:</span> <span class="mf">10.0</span><span class="p">,</span>    <span class="c1"># &gt;10 % outliers</span>
+        <span class="s2">"medium"</span><span class="p">:</span> <span class="mf">5.0</span><span class="p">,</span>   <span class="c1"># &gt;5 %</span>
+        <span class="s2">"low"</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>      <span class="c1"># anything else</span>
+    <span class="p">}</span>
+
+    <span class="n">argument_specs</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">ArgumentSpec</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="n">ArgumentSpec</span><span class="p">(</span>
+            <span class="n">name</span><span class="o">=</span><span class="s2">"method"</span><span class="p">,</span>
+            <span class="nb">type</span><span class="o">=</span><span class="s2">"str"</span><span class="p">,</span>
+            <span class="n">required</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+            <span class="n">default</span><span class="o">=</span><span class="s2">"iqr"</span><span class="p">,</span>
+            <span class="n">description</span><span class="o">=</span><span class="s2">"Outlier detection algorithm to apply across all numeric columns."</span><span class="p">,</span>
+            <span class="n">possible_values</span><span class="o">=</span><span class="s2">"iqr | zscore"</span><span class="p">,</span>
+            <span class="n">value_descriptions</span><span class="o">=</span><span class="p">{</span>
+                <span class="s2">"iqr"</span><span class="p">:</span> <span class="p">(</span>
+                    <span class="s2">"Interquartile range fence rule: flags values below Q1 - 1.5×IQR "</span>
+                    <span class="s2">"or above Q3 + 1.5×IQR. Robust to non-normal distributions. "</span>
+                    <span class="s2">"Preferred for skewed or heavy-tailed columns."</span>
+                <span class="p">),</span>
+                <span class="s2">"zscore"</span><span class="p">:</span> <span class="p">(</span>
+                    <span class="s2">"Flags values whose Z-score exceeds zscore_threshold. "</span>
+                    <span class="s2">"Assumes approximate normality. Use only when the column is "</span>
+                    <span class="s2">"roughly normally distributed."</span>
+                <span class="p">),</span>
+            <span class="p">},</span>
+        <span class="p">),</span>
+        <span class="n">ArgumentSpec</span><span class="p">(</span>
+            <span class="n">name</span><span class="o">=</span><span class="s2">"zscore_threshold"</span><span class="p">,</span>
+            <span class="nb">type</span><span class="o">=</span><span class="s2">"float"</span><span class="p">,</span>
+            <span class="n">required</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+            <span class="n">default</span><span class="o">=</span><span class="mf">3.0</span><span class="p">,</span>
+            <span class="n">description</span><span class="o">=</span><span class="s2">"Z-score cutoff. Ignored entirely when method is 'iqr'."</span><span class="p">,</span>
+            <span class="n">possible_values</span><span class="o">=</span><span class="s2">"any positive float — typical range 2.0–3.5"</span><span class="p">,</span>
+            <span class="n">value_descriptions</span><span class="o">=</span><span class="p">{</span>
+                <span class="s2">"2.0"</span><span class="p">:</span> <span class="s2">"Strict — flags ~5</span><span class="si">% o</span><span class="s2">f a normal distribution."</span><span class="p">,</span>
+                <span class="s2">"2.5"</span><span class="p">:</span> <span class="s2">"Moderate-strict — flags ~1.2</span><span class="si">% o</span><span class="s2">f a normal distribution."</span><span class="p">,</span>
+                <span class="s2">"3.0"</span><span class="p">:</span> <span class="s2">"Standard default — flags ~0.3</span><span class="si">% o</span><span class="s2">f a normal distribution."</span><span class="p">,</span>
+                <span class="s2">"3.5"</span><span class="p">:</span> <span class="s2">"Lenient — flags only extreme values (~0.05%)."</span><span class="p">,</span>
+            <span class="p">},</span>
+            <span class="n">condition</span><span class="o">=</span><span class="s2">"only used when method == 'zscore'"</span><span class="p">,</span>
+        <span class="p">),</span>
+    <span class="p">]</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_arguments_description</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">(</span>
+            <span class="s2">"Pass `method` to choose the detection algorithm. "</span>
+            <span class="s2">"IQR is the safer default for real-world data with unknown distributions. "</span>
+            <span class="s2">"Only pass `zscore_threshold` when method is 'zscore'."</span>
+        <span class="p">)</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_example</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s2">"step"</span><span class="p">:</span> <span class="mi">3</span><span class="p">,</span>
+            <span class="s2">"name"</span><span class="p">:</span> <span class="s2">"Detect numeric outliers"</span><span class="p">,</span>
+            <span class="s2">"inspection"</span><span class="p">:</span> <span class="bp">cls</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span>
+            <span class="s2">"objective"</span><span class="p">:</span> <span class="s2">"Identify rows with extreme values that may distort model training."</span><span class="p">,</span>
+            <span class="s2">"actions"</span><span class="p">:</span> <span class="p">[</span>
+                <span class="s2">"Apply 1.5 × IQR fence to all numeric columns."</span><span class="p">,</span>
+                <span class="s2">"Count and index outlier rows per column."</span><span class="p">,</span>
+                <span class="s2">"Assign severity (low / medium / high) based on outlier ratio."</span><span class="p">,</span>
+            <span class="p">],</span>
+            <span class="s2">"arguments"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"method"</span><span class="p">:</span> <span class="s2">"iqr"</span><span class="p">},</span>
+            <span class="s2">"expected_output"</span><span class="p">:</span> <span class="p">[</span>
+                <span class="s2">"Outlier count and ratio per numeric column"</span><span class="p">,</span>
+                <span class="s2">"Severity classification per column"</span><span class="p">,</span>
+                <span class="s2">"List of high-severity columns requiring treatment"</span><span class="p">,</span>
+            <span class="p">],</span>
+        <span class="p">}</span>
+
+<div class="viewcode-block" id="DetectOutliersInspectionStrategy.inspect">
+<a class="viewcode-back" href="../../../../generated/squirrel_modules_inspectors_tabular.html#squirrel.modules.inspectors.tabular.DetectOutliersInspectionStrategy.inspect">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">inspect</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Detect outliers in all numeric columns.</span>
+
+<span class="sd">        :param data: DataFrame to inspect.</span>
+<span class="sd">        :type data: pd.DataFrame</span>
+<span class="sd">        :param kwargs: Optional keys:</span>
+<span class="sd">            - ``method`` (str): ``"iqr"`` (default) or ``"zscore"``.</span>
+<span class="sd">            - ``zscore_threshold`` (float): cutoff for Z-score method, default ``3.0``.</span>
+<span class="sd">        :return: Per-column outlier profile plus a dataset-level summary.</span>
+<span class="sd">        :rtype: dict</span>
+<span class="sd">        """</span>
+        <span class="n">method</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"method"</span><span class="p">,</span> <span class="s2">"iqr"</span><span class="p">)</span>
+        <span class="n">zscore_threshold</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"zscore_threshold"</span><span class="p">,</span> <span class="mf">3.0</span><span class="p">))</span>
+
+        <span class="n">columns</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">numeric_cols</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">select_dtypes</span><span class="p">(</span><span class="n">include</span><span class="o">=</span><span class="s2">"number"</span><span class="p">)</span><span class="o">.</span><span class="n">columns</span>
+
+        <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">numeric_cols</span><span class="p">:</span>
+            <span class="n">series</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">col</span><span class="p">]</span><span class="o">.</span><span class="n">dropna</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">series</span><span class="o">.</span><span class="n">empty</span><span class="p">:</span>
+                <span class="n">columns</span><span class="p">[</span><span class="n">col</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"error"</span><span class="p">:</span> <span class="s2">"all_missing"</span><span class="p">}</span>
+                <span class="k">continue</span>
+
+            <span class="k">if</span> <span class="n">method</span> <span class="o">==</span> <span class="s2">"zscore"</span><span class="p">:</span>
+                <span class="n">col_result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_zscore_outliers</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">col</span><span class="p">,</span> <span class="n">series</span><span class="p">,</span> <span class="n">zscore_threshold</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">col_result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_iqr_outliers</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">col</span><span class="p">,</span> <span class="n">series</span><span class="p">)</span>
+
+            <span class="n">col_result</span><span class="p">[</span><span class="s2">"severity"</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_severity</span><span class="p">(</span><span class="n">col_result</span><span class="p">[</span><span class="s2">"outlier_ratio"</span><span class="p">])</span>
+            <span class="n">col_result</span><span class="p">[</span><span class="s2">"recommended_action"</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_recommend</span><span class="p">(</span>
+                <span class="n">col_result</span><span class="p">[</span><span class="s2">"severity"</span><span class="p">],</span> <span class="n">col_result</span><span class="p">[</span><span class="s2">"outlier_ratio"</span><span class="p">]</span>
+            <span class="p">)</span>
+            <span class="n">columns</span><span class="p">[</span><span class="n">col</span><span class="p">]</span> <span class="o">=</span> <span class="n">col_result</span>
+
+        <span class="n">high_severity</span> <span class="o">=</span> <span class="p">[</span><span class="n">c</span> <span class="k">for</span> <span class="n">c</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">columns</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">v</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"severity"</span><span class="p">)</span> <span class="o">==</span> <span class="s2">"high"</span><span class="p">]</span>
+        <span class="n">medium_severity</span> <span class="o">=</span> <span class="p">[</span><span class="n">c</span> <span class="k">for</span> <span class="n">c</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">columns</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">v</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"severity"</span><span class="p">)</span> <span class="o">==</span> <span class="s2">"medium"</span><span class="p">]</span>
+
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s2">"method"</span><span class="p">:</span> <span class="n">method</span><span class="p">,</span>
+            <span class="s2">"columns"</span><span class="p">:</span> <span class="n">columns</span><span class="p">,</span>
+            <span class="s2">"summary"</span><span class="p">:</span> <span class="p">{</span>
+                <span class="s2">"total_numeric_columns"</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">numeric_cols</span><span class="p">),</span>
+                <span class="s2">"columns_with_outliers"</span><span class="p">:</span> <span class="p">[</span>
+                    <span class="n">c</span> <span class="k">for</span> <span class="n">c</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">columns</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">v</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"n_outliers"</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span>
+                <span class="p">],</span>
+                <span class="s2">"high_severity_columns"</span><span class="p">:</span> <span class="n">high_severity</span><span class="p">,</span>
+                <span class="s2">"medium_severity_columns"</span><span class="p">:</span> <span class="n">medium_severity</span><span class="p">,</span>
+            <span class="p">},</span>
+        <span class="p">}</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_iqr_outliers</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span> <span class="n">col</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">series</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Detect outliers using the 1.5 × IQR fence rule."""</span>
+        <span class="n">q1</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">series</span><span class="o">.</span><span class="n">quantile</span><span class="p">(</span><span class="mf">0.25</span><span class="p">))</span>
+        <span class="n">q3</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">series</span><span class="o">.</span><span class="n">quantile</span><span class="p">(</span><span class="mf">0.75</span><span class="p">))</span>
+        <span class="n">iqr</span> <span class="o">=</span> <span class="n">q3</span> <span class="o">-</span> <span class="n">q1</span>
+        <span class="n">lower</span> <span class="o">=</span> <span class="n">q1</span> <span class="o">-</span> <span class="mf">1.5</span> <span class="o">*</span> <span class="n">iqr</span>
+        <span class="n">upper</span> <span class="o">=</span> <span class="n">q3</span> <span class="o">+</span> <span class="mf">1.5</span> <span class="o">*</span> <span class="n">iqr</span>
+
+        <span class="n">outlier_mask</span> <span class="o">=</span> <span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">col</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">lower</span><span class="p">)</span> <span class="o">|</span> <span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">col</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">upper</span><span class="p">)</span>
+        <span class="n">outlier_indices</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">index</span><span class="p">[</span><span class="n">outlier_mask</span> <span class="o">&amp;</span> <span class="n">data</span><span class="p">[</span><span class="n">col</span><span class="p">]</span><span class="o">.</span><span class="n">notna</span><span class="p">()]</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+        <span class="n">n_outliers</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">outlier_indices</span><span class="p">)</span>
+        <span class="n">n_total</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s2">"n_outliers"</span><span class="p">:</span> <span class="n">n_outliers</span><span class="p">,</span>
+            <span class="s2">"outlier_ratio"</span><span class="p">:</span> <span class="nb">round</span><span class="p">(</span><span class="n">n_outliers</span> <span class="o">/</span> <span class="n">n_total</span><span class="p">,</span> <span class="mi">4</span><span class="p">)</span> <span class="k">if</span> <span class="n">n_total</span> <span class="k">else</span> <span class="mf">0.0</span><span class="p">,</span>
+            <span class="s2">"outlier_indices"</span><span class="p">:</span> <span class="n">outlier_indices</span><span class="p">,</span>
+            <span class="s2">"lower_bound"</span><span class="p">:</span> <span class="nb">round</span><span class="p">(</span><span class="n">lower</span><span class="p">,</span> <span class="mi">6</span><span class="p">),</span>
+            <span class="s2">"upper_bound"</span><span class="p">:</span> <span class="nb">round</span><span class="p">(</span><span class="n">upper</span><span class="p">,</span> <span class="mi">6</span><span class="p">),</span>
+            <span class="s2">"q1"</span><span class="p">:</span> <span class="nb">round</span><span class="p">(</span><span class="n">q1</span><span class="p">,</span> <span class="mi">6</span><span class="p">),</span>
+            <span class="s2">"q3"</span><span class="p">:</span> <span class="nb">round</span><span class="p">(</span><span class="n">q3</span><span class="p">,</span> <span class="mi">6</span><span class="p">),</span>
+            <span class="s2">"iqr"</span><span class="p">:</span> <span class="nb">round</span><span class="p">(</span><span class="n">iqr</span><span class="p">,</span> <span class="mi">6</span><span class="p">),</span>
+        <span class="p">}</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_zscore_outliers</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span> <span class="n">col</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">series</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">,</span> <span class="n">threshold</span><span class="p">:</span> <span class="nb">float</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Detect outliers using the Z-score method."""</span>
+        <span class="n">mean</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">series</span><span class="o">.</span><span class="n">mean</span><span class="p">())</span>
+        <span class="n">std</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">series</span><span class="o">.</span><span class="n">std</span><span class="p">(</span><span class="n">ddof</span><span class="o">=</span><span class="mi">0</span><span class="p">))</span>
+
+        <span class="k">if</span> <span class="n">std</span> <span class="o">==</span> <span class="mf">0.0</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">{</span>
+                <span class="s2">"n_outliers"</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+                <span class="s2">"outlier_ratio"</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>
+                <span class="s2">"outlier_indices"</span><span class="p">:</span> <span class="p">[],</span>
+                <span class="s2">"mean"</span><span class="p">:</span> <span class="n">mean</span><span class="p">,</span>
+                <span class="s2">"std"</span><span class="p">:</span> <span class="n">std</span><span class="p">,</span>
+                <span class="s2">"zscore_threshold"</span><span class="p">:</span> <span class="n">threshold</span><span class="p">,</span>
+                <span class="s2">"note"</span><span class="p">:</span> <span class="s2">"zero_variance_column"</span><span class="p">,</span>
+            <span class="p">}</span>
+
+        <span class="n">zscores</span> <span class="o">=</span> <span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">col</span><span class="p">]</span> <span class="o">-</span> <span class="n">mean</span><span class="p">)</span> <span class="o">/</span> <span class="n">std</span>
+        <span class="n">outlier_mask</span> <span class="o">=</span> <span class="n">zscores</span><span class="o">.</span><span class="n">abs</span><span class="p">()</span> <span class="o">&gt;</span> <span class="n">threshold</span>
+        <span class="n">outlier_indices</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">index</span><span class="p">[</span><span class="n">outlier_mask</span> <span class="o">&amp;</span> <span class="n">data</span><span class="p">[</span><span class="n">col</span><span class="p">]</span><span class="o">.</span><span class="n">notna</span><span class="p">()]</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+        <span class="n">n_outliers</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">outlier_indices</span><span class="p">)</span>
+        <span class="n">n_total</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s2">"n_outliers"</span><span class="p">:</span> <span class="n">n_outliers</span><span class="p">,</span>
+            <span class="s2">"outlier_ratio"</span><span class="p">:</span> <span class="nb">round</span><span class="p">(</span><span class="n">n_outliers</span> <span class="o">/</span> <span class="n">n_total</span><span class="p">,</span> <span class="mi">4</span><span class="p">)</span> <span class="k">if</span> <span class="n">n_total</span> <span class="k">else</span> <span class="mf">0.0</span><span class="p">,</span>
+            <span class="s2">"outlier_indices"</span><span class="p">:</span> <span class="n">outlier_indices</span><span class="p">,</span>
+            <span class="s2">"mean"</span><span class="p">:</span> <span class="nb">round</span><span class="p">(</span><span class="n">mean</span><span class="p">,</span> <span class="mi">6</span><span class="p">),</span>
+            <span class="s2">"std"</span><span class="p">:</span> <span class="nb">round</span><span class="p">(</span><span class="n">std</span><span class="p">,</span> <span class="mi">6</span><span class="p">),</span>
+            <span class="s2">"zscore_threshold"</span><span class="p">:</span> <span class="n">threshold</span><span class="p">,</span>
+        <span class="p">}</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_severity</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">outlier_ratio</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="n">pct</span> <span class="o">=</span> <span class="n">outlier_ratio</span> <span class="o">*</span> <span class="mi">100</span>
+        <span class="k">if</span> <span class="n">pct</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">_SEVERITY_THRESHOLDS</span><span class="p">[</span><span class="s2">"high"</span><span class="p">]:</span>
+            <span class="k">return</span> <span class="s2">"high"</span>
+        <span class="k">if</span> <span class="n">pct</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">_SEVERITY_THRESHOLDS</span><span class="p">[</span><span class="s2">"medium"</span><span class="p">]:</span>
+            <span class="k">return</span> <span class="s2">"medium"</span>
+        <span class="k">return</span> <span class="s2">"low"</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_recommend</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">severity</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">outlier_ratio</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">severity</span> <span class="o">==</span> <span class="s2">"high"</span><span class="p">:</span>
+            <span class="k">return</span> <span class="s2">"review_and_treat: high outlier density may distort model"</span>
+        <span class="k">if</span> <span class="n">severity</span> <span class="o">==</span> <span class="s2">"medium"</span><span class="p">:</span>
+            <span class="k">return</span> <span class="s2">"investigate: moderate outliers present, consider capping or transformation"</span>
+        <span class="k">if</span> <span class="n">outlier_ratio</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">return</span> <span class="s2">"monitor: low outlier count, likely acceptable"</span>
+        <span class="k">return</span> <span class="s2">"none"</span></div>
+
+    
+<span class="c1"># —————————————————————————————————————————————————————————————</span>
+<span class="c1"># Correlation and Missingness Dependency Inspector</span>
+<div class="viewcode-block" id="CorrelationInspectionStrategy">
+<a class="viewcode-back" href="../../../../generated/squirrel_modules_inspectors_tabular.html#squirrel.modules.inspectors.tabular.CorrelationInspectionStrategy">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">CorrelationInspectionStrategy</span><span class="p">(</span><span class="n">DataInspectStrategy</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    A concrete implementation of DataInspectStrategy that measures the association</span>
+<span class="sd">    between two columns, automatically selecting the appropriate method based on</span>
+<span class="sd">    their dtypes:</span>
+
+<span class="sd">    - numeric  × numeric  → Pearson r</span>
+<span class="sd">    - ordinal  × ordinal  → Spearman ρ  (pass ordinal_columns=[...] to flag these)</span>
+<span class="sd">    - numeric  × category → Eta squared  (η²)</span>
+<span class="sd">    - category × category → Cramér's V</span>
+<span class="sd">    """</span>
+
+    <span class="n">argument_specs</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">ArgumentSpec</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="n">ArgumentSpec</span><span class="p">(</span>
+            <span class="n">name</span><span class="o">=</span><span class="s2">"column_1"</span><span class="p">,</span>
+            <span class="nb">type</span><span class="o">=</span><span class="s2">"str"</span><span class="p">,</span>
+            <span class="n">required</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+            <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+            <span class="n">description</span><span class="o">=</span><span class="s2">"First column in the association pair."</span><span class="p">,</span>
+            <span class="n">possible_values</span><span class="o">=</span><span class="s2">"any column name present in the dataset"</span><span class="p">,</span>
+            <span class="n">value_descriptions</span><span class="o">=</span><span class="p">{</span>
+                <span class="s2">"&lt;numeric_column&gt;"</span><span class="p">:</span> <span class="s2">"Paired with numeric → Pearson. With ordinal → Spearman. With categorical → Eta squared."</span><span class="p">,</span>
+                <span class="s2">"&lt;categorical_column&gt;"</span><span class="p">:</span> <span class="s2">"Paired with categorical → Cramér's V. With numeric → Eta squared."</span><span class="p">,</span>
+            <span class="p">},</span>
+        <span class="p">),</span>
+        <span class="n">ArgumentSpec</span><span class="p">(</span>
+            <span class="n">name</span><span class="o">=</span><span class="s2">"column_2"</span><span class="p">,</span>
+            <span class="nb">type</span><span class="o">=</span><span class="s2">"str"</span><span class="p">,</span>
+            <span class="n">required</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+            <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+            <span class="n">description</span><span class="o">=</span><span class="s2">"Second column in the association pair. Method is chosen automatically from the pair's dtypes."</span><span class="p">,</span>
+            <span class="n">possible_values</span><span class="o">=</span><span class="s2">"any column name present in the dataset, different from column_1"</span><span class="p">,</span>
+            <span class="n">value_descriptions</span><span class="o">=</span><span class="p">{</span>
+                <span class="s2">"&lt;numeric_column&gt;"</span><span class="p">:</span> <span class="s2">"See column_1 — method is determined by the pair."</span><span class="p">,</span>
+                <span class="s2">"&lt;categorical_column&gt;"</span><span class="p">:</span> <span class="s2">"See column_1 — method is determined by the pair."</span><span class="p">,</span>
+            <span class="p">},</span>
+        <span class="p">),</span>
+        <span class="n">ArgumentSpec</span><span class="p">(</span>
+            <span class="n">name</span><span class="o">=</span><span class="s2">"threshold"</span><span class="p">,</span>
+            <span class="nb">type</span><span class="o">=</span><span class="s2">"float"</span><span class="p">,</span>
+            <span class="n">required</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+            <span class="n">default</span><span class="o">=</span><span class="mf">0.3</span><span class="p">,</span>
+            <span class="n">description</span><span class="o">=</span><span class="p">(</span>
+                <span class="s2">"Minimum association_strength to classify the pair as associated. "</span>
+                <span class="s2">"Applies uniformly across Pearson, Spearman, Cramér's V, and Eta squared "</span>
+                <span class="s2">"since all return a value in [0, 1]."</span>
+            <span class="p">),</span>
+            <span class="n">possible_values</span><span class="o">=</span><span class="s2">"any float in (0.0, 1.0) — typical range 0.3–0.7"</span><span class="p">,</span>
+            <span class="n">value_descriptions</span><span class="o">=</span><span class="p">{</span>
+                <span class="s2">"0.3"</span><span class="p">:</span> <span class="s2">"Standard default — flags moderate and strong associations."</span><span class="p">,</span>
+                <span class="s2">"0.5"</span><span class="p">:</span> <span class="s2">"Moderate-strict — flags only medium-to-strong associations."</span><span class="p">,</span>
+                <span class="s2">"0.7"</span><span class="p">:</span> <span class="s2">"Strict collinearity screen — use when dropping features before modelling."</span><span class="p">,</span>
+            <span class="p">},</span>
+        <span class="p">),</span>
+        <span class="n">ArgumentSpec</span><span class="p">(</span>
+            <span class="n">name</span><span class="o">=</span><span class="s2">"ordinal_columns"</span><span class="p">,</span>
+            <span class="nb">type</span><span class="o">=</span><span class="s2">"list[str]"</span><span class="p">,</span>
+            <span class="n">required</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+            <span class="n">default</span><span class="o">=</span><span class="p">[],</span>
+            <span class="n">description</span><span class="o">=</span><span class="p">(</span>
+                <span class="s2">"Columns that are numeric in dtype but ordinal in meaning "</span>
+                <span class="s2">"(e.g. survey ratings, education levels coded as integers). "</span>
+                <span class="s2">"If either column appears here, Spearman ρ is used instead of Pearson r."</span>
+            <span class="p">),</span>
+            <span class="n">possible_values</span><span class="o">=</span><span class="s2">"list of column names, or [] to use default dtype detection"</span><span class="p">,</span>
+            <span class="n">value_descriptions</span><span class="o">=</span><span class="p">{</span>
+                <span class="s2">"[]"</span><span class="p">:</span> <span class="s2">"Default — numeric columns treated as continuous, paired using Pearson r."</span><span class="p">,</span>
+                <span class="s2">"[&lt;column_name&gt;, ...]"</span><span class="p">:</span> <span class="s2">"Named columns treated as ordinal; triggers Spearman ρ."</span><span class="p">,</span>
+            <span class="p">},</span>
+        <span class="p">),</span>
+    <span class="p">]</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_arguments_description</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">(</span>
+            <span class="s2">"Always provide both column_1 and column_2. "</span>
+            <span class="s2">"Do not specify the method — it is chosen automatically from dtypes. "</span>
+            <span class="s2">"Produce one step per column pair. "</span>
+            <span class="s2">"Use threshold=0.7 when the goal is collinearity screening before modelling."</span>
+        <span class="p">)</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_example</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s2">"step"</span><span class="p">:</span> <span class="mi">5</span><span class="p">,</span>
+            <span class="s2">"name"</span><span class="p">:</span> <span class="s2">"Correlate age and income"</span><span class="p">,</span>
+            <span class="s2">"inspection"</span><span class="p">:</span> <span class="bp">cls</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span>
+            <span class="s2">"objective"</span><span class="p">:</span> <span class="s2">"Determine whether age and income are linearly associated."</span><span class="p">,</span>
+            <span class="s2">"actions"</span><span class="p">:</span> <span class="p">[</span>
+                <span class="s2">"Detect both columns are numeric and select Pearson r automatically."</span><span class="p">,</span>
+                <span class="s2">"Drop rows with missing values in either column."</span><span class="p">,</span>
+                <span class="s2">"Compare association_strength against threshold and set is_associated."</span><span class="p">,</span>
+            <span class="p">],</span>
+            <span class="s2">"arguments"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"column_1"</span><span class="p">:</span> <span class="s2">"age"</span><span class="p">,</span> <span class="s2">"column_2"</span><span class="p">:</span> <span class="s2">"income"</span><span class="p">,</span> <span class="s2">"threshold"</span><span class="p">:</span> <span class="mf">0.3</span><span class="p">},</span>
+            <span class="s2">"expected_output"</span><span class="p">:</span> <span class="p">[</span>
+                <span class="s2">"Association coefficient and strength (Pearson r)"</span><span class="p">,</span>
+                <span class="s2">"Direction: positive or negative"</span><span class="p">,</span>
+                <span class="s2">"is_associated flag"</span><span class="p">,</span>
+                <span class="s2">"recommended_action (e.g. flag_for_removal if strength &gt;= 0.7)"</span><span class="p">,</span>
+            <span class="p">],</span>
+        <span class="p">}</span>
+
+<div class="viewcode-block" id="CorrelationInspectionStrategy.inspect">
+<a class="viewcode-back" href="../../../../generated/squirrel_modules_inspectors_tabular.html#squirrel.modules.inspectors.tabular.CorrelationInspectionStrategy.inspect">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">inspect</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Measure the association between two columns and return a structured result</span>
+<span class="sd">        suitable for downstream agent consumption.</span>
+
+<span class="sd">        :param data: DataFrame containing the tabular data to inspect.</span>
+<span class="sd">        :type data: pd.DataFrame</span>
+<span class="sd">                :param kwargs: Keyword arguments:</span>
+
+<span class="sd">                        - ``column_1`` (str): first column name.</span>
+<span class="sd">                        - ``column_2`` (str): second column name.</span>
+<span class="sd">                        - ``threshold`` (float, optional): strength cutoff, default ``0.3``.</span>
+<span class="sd">                        - ``ordinal_columns`` (list[str], optional): columns to treat as</span>
+<span class="sd">                            ordinal (triggers Spearman instead of Pearson for numeric-looking</span>
+<span class="sd">                            columns).</span>
+<span class="sd">        :return: Structured association result for agent consumption.</span>
+<span class="sd">        :rtype: dict</span>
+<span class="sd">        """</span>
+        <span class="n">first_column</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"column_1"</span><span class="p">)</span>
+        <span class="n">second_column</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"column_2"</span><span class="p">)</span>
+        <span class="n">threshold</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"threshold"</span><span class="p">,</span> <span class="mf">0.3</span><span class="p">))</span>
+        <span class="n">ordinal_columns</span><span class="p">:</span> <span class="nb">list</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"ordinal_columns"</span><span class="p">)</span> <span class="ow">or</span> <span class="p">[]</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">first_column</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">second_column</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s2">"Two column names must be provided using 'column_1' and 'column_2'."</span>
+            <span class="p">)</span>
+        <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="p">(</span><span class="n">first_column</span><span class="p">,</span> <span class="n">second_column</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">col</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">data</span><span class="o">.</span><span class="n">columns</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Column not found: </span><span class="si">{</span><span class="n">col</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+
+        <span class="n">col1_type</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_resolve_dtype</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">first_column</span><span class="p">],</span> <span class="n">first_column</span><span class="p">,</span> <span class="n">ordinal_columns</span><span class="p">)</span>
+        <span class="n">col2_type</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_resolve_dtype</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">second_column</span><span class="p">],</span> <span class="n">second_column</span><span class="p">,</span> <span class="n">ordinal_columns</span><span class="p">)</span>
+
+        <span class="n">method</span><span class="p">,</span> <span class="n">result_updates</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_compute_association</span><span class="p">(</span>
+            <span class="n">data</span><span class="p">,</span> <span class="n">first_column</span><span class="p">,</span> <span class="n">second_column</span><span class="p">,</span> <span class="n">col1_type</span><span class="p">,</span> <span class="n">col2_type</span><span class="p">,</span> <span class="n">threshold</span>
+        <span class="p">)</span>
+
+        <span class="n">strength</span> <span class="o">=</span> <span class="n">result_updates</span><span class="p">[</span><span class="s2">"association_strength"</span><span class="p">]</span>
+        <span class="n">is_associated</span> <span class="o">=</span> <span class="n">strength</span> <span class="o">&gt;=</span> <span class="n">threshold</span>
+
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="c1"># ── Identity ──────────────────────────────────────────────────────</span>
+            <span class="s2">"columns"</span><span class="p">:</span> <span class="p">[</span><span class="n">first_column</span><span class="p">,</span> <span class="n">second_column</span><span class="p">],</span>
+            <span class="s2">"column_types"</span><span class="p">:</span> <span class="p">{</span><span class="n">first_column</span><span class="p">:</span> <span class="n">col1_type</span><span class="p">,</span> <span class="n">second_column</span><span class="p">:</span> <span class="n">col2_type</span><span class="p">},</span>
+            <span class="c1"># ── Method ───────────────────────────────────────────────────────</span>
+            <span class="s2">"method"</span><span class="p">:</span> <span class="n">method</span><span class="p">,</span>
+            <span class="s2">"threshold"</span><span class="p">:</span> <span class="n">threshold</span><span class="p">,</span>
+            <span class="c1"># ── Computed values ───────────────────────────────────────────────</span>
+            <span class="o">**</span><span class="n">result_updates</span><span class="p">,</span>
+            <span class="c1"># ── Agent-facing fields ───────────────────────────────────────────</span>
+            <span class="s2">"is_associated"</span><span class="p">:</span> <span class="n">is_associated</span><span class="p">,</span>
+            <span class="s2">"confidence"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_confidence</span><span class="p">(</span><span class="n">result_updates</span><span class="p">[</span><span class="s2">"paired_observations"</span><span class="p">]),</span>
+            <span class="s2">"recommended_action"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_recommend</span><span class="p">(</span>
+                <span class="n">is_associated</span><span class="p">,</span> <span class="n">col1_type</span><span class="p">,</span> <span class="n">col2_type</span><span class="p">,</span> <span class="n">method</span><span class="p">,</span> <span class="n">strength</span>
+            <span class="p">),</span>
+        <span class="p">}</span></div>
+
+
+    <span class="c1"># ── Dtype resolution ──────────────────────────────────────────────────────</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_resolve_dtype</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">series</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">ordinal_columns</span><span class="p">:</span> <span class="nb">list</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Return 'ordinal', 'numeric', or 'categorical' for a column."""</span>
+        <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">ordinal_columns</span><span class="p">:</span>
+            <span class="k">return</span> <span class="s2">"ordinal"</span>
+        <span class="k">if</span> <span class="n">pd</span><span class="o">.</span><span class="n">api</span><span class="o">.</span><span class="n">types</span><span class="o">.</span><span class="n">is_numeric_dtype</span><span class="p">(</span><span class="n">series</span><span class="p">):</span>
+            <span class="k">return</span> <span class="s2">"numeric"</span>
+        <span class="k">return</span> <span class="s2">"categorical"</span>
+
+    <span class="c1"># ── Method dispatch ───────────────────────────────────────────────────────</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_compute_association</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">data</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span>
+        <span class="n">col1</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">col2</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">type1</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">type2</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">threshold</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">dict</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">"""Route to the correct association method and return (method_name, updates)."""</span>
+        <span class="n">numeric_types</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"numeric"</span><span class="p">,</span> <span class="s2">"ordinal"</span><span class="p">}</span>
+
+        <span class="n">both_numeric</span> <span class="o">=</span> <span class="n">type1</span> <span class="ow">in</span> <span class="n">numeric_types</span> <span class="ow">and</span> <span class="n">type2</span> <span class="ow">in</span> <span class="n">numeric_types</span>
+        <span class="n">both_categorical</span> <span class="o">=</span> <span class="n">type1</span> <span class="o">==</span> <span class="s2">"categorical"</span> <span class="ow">and</span> <span class="n">type2</span> <span class="o">==</span> <span class="s2">"categorical"</span>
+        <span class="n">mixed</span> <span class="o">=</span> <span class="ow">not</span> <span class="n">both_numeric</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">both_categorical</span>
+
+        <span class="k">if</span> <span class="n">both_numeric</span><span class="p">:</span>
+            <span class="n">use_spearman</span> <span class="o">=</span> <span class="n">type1</span> <span class="o">==</span> <span class="s2">"ordinal"</span> <span class="ow">or</span> <span class="n">type2</span> <span class="o">==</span> <span class="s2">"ordinal"</span>
+            <span class="n">method</span> <span class="o">=</span> <span class="s2">"spearman"</span> <span class="k">if</span> <span class="n">use_spearman</span> <span class="k">else</span> <span class="s2">"pearson"</span>
+            <span class="k">return</span> <span class="n">method</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pearson_or_spearman</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">col1</span><span class="p">,</span> <span class="n">col2</span><span class="p">,</span> <span class="n">method</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">both_categorical</span><span class="p">:</span>
+            <span class="k">return</span> <span class="s2">"cramers_v"</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cramers_v</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">col1</span><span class="p">,</span> <span class="n">col2</span><span class="p">)</span>
+
+        <span class="c1"># mixed: one numeric/ordinal, one categorical</span>
+        <span class="n">num_col</span><span class="p">,</span> <span class="n">cat_col</span> <span class="o">=</span> <span class="p">(</span><span class="n">col1</span><span class="p">,</span> <span class="n">col2</span><span class="p">)</span> <span class="k">if</span> <span class="n">type1</span> <span class="ow">in</span> <span class="n">numeric_types</span> <span class="k">else</span> <span class="p">(</span><span class="n">col2</span><span class="p">,</span> <span class="n">col1</span><span class="p">)</span>
+        <span class="k">return</span> <span class="s2">"eta_squared"</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_eta_squared</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">num_col</span><span class="p">,</span> <span class="n">cat_col</span><span class="p">)</span>
+
+    <span class="c1"># ── Association methods ───────────────────────────────────────────────────</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_pearson_or_spearman</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span> <span class="n">col1</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">col2</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">method</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Pearson r or Spearman ρ for two numeric/ordinal columns."""</span>
+        <span class="n">s1</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">to_numeric</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">col1</span><span class="p">],</span> <span class="n">errors</span><span class="o">=</span><span class="s2">"coerce"</span><span class="p">)</span>
+        <span class="n">s2</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">to_numeric</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">col2</span><span class="p">],</span> <span class="n">errors</span><span class="o">=</span><span class="s2">"coerce"</span><span class="p">)</span>
+        <span class="n">paired</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">([</span><span class="n">s1</span><span class="p">,</span> <span class="n">s2</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">dropna</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="n">paired</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&lt;</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s2">"At least two overlapping numeric values are required."</span>
+            <span class="p">)</span>
+
+        <span class="n">correlation</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">paired</span><span class="o">.</span><span class="n">iloc</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">corr</span><span class="p">(</span><span class="n">paired</span><span class="o">.</span><span class="n">iloc</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">])</span>
+            <span class="k">if</span> <span class="n">method</span> <span class="o">==</span> <span class="s2">"pearson"</span>
+            <span class="k">else</span> <span class="n">paired</span><span class="o">.</span><span class="n">iloc</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">corr</span><span class="p">(</span><span class="n">paired</span><span class="o">.</span><span class="n">iloc</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">],</span> <span class="n">method</span><span class="o">=</span><span class="s2">"spearman"</span><span class="p">)</span>
+        <span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">pd</span><span class="o">.</span><span class="n">isna</span><span class="p">(</span><span class="n">correlation</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"Correlation could not be calculated."</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s2">"association_coefficient"</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="n">correlation</span><span class="p">),</span>
+            <span class="s2">"association_strength"</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">correlation</span><span class="p">)),</span>
+            <span class="s2">"direction"</span><span class="p">:</span> <span class="s2">"positive"</span> <span class="k">if</span> <span class="n">correlation</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="k">else</span> <span class="s2">"negative"</span><span class="p">,</span>
+            <span class="s2">"paired_observations"</span><span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="n">paired</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span>
+        <span class="p">}</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_cramers_v</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span> <span class="n">col1</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">col2</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Cramér's V for two categorical columns.</span>
+<span class="sd">        Ranges from 0 (no association) to 1 (perfect association).</span>
+<span class="sd">        """</span>
+        <span class="n">contingency</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">crosstab</span><span class="p">(</span>
+            <span class="n">data</span><span class="p">[</span><span class="n">col1</span><span class="p">]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="s2">"string"</span><span class="p">),</span> <span class="n">data</span><span class="p">[</span><span class="n">col2</span><span class="p">]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="s2">"string"</span><span class="p">)</span>
+        <span class="p">)</span>
+        <span class="n">n</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">contingency</span><span class="o">.</span><span class="n">values</span><span class="o">.</span><span class="n">sum</span><span class="p">())</span>
+
+        <span class="k">if</span> <span class="n">n</span> <span class="o">&lt;</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s2">"At least two observations are required for Cramér's V."</span>
+            <span class="p">)</span>
+
+        <span class="n">chi2</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span>
+            <span class="p">((</span><span class="n">contingency</span> <span class="o">-</span> <span class="n">contingency</span><span class="o">.</span><span class="n">values</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">keepdims</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+              <span class="o">*</span> <span class="n">contingency</span><span class="o">.</span><span class="n">values</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">keepdims</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span> <span class="o">/</span> <span class="n">n</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span>
+             <span class="o">/</span> <span class="p">(</span><span class="n">contingency</span><span class="o">.</span><span class="n">values</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">keepdims</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+                <span class="o">*</span> <span class="n">contingency</span><span class="o">.</span><span class="n">values</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">keepdims</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span> <span class="o">/</span> <span class="n">n</span><span class="p">)</span>
+             <span class="p">)</span><span class="o">.</span><span class="n">values</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
+        <span class="p">)</span>
+        <span class="n">k</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">contingency</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span>
+        <span class="n">v</span> <span class="o">=</span> <span class="nb">float</span><span class="p">((</span><span class="n">chi2</span> <span class="o">/</span> <span class="p">(</span><span class="n">n</span> <span class="o">*</span> <span class="n">k</span><span class="p">))</span> <span class="o">**</span> <span class="mf">0.5</span><span class="p">)</span> <span class="k">if</span> <span class="n">k</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="k">else</span> <span class="mf">0.0</span>
+
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s2">"association_coefficient"</span><span class="p">:</span> <span class="n">v</span><span class="p">,</span>
+            <span class="s2">"association_strength"</span><span class="p">:</span> <span class="n">v</span><span class="p">,</span>
+            <span class="s2">"direction"</span><span class="p">:</span> <span class="s2">"none"</span><span class="p">,</span>          <span class="c1"># V is symmetric and unsigned</span>
+            <span class="s2">"paired_observations"</span><span class="p">:</span> <span class="n">n</span><span class="p">,</span>
+            <span class="s2">"chi2"</span><span class="p">:</span> <span class="n">chi2</span><span class="p">,</span>
+            <span class="s2">"contingency_shape"</span><span class="p">:</span> <span class="nb">list</span><span class="p">(</span><span class="n">contingency</span><span class="o">.</span><span class="n">shape</span><span class="p">),</span>
+        <span class="p">}</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_eta_squared</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span> <span class="n">num_col</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">cat_col</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Eta squared (η²) for a numeric column grouped by a categorical one.</span>
+<span class="sd">        Ranges from 0 (no effect) to 1 (all variance explained by the group).</span>
+<span class="sd">        """</span>
+        <span class="n">paired</span> <span class="o">=</span> <span class="n">data</span><span class="p">[[</span><span class="n">num_col</span><span class="p">,</span> <span class="n">cat_col</span><span class="p">]]</span><span class="o">.</span><span class="n">dropna</span><span class="p">()</span>
+        <span class="n">paired</span> <span class="o">=</span> <span class="n">paired</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="n">paired</span><span class="p">[</span><span class="n">num_col</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">to_numeric</span><span class="p">(</span><span class="n">paired</span><span class="p">[</span><span class="n">num_col</span><span class="p">],</span> <span class="n">errors</span><span class="o">=</span><span class="s2">"coerce"</span><span class="p">)</span>
+        <span class="n">paired</span> <span class="o">=</span> <span class="n">paired</span><span class="o">.</span><span class="n">dropna</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="n">paired</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&lt;</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s2">"At least two complete observations are required for η²."</span>
+            <span class="p">)</span>
+
+        <span class="n">grand_mean</span> <span class="o">=</span> <span class="n">paired</span><span class="p">[</span><span class="n">num_col</span><span class="p">]</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
+        <span class="n">ss_total</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(((</span><span class="n">paired</span><span class="p">[</span><span class="n">num_col</span><span class="p">]</span> <span class="o">-</span> <span class="n">grand_mean</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">())</span>
+        <span class="n">ss_between</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span>
+            <span class="n">paired</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span><span class="n">cat_col</span><span class="p">)[</span><span class="n">num_col</span><span class="p">]</span>
+            <span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="k">lambda</span> <span class="n">g</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">g</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="n">g</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span> <span class="o">-</span> <span class="n">grand_mean</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span>
+            <span class="o">.</span><span class="n">sum</span><span class="p">()</span>
+        <span class="p">)</span>
+        <span class="n">eta_sq</span> <span class="o">=</span> <span class="p">(</span><span class="n">ss_between</span> <span class="o">/</span> <span class="n">ss_total</span><span class="p">)</span> <span class="k">if</span> <span class="n">ss_total</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="k">else</span> <span class="mf">0.0</span>
+
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s2">"association_coefficient"</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="n">eta_sq</span><span class="p">),</span>
+            <span class="s2">"association_strength"</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="n">eta_sq</span><span class="p">),</span>
+            <span class="s2">"direction"</span><span class="p">:</span> <span class="s2">"none"</span><span class="p">,</span>          <span class="c1"># η² is unsigned</span>
+            <span class="s2">"paired_observations"</span><span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="n">paired</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span>
+            <span class="s2">"ss_between"</span><span class="p">:</span> <span class="n">ss_between</span><span class="p">,</span>
+            <span class="s2">"ss_total"</span><span class="p">:</span> <span class="n">ss_total</span><span class="p">,</span>
+            <span class="s2">"numeric_column"</span><span class="p">:</span> <span class="n">num_col</span><span class="p">,</span>
+            <span class="s2">"categorical_column"</span><span class="p">:</span> <span class="n">cat_col</span><span class="p">,</span>
+        <span class="p">}</span>
+
+    <span class="c1"># ── Agent support helpers ─────────────────────────────────────────────────</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_confidence</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">n</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Heuristic confidence tier based on sample size."""</span>
+        <span class="k">if</span> <span class="n">n</span> <span class="o">&gt;=</span> <span class="mi">100</span><span class="p">:</span>
+            <span class="k">return</span> <span class="s2">"high"</span>
+        <span class="k">if</span> <span class="n">n</span> <span class="o">&gt;=</span> <span class="mi">30</span><span class="p">:</span>
+            <span class="k">return</span> <span class="s2">"medium"</span>
+        <span class="k">return</span> <span class="s2">"low"</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_recommend</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">is_associated</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
+        <span class="n">type1</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">type2</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">method</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">strength</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Return a plain-language action string an agent can parse or display.</span>
+<span class="sd">        Keeps logic out of the agent and in the strategy where it belongs.</span>
+<span class="sd">        """</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">is_associated</span><span class="p">:</span>
+            <span class="k">return</span> <span class="s2">"no_action_required: association below threshold"</span>
+
+        <span class="k">if</span> <span class="n">method</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">"pearson"</span><span class="p">,</span> <span class="s2">"spearman"</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">strength</span> <span class="o">&gt;=</span> <span class="mf">0.7</span><span class="p">:</span>
+                <span class="k">return</span> <span class="s2">"flag_for_removal: high collinearity risk"</span>
+            <span class="k">return</span> <span class="s2">"investigate: moderate linear association detected"</span>
+
+        <span class="k">if</span> <span class="n">method</span> <span class="o">==</span> <span class="s2">"cramers_v"</span><span class="p">:</span>
+            <span class="k">return</span> <span class="s2">"investigate: categorical dependency detected"</span>
+
+        <span class="k">if</span> <span class="n">method</span> <span class="o">==</span> <span class="s2">"eta_squared"</span><span class="p">:</span>
+            <span class="k">return</span> <span class="s2">"investigate: numeric distribution differs across categories"</span>
+
+        <span class="k">return</span> <span class="s2">"investigate: association detected"</span></div>
+
+
+<span class="c1"># —————————————————————————————————————————————————————————————</span>
+<span class="c1"># Missing Values Inspector with Dependency Assessment</span>
+<div class="viewcode-block" id="MissingValuesInspectionStrategy">
+<a class="viewcode-back" href="../../../../generated/squirrel_modules_inspectors_tabular.html#squirrel.modules.inspectors.tabular.MissingValuesInspectionStrategy">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">MissingValuesInspectionStrategy</span><span class="p">(</span><span class="n">DataInspectStrategy</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    A unified strategy that inspects missing values for any column type and,</span>
+<span class="sd">    when a related column is provided, estimates whether the missingness</span>
+<span class="sd">    depends on it (numeric or categorical related column both supported).</span>
+
+<span class="sd">    Target column dtype is detected automatically:</span>
+<span class="sd">    - Categorical target: result includes ``observed_value_counts``.</span>
+<span class="sd">    - Numeric target: result includes ``target_column_type: "numeric"``.</span>
+
+<span class="sd">    Dependency is assessed on the *related* column's dtype:</span>
+<span class="sd">    - Numeric related: standardized mean gap between missing / observed groups.</span>
+<span class="sd">    - Categorical related: max per-category missing-rate deviation from overall rate.</span>
+<span class="sd">    """</span>
+
+    <span class="n">argument_specs</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">ArgumentSpec</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="n">ArgumentSpec</span><span class="p">(</span>
+            <span class="n">name</span><span class="o">=</span><span class="s2">"column_1"</span><span class="p">,</span>
+            <span class="nb">type</span><span class="o">=</span><span class="s2">"str"</span><span class="p">,</span>
+            <span class="n">required</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+            <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+            <span class="n">description</span><span class="o">=</span><span class="s2">"Target column to inspect for missing values."</span><span class="p">,</span>
+            <span class="n">possible_values</span><span class="o">=</span><span class="s2">"any column name present in the dataset"</span><span class="p">,</span>
+            <span class="n">value_descriptions</span><span class="o">=</span><span class="p">{</span>
+                <span class="s2">"&lt;column_name&gt;"</span><span class="p">:</span> <span class="p">(</span>
+                    <span class="s2">"Works for both numeric and categorical columns. "</span>
+                    <span class="s2">"Categorical columns additionally return an observed_value_counts "</span>
+                    <span class="s2">"frequency distribution."</span>
+                <span class="p">),</span>
+            <span class="p">},</span>
+        <span class="p">),</span>
+        <span class="n">ArgumentSpec</span><span class="p">(</span>
+            <span class="n">name</span><span class="o">=</span><span class="s2">"column_2"</span><span class="p">,</span>
+            <span class="nb">type</span><span class="o">=</span><span class="s2">"str"</span><span class="p">,</span>
+            <span class="n">required</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+            <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+            <span class="n">description</span><span class="o">=</span><span class="p">(</span>
+                <span class="s2">"Optional column to test whether missingness in column_1 depends on it. "</span>
+                <span class="s2">"Choose a column you suspect explains why values are missing."</span>
+            <span class="p">),</span>
+            <span class="n">possible_values</span><span class="o">=</span><span class="s2">"any column name present in the dataset, or omit entirely"</span><span class="p">,</span>
+            <span class="n">value_descriptions</span><span class="o">=</span><span class="p">{</span>
+                <span class="s2">"&lt;numeric_column&gt;"</span><span class="p">:</span> <span class="p">(</span>
+                    <span class="s2">"Tests dependency via standardized mean gap: compares the mean of this "</span>
+                    <span class="s2">"column between rows where column_1 is missing vs present."</span>
+                <span class="p">),</span>
+                <span class="s2">"&lt;categorical_column&gt;"</span><span class="p">:</span> <span class="p">(</span>
+                    <span class="s2">"Tests dependency via per-category missing rates: compares the missing "</span>
+                    <span class="s2">"rate of column_1 within each category against the overall rate."</span>
+                <span class="p">),</span>
+                <span class="s2">"omitted"</span><span class="p">:</span> <span class="p">(</span>
+                    <span class="s2">"Missingness is reported but not assessed. "</span>
+                    <span class="s2">"Result will contain missingness_type: 'unassessed'."</span>
+                <span class="p">),</span>
+            <span class="p">},</span>
+        <span class="p">),</span>
+        <span class="n">ArgumentSpec</span><span class="p">(</span>
+            <span class="n">name</span><span class="o">=</span><span class="s2">"threshold"</span><span class="p">,</span>
+            <span class="nb">type</span><span class="o">=</span><span class="s2">"float"</span><span class="p">,</span>
+            <span class="n">required</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+            <span class="n">default</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span>
+            <span class="n">description</span><span class="o">=</span><span class="p">(</span>
+                <span class="s2">"Sensitivity threshold for dependency classification. "</span>
+                <span class="s2">"For numeric related columns: minimum standardized mean gap. "</span>
+                <span class="s2">"For categorical related columns: minimum per-category rate deviation."</span>
+            <span class="p">),</span>
+            <span class="n">possible_values</span><span class="o">=</span><span class="s2">"any float in (0.0, 1.0) — typical range 0.05–0.3"</span><span class="p">,</span>
+            <span class="n">value_descriptions</span><span class="o">=</span><span class="p">{</span>
+                <span class="s2">"0.05"</span><span class="p">:</span> <span class="s2">"Strict — flags even small deviations as dependent."</span><span class="p">,</span>
+                <span class="s2">"0.1"</span><span class="p">:</span> <span class="s2">"Standard default — balanced sensitivity for most datasets."</span><span class="p">,</span>
+                <span class="s2">"0.2"</span><span class="p">:</span> <span class="s2">"Lenient — only flags substantial dependency."</span><span class="p">,</span>
+                <span class="s2">"0.3"</span><span class="p">:</span> <span class="s2">"Very lenient — flags only strong, obvious dependency."</span><span class="p">,</span>
+            <span class="p">},</span>
+        <span class="p">),</span>
+    <span class="p">]</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_arguments_description</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">(</span>
+            <span class="s2">"Always provide column_1. Optionally provide column_2 to assess MAR vs MCAR. "</span>
+            <span class="s2">"Produce one step per column you want to inspect."</span>
+        <span class="p">)</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_example</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s2">"step"</span><span class="p">:</span> <span class="mi">4</span><span class="p">,</span>
+            <span class="s2">"name"</span><span class="p">:</span> <span class="s2">"Assess income missingness vs age"</span><span class="p">,</span>
+            <span class="s2">"inspection"</span><span class="p">:</span> <span class="bp">cls</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span>
+            <span class="s2">"objective"</span><span class="p">:</span> <span class="s2">"Determine whether missing income values are random or related to age."</span><span class="p">,</span>
+            <span class="s2">"actions"</span><span class="p">:</span> <span class="p">[</span>
+                <span class="s2">"Count and index missing values in income."</span><span class="p">,</span>
+                <span class="s2">"Compare mean age between rows where income is missing vs present."</span><span class="p">,</span>
+                <span class="s2">"Classify missingness as dependent or random_like using standardized gap."</span><span class="p">,</span>
+            <span class="p">],</span>
+            <span class="s2">"arguments"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"column_1"</span><span class="p">:</span> <span class="s2">"income"</span><span class="p">,</span> <span class="s2">"column_2"</span><span class="p">:</span> <span class="s2">"age"</span><span class="p">,</span> <span class="s2">"threshold"</span><span class="p">:</span> <span class="mf">0.1</span><span class="p">},</span>
+            <span class="s2">"expected_output"</span><span class="p">:</span> <span class="p">[</span>
+                <span class="s2">"Missing count and ratio for income"</span><span class="p">,</span>
+                <span class="s2">"Standardized mean gap between missing and observed age groups"</span><span class="p">,</span>
+                <span class="s2">"Missingness classification: dependent or random_like"</span><span class="p">,</span>
+            <span class="p">],</span>
+        <span class="p">}</span>
+
+<div class="viewcode-block" id="MissingValuesInspectionStrategy.inspect">
+<a class="viewcode-back" href="../../../../generated/squirrel_modules_inspectors_tabular.html#squirrel.modules.inspectors.tabular.MissingValuesInspectionStrategy.inspect">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">inspect</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Inspect missing values for a target column and optionally assess</span>
+<span class="sd">        whether missingness depends on a related column.</span>
+
+<span class="sd">        :param data: DataFrame containing the data to inspect.</span>
+<span class="sd">        :type data: pd.DataFrame</span>
+<span class="sd">                :param kwargs: Keyword arguments:</span>
+
+<span class="sd">                        - ``column_1`` / ``column`` / ``target_column`` (str): target column name.</span>
+<span class="sd">                        - ``column_2`` / ``related_column`` / ``comparison_column`` (str, optional):</span>
+<span class="sd">                            column to test for missingness dependence.</span>
+<span class="sd">                        - ``threshold`` (float, optional): dependence sensitivity, default ``0.1``.</span>
+<span class="sd">        :return: Summary dict with missing stats and, when a related column is</span>
+<span class="sd">            supplied, a ``dependency`` and ``missingness_type`` classification.</span>
+<span class="sd">        :rtype: dict</span>
+<span class="sd">        """</span>
+        <span class="n">target_column</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"column_1"</span><span class="p">)</span>
+            <span class="ow">or</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"column"</span><span class="p">)</span>
+            <span class="ow">or</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"target_column"</span><span class="p">)</span>
+        <span class="p">)</span>
+        <span class="n">related_column</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"column_2"</span><span class="p">)</span>
+            <span class="ow">or</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"related_column"</span><span class="p">)</span>
+            <span class="ow">or</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"comparison_column"</span><span class="p">)</span>
+        <span class="p">)</span>
+        <span class="n">threshold</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"threshold"</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">))</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">target_column</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"A target column must be provided using 'column_1'."</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">target_column</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">data</span><span class="o">.</span><span class="n">columns</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Column not found: </span><span class="si">{</span><span class="n">target_column</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+
+        <span class="c1"># ── Base stats ────────────────────────────────────────────────────────</span>
+
+        <span class="n">missing_mask</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">target_column</span><span class="p">]</span><span class="o">.</span><span class="n">isna</span><span class="p">()</span>
+        <span class="n">missing_count</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">missing_mask</span><span class="o">.</span><span class="n">sum</span><span class="p">())</span>
+        <span class="n">total_count</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="n">missing_ratio</span> <span class="o">=</span> <span class="p">(</span><span class="n">missing_count</span> <span class="o">/</span> <span class="n">total_count</span><span class="p">)</span> <span class="k">if</span> <span class="n">total_count</span> <span class="k">else</span> <span class="mf">0.0</span>
+        <span class="n">is_categorical</span> <span class="o">=</span> <span class="ow">not</span> <span class="n">pd</span><span class="o">.</span><span class="n">api</span><span class="o">.</span><span class="n">types</span><span class="o">.</span><span class="n">is_numeric_dtype</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">target_column</span><span class="p">])</span>
+
+        <span class="n">result</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">"column"</span><span class="p">:</span> <span class="n">target_column</span><span class="p">,</span>
+            <span class="s2">"target_column_type"</span><span class="p">:</span> <span class="s2">"categorical"</span> <span class="k">if</span> <span class="n">is_categorical</span> <span class="k">else</span> <span class="s2">"numeric"</span><span class="p">,</span>
+            <span class="s2">"missing_count"</span><span class="p">:</span> <span class="n">missing_count</span><span class="p">,</span>
+            <span class="s2">"total_count"</span><span class="p">:</span> <span class="n">total_count</span><span class="p">,</span>
+            <span class="s2">"missing_ratio"</span><span class="p">:</span> <span class="n">missing_ratio</span><span class="p">,</span>
+            <span class="s2">"has_missing_values"</span><span class="p">:</span> <span class="n">missing_count</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">,</span>
+            <span class="s2">"missing_indices"</span><span class="p">:</span> <span class="n">data</span><span class="o">.</span><span class="n">index</span><span class="p">[</span><span class="n">missing_mask</span><span class="p">]</span><span class="o">.</span><span class="n">tolist</span><span class="p">(),</span>
+        <span class="p">}</span>
+
+        <span class="c1"># Categorical targets get a frequency distribution of observed values.</span>
+        <span class="k">if</span> <span class="n">is_categorical</span><span class="p">:</span>
+            <span class="n">result</span><span class="p">[</span><span class="s2">"observed_value_counts"</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="n">data</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="o">~</span><span class="n">missing_mask</span><span class="p">,</span> <span class="n">target_column</span><span class="p">]</span>
+                <span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="s2">"string"</span><span class="p">)</span>
+                <span class="o">.</span><span class="n">value_counts</span><span class="p">()</span>
+                <span class="o">.</span><span class="n">to_dict</span><span class="p">()</span>
+            <span class="p">)</span>
+
+        <span class="c1"># ── Early exits ───────────────────────────────────────────────────────</span>
+
+        <span class="k">if</span> <span class="n">missing_count</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">result</span><span class="o">.</span><span class="n">update</span><span class="p">(</span>
+                <span class="p">{</span><span class="s2">"missingness_type"</span><span class="p">:</span> <span class="s2">"none"</span><span class="p">,</span> <span class="s2">"dependency"</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+                 <span class="s2">"related_column"</span><span class="p">:</span> <span class="n">related_column</span><span class="p">}</span>
+            <span class="p">)</span>
+            <span class="k">return</span> <span class="n">result</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">related_column</span><span class="p">:</span>
+            <span class="n">result</span><span class="o">.</span><span class="n">update</span><span class="p">(</span>
+                <span class="p">{</span><span class="s2">"missingness_type"</span><span class="p">:</span> <span class="s2">"unassessed"</span><span class="p">,</span>
+                 <span class="s2">"dependency"</span><span class="p">:</span> <span class="s2">"no_related_column_provided"</span><span class="p">}</span>
+            <span class="p">)</span>
+            <span class="k">return</span> <span class="n">result</span>
+
+        <span class="k">if</span> <span class="n">related_column</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">data</span><span class="o">.</span><span class="n">columns</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Column not found: </span><span class="si">{</span><span class="n">related_column</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+
+        <span class="c1"># ── Dependency assessment ─────────────────────────────────────────────</span>
+
+        <span class="n">related_series</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">related_column</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="n">pd</span><span class="o">.</span><span class="n">api</span><span class="o">.</span><span class="n">types</span><span class="o">.</span><span class="n">is_numeric_dtype</span><span class="p">(</span><span class="n">related_series</span><span class="p">):</span>
+            <span class="n">updates</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_assess_numeric_related</span><span class="p">(</span>
+                <span class="n">missing_mask</span><span class="p">,</span> <span class="n">related_series</span><span class="p">,</span> <span class="n">threshold</span>
+            <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">updates</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_assess_categorical_related</span><span class="p">(</span>
+                <span class="n">missing_mask</span><span class="p">,</span> <span class="n">related_series</span><span class="p">,</span> <span class="n">missing_ratio</span><span class="p">,</span> <span class="n">threshold</span>
+            <span class="p">)</span>
+
+        <span class="n">result</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="s2">"related_column"</span><span class="p">:</span> <span class="n">related_column</span><span class="p">,</span> <span class="o">**</span><span class="n">updates</span><span class="p">})</span>
+        <span class="k">return</span> <span class="n">result</span></div>
+
+
+    <span class="c1"># ── Private helpers ───────────────────────────────────────────────────────</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_assess_numeric_related</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">missing_mask</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">,</span>
+        <span class="n">related</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">,</span>
+        <span class="n">threshold</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Compare the mean of *related* between the missing and observed groups.</span>
+
+<span class="sd">        A standardized gap &gt;= ``threshold`` indicates the missingness is likely</span>
+<span class="sd">        dependent on the related column (MAR rather than MCAR).</span>
+<span class="sd">        """</span>
+        <span class="n">observed_mask</span> <span class="o">=</span> <span class="o">~</span><span class="n">missing_mask</span>
+
+        <span class="n">missing_vals</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">to_numeric</span><span class="p">(</span><span class="n">related</span><span class="p">[</span><span class="n">missing_mask</span><span class="p">],</span> <span class="n">errors</span><span class="o">=</span><span class="s2">"coerce"</span><span class="p">)</span><span class="o">.</span><span class="n">dropna</span><span class="p">()</span>
+        <span class="n">observed_vals</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">to_numeric</span><span class="p">(</span><span class="n">related</span><span class="p">[</span><span class="n">observed_mask</span><span class="p">],</span> <span class="n">errors</span><span class="o">=</span><span class="s2">"coerce"</span><span class="p">)</span><span class="o">.</span><span class="n">dropna</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="n">missing_vals</span><span class="o">.</span><span class="n">empty</span> <span class="ow">or</span> <span class="n">observed_vals</span><span class="o">.</span><span class="n">empty</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">{</span>
+                <span class="s2">"related_column_type"</span><span class="p">:</span> <span class="s2">"numeric"</span><span class="p">,</span>
+                <span class="s2">"missingness_type"</span><span class="p">:</span> <span class="s2">"indeterminate"</span><span class="p">,</span>
+                <span class="s2">"dependency"</span><span class="p">:</span> <span class="s2">"insufficient_data_for_numeric_comparison"</span><span class="p">,</span>
+            <span class="p">}</span>
+
+        <span class="n">missing_mean</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">missing_vals</span><span class="o">.</span><span class="n">mean</span><span class="p">())</span>
+        <span class="n">observed_mean</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">observed_vals</span><span class="o">.</span><span class="n">mean</span><span class="p">())</span>
+        <span class="n">pooled_std</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">related</span><span class="o">.</span><span class="n">dropna</span><span class="p">()</span><span class="o">.</span><span class="n">std</span><span class="p">(</span><span class="n">ddof</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span> <span class="ow">or</span> <span class="mf">0.0</span><span class="p">)</span>
+        <span class="n">mean_gap</span> <span class="o">=</span> <span class="nb">abs</span><span class="p">(</span><span class="n">missing_mean</span> <span class="o">-</span> <span class="n">observed_mean</span><span class="p">)</span>
+        <span class="n">standardized_gap</span> <span class="o">=</span> <span class="p">(</span><span class="n">mean_gap</span> <span class="o">/</span> <span class="n">pooled_std</span><span class="p">)</span> <span class="k">if</span> <span class="n">pooled_std</span> <span class="k">else</span> <span class="mf">0.0</span>
+        <span class="n">dependent</span> <span class="o">=</span> <span class="n">standardized_gap</span> <span class="o">&gt;=</span> <span class="n">threshold</span>
+
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s2">"related_column_type"</span><span class="p">:</span> <span class="s2">"numeric"</span><span class="p">,</span>
+            <span class="s2">"missing_group_mean"</span><span class="p">:</span> <span class="n">missing_mean</span><span class="p">,</span>
+            <span class="s2">"observed_group_mean"</span><span class="p">:</span> <span class="n">observed_mean</span><span class="p">,</span>
+            <span class="s2">"mean_gap"</span><span class="p">:</span> <span class="n">mean_gap</span><span class="p">,</span>
+            <span class="s2">"standardized_gap"</span><span class="p">:</span> <span class="n">standardized_gap</span><span class="p">,</span>
+            <span class="s2">"dependency"</span><span class="p">:</span> <span class="s2">"likely_dependent"</span> <span class="k">if</span> <span class="n">dependent</span> <span class="k">else</span> <span class="s2">"no_strong_dependency_detected"</span><span class="p">,</span>
+            <span class="s2">"missingness_type"</span><span class="p">:</span> <span class="s2">"dependent"</span> <span class="k">if</span> <span class="n">dependent</span> <span class="k">else</span> <span class="s2">"random_like"</span><span class="p">,</span>
+        <span class="p">}</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_assess_categorical_related</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">missing_mask</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">,</span>
+        <span class="n">related</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">,</span>
+        <span class="n">overall_missing_rate</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+        <span class="n">threshold</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Compare per-category missing rates against the overall missing rate.</span>
+
+<span class="sd">        If any category's missing rate deviates by &gt;= ``threshold``, missingness</span>
+<span class="sd">        is likely dependent on the related column.</span>
+<span class="sd">        """</span>
+        <span class="n">category_counts</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">crosstab</span><span class="p">(</span><span class="n">related</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="s2">"string"</span><span class="p">),</span> <span class="n">missing_mask</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">category_counts</span><span class="o">.</span><span class="n">empty</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">{</span>
+                <span class="s2">"related_column_type"</span><span class="p">:</span> <span class="s2">"categorical"</span><span class="p">,</span>
+                <span class="s2">"missingness_type"</span><span class="p">:</span> <span class="s2">"indeterminate"</span><span class="p">,</span>
+                <span class="s2">"dependency"</span><span class="p">:</span> <span class="s2">"insufficient_data_for_categorical_comparison"</span><span class="p">,</span>
+            <span class="p">}</span>
+
+        <span class="n">category_missing_rates</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">category_counts</span><span class="o">.</span><span class="n">div</span><span class="p">(</span><span class="n">category_counts</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">),</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+            <span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span>
+            <span class="o">.</span><span class="n">fillna</span><span class="p">(</span><span class="mf">0.0</span><span class="p">)</span>
+            <span class="o">.</span><span class="n">to_dict</span><span class="p">()</span>
+            <span class="k">if</span> <span class="kc">True</span> <span class="ow">in</span> <span class="n">category_counts</span><span class="o">.</span><span class="n">columns</span>
+            <span class="k">else</span> <span class="p">{</span><span class="n">cat</span><span class="p">:</span> <span class="mf">0.0</span> <span class="k">for</span> <span class="n">cat</span> <span class="ow">in</span> <span class="n">category_counts</span><span class="o">.</span><span class="n">index</span><span class="p">}</span>
+        <span class="p">)</span>
+
+        <span class="n">max_rate_gap</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span>
+            <span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">r</span> <span class="o">-</span> <span class="n">overall_missing_rate</span><span class="p">)</span> <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">category_missing_rates</span><span class="o">.</span><span class="n">values</span><span class="p">()),</span>
+            <span class="n">default</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">dependent</span> <span class="o">=</span> <span class="n">max_rate_gap</span> <span class="o">&gt;=</span> <span class="n">threshold</span>
+
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s2">"related_column_type"</span><span class="p">:</span> <span class="s2">"categorical"</span><span class="p">,</span>
+            <span class="s2">"category_missing_rates"</span><span class="p">:</span> <span class="n">category_missing_rates</span><span class="p">,</span>
+            <span class="s2">"overall_missing_rate"</span><span class="p">:</span> <span class="n">overall_missing_rate</span><span class="p">,</span>
+            <span class="s2">"max_rate_gap"</span><span class="p">:</span> <span class="n">max_rate_gap</span><span class="p">,</span>
+            <span class="s2">"dependency"</span><span class="p">:</span> <span class="s2">"likely_dependent"</span> <span class="k">if</span> <span class="n">dependent</span> <span class="k">else</span> <span class="s2">"no_strong_dependency_detected"</span><span class="p">,</span>
+            <span class="s2">"missingness_type"</span><span class="p">:</span> <span class="s2">"dependent"</span> <span class="k">if</span> <span class="n">dependent</span> <span class="k">else</span> <span class="s2">"random_like"</span><span class="p">,</span>
+        <span class="p">}</span></div>
+
+
+<span class="c1"># ——————————————————————————————————————————————————————————————</span>
+<span class="c1"># Tabular Data Analyzer</span>
+<div class="viewcode-block" id="TabularDataInpsector">
+<a class="viewcode-back" href="../../../../generated/squirrel_modules_inspectors_tabular.html#squirrel.modules.inspectors.tabular.TabularDataInpsector">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">TabularDataInpsector</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    A class for analyzing tabular data using a specified data inspection strategy. This class allows for flexible analysis of tabular datasets by utilizing different strategies to inspect and summarize the data. </span>
+<span class="sd">    The `analyze` method can be implemented to perform specific analyses based on the chosen strategy, providing insights into the structure and characteristics of the dataset.</span>
+<span class="sd">    """</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> 
+        <span class="n">strategy</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">DataInspectStrategy</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Initialize the TabularDataAnalyzer with a specific data inspection strategy.</span>
+<span class="sd">        </span>
+<span class="sd">        :param strategy: The data inspection strategy to be used, either as an instance of DataInspectStrategy or as a string identifier.</span>
+<span class="sd">        :type strategy: Union[DataInspectStrategy, str]</span>
+<span class="sd">        </span>
+<span class="sd">        :raises ValueError: If the provided strategy is not recognized or is invalid.</span>
+<span class="sd">        """</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">strategy</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">strategy</span> <span class="o">==</span> <span class="s2">"data_type"</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">strategy</span> <span class="o">=</span> <span class="n">DataTypeInspectionStrategy</span><span class="p">()</span>
+            <span class="k">elif</span> <span class="n">strategy</span> <span class="o">==</span> <span class="s2">"summary_statistics"</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">strategy</span> <span class="o">=</span> <span class="n">SummaryStatisticsInspectionStrategy</span><span class="p">()</span>
+            <span class="k">elif</span> <span class="n">strategy</span> <span class="o">==</span> <span class="s2">"correlation"</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">strategy</span> <span class="o">=</span> <span class="n">CorrelationInspectionStrategy</span><span class="p">()</span>
+            <span class="k">elif</span> <span class="n">strategy</span> <span class="o">==</span> <span class="s2">"missing_values"</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">strategy</span> <span class="o">=</span> <span class="n">MissingValuesInspectionStrategy</span><span class="p">()</span>
+            <span class="k">elif</span> <span class="n">strategy</span> <span class="o">==</span> <span class="s2">"detect_outliers"</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">strategy</span> <span class="o">=</span> <span class="n">DetectOutliersInspectionStrategy</span><span class="p">()</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Unknown strategy: </span><span class="si">{</span><span class="n">strategy</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">strategy</span><span class="p">,</span> <span class="n">DataInspectStrategy</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">strategy</span> <span class="o">=</span> <span class="n">strategy</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"Strategy must be either a string identifier or an instance of DataInspectStrategy."</span><span class="p">)</span>
+
+<div class="viewcode-block" id="TabularDataInpsector.set_strategy">
+<a class="viewcode-back" href="../../../../generated/squirrel_modules_inspectors_tabular.html#squirrel.modules.inspectors.tabular.TabularDataInpsector.set_strategy">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">set_strategy</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">strategy</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">DataInspectStrategy</span><span class="p">,</span> <span class="nb">str</span><span class="p">]):</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Set a new data inspection strategy for the analyzer.</span>
+<span class="sd">        </span>
+<span class="sd">        :param strategy: The new data inspection strategy to be used, either as an instance of DataInspectStrategy or as a string identifier.</span>
+<span class="sd">        :type strategy: Union[DataInspectStrategy, str]</span>
+<span class="sd">        </span>
+<span class="sd">        :raises ValueError: If the provided strategy is not recognized or is invalid.</span>
+<span class="sd">        """</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">strategy</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">strategy</span> <span class="o">==</span> <span class="s2">"data_type"</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">strategy</span> <span class="o">=</span> <span class="n">DataTypeInspectionStrategy</span><span class="p">()</span>
+            <span class="k">elif</span> <span class="n">strategy</span> <span class="o">==</span> <span class="s2">"summary_statistics"</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">strategy</span> <span class="o">=</span> <span class="n">SummaryStatisticsInspectionStrategy</span><span class="p">()</span>
+            <span class="k">elif</span> <span class="n">strategy</span> <span class="o">==</span> <span class="s2">"correlation"</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">strategy</span> <span class="o">=</span> <span class="n">CorrelationInspectionStrategy</span><span class="p">()</span>
+            <span class="k">elif</span> <span class="n">strategy</span> <span class="o">==</span> <span class="s2">"missing_values"</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">strategy</span> <span class="o">=</span> <span class="n">MissingValuesInspectionStrategy</span><span class="p">()</span>
+            <span class="k">elif</span> <span class="n">strategy</span> <span class="o">==</span> <span class="s2">"detect_outliers"</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">strategy</span> <span class="o">=</span> <span class="n">DetectOutliersInspectionStrategy</span><span class="p">()</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Unknown strategy: </span><span class="si">{</span><span class="n">strategy</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">strategy</span><span class="p">,</span> <span class="n">DataInspectStrategy</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">strategy</span> <span class="o">=</span> <span class="n">strategy</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"Strategy must be either a string identifier or an instance of DataInspectStrategy."</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="TabularDataInpsector.execute_strategy">
+<a class="viewcode-back" href="../../../../generated/squirrel_modules_inspectors_tabular.html#squirrel.modules.inspectors.tabular.TabularDataInpsector.execute_strategy">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">execute_strategy</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Execute the current data inspection strategy on the provided DataFrame.</span>
+<span class="sd">        </span>
+<span class="sd">        :param data: A pandas DataFrame containing the tabular data to be analyzed.</span>
+<span class="sd">        :type data: pd.DataFrame</span>
+<span class="sd">        :param kwargs: Additional keyword arguments forwarded to the strategy.</span>
+<span class="sd">        :type kwargs: Any</span>
+<span class="sd">        </span>
+<span class="sd">        :return: The result of the data inspection based on the current strategy.</span>
+<span class="sd">        :rtype: Any</span>
+<span class="sd">        """</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">strategy</span><span class="o">.</span><span class="n">inspect</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
+</div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, Mazen Soliman.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

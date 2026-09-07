@@ -1,0 +1,430 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>squirrel.modules.prompts.builder.TabularDataPromptGenerator &mdash; squirrel  documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../../../../_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" type="text/css" href="../../../../../_static/css/custom.css?v=adc7883a" />
+
+  
+    <link rel="shortcut icon" href="../../../../../_static/sqrl.png"/>
+      <script src="../../../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../../../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../../../../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script src="../../../../../_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="../../../../../_static/copybutton.js?v=a46eff05"></script>
+    <script src="../../../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../../../index.html" class="icon icon-home">
+            squirrel
+              <img src="../../../../../_static/sqrl.png" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Python API Reference:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../api.html">Python API Reference</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../../index.html">squirrel</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">squirrel.modules.prompts.builder.TabularDataPromptGenerator</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for squirrel.modules.prompts.builder.TabularDataPromptGenerator</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/python</span>
+<span class="sd">"""</span>
+<span class="sd">Model Builder Prompt Generator Module</span>
+<span class="sd">=====================================</span>
+
+<span class="sd">Generates system and user prompts for the two-stage model builder pipeline:</span>
+<span class="sd">  1. GENERATE_PLAN  — ask the LLM to choose model architectures and hyperparameters.</span>
+<span class="sd">  2. GENERATE_STEP  — ask the LLM to fix or regenerate a single invalid plan step.</span>
+<span class="sd">"""</span>
+
+<span class="c1"># ——————————————————————————————————————————————————————————————</span>
+<span class="c1"># Imports</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">textwrap</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">enum</span><span class="w"> </span><span class="kn">import</span> <span class="n">Enum</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing_extensions</span><span class="w"> </span><span class="kn">import</span> <span class="n">override</span>
+
+<span class="c1"># Abstract Class</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">squirrel.modules.prompts.abstract</span><span class="w"> </span><span class="kn">import</span> <span class="n">IPromptGenerator</span>
+
+
+<span class="c1"># —— Prompt type discriminator ——————————————————————————————————————————</span>
+
+
+<div class="viewcode-block" id="ModelBuilderPromptType">
+<a class="viewcode-back" href="../../../../../generated/squirrel_modules_prompts_builder_TabularDataPromptGenerator.html#squirrel.modules.prompts.builder.TabularDataPromptGenerator.ModelBuilderPromptType">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">ModelBuilderPromptType</span><span class="p">(</span><span class="n">Enum</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Discriminator for the two prompt stages in the model builder pipeline.</span>
+<span class="sd">    """</span>
+    <span class="n">GENERATE_PLAN</span> <span class="o">=</span> <span class="s2">"generate_plan"</span>
+    <span class="n">GENERATE_STEP</span> <span class="o">=</span> <span class="s2">"generate_step"</span></div>
+
+
+
+<span class="c1"># —— Prompt generator implementation —————————————————————————————————————————</span>
+
+
+<div class="viewcode-block" id="ModelBuilderPromptGenerator">
+<a class="viewcode-back" href="../../../../../generated/squirrel_modules_prompts_builder_TabularDataPromptGenerator.html#squirrel.modules.prompts.builder.TabularDataPromptGenerator.ModelBuilderPromptGenerator">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">ModelBuilderPromptGenerator</span><span class="p">(</span><span class="n">IPromptGenerator</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Prompt generator for the tabular data model builder agent.</span>
+
+<span class="sd">    Produces stage-specific system instructions and grounded user prompts</span>
+<span class="sd">    for plan generation and single-step regeneration.</span>
+<span class="sd">    """</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+
+    <span class="c1"># ── System prompts ────────────────────────────────────────────────────────</span>
+
+<div class="viewcode-block" id="ModelBuilderPromptGenerator.generate_system_prompt">
+<a class="viewcode-back" href="../../../../../generated/squirrel_modules_prompts_builder_TabularDataPromptGenerator.html#squirrel.modules.prompts.builder.TabularDataPromptGenerator.ModelBuilderPromptGenerator.generate_system_prompt">[docs]</a>
+    <span class="nd">@override</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">generate_system_prompt</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">prompt_type</span><span class="p">:</span> <span class="n">ModelBuilderPromptType</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Generate stage-specific system-level instructions.</span>
+
+<span class="sd">        :param prompt_type: Which pipeline stage to generate instructions for.</span>
+<span class="sd">        :type prompt_type: ModelBuilderPromptType</span>
+
+<span class="sd">        :return: System prompt string.</span>
+<span class="sd">        :rtype: str</span>
+
+<span class="sd">        :raises ValueError: If ``prompt_type`` is not a recognised ModelBuilderPromptType.</span>
+<span class="sd">        """</span>
+        <span class="n">dispatch</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="n">ModelBuilderPromptType</span><span class="o">.</span><span class="n">GENERATE_PLAN</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_system_plan</span><span class="p">,</span>
+            <span class="n">ModelBuilderPromptType</span><span class="o">.</span><span class="n">GENERATE_STEP</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_system_step</span><span class="p">,</span>
+        <span class="p">}</span>
+
+        <span class="k">if</span> <span class="n">prompt_type</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">prompt_type</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">dispatch</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"Unsupported prompt type: </span><span class="si">{</span><span class="n">prompt_type</span><span class="si">!r}</span><span class="s2">. "</span>
+                <span class="sa">f</span><span class="s2">"Expected one of: </span><span class="si">{</span><span class="p">[</span><span class="n">t</span><span class="o">.</span><span class="n">value</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">t</span><span class="w"> </span><span class="ow">in</span><span class="w"> </span><span class="n">ModelBuilderPromptType</span><span class="p">]</span><span class="si">}</span><span class="s2">"</span>
+            <span class="p">)</span>
+
+        <span class="n">handler</span> <span class="o">=</span> <span class="n">dispatch</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">prompt_type</span><span class="p">,</span> <span class="k">lambda</span><span class="p">:</span> <span class="s2">"You are a helpful assistant."</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">handler</span><span class="p">()</span></div>
+
+
+    <span class="c1"># ── User prompts ──────────────────────────────────────────────────────────</span>
+
+<div class="viewcode-block" id="ModelBuilderPromptGenerator.generate_user_prompt">
+<a class="viewcode-back" href="../../../../../generated/squirrel_modules_prompts_builder_TabularDataPromptGenerator.html#squirrel.modules.prompts.builder.TabularDataPromptGenerator.ModelBuilderPromptGenerator.generate_user_prompt">[docs]</a>
+    <span class="nd">@override</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">generate_user_prompt</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">prompt_type</span><span class="p">:</span> <span class="n">ModelBuilderPromptType</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Dispatch to the correct user prompt builder based on ``prompt_type``.</span>
+
+<span class="sd">        :param prompt_type: Which pipeline stage to build a user prompt for.</span>
+<span class="sd">        :type prompt_type: ModelBuilderPromptType</span>
+
+<span class="sd">        :param kwargs: Stage-dependent context — see each builder's docstring.</span>
+
+<span class="sd">        :return: User prompt string ready to send to the LLM.</span>
+<span class="sd">        :rtype: str</span>
+
+<span class="sd">        :raises ValueError: If ``prompt_type`` is missing or unrecognised.</span>
+<span class="sd">        """</span>
+        <span class="n">dispatch</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="n">ModelBuilderPromptType</span><span class="o">.</span><span class="n">GENERATE_PLAN</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_user_plan</span><span class="p">,</span>
+            <span class="n">ModelBuilderPromptType</span><span class="o">.</span><span class="n">GENERATE_STEP</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_user_step</span><span class="p">,</span>
+        <span class="p">}</span>
+
+        <span class="n">handler</span> <span class="o">=</span> <span class="n">dispatch</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">prompt_type</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">handler</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"Unsupported prompt type: </span><span class="si">{</span><span class="n">prompt_type</span><span class="si">!r}</span><span class="s2">. "</span>
+                <span class="sa">f</span><span class="s2">"Expected one of: </span><span class="si">{</span><span class="p">[</span><span class="n">t</span><span class="o">.</span><span class="n">value</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">t</span><span class="w"> </span><span class="ow">in</span><span class="w"> </span><span class="n">ModelBuilderPromptType</span><span class="p">]</span><span class="si">}</span><span class="s2">"</span>
+            <span class="p">)</span>
+        <span class="k">return</span> <span class="n">handler</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
+
+
+    <span class="c1"># ── System prompt builders ────────────────────────────────────────────────</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_system_plan</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">textwrap</span><span class="o">.</span><span class="n">dedent</span><span class="p">(</span><span class="s2">"""</span><span class="se">\</span>
+<span class="s2">            You are an expert machine learning engineer specialising in tabular data.</span>
+
+<span class="s2">            Your task is to design a complete, ordered model-building plan for a</span>
+<span class="s2">            preprocessed tabular dataset. You will receive:</span>
+<span class="s2">              - A dataset profile (shape, column names, dtypes, missing-value counts).</span>
+<span class="s2">              - A preprocessing summary from the upstream TabularDataProcessorAgent.</span>
+<span class="s2">              - A model catalog listing every available model class with their</span>
+<span class="s2">                hyperparameter specs.</span>
+<span class="s2">              - An optional modelling objective (e.g. "binary classification", "regression").</span>
+
+<span class="s2">            Guidelines</span>
+<span class="s2">            ----------</span>
+<span class="s2">            1. Infer the task type (regression / binary classification /</span>
+<span class="s2">               multi-class classification) from the target column dtype and the</span>
+<span class="s2">               preprocessing summary when no objective is supplied.</span>
+<span class="s2">            2. Choose 1–4 models from the catalog that are well-suited to the</span>
+<span class="s2">               inferred task and dataset size.  Prefer an ensemble (gradient</span>
+<span class="s2">               boosting + linear baseline) over a single model when N &gt; 500.</span>
+<span class="s2">            3. For each model, specify every hyperparameter listed as "required"</span>
+<span class="s2">               in the catalog entry.  Optional hyperparameters may be omitted.</span>
+<span class="s2">            4. Include a cross-validation step (cv_evaluate) after each model fit</span>
+<span class="s2">               to estimate generalisation performance.</span>
+<span class="s2">            5. If the dataset has a clear class imbalance (visible in the</span>
+<span class="s2">               preprocessing summary), note it in the plan rationale and set</span>
+<span class="s2">               appropriate class-weight or sample-weight hyperparameters.</span>
+<span class="s2">            6. Return **only** valid JSON that matches the plan schema — no prose,</span>
+<span class="s2">               no markdown fences.</span>
+<span class="s2">        """</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_system_step</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">textwrap</span><span class="o">.</span><span class="n">dedent</span><span class="p">(</span><span class="s2">"""</span><span class="se">\</span>
+<span class="s2">            You are an expert machine learning engineer specialising in tabular data.</span>
+
+<span class="s2">            A model-building plan step has been flagged as invalid.  Your task is</span>
+<span class="s2">            to correct the single step and return a replacement that passes</span>
+<span class="s2">            validation.</span>
+
+<span class="s2">            Rules</span>
+<span class="s2">            -----</span>
+<span class="s2">            - Use only model or action names that appear in the provided catalogs.</span>
+<span class="s2">            - Supply every argument marked "required" in the catalog entry.</span>
+<span class="s2">            - Return a **single** step object as valid JSON — no prose, no fences,</span>
+<span class="s2">              no enclosing plan envelope.</span>
+<span class="s2">            - Do not change the step number or the overall intent of the step.</span>
+<span class="s2">        """</span><span class="p">)</span>
+
+    <span class="c1"># ── User prompt builders ──────────────────────────────────────────────────</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_user_plan</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="o">*</span><span class="p">,</span>
+        <span class="n">objective</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">""</span><span class="p">,</span>
+        <span class="n">dataset_profile</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">preprocessing_summary</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">model_catalog</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">action_catalog</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">_</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Build the user prompt for the GENERATE_PLAN stage.</span>
+
+<span class="sd">        :param objective: Optional free-text modelling goal.</span>
+<span class="sd">        :param dataset_profile: Dict from ``_dataset_profile()``.</span>
+<span class="sd">        :param preprocessing_summary: Dict from ``TabularDataProcessorAgent.summarize()``.</span>
+<span class="sd">        :param model_catalog: List of model catalog entries (should already be</span>
+<span class="sd">            pre-filtered by task type by the caller where possible).</span>
+<span class="sd">        :param action_catalog: List of action catalog entries (fit, evaluate, …).</span>
+<span class="sd">        :return: Formatted user prompt string.</span>
+<span class="sd">        """</span>
+        <span class="n">sections</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="k">if</span> <span class="n">objective</span><span class="p">:</span>
+            <span class="n">sections</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">"## Modelling Objective</span><span class="se">\n</span><span class="si">{</span><span class="n">objective</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">sections</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                <span class="s2">"## Modelling Objective</span><span class="se">\n</span><span class="s2">"</span>
+                <span class="s2">"Infer the task type from the dataset and preprocessing summary, "</span>
+                <span class="s2">"then select the most appropriate models."</span>
+            <span class="p">)</span>
+
+        <span class="n">sections</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+            <span class="s2">"## Dataset Profile</span><span class="se">\n</span><span class="s2">"</span>
+            <span class="o">+</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">dataset_profile</span> <span class="ow">or</span> <span class="p">{},</span> <span class="n">separators</span><span class="o">=</span><span class="p">(</span><span class="s2">","</span><span class="p">,</span> <span class="s2">":"</span><span class="p">))</span>
+        <span class="p">)</span>
+
+        <span class="n">sections</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+            <span class="s2">"## Preprocessing Summary</span><span class="se">\n</span><span class="s2">"</span>
+            <span class="o">+</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">preprocessing_summary</span> <span class="ow">or</span> <span class="p">{},</span> <span class="n">separators</span><span class="o">=</span><span class="p">(</span><span class="s2">","</span><span class="p">,</span> <span class="s2">":"</span><span class="p">))</span>
+        <span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">model_catalog</span><span class="p">:</span>
+            <span class="n">sections</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                <span class="s2">"## Available Models</span><span class="se">\n</span><span class="s2">"</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">_render_model_catalog</span><span class="p">(</span><span class="n">model_catalog</span><span class="p">)</span>
+            <span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">action_catalog</span><span class="p">:</span>
+            <span class="n">sections</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                <span class="s2">"## Available Actions</span><span class="se">\n</span><span class="s2">"</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">_render_action_catalog</span><span class="p">(</span><span class="n">action_catalog</span><span class="p">)</span>
+            <span class="p">)</span>
+
+        <span class="n">sections</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+            <span class="s2">"## Instructions</span><span class="se">\n</span><span class="s2">"</span>
+            <span class="s2">"Return a JSON plan object that strictly matches the plan schema.  "</span>
+            <span class="s2">"Each step must reference a model or action name that appears in the "</span>
+            <span class="s2">"catalogs above, and must supply all required hyperparameters."</span>
+        <span class="p">)</span>
+
+        <span class="k">return</span> <span class="s2">"</span><span class="se">\n\n</span><span class="s2">"</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">sections</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_user_step</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="o">*</span><span class="p">,</span>
+        <span class="n">objective</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">""</span><span class="p">,</span>
+        <span class="n">dataset_profile</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">step</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">model_catalog</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">action_catalog</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">_</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Build the user prompt for the GENERATE_STEP (regeneration) stage.</span>
+
+<span class="sd">        :param objective: Description of why the step is invalid and what to fix.</span>
+<span class="sd">        :param dataset_profile: Dict from ``_dataset_profile()``.</span>
+<span class="sd">        :param step: The invalid step dict to be replaced.</span>
+<span class="sd">        :param model_catalog: List of model catalog entries.</span>
+<span class="sd">        :param action_catalog: List of action catalog entries.</span>
+<span class="sd">        :return: Formatted user prompt string.</span>
+<span class="sd">        """</span>
+        <span class="n">sections</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="n">sections</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">"## Task</span><span class="se">\n</span><span class="si">{</span><span class="n">objective</span><span class="w"> </span><span class="ow">or</span><span class="w"> </span><span class="s1">'Fix the invalid step below.'</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+
+        <span class="n">sections</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+            <span class="s2">"## Invalid Step</span><span class="se">\n</span><span class="s2">"</span>
+            <span class="o">+</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">step</span> <span class="ow">or</span> <span class="p">{},</span> <span class="n">separators</span><span class="o">=</span><span class="p">(</span><span class="s2">","</span><span class="p">,</span> <span class="s2">":"</span><span class="p">))</span>
+        <span class="p">)</span>
+
+        <span class="n">sections</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+            <span class="s2">"## Dataset Profile</span><span class="se">\n</span><span class="s2">"</span>
+            <span class="o">+</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">dataset_profile</span> <span class="ow">or</span> <span class="p">{},</span> <span class="n">separators</span><span class="o">=</span><span class="p">(</span><span class="s2">","</span><span class="p">,</span> <span class="s2">":"</span><span class="p">))</span>
+        <span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">model_catalog</span><span class="p">:</span>
+            <span class="n">sections</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                <span class="s2">"## Available Models</span><span class="se">\n</span><span class="s2">"</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">_render_model_catalog</span><span class="p">(</span><span class="n">model_catalog</span><span class="p">)</span>
+            <span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">action_catalog</span><span class="p">:</span>
+            <span class="n">sections</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                <span class="s2">"## Available Actions</span><span class="se">\n</span><span class="s2">"</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">_render_action_catalog</span><span class="p">(</span><span class="n">action_catalog</span><span class="p">)</span>
+            <span class="p">)</span>
+
+        <span class="n">sections</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+            <span class="s2">"## Instructions</span><span class="se">\n</span><span class="s2">"</span>
+            <span class="s2">"Return a single corrected step object as valid JSON.  "</span>
+            <span class="s2">"Do not wrap it in a plan envelope or add any prose."</span>
+        <span class="p">)</span>
+
+        <span class="k">return</span> <span class="s2">"</span><span class="se">\n\n</span><span class="s2">"</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">sections</span><span class="p">)</span>
+
+    <span class="c1"># ── Rendering helpers ─────────────────────────────────────────────────────</span>
+    <span class="c1">#</span>
+    <span class="c1"># Replace raw json.dumps(..., indent=2) dumps of the catalogs — pretty</span>
+    <span class="c1"># printing spends tokens on whitespace/newlines the model doesn't need to</span>
+    <span class="c1"># "read" a catalog, and the original per-model dict repeated key names</span>
+    <span class="c1"># ("model_key", "task", "description", ...) on every entry. A compact</span>
+    <span class="c1"># one-line-per-entry format carries the same information for a fraction</span>
+    <span class="c1"># of the tokens.</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_render_model_catalog</span><span class="p">(</span><span class="n">catalog</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="n">lines</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="n">catalog</span><span class="p">:</span>
+            <span class="n">req</span> <span class="o">=</span> <span class="s2">","</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"required_params"</span><span class="p">)</span> <span class="ow">or</span> <span class="p">[])</span> <span class="ow">or</span> <span class="s2">"none"</span>
+            <span class="n">opt</span> <span class="o">=</span> <span class="s2">","</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"optional_params"</span><span class="p">)</span> <span class="ow">or</span> <span class="p">[])</span> <span class="ow">or</span> <span class="s2">"none"</span>
+            <span class="n">lines</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"- </span><span class="si">{</span><span class="n">m</span><span class="p">[</span><span class="s1">'model_key'</span><span class="p">]</span><span class="si">}</span><span class="s2"> [</span><span class="si">{</span><span class="n">m</span><span class="p">[</span><span class="s1">'task'</span><span class="p">]</span><span class="si">}</span><span class="s2">]: </span><span class="si">{</span><span class="n">m</span><span class="p">[</span><span class="s1">'description'</span><span class="p">]</span><span class="si">}</span><span class="s2"> "</span>
+                <span class="sa">f</span><span class="s2">"(required: </span><span class="si">{</span><span class="n">req</span><span class="si">}</span><span class="s2">; optional: </span><span class="si">{</span><span class="n">opt</span><span class="si">}</span><span class="s2">)"</span>
+            <span class="p">)</span>
+        <span class="k">return</span> <span class="s2">"</span><span class="se">\n</span><span class="s2">"</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">lines</span><span class="p">)</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_render_action_catalog</span><span class="p">(</span><span class="n">catalog</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="n">lines</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="n">catalog</span><span class="p">:</span>
+            <span class="n">req</span> <span class="o">=</span> <span class="s2">","</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">a</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"required_params"</span><span class="p">)</span> <span class="ow">or</span> <span class="p">[])</span> <span class="ow">or</span> <span class="s2">"none"</span>
+            <span class="n">opt</span> <span class="o">=</span> <span class="s2">","</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">a</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"optional_params"</span><span class="p">)</span> <span class="ow">or</span> <span class="p">[])</span> <span class="ow">or</span> <span class="s2">"none"</span>
+            <span class="n">lines</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"- </span><span class="si">{</span><span class="n">a</span><span class="p">[</span><span class="s1">'action_key'</span><span class="p">]</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">a</span><span class="p">[</span><span class="s1">'description'</span><span class="p">]</span><span class="si">}</span><span class="s2"> "</span>
+                <span class="sa">f</span><span class="s2">"(required: </span><span class="si">{</span><span class="n">req</span><span class="si">}</span><span class="s2">; optional: </span><span class="si">{</span><span class="n">opt</span><span class="si">}</span><span class="s2">)"</span>
+            <span class="p">)</span>
+        <span class="k">return</span> <span class="s2">"</span><span class="se">\n</span><span class="s2">"</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">lines</span><span class="p">)</span></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, Mazen Soliman.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

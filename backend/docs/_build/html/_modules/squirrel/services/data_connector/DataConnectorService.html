@@ -1,0 +1,1058 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>squirrel.services.data_connector.DataConnectorService &mdash; squirrel  documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../../../_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" type="text/css" href="../../../../_static/css/custom.css?v=adc7883a" />
+
+  
+    <link rel="shortcut icon" href="../../../../_static/sqrl.png"/>
+      <script src="../../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../../../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script src="../../../../_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="../../../../_static/copybutton.js?v=a46eff05"></script>
+    <script src="../../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../../index.html" class="icon icon-home">
+            squirrel
+              <img src="../../../../_static/sqrl.png" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Python API Reference:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../api.html">Python API Reference</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../index.html">squirrel</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">squirrel.services.data_connector.DataConnectorService</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for squirrel.services.data_connector.DataConnectorService</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/python</span>
+<span class="sd">"""</span>
+<span class="sd">Data Connector Service</span>
+<span class="sd">=======================</span>
+
+<span class="sd">Owns everything related to a **data connection**: its metadata (name,</span>
+<span class="sd">type, live status) and its config, including encrypting/redacting whatever</span>
+<span class="sd">fields the connector type marks as secret (see</span>
+<span class="sd">``squirrel.constants.connector.CONNECTOR_TYPE_SPECS``).</span>
+
+<span class="sd">Table</span>
+<span class="sd">-----</span>
+
+<span class="sd">.. code-block:: sql</span>
+
+<span class="sd">    CREATE TABLE IF NOT EXISTS data_connections (</span>
+<span class="sd">        connector_id     TEXT            PRIMARY KEY,</span>
+<span class="sd">        name             TEXT            NOT NULL,</span>
+<span class="sd">        type             TEXT            NOT NULL,</span>
+<span class="sd">        status           TEXT            NOT NULL DEFAULT 'untested',</span>
+<span class="sd">        config           JSONB           NOT NULL DEFAULT '{}'::jsonb,</span>
+<span class="sd">        error            TEXT,</span>
+<span class="sd">        last_tested_at   TIMESTAMPTZ,</span>
+<span class="sd">        created_at       TIMESTAMPTZ     NOT NULL DEFAULT NOW(),</span>
+<span class="sd">        updated_at       TIMESTAMPTZ     NOT NULL DEFAULT NOW()</span>
+<span class="sd">    );</span>
+
+<span class="sd">Secret fields (e.g. passwords, service-account JSON) are stored in</span>
+<span class="sd">``config`` **encrypted**, never in plaintext, and are always redacted</span>
+<span class="sd">(returned as ``""``) by :meth:`to_public_dict` — the API layer should only</span>
+<span class="sd">ever hand callers the output of that method, never a raw row.</span>
+
+<span class="sd">.. note::</span>
+<span class="sd">    Encryption uses ``cryptography.fernet`` when the package is available,</span>
+<span class="sd">    keyed by the ``SQUIRREL_CONNECTOR_SECRET_KEY`` environment variable. If</span>
+<span class="sd">    either is missing, secrets are still stored obfuscated (base64) rather</span>
+<span class="sd">    than in plaintext, but this is **not** a substitute for a real secrets</span>
+<span class="sd">    manager in production — swap ``_encrypt_secret``/``_decrypt_secret`` for</span>
+<span class="sd">    calls to one (Vault, KMS, etc.) when this moves past a prototype.</span>
+
+<span class="sd">.. note::</span>
+<span class="sd">    Postgres connectivity (testing + reading) goes through :mod:`psycopg`</span>
+<span class="sd">    (v3), matching :class:`PostgresService` elsewhere in this codebase —</span>
+<span class="sd">    not the legacy :mod:`psycopg2`. Install it via</span>
+<span class="sd">    ``psycopg[binary]&gt;=3.2.0,&lt;4.0.0``.</span>
+<span class="sd">"""</span>
+<span class="c1"># ——————————————————————————————————————————————————————————————</span>
+<span class="c1"># Imports</span>
+
+<span class="c1"># Standard Libraries</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">base64</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">uuid</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="kn">import</span> <span class="n">datetime</span><span class="p">,</span> <span class="n">timezone</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Optional</span>
+
+<span class="c1"># Third-Party Libraries</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+
+<span class="c1"># Services</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">squirrel.services.storage.database.PostgresService</span><span class="w"> </span><span class="kn">import</span> <span class="n">PostgresService</span>
+
+<span class="c1"># Exceptiosn</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">squirrel.schemas.connector</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">ConnectorNotFoundError</span><span class="p">,</span>
+    <span class="n">ConnectorValidationError</span><span class="p">,</span>
+    <span class="n">ConnectorInUseError</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="c1"># Constants</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">squirrel.constants.connector</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">ConnectionStatus</span><span class="p">,</span>
+    <span class="n">ConnectorType</span><span class="p">,</span>
+    <span class="n">get_connector_type_spec</span>
+<span class="p">)</span>
+
+<span class="c1"># Logging</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">loguru</span><span class="w"> </span><span class="kn">import</span> <span class="n">logger</span>
+
+<span class="c1"># Optional: real symmetric encryption for secret config values. Falls back</span>
+<span class="c1"># to a clearly-marked obfuscation (not real security) if unavailable, the</span>
+<span class="c1"># same graceful-degradation pattern used for optional ML dependencies</span>
+<span class="c1"># elsewhere in this codebase (see TabularDataModelBuilderAgent's xgboost/</span>
+<span class="c1"># lightgbm imports).</span>
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">cryptography.fernet</span><span class="w"> </span><span class="kn">import</span> <span class="n">Fernet</span><span class="p">,</span> <span class="n">InvalidToken</span>
+    <span class="n">_HAS_FERNET</span> <span class="o">=</span> <span class="kc">True</span>
+<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+    <span class="n">_HAS_FERNET</span> <span class="o">=</span> <span class="kc">False</span>
+
+<span class="c1"># Optional: live-connection testers per connector type. Each import failure</span>
+<span class="c1"># only disables that one type's Test button (surfaced as a clear error),</span>
+<span class="c1"># never the whole service.</span>
+<span class="c1">#</span>
+<span class="c1"># Postgres uses psycopg (v3) — same driver as PostgresService — not the</span>
+<span class="c1"># legacy psycopg2. `psycopg[binary]` ships prebuilt wheels so there's no</span>
+<span class="c1"># libpq/pg_config build-toolchain requirement, same rationale as the</span>
+<span class="c1"># psycopg2-binary note this replaces.</span>
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">import</span><span class="w"> </span><span class="nn">psycopg</span>  <span class="c1"># pyright: ignore[reportMissingImports]</span>
+    <span class="n">_HAS_PSYCOPG</span> <span class="o">=</span> <span class="kc">True</span>
+<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+    <span class="n">_HAS_PSYCOPG</span> <span class="o">=</span> <span class="kc">False</span>
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">import</span><span class="w"> </span><span class="nn">pymysql</span>
+    <span class="n">_HAS_PYMYSQL</span> <span class="o">=</span> <span class="kc">True</span>
+<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+    <span class="n">_HAS_PYMYSQL</span> <span class="o">=</span> <span class="kc">False</span>
+
+<span class="c1"># ——————————————————————————————————————————————————————————————</span>
+<span class="c1"># Secret handling</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_get_cipher</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">"Fernet"</span><span class="p">]:</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">_HAS_FERNET</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">None</span>
+    <span class="n">key</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"SQUIRREL_CONNECTOR_SECRET_KEY"</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">key</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+            <span class="s2">"SQUIRREL_CONNECTOR_SECRET_KEY is not set — connector secrets will "</span>
+            <span class="s2">"be obfuscated, not encrypted. Set this env var in any real "</span>
+            <span class="s2">"deployment."</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="kc">None</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">Fernet</span><span class="p">(</span><span class="n">key</span><span class="o">.</span><span class="n">encode</span><span class="p">()</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="k">else</span> <span class="n">key</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">exception</span><span class="p">(</span><span class="s2">"SQUIRREL_CONNECTOR_SECRET_KEY is not a valid Fernet key."</span><span class="p">)</span>
+        <span class="k">return</span> <span class="kc">None</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_encrypt_secret</span><span class="p">(</span><span class="n">value</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="n">cipher</span> <span class="o">=</span> <span class="n">_get_cipher</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">cipher</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="s2">"fernet:"</span> <span class="o">+</span> <span class="n">cipher</span><span class="o">.</span><span class="n">encrypt</span><span class="p">(</span><span class="n">value</span><span class="o">.</span><span class="n">encode</span><span class="p">())</span><span class="o">.</span><span class="n">decode</span><span class="p">()</span>
+    <span class="c1"># No usable cipher — obfuscate so it's at least not plaintext-legible</span>
+    <span class="c1"># in the database, and tag it so _decrypt_secret knows how to reverse it.</span>
+    <span class="k">return</span> <span class="s2">"b64:"</span> <span class="o">+</span> <span class="n">base64</span><span class="o">.</span><span class="n">b64encode</span><span class="p">(</span><span class="n">value</span><span class="o">.</span><span class="n">encode</span><span class="p">())</span><span class="o">.</span><span class="n">decode</span><span class="p">()</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_decrypt_secret</span><span class="p">(</span><span class="n">token</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">if</span> <span class="n">token</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">"fernet:"</span><span class="p">):</span>
+        <span class="n">cipher</span> <span class="o">=</span> <span class="n">_get_cipher</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">cipher</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
+                <span class="s2">"Stored secret was encrypted with Fernet, but no usable key is "</span>
+                <span class="s2">"configured to decrypt it now."</span>
+            <span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">cipher</span><span class="o">.</span><span class="n">decrypt</span><span class="p">(</span><span class="n">token</span><span class="p">[</span><span class="nb">len</span><span class="p">(</span><span class="s2">"fernet:"</span><span class="p">):]</span><span class="o">.</span><span class="n">encode</span><span class="p">())</span><span class="o">.</span><span class="n">decode</span><span class="p">()</span>
+        <span class="k">except</span> <span class="n">InvalidToken</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">"Could not decrypt stored secret (invalid token)."</span><span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">exc</span>
+    <span class="k">if</span> <span class="n">token</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">"b64:"</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">base64</span><span class="o">.</span><span class="n">b64decode</span><span class="p">(</span><span class="n">token</span><span class="p">[</span><span class="nb">len</span><span class="p">(</span><span class="s2">"b64:"</span><span class="p">):]</span><span class="o">.</span><span class="n">encode</span><span class="p">())</span><span class="o">.</span><span class="n">decode</span><span class="p">()</span>
+    <span class="c1"># Unrecognised prefix — treat as legacy plaintext rather than crashing.</span>
+    <span class="k">return</span> <span class="n">token</span>
+
+
+<span class="c1"># ——————————————————————————————————————————————————————————————</span>
+<span class="c1"># Live connection testers — one per ConnectorType. Add an entry to</span>
+<span class="c1"># ``DataConnectorService._TEST_DISPATCH`` when adding a new tester.</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_test_postgres</span><span class="p">(</span><span class="n">config</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">_HAS_PSYCOPG</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
+            <span class="s2">"psycopg is not installed; cannot test Postgres connections. "</span>
+            <span class="s2">"Install `psycopg[binary]&gt;=3.2.0,&lt;4.0.0`."</span>
+        <span class="p">)</span>
+    <span class="n">conn</span> <span class="o">=</span> <span class="n">psycopg</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span>
+        <span class="n">host</span><span class="o">=</span><span class="n">config</span><span class="p">[</span><span class="s2">"host"</span><span class="p">],</span>
+        <span class="n">port</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"port"</span><span class="p">)</span> <span class="ow">or</span> <span class="mi">5432</span><span class="p">),</span>
+        <span class="n">dbname</span><span class="o">=</span><span class="n">config</span><span class="p">[</span><span class="s2">"database"</span><span class="p">],</span>
+        <span class="n">user</span><span class="o">=</span><span class="n">config</span><span class="p">[</span><span class="s2">"username"</span><span class="p">],</span>
+        <span class="n">password</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"password"</span><span class="p">,</span> <span class="s2">""</span><span class="p">),</span>
+        <span class="n">connect_timeout</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">conn</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+
+<span class="c1"># ——————————————————————————————————————————————————————————————</span>
+<span class="c1"># List Tables</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_list_tables_postgres</span><span class="p">(</span>
+    <span class="n">config</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">_HAS_PSYCOPG</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
+            <span class="s2">"psycopg is not installed; cannot list Postgres tables. "</span>
+            <span class="s2">"Install `psycopg[binary]&gt;=3.2.0,&lt;4.0.0`."</span>
+        <span class="p">)</span>
+    <span class="n">conn</span> <span class="o">=</span> <span class="n">psycopg</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span>
+        <span class="n">host</span><span class="o">=</span><span class="n">config</span><span class="p">[</span><span class="s2">"host"</span><span class="p">],</span>
+        <span class="n">port</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"port"</span><span class="p">)</span> <span class="ow">or</span> <span class="mi">5432</span><span class="p">),</span>
+        <span class="n">dbname</span><span class="o">=</span><span class="n">config</span><span class="p">[</span><span class="s2">"database"</span><span class="p">],</span>
+        <span class="n">user</span><span class="o">=</span><span class="n">config</span><span class="p">[</span><span class="s2">"username"</span><span class="p">],</span>
+        <span class="n">password</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"password"</span><span class="p">,</span> <span class="s2">""</span><span class="p">),</span>
+        <span class="n">connect_timeout</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">with</span> <span class="n">conn</span><span class="o">.</span><span class="n">cursor</span><span class="p">()</span> <span class="k">as</span> <span class="n">cur</span><span class="p">:</span>
+            <span class="n">cur</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span>
+                <span class="s2">"SELECT table_schema, table_name FROM information_schema.tables "</span>
+                <span class="s2">"WHERE table_schema NOT IN ('pg_catalog', 'information_schema') "</span>
+                <span class="s2">"ORDER BY table_schema, table_name"</span>
+            <span class="p">)</span>
+            <span class="n">rows</span> <span class="o">=</span> <span class="n">cur</span><span class="o">.</span><span class="n">fetchall</span><span class="p">()</span>
+        <span class="c1"># Qualify with schema only when it isn't the default 'public', to</span>
+        <span class="c1"># keep the common case ("public.customers") readable as just</span>
+        <span class="c1"># "customers" in the picker.</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">name</span> <span class="k">if</span> <span class="n">schema</span> <span class="o">==</span> <span class="s2">"public"</span> <span class="k">else</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">schema</span><span class="si">}</span><span class="s2">.</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">"</span> <span class="k">for</span> <span class="n">schema</span><span class="p">,</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">rows</span><span class="p">]</span>
+    <span class="k">finally</span><span class="p">:</span>
+        <span class="n">conn</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_quote_ident_postgres</span><span class="p">(</span><span class="n">table_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="c1"># table_name may be "schema.table" (see _list_tables_postgres) or bare "table".</span>
+    <span class="n">parts</span> <span class="o">=</span> <span class="n">table_name</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">"."</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="k">return</span> <span class="s2">"."</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="sa">f</span><span class="s1">'"</span><span class="si">{</span><span class="n">p</span><span class="si">}</span><span class="s1">"'</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">parts</span><span class="p">)</span>
+
+<span class="c1"># ——————————————————————————————————————————————————————————————</span>
+<span class="c1"># DataConnectorService</span>
+
+
+<div class="viewcode-block" id="DataConnectorService">
+<a class="viewcode-back" href="../../../../generated/squirrel_services_data_connector_DataConnectorService.html#squirrel.services.data_connector.DataConnectorService.DataConnectorService">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">DataConnectorService</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Coordinate CRUD, secret handling, and live testing for data</span>
+<span class="sd">    connections used by workspaces as an alternative/additional input</span>
+<span class="sd">    source to file uploads.</span>
+
+<span class="sd">    **Usage:**</span>
+
+<span class="sd">    1. Create / list / fetch / update / delete connections.</span>
+<span class="sd">    2. Validate a connector type's required fields on create.</span>
+<span class="sd">    3. Encrypt secret fields at rest; never surface them in plaintext.</span>
+<span class="sd">    4. Run a live connectivity check ("Test") per connector type and</span>
+<span class="sd">       persist the resulting status/error.</span>
+<span class="sd">    5. Resolve a connection into an in-memory DataFrame for the workspace</span>
+<span class="sd">       build pipeline (extension point — only a subset of types today).</span>
+<span class="sd">    """</span>
+
+    <span class="n">_TABLE</span> <span class="o">=</span> <span class="s2">"data_connections"</span>
+
+    <span class="n">_TABLE_LIST_DISPATCH</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]],</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]]</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="n">ConnectorType</span><span class="o">.</span><span class="n">POSTGRES</span><span class="p">:</span> <span class="n">_list_tables_postgres</span>
+    <span class="p">}</span>
+    
+    <span class="n">_QUOTE_DISPATCH</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Callable</span><span class="p">[[</span><span class="nb">str</span><span class="p">],</span> <span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="n">ConnectorType</span><span class="o">.</span><span class="n">POSTGRES</span><span class="p">:</span> <span class="n">_quote_ident_postgres</span>
+    <span class="p">}</span>
+    
+    <span class="n">_TEST_DISPATCH</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]],</span> <span class="kc">None</span><span class="p">]]</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="n">ConnectorType</span><span class="o">.</span><span class="n">POSTGRES</span><span class="p">:</span> <span class="n">_test_postgres</span>
+    <span class="p">}</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> 
+        <span class="n">db</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">PostgresService</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_db</span> <span class="o">=</span> <span class="n">db</span> <span class="ow">or</span> <span class="n">PostgresService</span><span class="p">()</span>
+        
+        <span class="c1"># Ensure the data_connections table exists and has the expected columns.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_ensure_table</span><span class="p">()</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_ensure_table</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_db</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"""</span>
+<span class="s2">                CREATE TABLE IF NOT EXISTS </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_TABLE</span><span class="si">}</span><span class="s2"> (</span>
+<span class="s2">                    connector_id     TEXT            PRIMARY KEY,</span>
+<span class="s2">                    name             TEXT            NOT NULL,</span>
+<span class="s2">                    type             TEXT            NOT NULL,</span>
+<span class="s2">                    status           TEXT            NOT NULL DEFAULT 'untested',</span>
+<span class="s2">                    config           JSONB           NOT NULL DEFAULT '</span><span class="se">{{}}</span><span class="s2">'::jsonb,</span>
+<span class="s2">                    error            TEXT,</span>
+<span class="s2">                    last_tested_at   TIMESTAMPTZ,</span>
+<span class="s2">                    created_at       TIMESTAMPTZ     NOT NULL DEFAULT NOW(),</span>
+<span class="s2">                    updated_at       TIMESTAMPTZ     NOT NULL DEFAULT NOW()</span>
+<span class="s2">                );</span>
+<span class="s2">                """</span><span class="p">,</span>
+                <span class="n">params</span><span class="o">=</span><span class="p">{},</span>
+                <span class="n">fetch</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">"data_connections table ready."</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">exception</span><span class="p">(</span><span class="s2">"Failed to ensure data_connections table."</span><span class="p">)</span>
+
+    <span class="c1"># ------------------------------------------------------------------</span>
+    <span class="c1"># Validation</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_validate_config</span><span class="p">(</span>
+        <span class="n">connector_type</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">config</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">],</span>
+        <span class="n">existing_config</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Check that every required field for *connector_type* is present.</span>
+
+<span class="sd">        On update (``existing_config`` given), a blank secret field is</span>
+<span class="sd">        allowed — it means "keep the current value" and is filled in by</span>
+<span class="sd">        :meth:`update_connection` before this is (re)validated against the</span>
+<span class="sd">        merged config.</span>
+<span class="sd">        """</span>
+        <span class="n">spec</span> <span class="o">=</span> <span class="n">get_connector_type_spec</span><span class="p">(</span><span class="n">connector_type</span><span class="p">)</span>
+        <span class="n">known_keys</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">spec</span><span class="o">.</span><span class="n">field_keys</span><span class="p">())</span>
+        <span class="n">unknown</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span> <span class="o">-</span> <span class="n">known_keys</span>
+        <span class="k">if</span> <span class="n">unknown</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">ConnectorValidationError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"Unknown field(s) for connector type '</span><span class="si">{</span><span class="n">connector_type</span><span class="si">}</span><span class="s2">': </span><span class="si">{</span><span class="nb">sorted</span><span class="p">(</span><span class="n">unknown</span><span class="p">)</span><span class="si">}</span><span class="s2">."</span>
+            <span class="p">)</span>
+
+        <span class="n">missing</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="n">f</span><span class="o">.</span><span class="n">key</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">spec</span><span class="o">.</span><span class="n">fields</span>
+            <span class="k">if</span> <span class="n">f</span><span class="o">.</span><span class="n">required</span> <span class="ow">and</span> <span class="ow">not</span> <span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">f</span><span class="o">.</span><span class="n">key</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">""</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+        <span class="p">]</span>
+        <span class="k">if</span> <span class="n">missing</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">ConnectorValidationError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"Missing required field(s) for connector type '</span><span class="si">{</span><span class="n">connector_type</span><span class="si">}</span><span class="s2">': </span><span class="si">{</span><span class="n">missing</span><span class="si">}</span><span class="s2">."</span>
+            <span class="p">)</span>
+
+    <span class="c1"># ------------------------------------------------------------------</span>
+    <span class="c1"># CRUD</span>
+
+<div class="viewcode-block" id="DataConnectorService.create_connection">
+<a class="viewcode-back" href="../../../../generated/squirrel_services_data_connector_DataConnectorService.html#squirrel.services.data_connector.DataConnectorService.DataConnectorService.create_connection">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">create_connection</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">connector_type</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">config</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">],</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Create a new connection. Secret fields in *config* are encrypted</span>
+<span class="sd">        before being persisted.</span>
+
+<span class="sd">        :raises ValueError: if ``connector_type`` isn't recognised.</span>
+<span class="sd">        :raises ConnectorValidationError: if required fields are missing.</span>
+<span class="sd">        """</span>
+        <span class="k">if</span> <span class="n">connector_type</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">ConnectorType</span><span class="o">.</span><span class="n">ALL</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Unknown connector type '</span><span class="si">{</span><span class="n">connector_type</span><span class="si">}</span><span class="s2">'."</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_validate_config</span><span class="p">(</span><span class="n">connector_type</span><span class="p">,</span> <span class="n">config</span><span class="p">)</span>
+        <span class="n">stored_config</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_encrypt_config</span><span class="p">(</span><span class="n">connector_type</span><span class="p">,</span> <span class="n">config</span><span class="p">)</span>
+
+        <span class="n">connector_id</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"conn_</span><span class="si">{</span><span class="n">uuid</span><span class="o">.</span><span class="n">uuid4</span><span class="p">()</span><span class="o">.</span><span class="n">hex</span><span class="p">[:</span><span class="mi">12</span><span class="p">]</span><span class="si">}</span><span class="s2">"</span>
+        <span class="n">now</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">(</span><span class="n">timezone</span><span class="o">.</span><span class="n">utc</span><span class="p">)</span>
+
+        <span class="n">result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_db</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span>
+            <span class="p">{</span>
+                <span class="s2">"sql"</span><span class="p">:</span> <span class="sa">f</span><span class="s2">"""</span>
+<span class="s2">                    INSERT INTO </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_TABLE</span><span class="si">}</span><span class="s2"> (</span>
+<span class="s2">                        connector_id, name, type, status, config, created_at, updated_at</span>
+<span class="s2">                    ) VALUES (</span>
+<span class="s2">                        %(connector_id)s, %(name)s, %(type)s, %(status)s, %(config)s::jsonb, %(now)s, %(now)s</span>
+<span class="s2">                    )</span>
+<span class="s2">                    RETURNING connector_id, name, type, status, config, error,</span>
+<span class="s2">                              last_tested_at, created_at, updated_at</span>
+<span class="s2">                """</span><span class="p">,</span>
+                <span class="s2">"params"</span><span class="p">:</span> <span class="p">{</span>
+                    <span class="s2">"connector_id"</span><span class="p">:</span> <span class="n">connector_id</span><span class="p">,</span>
+                    <span class="s2">"name"</span><span class="p">:</span> <span class="n">name</span><span class="p">,</span>
+                    <span class="s2">"type"</span><span class="p">:</span> <span class="n">connector_type</span><span class="p">,</span>
+                    <span class="s2">"status"</span><span class="p">:</span> <span class="n">ConnectionStatus</span><span class="o">.</span><span class="n">UNTESTED</span><span class="p">,</span>
+                    <span class="s2">"config"</span><span class="p">:</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">stored_config</span><span class="p">),</span>
+                    <span class="s2">"now"</span><span class="p">:</span> <span class="n">now</span><span class="p">,</span>
+                <span class="p">},</span>
+            <span class="p">}</span>
+        <span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">result</span> <span class="ow">or</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="nb">list</span><span class="p">)</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">result</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"connector_id"</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">"Failed to create connection row."</span><span class="p">)</span>
+
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">"Created connection '</span><span class="si">{}</span><span class="s2">' (connector_id=</span><span class="si">{}</span><span class="s2">, type=</span><span class="si">{}</span><span class="s2">)"</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">connector_id</span><span class="p">,</span> <span class="n">connector_type</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">result</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span></div>
+
+
+<div class="viewcode-block" id="DataConnectorService.list_connections">
+<a class="viewcode-back" href="../../../../generated/squirrel_services_data_connector_DataConnectorService.html#squirrel.services.data_connector.DataConnectorService.DataConnectorService.list_connections">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">list_connections</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">limit</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">200</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Return all connections, newest first.</span>
+<span class="sd">        """</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_db</span><span class="o">.</span><span class="n">retrieve</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_TABLE</span><span class="p">,</span> <span class="n">filters</span><span class="o">=</span><span class="p">{})</span>
+        <span class="n">rows</span> <span class="o">=</span> <span class="n">result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"rows"</span><span class="p">,</span> <span class="p">[])</span> <span class="k">if</span> <span class="n">result</span> <span class="k">else</span> <span class="p">[]</span>
+        <span class="n">rows</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">r</span><span class="p">:</span> <span class="n">r</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"created_at"</span><span class="p">,</span> <span class="s2">""</span><span class="p">),</span> <span class="n">reverse</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">rows</span><span class="p">[:</span><span class="n">limit</span><span class="p">]</span></div>
+
+
+<div class="viewcode-block" id="DataConnectorService.get_connection">
+<a class="viewcode-back" href="../../../../generated/squirrel_services_data_connector_DataConnectorService.html#squirrel.services.data_connector.DataConnectorService.DataConnectorService.get_connection">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_connection</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">connector_id</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Fetch a single connection row, or raise ``ConnectorNotFoundError``.</span>
+<span class="sd">        """</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_db</span><span class="o">.</span><span class="n">retrieve</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_TABLE</span><span class="p">,</span>
+            <span class="n">filters</span><span class="o">=</span><span class="p">{</span>
+                <span class="s2">"connector_id"</span><span class="p">:</span> <span class="n">connector_id</span>
+                <span class="p">}</span>
+            <span class="p">)</span>
+        <span class="n">rows</span> <span class="o">=</span> <span class="n">result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"rows"</span><span class="p">,</span> <span class="p">[])</span> <span class="k">if</span> <span class="n">result</span> <span class="k">else</span> <span class="p">[]</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">rows</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">ConnectorNotFoundError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"No connection with connector_id=</span><span class="si">{</span><span class="n">connector_id</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">rows</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span></div>
+
+
+<div class="viewcode-block" id="DataConnectorService.update_connection">
+<a class="viewcode-back" href="../../../../generated/squirrel_services_data_connector_DataConnectorService.html#squirrel.services.data_connector.DataConnectorService.DataConnectorService.update_connection">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">update_connection</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">connector_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">config</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Update a connection's name and/or config.</span>
+
+<span class="sd">        A blank value for a secret field in *config* means "keep the</span>
+<span class="sd">        existing value" (matching the frontend form's behaviour) — it's</span>
+<span class="sd">        merged in from the stored config before validation and encryption,</span>
+<span class="sd">        rather than overwriting the secret with an empty string.</span>
+<span class="sd">        """</span>
+        <span class="n">row</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_connection</span><span class="p">(</span><span class="n">connector_id</span><span class="p">)</span>
+        <span class="n">fields</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+
+        <span class="k">if</span> <span class="n">name</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">name</span> <span class="o">=</span> <span class="n">name</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">name</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"Connection name cannot be empty."</span><span class="p">)</span>
+            <span class="n">fields</span><span class="p">[</span><span class="s2">"name"</span><span class="p">]</span> <span class="o">=</span> <span class="n">name</span>
+
+        <span class="k">if</span> <span class="n">config</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">connector_type</span> <span class="o">=</span> <span class="n">row</span><span class="p">[</span><span class="s2">"type"</span><span class="p">]</span>
+            <span class="n">spec</span> <span class="o">=</span> <span class="n">get_connector_type_spec</span><span class="p">(</span><span class="n">connector_type</span><span class="p">)</span>
+            <span class="n">existing_config</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="n">row</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"config"</span><span class="p">)</span> <span class="ow">or</span> <span class="p">{}</span>
+
+            <span class="n">merged</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">spec</span><span class="o">.</span><span class="n">fields</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">f</span><span class="o">.</span><span class="n">secret</span> <span class="ow">and</span> <span class="ow">not</span> <span class="p">(</span><span class="n">merged</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">f</span><span class="o">.</span><span class="n">key</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">""</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="ow">and</span> <span class="n">f</span><span class="o">.</span><span class="n">key</span> <span class="ow">in</span> <span class="n">existing_config</span><span class="p">:</span>
+                    <span class="c1"># Blank secret on update =&gt; keep the existing encrypted value as-is.</span>
+                    <span class="n">merged</span><span class="p">[</span><span class="n">f</span><span class="o">.</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="s2">"__KEEP_EXISTING__"</span>
+
+            <span class="n">to_validate</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="n">k</span><span class="p">:</span> <span class="p">(</span><span class="s2">"placeholder"</span> <span class="k">if</span> <span class="n">v</span> <span class="o">==</span> <span class="s2">"__KEEP_EXISTING__"</span> <span class="k">else</span> <span class="n">v</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">merged</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+            <span class="p">}</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_validate_config</span><span class="p">(</span><span class="n">connector_type</span><span class="p">,</span> <span class="n">to_validate</span><span class="p">)</span>
+
+            <span class="n">final_config</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+            <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">merged</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                <span class="n">field_spec</span> <span class="o">=</span> <span class="nb">next</span><span class="p">((</span><span class="n">f</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">spec</span><span class="o">.</span><span class="n">fields</span> <span class="k">if</span> <span class="n">f</span><span class="o">.</span><span class="n">key</span> <span class="o">==</span> <span class="n">key</span><span class="p">),</span> <span class="kc">None</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">value</span> <span class="o">==</span> <span class="s2">"__KEEP_EXISTING__"</span><span class="p">:</span>
+                    <span class="n">final_config</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">existing_config</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
+                <span class="k">elif</span> <span class="n">field_spec</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">field_spec</span><span class="o">.</span><span class="n">secret</span><span class="p">:</span>
+                    <span class="n">final_config</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">_encrypt_secret</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">final_config</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span>
+
+            <span class="n">fields</span><span class="p">[</span><span class="s2">"config"</span><span class="p">]</span> <span class="o">=</span> <span class="n">final_config</span>
+            <span class="c1"># Config changed — require a fresh Test before trusting status again.</span>
+            <span class="n">fields</span><span class="p">[</span><span class="s2">"status"</span><span class="p">]</span> <span class="o">=</span> <span class="n">ConnectionStatus</span><span class="o">.</span><span class="n">UNTESTED</span>
+            <span class="n">fields</span><span class="p">[</span><span class="s2">"error"</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">fields</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">row</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_update_connection_row</span><span class="p">(</span><span class="n">connector_id</span><span class="p">,</span> <span class="n">fields</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_connection</span><span class="p">(</span><span class="n">connector_id</span><span class="p">)</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_connector_usage</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">connector_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Find every notebook and workspace still referencing *connector_id*,</span>
+<span class="sd">        so :meth:`delete_connection` can refuse to remove a connection that's</span>
+<span class="sd">        still wired into live analysis.</span>
+
+<span class="sd">        Both lookups are best-effort against tables owned by other services</span>
+<span class="sd">        (``sqrl_notebooks``/``sqrl_notebook_data_sources`` from</span>
+<span class="sd">        :class:`NotebookService`, ``workspaces`` from :class:`WorkspaceService`)</span>
+<span class="sd">        rather than importing those services directly, to avoid a circular</span>
+<span class="sd">        service dependency. Either table may not exist yet if that feature has</span>
+<span class="sd">        never been used — treated as "no usage there", not an error.</span>
+
+<span class="sd">        :return: ``{"notebooks": [names...], "workspaces": [names...]}``.</span>
+<span class="sd">        :rtype: Dict[str, List[str]]</span>
+<span class="sd">        """</span>
+        <span class="n">notebooks</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">workspaces</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_db</span><span class="o">.</span><span class="n">query</span><span class="p">(</span>
+<span class="w">                </span><span class="sd">"""</span>
+<span class="sd">                SELECT DISTINCT n.name</span>
+<span class="sd">                FROM sqrl_notebook_data_sources d</span>
+<span class="sd">                JOIN sqrl_notebooks n ON n.id = d.notebook_id</span>
+<span class="sd">                WHERE d.connector_id = %(connector_id)s</span>
+<span class="sd">                """</span><span class="p">,</span>
+                <span class="n">params</span><span class="o">=</span><span class="p">{</span><span class="s2">"connector_id"</span><span class="p">:</span> <span class="n">connector_id</span><span class="p">},</span>
+            <span class="p">)</span>
+            <span class="n">notebooks</span> <span class="o">=</span> <span class="p">[</span><span class="n">row</span><span class="p">[</span><span class="s2">"name"</span><span class="p">]</span> <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="p">(</span><span class="n">result</span> <span class="ow">or</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"rows"</span><span class="p">,</span> <span class="p">[])]</span>
+        <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+            <span class="c1"># Most likely: sqrl_notebooks/sqrl_notebook_data_sources don't</span>
+            <span class="c1"># exist yet because no notebook has ever been created.</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
+                <span class="s2">"Skipping notebook-usage check for connector </span><span class="si">{}</span><span class="s2"> (table not "</span>
+                <span class="s2">"available yet)."</span><span class="p">,</span> <span class="n">connector_id</span><span class="p">,</span>
+            <span class="p">)</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_db</span><span class="o">.</span><span class="n">query</span><span class="p">(</span>
+<span class="w">                </span><span class="sd">"""</span>
+<span class="sd">                SELECT w.name</span>
+<span class="sd">                FROM workspaces w</span>
+<span class="sd">                WHERE EXISTS (</span>
+<span class="sd">                    SELECT 1 FROM jsonb_array_elements(w.input_sources) AS src</span>
+<span class="sd">                    WHERE src-&gt;&gt;'connector_id' = %(connector_id)s</span>
+<span class="sd">                )</span>
+<span class="sd">                """</span><span class="p">,</span>
+                <span class="n">params</span><span class="o">=</span><span class="p">{</span><span class="s2">"connector_id"</span><span class="p">:</span> <span class="n">connector_id</span><span class="p">},</span>
+            <span class="p">)</span>
+            <span class="n">workspaces</span> <span class="o">=</span> <span class="p">[</span><span class="n">row</span><span class="p">[</span><span class="s2">"name"</span><span class="p">]</span> <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="p">(</span><span class="n">result</span> <span class="ow">or</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"rows"</span><span class="p">,</span> <span class="p">[])]</span>
+        <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
+                <span class="s2">"Skipping workspace-usage check for connector </span><span class="si">{}</span><span class="s2"> (table not "</span>
+                <span class="s2">"available yet)."</span><span class="p">,</span> <span class="n">connector_id</span><span class="p">,</span>
+            <span class="p">)</span>
+
+        <span class="k">return</span> <span class="p">{</span><span class="s2">"notebooks"</span><span class="p">:</span> <span class="n">notebooks</span><span class="p">,</span> <span class="s2">"workspaces"</span><span class="p">:</span> <span class="n">workspaces</span><span class="p">}</span>
+
+<div class="viewcode-block" id="DataConnectorService.delete_connection">
+<a class="viewcode-back" href="../../../../generated/squirrel_services_data_connector_DataConnectorService.html#squirrel.services.data_connector.DataConnectorService.DataConnectorService.delete_connection">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">delete_connection</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">connector_id</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Permanently delete a connection.</span>
+
+<span class="sd">        :raises ConnectorNotFoundError: if the connector doesn't exist.</span>
+<span class="sd">        :raises ConnectorInUseError: if any notebook or workspace still has</span>
+<span class="sd">            a data/input source bound to this connector — those must be</span>
+<span class="sd">            detached first (remove the data source from the notebook, or</span>
+<span class="sd">            remove the source from the workspace) so a delete here can never</span>
+<span class="sd">            silently orphan a live notebook cell or workspace run.</span>
+<span class="sd">        """</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">get_connection</span><span class="p">(</span><span class="n">connector_id</span><span class="p">)</span>
+
+        <span class="n">usage</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_connector_usage</span><span class="p">(</span><span class="n">connector_id</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">usage</span><span class="p">[</span><span class="s2">"notebooks"</span><span class="p">]</span> <span class="ow">or</span> <span class="n">usage</span><span class="p">[</span><span class="s2">"workspaces"</span><span class="p">]:</span>
+            <span class="n">parts</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">if</span> <span class="n">usage</span><span class="p">[</span><span class="s2">"notebooks"</span><span class="p">]:</span>
+                <span class="n">parts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">"notebook(s) [</span><span class="si">{</span><span class="s1">', '</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">usage</span><span class="p">[</span><span class="s1">'notebooks'</span><span class="p">])</span><span class="si">}</span><span class="s2">]"</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">usage</span><span class="p">[</span><span class="s2">"workspaces"</span><span class="p">]:</span>
+                <span class="n">parts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">"workspace(s) [</span><span class="si">{</span><span class="s1">', '</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">usage</span><span class="p">[</span><span class="s1">'workspaces'</span><span class="p">])</span><span class="si">}</span><span class="s2">]"</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="n">ConnectorInUseError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"Can't remove this connection — it's still used by "</span>
+                <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="s1">' and '</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">parts</span><span class="p">)</span><span class="si">}</span><span class="s2">. Remove it from those first."</span>
+            <span class="p">)</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_db</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"DELETE FROM </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_TABLE</span><span class="si">}</span><span class="s2"> WHERE connector_id = %(connector_id)s"</span><span class="p">,</span>
+                <span class="n">params</span><span class="o">=</span><span class="p">{</span><span class="s2">"connector_id"</span><span class="p">:</span> <span class="n">connector_id</span><span class="p">},</span>
+                <span class="n">fetch</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">"Deleted connection connector_id=</span><span class="si">{}</span><span class="s2">"</span><span class="p">,</span> <span class="n">connector_id</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">exception</span><span class="p">(</span><span class="s2">"Failed to delete connection connector_id=</span><span class="si">{}</span><span class="s2">"</span><span class="p">,</span> <span class="n">connector_id</span><span class="p">)</span>
+            <span class="k">raise</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_update_connection_row</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">connector_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">fields</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">jsonb_cols</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"config"</span><span class="p">}</span>
+        <span class="n">set_parts</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">params</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"connector_id"</span><span class="p">:</span> <span class="n">connector_id</span><span class="p">,</span> <span class="s2">"updated_at"</span><span class="p">:</span> <span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">(</span><span class="n">timezone</span><span class="o">.</span><span class="n">utc</span><span class="p">)}</span>
+        <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">fields</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">jsonb_cols</span><span class="p">:</span>
+                <span class="n">set_parts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">k</span><span class="si">}</span><span class="s2"> = %(</span><span class="si">{</span><span class="n">k</span><span class="si">}</span><span class="s2">)s::jsonb"</span><span class="p">)</span>
+                <span class="n">params</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">set_parts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">k</span><span class="si">}</span><span class="s2"> = %(</span><span class="si">{</span><span class="n">k</span><span class="si">}</span><span class="s2">)s"</span><span class="p">)</span>
+                <span class="n">params</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">v</span>
+        <span class="n">set_parts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">"updated_at = </span><span class="si">%(updated_at)s</span><span class="s2">"</span><span class="p">)</span>
+        <span class="n">set_clause</span> <span class="o">=</span> <span class="s2">", "</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">set_parts</span><span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_db</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"UPDATE </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_TABLE</span><span class="si">}</span><span class="s2"> SET </span><span class="si">{</span><span class="n">set_clause</span><span class="si">}</span><span class="s2"> WHERE connector_id = %(connector_id)s"</span><span class="p">,</span>
+                <span class="n">params</span><span class="o">=</span><span class="n">params</span><span class="p">,</span>
+                <span class="n">fetch</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">exception</span><span class="p">(</span><span class="s2">"Failed to update connection connector_id=</span><span class="si">{}</span><span class="s2">"</span><span class="p">,</span> <span class="n">connector_id</span><span class="p">)</span>
+            <span class="k">raise</span>
+
+
+<div class="viewcode-block" id="DataConnectorService.list_tables">
+<a class="viewcode-back" href="../../../../generated/squirrel_services_data_connector_DataConnectorService.html#squirrel.services.data_connector.DataConnectorService.DataConnectorService.list_tables">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">list_tables</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> 
+        <span class="n">connector_id</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Best-effort list of queryable tables for this connection, to</span>
+<span class="sd">        populate a table picker. Raises ``NotImplementedError`` for</span>
+<span class="sd">        connector types with no lister registered (Snowflake, BigQuery,</span>
+<span class="sd">        Google Sheets today).</span>
+<span class="sd">        """</span>
+        <span class="n">row</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_connection</span><span class="p">(</span><span class="n">connector_id</span><span class="p">)</span>
+        <span class="n">connector_type</span> <span class="o">=</span> <span class="n">row</span><span class="p">[</span><span class="s2">"type"</span><span class="p">]</span>
+        <span class="n">lister</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_TABLE_LIST_DISPATCH</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">connector_type</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">lister</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"Listing tables for connector type '</span><span class="si">{</span><span class="n">connector_type</span><span class="si">}</span><span class="s2">' isn't "</span>
+                <span class="s2">"wired up yet."</span>
+            <span class="p">)</span>
+        <span class="n">config</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_decrypt_config</span><span class="p">(</span><span class="n">row</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"config"</span><span class="p">)</span> <span class="ow">or</span> <span class="p">{})</span>
+        <span class="k">return</span> <span class="n">lister</span><span class="p">(</span><span class="n">config</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="DataConnectorService.build_table_query">
+<a class="viewcode-back" href="../../../../generated/squirrel_services_data_connector_DataConnectorService.html#squirrel.services.data_connector.DataConnectorService.DataConnectorService.build_table_query">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">build_table_query</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">connector_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">table_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">columns</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Turn a table name — plus, optionally, a subset of its columns — into a</span>
+<span class="sd">        safe SELECT query. Both the table name and every column name are</span>
+<span class="sd">        validated against what this connector actually reports before being</span>
+<span class="sd">        quoted and used, same guarantee as before: nothing here can be used to</span>
+<span class="sd">        smuggle arbitrary SQL in via a name-shaped string.</span>
+
+<span class="sd">        :param columns: Column names to select. ``None`` or empty means "every</span>
+<span class="sd">            column" (``SELECT *``), same as today's behaviour.</span>
+<span class="sd">        """</span>
+        <span class="n">row</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_connection</span><span class="p">(</span><span class="n">connector_id</span><span class="p">)</span>
+        <span class="n">connector_type</span> <span class="o">=</span> <span class="n">row</span><span class="p">[</span><span class="s2">"type"</span><span class="p">]</span>
+
+        <span class="n">known_tables</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">list_tables</span><span class="p">(</span><span class="n">connector_id</span><span class="p">))</span>
+        <span class="k">if</span> <span class="n">table_name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">known_tables</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"'</span><span class="si">{</span><span class="n">table_name</span><span class="si">}</span><span class="s2">' is not a known table for connector '</span><span class="si">{</span><span class="n">connector_id</span><span class="si">}</span><span class="s2">'."</span>
+            <span class="p">)</span>
+
+        <span class="n">quoter</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_QUOTE_DISPATCH</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">connector_type</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">quoter</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"Building a table query for connector type '</span><span class="si">{</span><span class="n">connector_type</span><span class="si">}</span><span class="s2">' "</span>
+                <span class="s2">"isn't wired up yet."</span>
+            <span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">columns</span><span class="p">:</span>
+            <span class="k">return</span> <span class="sa">f</span><span class="s2">"SELECT * FROM </span><span class="si">{</span><span class="n">quoter</span><span class="p">(</span><span class="n">table_name</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span>
+
+        <span class="n">known_columns</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_known_columns</span><span class="p">(</span><span class="n">connector_id</span><span class="p">,</span> <span class="n">table_name</span><span class="p">))</span>
+        <span class="n">unknown_columns</span> <span class="o">=</span> <span class="p">[</span><span class="n">c</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">columns</span> <span class="k">if</span> <span class="n">c</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">known_columns</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">unknown_columns</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"Unknown column(s) for table '</span><span class="si">{</span><span class="n">table_name</span><span class="si">}</span><span class="s2">': </span><span class="si">{</span><span class="n">unknown_columns</span><span class="si">}</span><span class="s2">."</span>
+            <span class="p">)</span>
+
+        <span class="n">column_sql</span> <span class="o">=</span> <span class="s2">", "</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">quoter</span><span class="p">(</span><span class="n">c</span><span class="p">)</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">columns</span><span class="p">)</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">"SELECT </span><span class="si">{</span><span class="n">column_sql</span><span class="si">}</span><span class="s2"> FROM </span><span class="si">{</span><span class="n">quoter</span><span class="p">(</span><span class="n">table_name</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span></div>
+
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_known_columns</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> 
+        <span class="n">connector_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> 
+        <span class="n">table_name</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Cheap way to learn a table's column names for validating a column</span>
+<span class="sd">        subset: an unrestricted, zero-row-cost preview. Reuses the existing</span>
+<span class="sd">        preview machinery rather than adding a per-dialect information_schema</span>
+<span class="sd">        query.</span>
+<span class="sd">        """</span>
+        <span class="n">full_query</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">build_table_query</span><span class="p">(</span><span class="n">connector_id</span><span class="p">,</span> <span class="n">table_name</span><span class="p">)</span>  <span class="c1"># columns=None -&gt; SELECT *</span>
+        <span class="n">df</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">preview_dataframe</span><span class="p">(</span><span class="n">connector_id</span><span class="p">,</span> <span class="n">full_query</span><span class="p">,</span> <span class="n">limit</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+        <span class="k">return</span> <span class="nb">list</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">columns</span><span class="p">)</span>
+
+<div class="viewcode-block" id="DataConnectorService.preview_table">
+<a class="viewcode-back" href="../../../../generated/squirrel_services_data_connector_DataConnectorService.html#squirrel.services.data_connector.DataConnectorService.DataConnectorService.preview_table">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">preview_table</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">connector_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">table_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">limit</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">5</span><span class="p">,</span>
+        <span class="n">columns</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Preview the first *limit* rows of a specific table, restricted to</span>
+<span class="sd">        *columns* if given.</span>
+<span class="sd">        """</span>
+        <span class="n">query</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">build_table_query</span><span class="p">(</span><span class="n">connector_id</span><span class="p">,</span> <span class="n">table_name</span><span class="p">,</span> <span class="n">columns</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">preview_dataframe</span><span class="p">(</span><span class="n">connector_id</span><span class="p">,</span> <span class="n">query</span><span class="p">,</span> <span class="n">limit</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="DataConnectorService.preview_dataframe">
+<a class="viewcode-back" href="../../../../generated/squirrel_services_data_connector_DataConnectorService.html#squirrel.services.data_connector.DataConnectorService.DataConnectorService.preview_dataframe">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">preview_dataframe</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">connector_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">query</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">limit</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">50</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Internal helper: run *query* capped to *limit* rows via an outer</span>
+<span class="sd">        LIMIT wrapper. Only called with queries this service built itself</span>
+<span class="sd">        (:meth:`build_table_query`) — never with caller-supplied SQL.</span>
+<span class="sd">        """</span>
+        <span class="n">wrapped</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"SELECT * FROM (</span><span class="si">{</span><span class="n">query</span><span class="si">}</span><span class="s2">) AS _squirrel_preview LIMIT </span><span class="si">{</span><span class="nb">int</span><span class="p">(</span><span class="n">limit</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">fetch_dataframe</span><span class="p">(</span><span class="n">connector_id</span><span class="p">,</span> <span class="n">wrapped</span><span class="p">)</span></div>
+
+
+    <span class="c1"># ------------------------------------------------------------------</span>
+    <span class="c1"># Testing</span>
+
+<div class="viewcode-block" id="DataConnectorService.test_connection">
+<a class="viewcode-back" href="../../../../generated/squirrel_services_data_connector_DataConnectorService.html#squirrel.services.data_connector.DataConnectorService.DataConnectorService.test_connection">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">test_connection</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">connector_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Run a live connectivity check for a connection and persist the</span>
+<span class="sd">        resulting status. Never raises for a failed *test* — a connection</span>
+<span class="sd">        that can't be reached is a normal outcome (status='error'), not a</span>
+<span class="sd">        service failure. Only genuinely unexpected errors bubble up.</span>
+<span class="sd">        """</span>
+        <span class="n">row</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_connection</span><span class="p">(</span><span class="n">connector_id</span><span class="p">)</span>
+        <span class="n">connector_type</span> <span class="o">=</span> <span class="n">row</span><span class="p">[</span><span class="s2">"type"</span><span class="p">]</span>
+        <span class="n">tester</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_TEST_DISPATCH</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">connector_type</span><span class="p">)</span>
+
+        <span class="n">now</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">(</span><span class="n">timezone</span><span class="o">.</span><span class="n">utc</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">tester</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">fields</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="s2">"status"</span><span class="p">:</span> <span class="n">ConnectionStatus</span><span class="o">.</span><span class="n">ERROR</span><span class="p">,</span>
+                <span class="s2">"error"</span><span class="p">:</span> <span class="sa">f</span><span class="s2">"No tester registered for connector type '</span><span class="si">{</span><span class="n">connector_type</span><span class="si">}</span><span class="s2">'."</span><span class="p">,</span>
+                <span class="s2">"last_tested_at"</span><span class="p">:</span> <span class="n">now</span><span class="p">,</span>
+            <span class="p">}</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_update_connection_row</span><span class="p">(</span><span class="n">connector_id</span><span class="p">,</span> <span class="n">fields</span><span class="p">)</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_connection</span><span class="p">(</span><span class="n">connector_id</span><span class="p">)</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">decrypted_config</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_decrypt_config</span><span class="p">(</span><span class="n">row</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"config"</span><span class="p">)</span> <span class="ow">or</span> <span class="p">{})</span>
+            <span class="n">tester</span><span class="p">(</span><span class="n">decrypted_config</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">NotImplementedError</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+            <span class="n">fields</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"status"</span><span class="p">:</span> <span class="n">ConnectionStatus</span><span class="o">.</span><span class="n">ERROR</span><span class="p">,</span> <span class="s2">"error"</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">exc</span><span class="p">),</span> <span class="s2">"last_tested_at"</span><span class="p">:</span> <span class="n">now</span><span class="p">}</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">"Connection test failed for connector_id=</span><span class="si">{}</span><span class="s2">: </span><span class="si">{}</span><span class="s2">"</span><span class="p">,</span> <span class="n">connector_id</span><span class="p">,</span> <span class="n">exc</span><span class="p">)</span>
+            <span class="n">fields</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"status"</span><span class="p">:</span> <span class="n">ConnectionStatus</span><span class="o">.</span><span class="n">ERROR</span><span class="p">,</span> <span class="s2">"error"</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">exc</span><span class="p">),</span> <span class="s2">"last_tested_at"</span><span class="p">:</span> <span class="n">now</span><span class="p">}</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">fields</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"status"</span><span class="p">:</span> <span class="n">ConnectionStatus</span><span class="o">.</span><span class="n">CONNECTED</span><span class="p">,</span> <span class="s2">"error"</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span> <span class="s2">"last_tested_at"</span><span class="p">:</span> <span class="n">now</span><span class="p">}</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_update_connection_row</span><span class="p">(</span><span class="n">connector_id</span><span class="p">,</span> <span class="n">fields</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_connection</span><span class="p">(</span><span class="n">connector_id</span><span class="p">)</span></div>
+
+
+    <span class="c1"># ------------------------------------------------------------------</span>
+    <span class="c1"># Data retrieval — extension point for WorkspaceService.fetch_data</span>
+
+<div class="viewcode-block" id="DataConnectorService.fetch_dataframe">
+<a class="viewcode-back" href="../../../../generated/squirrel_services_data_connector_DataConnectorService.html#squirrel.services.data_connector.DataConnectorService.DataConnectorService.fetch_dataframe">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">fetch_dataframe</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">connector_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">query</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Resolve a connection into an in-memory DataFrame.</span>
+
+<span class="sd">        This is the method ``WorkspaceService.fetch_data`` should call once</span>
+<span class="sd">        a workspace build needs a connector source's live data. Only</span>
+<span class="sd">        Postgres/MySQL are wired up (via the given ``query``); other types</span>
+<span class="sd">        raise ``NotImplementedError`` with a clear message, same as the</span>
+<span class="sd">        rest of this service's extension points.</span>
+
+<span class="sd">        Postgres reads go through a short-lived SQLAlchemy engine on the</span>
+<span class="sd">        ``postgresql+psycopg://`` dialect (psycopg v3) rather than a raw</span>
+<span class="sd">        DBAPI connection — this matches how :meth:`PostgresService.load`</span>
+<span class="sd">        already hands DataFrames to/from Postgres elsewhere in this</span>
+<span class="sd">        codebase, and keeps ``pandas.read_sql_query`` on its</span>
+<span class="sd">        fully-supported path instead of the raw-connection one pandas is</span>
+<span class="sd">        deprecating.</span>
+
+<span class="sd">        :param query: SQL query to run — required for both Postgres and</span>
+<span class="sd">            MySQL since there's no single default table to select from.</span>
+<span class="sd">        """</span>
+        <span class="n">row</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_connection</span><span class="p">(</span><span class="n">connector_id</span><span class="p">)</span>
+        <span class="n">connector_type</span> <span class="o">=</span> <span class="n">row</span><span class="p">[</span><span class="s2">"type"</span><span class="p">]</span>
+        <span class="n">config</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_decrypt_config</span><span class="p">(</span><span class="n">row</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"config"</span><span class="p">)</span> <span class="ow">or</span> <span class="p">{})</span>
+
+        <span class="k">if</span> <span class="n">connector_type</span> <span class="o">==</span> <span class="n">ConnectorType</span><span class="o">.</span><span class="n">POSTGRES</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">_HAS_PSYCOPG</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span>
+                    <span class="s2">"psycopg is not installed; cannot read from Postgres connectors. "</span>
+                    <span class="s2">"Install `psycopg[binary]&gt;=3.2.0,&lt;4.0.0`."</span>
+                <span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">query</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span>
+                    <span class="s2">"Reading a Postgres connector requires a 'query' — there's no "</span>
+                    <span class="s2">"default table to select from."</span>
+                <span class="p">)</span>
+            <span class="kn">from</span><span class="w"> </span><span class="nn">sqlalchemy</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_engine</span>
+            <span class="kn">from</span><span class="w"> </span><span class="nn">sqlalchemy.engine</span><span class="w"> </span><span class="kn">import</span> <span class="n">URL</span>
+
+            <span class="n">conn_url</span> <span class="o">=</span> <span class="n">URL</span><span class="o">.</span><span class="n">create</span><span class="p">(</span>
+                <span class="n">drivername</span><span class="o">=</span><span class="s2">"postgresql+psycopg"</span><span class="p">,</span>
+                <span class="n">username</span><span class="o">=</span><span class="n">config</span><span class="p">[</span><span class="s2">"username"</span><span class="p">],</span>
+                <span class="n">password</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"password"</span><span class="p">,</span> <span class="s2">""</span><span class="p">),</span>
+                <span class="n">host</span><span class="o">=</span><span class="n">config</span><span class="p">[</span><span class="s2">"host"</span><span class="p">],</span>
+                <span class="n">port</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"port"</span><span class="p">)</span> <span class="ow">or</span> <span class="mi">5432</span><span class="p">),</span>
+                <span class="n">database</span><span class="o">=</span><span class="n">config</span><span class="p">[</span><span class="s2">"database"</span><span class="p">],</span>
+            <span class="p">)</span>
+            <span class="n">engine</span> <span class="o">=</span> <span class="n">create_engine</span><span class="p">(</span><span class="n">conn_url</span><span class="p">)</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_sql_query</span><span class="p">(</span><span class="n">query</span><span class="p">,</span> <span class="n">engine</span><span class="p">)</span>
+            <span class="k">finally</span><span class="p">:</span>
+                <span class="n">engine</span><span class="o">.</span><span class="n">dispose</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="n">connector_type</span> <span class="o">==</span> <span class="n">ConnectorType</span><span class="o">.</span><span class="n">MYSQL</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">_HAS_PYMYSQL</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s2">"pymysql is not installed; cannot read from MySQL connectors."</span><span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">query</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span>
+                    <span class="s2">"Reading a MySQL connector requires a 'query' — there's no "</span>
+                    <span class="s2">"default table to select from."</span>
+                <span class="p">)</span>
+            <span class="n">conn</span> <span class="o">=</span> <span class="n">pymysql</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span>
+                <span class="n">host</span><span class="o">=</span><span class="n">config</span><span class="p">[</span><span class="s2">"host"</span><span class="p">],</span>
+                <span class="n">port</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"port"</span><span class="p">)</span> <span class="ow">or</span> <span class="mi">3306</span><span class="p">),</span>
+                <span class="n">db</span><span class="o">=</span><span class="n">config</span><span class="p">[</span><span class="s2">"database"</span><span class="p">],</span>
+                <span class="n">user</span><span class="o">=</span><span class="n">config</span><span class="p">[</span><span class="s2">"username"</span><span class="p">],</span>
+                <span class="n">password</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"password"</span><span class="p">,</span> <span class="s2">""</span><span class="p">),</span>
+                <span class="n">connect_timeout</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_sql_query</span><span class="p">(</span><span class="n">query</span><span class="p">,</span> <span class="n">conn</span><span class="p">)</span>
+            <span class="k">finally</span><span class="p">:</span>
+                <span class="n">conn</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">"Reading data from connector type '</span><span class="si">{</span><span class="n">connector_type</span><span class="si">}</span><span class="s2">' isn't wired up "</span>
+            <span class="s2">"yet — add a branch here once the corresponding client library is "</span>
+            <span class="s2">"integrated."</span>
+        <span class="p">)</span></div>
+
+
+    <span class="c1"># ------------------------------------------------------------------</span>
+    <span class="c1"># Secret handling helpers</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_encrypt_config</span><span class="p">(</span>
+        <span class="n">connector_type</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">config</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
+        <span class="n">spec</span> <span class="o">=</span> <span class="n">get_connector_type_spec</span><span class="p">(</span><span class="n">connector_type</span><span class="p">)</span>
+        <span class="n">secret_keys</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">spec</span><span class="o">.</span><span class="n">secret_keys</span><span class="p">())</span>
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="n">k</span><span class="p">:</span> <span class="p">(</span><span class="n">_encrypt_secret</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="k">if</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">secret_keys</span> <span class="ow">and</span> <span class="n">v</span> <span class="k">else</span> <span class="n">v</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">config</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+        <span class="p">}</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_decrypt_config</span><span class="p">(</span><span class="n">config</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
+        <span class="n">decrypted</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="p">(</span><span class="n">config</span> <span class="ow">or</span> <span class="p">{})</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="n">v</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">"fernet:"</span><span class="p">)</span> <span class="ow">or</span> <span class="n">v</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">"b64:"</span><span class="p">)):</span>
+                <span class="n">decrypted</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">_decrypt_secret</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">decrypted</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">v</span>
+        <span class="k">return</span> <span class="n">decrypted</span>
+
+    <span class="c1"># ------------------------------------------------------------------</span>
+    <span class="c1"># Public-facing serialization</span>
+
+<div class="viewcode-block" id="DataConnectorService.to_public_dict">
+<a class="viewcode-back" href="../../../../generated/squirrel_services_data_connector_DataConnectorService.html#squirrel.services.data_connector.DataConnectorService.DataConnectorService.to_public_dict">[docs]</a>
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">to_public_dict</span><span class="p">(</span>
+        <span class="n">row</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Convert a raw DB row into a dict safe to hand to the API layer:</span>
+<span class="sd">        every secret field is redacted to ``""`` regardless of what's</span>
+<span class="sd">        stored, and non-secret fields are passed through as-is (they were</span>
+<span class="sd">        never encrypted).</span>
+<span class="sd">        """</span>
+        <span class="n">connector_type</span> <span class="o">=</span> <span class="n">row</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"type"</span><span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">spec</span> <span class="o">=</span> <span class="n">get_connector_type_spec</span><span class="p">(</span><span class="n">connector_type</span><span class="p">)</span> <span class="k">if</span> <span class="n">connector_type</span> <span class="k">else</span> <span class="kc">None</span>
+        <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+            <span class="n">spec</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="n">secret_keys</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">spec</span><span class="o">.</span><span class="n">secret_keys</span><span class="p">())</span> <span class="k">if</span> <span class="n">spec</span> <span class="k">else</span> <span class="nb">set</span><span class="p">()</span>
+
+        <span class="n">raw_config</span> <span class="o">=</span> <span class="n">row</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"config"</span><span class="p">)</span> <span class="ow">or</span> <span class="p">{}</span>
+        <span class="n">public_config</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="n">k</span><span class="p">:</span> <span class="p">(</span><span class="s2">""</span> <span class="k">if</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">secret_keys</span> <span class="k">else</span> <span class="n">v</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">raw_config</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+        <span class="p">}</span>
+
+        <span class="k">return</span> <span class="p">{</span><span class="o">**</span><span class="n">row</span><span class="p">,</span> <span class="s2">"config"</span><span class="p">:</span> <span class="n">public_config</span><span class="p">}</span></div>
+
+
+<div class="viewcode-block" id="DataConnectorService.get_postgres_service">
+<a class="viewcode-back" href="../../../../generated/squirrel_services_data_connector_DataConnectorService.html#squirrel.services.data_connector.DataConnectorService.DataConnectorService.get_postgres_service">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_postgres_service</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">connector_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PostgresService</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Resolve a Postgres-backed connection into a connected, query-capable</span>
+<span class="sd">        :class:`PostgresService` pointed at the connector's own database.</span>
+
+<span class="sd">        Used by callers (e.g. NotebookService) that need to run multiple</span>
+<span class="sd">        queries against a connector-backed data source, rather than a single</span>
+<span class="sd">        one-shot DataFrame read like :meth:`fetch_dataframe`.</span>
+
+<span class="sd">        :raises ConnectorNotFoundError: if ``connector_id`` doesn't exist.</span>
+<span class="sd">        :raises NotImplementedError: if this connector isn't Postgres-backed —</span>
+<span class="sd">            only Postgres connectors can be resolved into a PostgresService</span>
+<span class="sd">            today; other types (MySQL, Snowflake, BigQuery, Google Sheets)</span>
+<span class="sd">            would need their own query-capable service class first.</span>
+<span class="sd">        """</span>
+        <span class="n">row</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_connection</span><span class="p">(</span><span class="n">connector_id</span><span class="p">)</span>
+        <span class="n">connector_type</span> <span class="o">=</span> <span class="n">row</span><span class="p">[</span><span class="s2">"type"</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="n">connector_type</span> <span class="o">!=</span> <span class="n">ConnectorType</span><span class="o">.</span><span class="n">POSTGRES</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"get_postgres_service() only supports Postgres connectors; "</span>
+                <span class="sa">f</span><span class="s2">"connector '</span><span class="si">{</span><span class="n">connector_id</span><span class="si">}</span><span class="s2">' is type '</span><span class="si">{</span><span class="n">connector_type</span><span class="si">}</span><span class="s2">'."</span>
+            <span class="p">)</span>
+
+        <span class="n">config</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_decrypt_config</span><span class="p">(</span><span class="n">row</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"config"</span><span class="p">)</span> <span class="ow">or</span> <span class="p">{})</span>
+        <span class="n">connection_string</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="sa">f</span><span class="s2">"postgresql://</span><span class="si">{</span><span class="n">config</span><span class="p">[</span><span class="s1">'username'</span><span class="p">]</span><span class="si">}</span><span class="s2">:</span><span class="si">{</span><span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">'password'</span><span class="p">,</span><span class="w"> </span><span class="s1">''</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span>
+            <span class="sa">f</span><span class="s2">"@</span><span class="si">{</span><span class="n">config</span><span class="p">[</span><span class="s1">'host'</span><span class="p">]</span><span class="si">}</span><span class="s2">:</span><span class="si">{</span><span class="nb">int</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">'port'</span><span class="p">)</span><span class="w"> </span><span class="ow">or</span><span class="w"> </span><span class="mi">5432</span><span class="p">)</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">config</span><span class="p">[</span><span class="s1">'database'</span><span class="p">]</span><span class="si">}</span><span class="s2">"</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="n">PostgresService</span><span class="p">(</span><span class="n">connection_string</span><span class="o">=</span><span class="n">connection_string</span><span class="p">)</span></div>
+</div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, Mazen Soliman.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

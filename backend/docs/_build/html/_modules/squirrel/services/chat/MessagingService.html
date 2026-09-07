@@ -1,0 +1,311 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>squirrel.services.chat.MessagingService &mdash; squirrel  documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../../../_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" type="text/css" href="../../../../_static/css/custom.css?v=adc7883a" />
+
+  
+    <link rel="shortcut icon" href="../../../../_static/sqrl.png"/>
+      <script src="../../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../../../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script src="../../../../_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="../../../../_static/copybutton.js?v=a46eff05"></script>
+    <script src="../../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../../index.html" class="icon icon-home">
+            squirrel
+              <img src="../../../../_static/sqrl.png" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Python API Reference:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../api.html">Python API Reference</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../index.html">squirrel</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">squirrel.services.chat.MessagingService</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for squirrel.services.chat.MessagingService</h1><div class="highlight"><pre>
+<span></span><span class="sd">"""</span>
+<span class="sd">Messaging Service</span>
+<span class="sd">=================</span>
+
+<span class="sd">Owns all PostgreSQL writes for chat messages: incoming user messages,</span>
+<span class="sd">attached file URLs, assistant replies, and associated token/timing metadata.</span>
+
+<span class="sd">Schema expectation</span>
+<span class="sd">------------------</span>
+
+<span class="sd">.. code-block:: sql</span>
+
+<span class="sd">    CREATE TABLE IF NOT EXISTS chat_messages (</span>
+<span class="sd">        id                  BIGSERIAL PRIMARY KEY,</span>
+<span class="sd">        conversation_id     TEXT        NOT NULL,</span>
+<span class="sd">        user_message        TEXT        NOT NULL,</span>
+<span class="sd">        file_urls           TEXT[]      DEFAULT '{}',</span>
+<span class="sd">        assistant_reply     TEXT        NOT NULL,</span>
+<span class="sd">        prompt_tokens       INT         DEFAULT 0,</span>
+<span class="sd">        completion_tokens   INT         DEFAULT 0,</span>
+<span class="sd">        total_tokens        INT         DEFAULT 0,</span>
+<span class="sd">        response_time_ms    INT         DEFAULT 0,</span>
+<span class="sd">        created_at          TIMESTAMPTZ NOT NULL DEFAULT NOW()</span>
+<span class="sd">    );</span>
+
+<span class="sd">"""</span>
+<span class="c1"># ——————————————————————————————————————————————————————————————</span>
+<span class="c1"># Imports</span>
+
+<span class="c1"># Standard Libraries</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="kn">import</span> <span class="n">datetime</span><span class="p">,</span> <span class="n">timezone</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Optional</span>
+
+<span class="c1"># Services</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">squirrel.services.storage.database.PostgresService</span><span class="w"> </span><span class="kn">import</span> <span class="n">PostgresService</span>
+
+<span class="c1"># Schemas</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">squirrel.schemas.api</span><span class="w"> </span><span class="kn">import</span> <span class="n">AgentRequest</span><span class="p">,</span> <span class="n">AgentResponse</span>
+
+<span class="c1"># Logging</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">loguru</span><span class="w"> </span><span class="kn">import</span> <span class="n">logger</span>
+
+<span class="c1"># ——————————————————————————————————————————————————————————————</span>
+<span class="c1"># Messaging Service</span>
+
+
+<div class="viewcode-block" id="MessagingService">
+<a class="viewcode-back" href="../../../../generated/squirrel_services_chat_MessagingService.html#squirrel.services.chat.MessagingService.MessagingService">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">MessagingService</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Handle messaging operations for chat interactions.</span>
+
+<span class="sd">    Each public method is intentionally narrow: callers pass in the objects</span>
+<span class="sd">    they already have; this service handles all SQL concerns.</span>
+
+<span class="sd">    :param db: An open :class:`PostgresService` instance. When omitted a new</span>
+<span class="sd">        one is created using environment-variable credentials.</span>
+<span class="sd">    :type db: Optional[PostgresService]</span>
+
+<span class="sd">    """</span>
+
+    <span class="n">_TABLE</span> <span class="o">=</span> <span class="s2">"chat_messages"</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">db</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">PostgresService</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_db</span> <span class="o">=</span> <span class="n">db</span> <span class="ow">or</span> <span class="n">PostgresService</span><span class="p">()</span>
+        
+        <span class="c1"># Create the chat_messages table if it doesn't exist. This is a no-op if the</span>
+        <span class="c1"># table already exists, so it's safe to run on every init.</span>
+        <span class="n">table_exists</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_db</span><span class="o">.</span><span class="n">retrieve</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_TABLE</span><span class="p">,</span>
+            <span class="n">filters</span><span class="o">=</span><span class="p">{},</span>
+        <span class="p">)</span>
+        
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">table_exists</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">table_exists</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"rows"</span><span class="p">):</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">"Creating chat_messages table in PostgreSQL"</span><span class="p">)</span>
+            
+            <span class="bp">self</span><span class="o">.</span><span class="n">_db</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"""</span>
+<span class="s2">                    CREATE TABLE IF NOT EXISTS </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_TABLE</span><span class="si">}</span><span class="s2"> (</span>
+<span class="s2">                        id                  BIGSERIAL PRIMARY KEY,</span>
+<span class="s2">                        conversation_id     TEXT        NOT NULL,</span>
+<span class="s2">                        user_message        TEXT        NOT NULL,</span>
+<span class="s2">                        file_urls           TEXT[]      DEFAULT '</span><span class="se">{{}}</span><span class="s2">',</span>
+<span class="s2">                        assistant_reply     TEXT        NOT NULL,</span>
+<span class="s2">                        prompt_tokens       INT         DEFAULT 0,</span>
+<span class="s2">                        completion_tokens   INT         DEFAULT 0,</span>
+<span class="s2">                        total_tokens        INT         DEFAULT 0,</span>
+<span class="s2">                        response_time_ms    INT         DEFAULT 0,</span>
+<span class="s2">                        created_at          TIMESTAMPTZ NOT NULL DEFAULT NOW()</span>
+<span class="s2">                    );</span>
+<span class="s2">                """</span><span class="p">,</span>
+                <span class="n">params</span><span class="o">=</span><span class="p">{},</span>
+                <span class="n">fetch</span><span class="o">=</span><span class="kc">False</span>
+            <span class="p">)</span>
+
+    <span class="c1"># ------------------------------------------------------------------</span>
+    <span class="c1"># Public API</span>
+
+<div class="viewcode-block" id="MessagingService.save_chat_turn">
+<a class="viewcode-back" href="../../../../generated/squirrel_services_chat_MessagingService.html#squirrel.services.chat.MessagingService.MessagingService.save_chat_turn">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">save_chat_turn</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">request</span><span class="p">:</span> <span class="n">AgentRequest</span><span class="p">,</span>
+        <span class="n">response</span><span class="p">:</span> <span class="n">AgentResponse</span><span class="p">,</span>
+        <span class="n">file_urls</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Persist a completed chat turn to the ``chat_messages`` table.</span>
+
+<span class="sd">        :param request: The original chat request from the user.</span>
+<span class="sd">        :type request: AgentRequest</span>
+<span class="sd">        :param response: The assistant's response.</span>
+<span class="sd">        :type response: AgentResponse</span>
+<span class="sd">        :param file_urls: Resolved ``s3://`` URLs for any files attached to</span>
+<span class="sd">            the request (may be empty).</span>
+<span class="sd">        :type file_urls: list[str]</span>
+<span class="sd">        </span>
+<span class="sd">        :return: ``True`` when the row was written successfully.</span>
+<span class="sd">        :rtype: bool</span>
+<span class="sd">        """</span>
+        <span class="n">user_message</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">query</span> <span class="k">if</span> <span class="n">request</span><span class="o">.</span><span class="n">query</span> <span class="k">else</span> <span class="nb">str</span><span class="p">(</span><span class="n">request</span><span class="o">.</span><span class="n">message</span> <span class="ow">or</span> <span class="s2">""</span><span class="p">)</span>
+
+        <span class="c1"># psycopg accepts Python lists for array columns directly.</span>
+        <span class="n">ok</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_db</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span>
+            <span class="p">{</span>
+                <span class="s2">"sql"</span><span class="p">:</span> <span class="s2">"""</span>
+<span class="s2">                    INSERT INTO chat_messages (</span>
+<span class="s2">                        conversation_id,</span>
+<span class="s2">                        user_message,</span>
+<span class="s2">                        file_urls,</span>
+<span class="s2">                        assistant_reply,</span>
+<span class="s2">                        prompt_tokens,</span>
+<span class="s2">                        completion_tokens,</span>
+<span class="s2">                        total_tokens,</span>
+<span class="s2">                        response_time_ms,</span>
+<span class="s2">                        created_at</span>
+<span class="s2">                    ) VALUES (</span>
+<span class="s2">                        </span><span class="si">%(conversation_id)s</span><span class="s2">,</span>
+<span class="s2">                        </span><span class="si">%(user_message)s</span><span class="s2">,</span>
+<span class="s2">                        </span><span class="si">%(file_urls)s</span><span class="s2">,</span>
+<span class="s2">                        </span><span class="si">%(assistant_reply)s</span><span class="s2">,</span>
+<span class="s2">                        </span><span class="si">%(prompt_tokens)s</span><span class="s2">,</span>
+<span class="s2">                        </span><span class="si">%(completion_tokens)s</span><span class="s2">,</span>
+<span class="s2">                        </span><span class="si">%(total_tokens)s</span><span class="s2">,</span>
+<span class="s2">                        </span><span class="si">%(response_time_ms)s</span><span class="s2">,</span>
+<span class="s2">                        </span><span class="si">%(created_at)s</span>
+<span class="s2">                    )</span>
+<span class="s2">                """</span><span class="p">,</span>
+                <span class="s2">"params"</span><span class="p">:</span> <span class="p">{</span>
+                    <span class="s2">"conversation_id"</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">request</span><span class="o">.</span><span class="n">conversationId</span> <span class="ow">or</span> <span class="s2">""</span><span class="p">),</span>
+                    <span class="s2">"user_message"</span><span class="p">:</span> <span class="n">user_message</span><span class="p">,</span>
+                    <span class="s2">"file_urls"</span><span class="p">:</span> <span class="n">file_urls</span><span class="p">,</span>
+                    <span class="s2">"assistant_reply"</span><span class="p">:</span> <span class="n">response</span><span class="o">.</span><span class="n">reply</span> <span class="ow">or</span> <span class="s2">""</span><span class="p">,</span>
+                    <span class="s2">"prompt_tokens"</span><span class="p">:</span> <span class="n">response</span><span class="o">.</span><span class="n">llmTokens</span><span class="o">.</span><span class="n">promptTokens</span> <span class="k">if</span> <span class="n">response</span><span class="o">.</span><span class="n">llmTokens</span> <span class="k">else</span> <span class="mi">0</span><span class="p">,</span>
+                    <span class="s2">"completion_tokens"</span><span class="p">:</span> <span class="n">response</span><span class="o">.</span><span class="n">llmTokens</span><span class="o">.</span><span class="n">completionTokens</span> <span class="k">if</span> <span class="n">response</span><span class="o">.</span><span class="n">llmTokens</span> <span class="k">else</span> <span class="mi">0</span><span class="p">,</span>
+                    <span class="s2">"total_tokens"</span><span class="p">:</span> <span class="n">response</span><span class="o">.</span><span class="n">llmTokens</span><span class="o">.</span><span class="n">totalTokens</span> <span class="k">if</span> <span class="n">response</span><span class="o">.</span><span class="n">llmTokens</span> <span class="k">else</span> <span class="mi">0</span><span class="p">,</span>
+                    <span class="s2">"response_time_ms"</span><span class="p">:</span> <span class="n">response</span><span class="o">.</span><span class="n">responseTime</span> <span class="ow">or</span> <span class="mi">0</span><span class="p">,</span>
+                    <span class="s2">"created_at"</span><span class="p">:</span> <span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">(</span><span class="n">timezone</span><span class="o">.</span><span class="n">utc</span><span class="p">),</span>
+                <span class="p">},</span>
+            <span class="p">}</span>
+        <span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">ok</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+                <span class="s2">"Persisted chat turn for conversation=</span><span class="si">{}</span><span class="s2">"</span><span class="p">,</span> <span class="n">request</span><span class="o">.</span><span class="n">conversationId</span>
+            <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span>
+                <span class="s2">"Failed to persist chat turn for conversation=</span><span class="si">{}</span><span class="s2">"</span><span class="p">,</span> <span class="n">request</span><span class="o">.</span><span class="n">conversationId</span>
+            <span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">ok</span></div>
+
+
+<div class="viewcode-block" id="MessagingService.get_conversation_history">
+<a class="viewcode-back" href="../../../../generated/squirrel_services_chat_MessagingService.html#squirrel.services.chat.MessagingService.MessagingService.get_conversation_history">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_conversation_history</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">conversation_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">limit</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">50</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Return recent messages for *conversation_id*, oldest first.</span>
+
+<span class="sd">        :param conversation_id: The conversation to fetch.</span>
+<span class="sd">        :type conversation_id: str</span>
+<span class="sd">        :param limit: Maximum number of rows to return.</span>
+<span class="sd">        :type limit: int</span>
+<span class="sd">        </span>
+<span class="sd">        :return: List of row dicts ordered by ``created_at`` ascending.</span>
+<span class="sd">        :rtype: list[dict]</span>
+<span class="sd">        """</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_db</span><span class="o">.</span><span class="n">retrieve</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_TABLE</span><span class="p">,</span>
+            <span class="n">filters</span><span class="o">=</span><span class="p">{</span><span class="s2">"conversation_id"</span><span class="p">:</span> <span class="n">conversation_id</span><span class="p">},</span>
+        <span class="p">)</span>
+        <span class="n">rows</span> <span class="o">=</span> <span class="n">result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"rows"</span><span class="p">,</span> <span class="p">[])</span> <span class="k">if</span> <span class="n">result</span> <span class="k">else</span> <span class="p">[]</span>
+        <span class="c1"># Sort ascending (retrieve() may not guarantee order) and apply limit.</span>
+        <span class="n">rows</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">r</span><span class="p">:</span> <span class="n">r</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"created_at"</span><span class="p">,</span> <span class="s2">""</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">rows</span><span class="p">[:</span><span class="n">limit</span><span class="p">]</span></div>
+</div>
+
+
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, Mazen Soliman.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

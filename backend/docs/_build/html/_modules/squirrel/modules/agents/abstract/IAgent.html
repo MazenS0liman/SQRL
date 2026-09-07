@@ -1,0 +1,1244 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>squirrel.modules.agents.abstract.IAgent &mdash; squirrel  documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../../../../_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" type="text/css" href="../../../../../_static/css/custom.css?v=adc7883a" />
+
+  
+    <link rel="shortcut icon" href="../../../../../_static/sqrl.png"/>
+      <script src="../../../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../../../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../../../../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script src="../../../../../_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="../../../../../_static/copybutton.js?v=a46eff05"></script>
+    <script src="../../../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../../../index.html" class="icon icon-home">
+            squirrel
+              <img src="../../../../../_static/sqrl.png" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Python API Reference:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../api.html">Python API Reference</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../../index.html">squirrel</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">squirrel.modules.agents.abstract.IAgent</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for squirrel.modules.agents.abstract.IAgent</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/python</span>
+<span class="sd">"""</span>
+<span class="sd">Abstract Agent Module</span>
+<span class="sd">=====================</span>
+
+<span class="sd">Overview</span>
+<span class="sd">--------</span>
+
+<span class="sd">This module defines the abstract base class IAgent for agents that interact with Large Language Models (LLMs).</span>
+
+<span class="sd">It provides a unified interface for communicating with various LLM providers,</span>
+<span class="sd">handling retries, provider selection, and request management.</span>
+
+<span class="sd">Features</span>
+<span class="sd">--------</span>
+
+<span class="sd">- Automatic retries with exponential backoff</span>
+<span class="sd">- Global request counting for monitoring usage</span>
+<span class="sd">- Support for multiple LLM providers (OpenAI, Gemini, Groq, OpenRouter)</span>
+<span class="sd">- Per-user credential resolution via TokenService, with fallback to shared env-var keys</span>
+
+<span class="sd">"""</span>
+<span class="c1"># ——————————————————————————————————————————————————————————————</span>
+<span class="c1"># Standard Libraries</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">ssl</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">time</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">ABC</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Optional</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">requests.exceptions</span><span class="w"> </span><span class="kn">import</span> <span class="n">SSLError</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fastapi</span><span class="w"> </span><span class="kn">import</span> <span class="n">WebSocket</span>
+
+<span class="c1"># Provider Classes</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">squirrel.modules.providers</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">IProvider</span><span class="p">,</span> <span class="n">Provider</span><span class="p">,</span>
+    <span class="n">OpenRouterProvider</span><span class="p">,</span>
+    <span class="n">GeminiProvider</span><span class="p">,</span>
+    <span class="n">GroqProvider</span>
+<span class="p">)</span>
+
+<span class="c1"># Prompt Generator Interface</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">squirrel.modules.prompts.abstract.IPromptGenerator</span><span class="w"> </span><span class="kn">import</span> <span class="n">IPromptGenerator</span>
+
+<span class="c1"># Token Service (per-user provider credentials)</span>
+<span class="c1"># NOTE: adjust this import path to wherever token_service actually lives in your project.</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">squirrel.services.auth.TokenService</span><span class="w"> </span><span class="kn">import</span> <span class="n">token_service</span>
+
+<span class="c1"># Logging</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">squirrel.core.logging</span><span class="w"> </span><span class="kn">import</span> <span class="n">Loggable</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">loguru</span><span class="w"> </span><span class="kn">import</span> <span class="n">logger</span>
+
+<span class="c1"># ——————————————————————————————————————————————————————————————</span>
+<span class="c1"># IAgent Class</span>
+<div class="viewcode-block" id="IAgent">
+<a class="viewcode-back" href="../../../../../generated/squirrel_modules_agents_abstract_IAgent.html#squirrel.modules.agents.abstract.IAgent.IAgent">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">IAgent</span><span class="p">(</span><span class="n">ABC</span><span class="p">,</span> <span class="n">Loggable</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Abstract Agent Class</span>
+<span class="sd">    --------------------</span>
+
+<span class="sd">    **Description:**</span>
+
+<span class="sd">        This class provides a unified interface for communicating with various LLM providers</span>
+<span class="sd">        (OpenAI, Google Gemini, Groq, OpenRouter) through a consistent API. It handles provider</span>
+<span class="sd">        selection, request management, error handling, and response processing for AI-powered</span>
+<span class="sd">        operations.</span>
+
+<span class="sd">        When a ``user_id`` is set on the agent (either at construction time or per-call via</span>
+<span class="sd">        :meth:`get_response`), the agent will first try to use that user's own stored provider</span>
+<span class="sd">        token (via :class:`TokenService`) before falling back to the shared, environment-variable</span>
+<span class="sd">        based API keys. This lets a single agent instance make calls on behalf of many different</span>
+<span class="sd">        users, each billed/rate-limited against their own credentials.</span>
+
+<span class="sd">    **Attributes:**</span>
+
+<span class="sd">        - :py:data:`DEFAULT_PROVIDERS`</span>
+<span class="sd">            Default list of providers in fallback order [GEMINI, OPENAI, GROQ, OPENROUTER]</span>
+
+<span class="sd">    **Key Features:**</span>
+
+<span class="sd">        - Support for multiple LLM providers (OpenAI, Gemini, Groq, OpenRouter)</span>
+<span class="sd">        - Automatic provider fallback when primary provider fails</span>
+<span class="sd">        - Retry logic with exponential backoff for resilience</span>
+<span class="sd">        - Global request counting for usage monitoring and quotas</span>
+<span class="sd">        - Integration with prompt generation strategies</span>
+<span class="sd">        - Flexible model selection and configuration</span>
+<span class="sd">        - SSL error handling and recovery</span>
+<span class="sd">        - Per-user credential resolution via TokenService</span>
+
+<span class="sd">    **Core Methods**</span>
+
+<span class="sd">        - :meth:`get_response`</span>
+<span class="sd">            Get a response from the LLM with customizable providers and models</span>
+
+<span class="sd">    **Supported Providers**</span>
+
+<span class="sd">        - **OpenAI**: GPT-5, GPT-4.1, GPT-4o</span>
+<span class="sd">        - **Google Gemini**: Gemini 2.5 Flash, Gemini 2.5 Pro</span>
+
+<span class="sd">    **Example**</span>
+
+<span class="sd">    .. code-block:: python</span>
+
+<span class="sd">        from squirrel.modules.agents.abstract.IAgent import IAgent</span>
+<span class="sd">        from squirrel.modules.providers.abstract.IProvider import Provider</span>
+<span class="sd">        from squirrel.modules.prompts.abstract.IPromptGenerator import IPromptGenerator</span>
+
+<span class="sd">        class CustomPromptGenerator(IPromptGenerator):</span>
+<span class="sd">            @override</span>
+<span class="sd">            def generate_system_prompt(self, input_data: Dict) -&gt; str:</span>
+<span class="sd">                return "Custom system prompt based on input data"</span>
+
+<span class="sd">            @override</span>
+<span class="sd">            def generate_user_prompt(self, input_data: Dict) -&gt; str:</span>
+<span class="sd">                return "Custom user prompt based on input data"</span>
+
+<span class="sd">        class CustomAgent(IAgent):</span>
+<span class="sd">            def __init__(</span>
+<span class="sd">                self,</span>
+<span class="sd">                api_env_var: str,</span>
+<span class="sd">                provider: Provider,</span>
+<span class="sd">                model_name: str,</span>
+<span class="sd">                prompt_generator: IPromptGenerator,</span>
+<span class="sd">                config: Dict = None,</span>
+<span class="sd">                user_id: str = None,</span>
+<span class="sd">            ) -&gt; None:</span>
+<span class="sd">                super().__init__(</span>
+<span class="sd">                    api_env_var="GEMINI_API_KEY_V1",</span>
+<span class="sd">                    provider=provider,</span>
+<span class="sd">                    model_name=model_name,</span>
+<span class="sd">                    prompt_generator=prompt_generator,</span>
+<span class="sd">                    config=config if config is not None else {"temperature": 0.7, "max_tokens": 1000},</span>
+<span class="sd">                    user_id=user_id,</span>
+<span class="sd">                )</span>
+
+<span class="sd">        agent = CustomAgent(</span>
+<span class="sd">            api_env_var="GEMINI_API_KEY_V1",</span>
+<span class="sd">            provider=Provider.GEMINI,</span>
+<span class="sd">            model_name="models/gemini-2.5-pro",</span>
+<span class="sd">            prompt_generator=CustomPromptGenerator(),</span>
+<span class="sd">            config={"temperature": 0.7, "max_tokens": 1000},</span>
+<span class="sd">            user_id="user_123",</span>
+<span class="sd">        )</span>
+
+<span class="sd">    """</span>
+    <span class="n">DEFAULT_PROVIDERS</span> <span class="o">=</span> <span class="p">[</span><span class="n">Provider</span><span class="o">.</span><span class="n">GEMINI</span><span class="p">,</span> <span class="n">Provider</span><span class="o">.</span><span class="n">OPENAI</span><span class="p">,</span> <span class="n">Provider</span><span class="o">.</span><span class="n">GROQ</span><span class="p">,</span> <span class="n">Provider</span><span class="o">.</span><span class="n">OPENROUTER</span><span class="p">]</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">api_env_var</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="s2">"GEMINI_API_KEY_V1"</span><span class="p">,</span>
+        <span class="n">provider</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Provider</span><span class="p">]</span> <span class="o">=</span> <span class="n">Provider</span><span class="o">.</span><span class="n">GEMINI</span><span class="p">,</span>
+        <span class="n">model_name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="s2">"models/gemini-2.5-pro"</span><span class="p">,</span>
+        <span class="n">prompt_generator</span><span class="p">:</span> <span class="n">IPromptGenerator</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">config</span><span class="p">:</span> <span class="n">Dict</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">socket</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">WebSocket</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">user_id</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Initialize the IAgent instance.</span>
+
+<span class="sd">        **Description:**</span>
+
+<span class="sd">            This constructor sets up the agent with the specified API key, provider,</span>
+<span class="sd">            model name, prompt generator, and configuration parameters. If ``user_id``</span>
+<span class="sd">            is provided, the agent will attempt to resolve that user's stored provider</span>
+<span class="sd">            token (via TokenService) before falling back to ``api_env_var``.</span>
+
+<span class="sd">        :param api_env_var: Environment variable name for the API key (default: "GEMINI_API_KEY_V1")</span>
+<span class="sd">        :type api_env_var: str, optional</span>
+
+<span class="sd">        :param provider: Primary LLM provider to use (default: Provider.GEMINI)</span>
+<span class="sd">        :type provider: Provider, optional</span>
+
+<span class="sd">        :param model_name: Name/ID of the model to use (default: "models/gemini-2.5-pro")</span>
+<span class="sd">        :type model_name: str, optional</span>
+
+<span class="sd">        :param prompt_generator: Prompt generation strategy for the agent</span>
+<span class="sd">        :type prompt_generator: IPromptGenerator</span>
+
+<span class="sd">        :param config: Configuration parameters (e.g., temperature, max_tokens)</span>
+<span class="sd">        :type config: dict, optional</span>
+
+<span class="sd">        :param socket: Optional WebSocket for streaming updates</span>
+<span class="sd">        :type socket: WebSocket, optional</span>
+
+<span class="sd">        :param user_id: The ID of the user this agent acts on behalf of. When set,</span>
+<span class="sd">            provider calls prefer this user's stored token over shared env-var keys.</span>
+<span class="sd">        :type user_id: str, optional</span>
+
+<span class="sd">        :return: None</span>
+<span class="sd">        :rtype: None</span>
+
+<span class="sd">        """</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_api_env_var</span> <span class="o">=</span> <span class="n">api_env_var</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_provider</span><span class="p">:</span> <span class="n">Provider</span> <span class="o">=</span> <span class="n">provider</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_model_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">model_name</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_prompt_generator</span><span class="p">:</span> <span class="n">IPromptGenerator</span> <span class="o">=</span> <span class="n">prompt_generator</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_config</span><span class="p">:</span> <span class="n">Dict</span> <span class="o">=</span> <span class="n">config</span> <span class="k">if</span> <span class="n">config</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_user_id</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="n">user_id</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Initializing IAgent with provider=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_provider</span><span class="si">}</span><span class="s2">, model_name=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_model_name</span><span class="si">}</span><span class="s2">, user_id=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_user_id</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+
+        <span class="n">resolved_api_key</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_resolve_api_key</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">provider</span><span class="p">)</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_user_id</span> <span class="k">else</span> <span class="kc">None</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Resolved API key for user_id=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_user_id</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="s1">'[REDACTED]'</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="n">resolved_api_key</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="s1">'None'</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_model</span><span class="p">:</span> <span class="n">IProvider</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_instantiate_model</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_api_env_var</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">provider</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">model_name</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">,</span>
+                <span class="n">api_key</span><span class="o">=</span><span class="n">resolved_api_key</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="k">if</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_api_env_var</span> <span class="ow">or</span> <span class="n">resolved_api_key</span><span class="p">)</span> <span class="k">else</span> <span class="kc">None</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_socket</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">WebSocket</span><span class="p">]</span> <span class="o">=</span> <span class="n">socket</span>
+
+        <span class="c1"># Usage tracking</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_total_input_tokens_used</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_total_output_tokens_used</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_total_tokens_used</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_total_request_count</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">api_env_var</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Environment variable name for the API key."""</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_api_env_var</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">provider</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Provider</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Provider name."""</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_provider</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">model_name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Model name."""</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_model_name</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">prompt_generator</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">IPromptGenerator</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Prompt generator instance."""</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_prompt_generator</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">config</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Configuration dictionary."""</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_config</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">model</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">IProvider</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Provider instance."""</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_model</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">socket</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">WebSocket</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">"""WebSocket instance."""</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_socket</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">user_id</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">"""The user this agent makes provider calls on behalf of, if any."""</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_user_id</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">total_request_count</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Total number of requests made across all providers."""</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_total_request_count</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">total_input_tokens_used</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Total number of input tokens used across all providers."""</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_total_input_tokens_used</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">total_output_tokens_used</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Total number of output tokens used across all providers."""</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_total_output_tokens_used</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">total_tokens_used</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Total number of tokens used across all providers."""</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_total_tokens_used</span>
+
+    <span class="nd">@api_env_var</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">api_env_var</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">value</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Set a new environment variable name for the API key.</span>
+
+<span class="sd">        :param value: The new environment variable name</span>
+<span class="sd">        :type value: str</span>
+
+<span class="sd">        :return: None</span>
+<span class="sd">        """</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_api_env_var</span> <span class="o">=</span> <span class="n">value</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_model</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_instantiate_model</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_api_env_var</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">provider</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">model_name</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">)</span>
+
+    <span class="nd">@provider</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">provider</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">value</span><span class="p">:</span> <span class="n">Provider</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Set the provider.</span>
+
+<span class="sd">        :param value: The provider to set</span>
+<span class="sd">        :type value: Provider</span>
+
+<span class="sd">        :return: None</span>
+<span class="sd">        """</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_provider</span> <span class="o">=</span> <span class="n">value</span>
+
+    <span class="nd">@model_name</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">model_name</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">value</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Set the model name.</span>
+
+<span class="sd">        :param value: The model name to set</span>
+<span class="sd">        :type value: str</span>
+
+<span class="sd">        :return: None</span>
+<span class="sd">        """</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_model_name</span> <span class="o">=</span> <span class="n">value</span>
+
+    <span class="nd">@prompt_generator</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">prompt_generator</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">value</span><span class="p">:</span> <span class="n">IPromptGenerator</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Set the prompt generator.</span>
+
+<span class="sd">        :param value: The prompt generator to set</span>
+<span class="sd">        :type value: IPromptGenerator</span>
+
+<span class="sd">        :return: None</span>
+<span class="sd">        """</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_prompt_generator</span> <span class="o">=</span> <span class="n">value</span>
+
+    <span class="nd">@config</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">config</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">value</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Set the configuration dictionary.</span>
+
+<span class="sd">        :param value: The configuration dictionary to set</span>
+<span class="sd">        :type value: dict[str, Any]</span>
+
+<span class="sd">        :return: None</span>
+<span class="sd">        """</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_config</span> <span class="o">=</span> <span class="n">value</span>
+
+    <span class="nd">@model</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">model</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">value</span><span class="p">:</span> <span class="n">IProvider</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Set the provider instance.</span>
+
+<span class="sd">        :param value: The provider instance to set</span>
+<span class="sd">        :type value: IProvider</span>
+
+<span class="sd">        :return: None</span>
+<span class="sd">        """</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_model</span> <span class="o">=</span> <span class="n">value</span>
+
+    <span class="nd">@socket</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">socket</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">value</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">WebSocket</span><span class="p">]</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Set the WebSocket instance.</span>
+
+<span class="sd">        :param value: The WebSocket instance to set</span>
+<span class="sd">        :type value: Optional[WebSocket]</span>
+
+<span class="sd">        :return: None</span>
+<span class="sd">        """</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_socket</span> <span class="o">=</span> <span class="n">value</span>
+
+    <span class="nd">@user_id</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">user_id</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">value</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Set the user this agent acts on behalf of.</span>
+
+<span class="sd">        :param value: The user ID, or None to clear it</span>
+<span class="sd">        :type value: Optional[str]</span>
+
+<span class="sd">        :return: None</span>
+<span class="sd">        """</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_user_id</span> <span class="o">=</span> <span class="n">value</span>
+
+    <span class="nd">@total_request_count</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">total_request_count</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">value</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Set the total number of requests made across all providers.</span>
+
+<span class="sd">        :param value: The total number of requests</span>
+<span class="sd">        :type value: int</span>
+
+<span class="sd">        :return: None</span>
+<span class="sd">        """</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_total_request_count</span> <span class="o">=</span> <span class="n">value</span>
+
+    <span class="nd">@total_input_tokens_used</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">total_input_tokens_used</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">value</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Set the total number of input tokens used across all providers.</span>
+
+<span class="sd">        :param value: The total number of input tokens</span>
+<span class="sd">        :type value: int</span>
+
+<span class="sd">        :return: None</span>
+<span class="sd">        """</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_total_input_tokens_used</span> <span class="o">=</span> <span class="n">value</span>
+
+    <span class="nd">@total_output_tokens_used</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">total_output_tokens_used</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">value</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Set the total number of output tokens used across all providers.</span>
+
+<span class="sd">        :param value: The total number of output tokens</span>
+<span class="sd">        :type value: int</span>
+
+<span class="sd">        :return: None</span>
+<span class="sd">        """</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_total_output_tokens_used</span> <span class="o">=</span> <span class="n">value</span>
+
+    <span class="nd">@total_tokens_used</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">total_tokens_used</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">value</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Set the total number of tokens used across all providers.</span>
+
+<span class="sd">        :param value: The total number of tokens used</span>
+<span class="sd">        :type value: int</span>
+
+<span class="sd">        :return: None</span>
+<span class="sd">        """</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_total_tokens_used</span> <span class="o">=</span> <span class="n">value</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_resolve_api_key</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">provider</span><span class="p">:</span> <span class="n">Provider</span><span class="p">,</span>
+        <span class="n">user_id</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">label</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Look up a stored provider token for a specific user via TokenService.</span>
+
+<span class="sd">        **Description:**</span>
+
+<span class="sd">            Resolves ``user_id`` (falling back to ``self._user_id`` if not given) and,</span>
+<span class="sd">            if present, asks TokenService for that user's decrypted token for the given</span>
+<span class="sd">            provider. Returns None if there's no user in scope, or if the user has no</span>
+<span class="sd">            token stored for that provider — callers should treat None as "fall back to</span>
+<span class="sd">            shared/env-var credentials".</span>
+
+<span class="sd">        :param provider: The provider to resolve a token for</span>
+<span class="sd">        :type provider: Provider</span>
+
+<span class="sd">        :param user_id: The user to resolve a token for. Falls back to self._user_id.</span>
+<span class="sd">        :type user_id: str, optional</span>
+
+<span class="sd">        :param label: Optional label, for users who store multiple tokens per provider</span>
+<span class="sd">        :type label: str, optional</span>
+
+<span class="sd">        :return: The decrypted token, or None if unavailable</span>
+<span class="sd">        :rtype: str or None</span>
+<span class="sd">        """</span>
+        <span class="n">uid</span> <span class="o">=</span> <span class="n">user_id</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">_user_id</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">uid</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">token_service</span><span class="o">.</span><span class="n">get_decrypted_token</span><span class="p">(</span><span class="n">uid</span><span class="p">,</span> <span class="n">provider</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="n">label</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"Could not resolve stored token for user_id=</span><span class="si">{</span><span class="n">uid</span><span class="si">}</span><span class="s2">, provider=</span><span class="si">{</span><span class="n">provider</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">"</span>
+            <span class="p">)</span>
+            <span class="k">return</span> <span class="kc">None</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_key_sources</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">provider</span><span class="p">:</span> <span class="n">Provider</span><span class="p">,</span>
+        <span class="n">user_id</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]]]:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Build the ordered list of credential sources to try for a provider.</span>
+
+<span class="sd">        **Description:**</span>
+
+<span class="sd">            The requesting user's own stored token (if any) is tried first, followed by</span>
+<span class="sd">            the shared environment-variable keys discovered via</span>
+<span class="sd">            :meth:`_get_provider_api_env_vars`. Each source is a dict of the form</span>
+<span class="sd">            ``{"api_env_var": Optional[str], "api_key": Optional[str]}`` and is consumed</span>
+<span class="sd">            by :meth:`_build_provider` / :meth:`_instantiate_model`.</span>
+
+<span class="sd">        :param provider: The provider to resolve credential sources for</span>
+<span class="sd">        :type provider: Provider</span>
+
+<span class="sd">        :param user_id: The user to resolve a personal token for. Falls back to self._user_id.</span>
+<span class="sd">        :type user_id: str, optional</span>
+
+<span class="sd">        :return: Ordered list of credential sources</span>
+<span class="sd">        :rtype: list[dict[str, Optional[str]]]</span>
+<span class="sd">        """</span>
+        <span class="n">sources</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]]]</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="n">user_key</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_resolve_api_key</span><span class="p">(</span><span class="n">provider</span><span class="p">,</span> <span class="n">user_id</span><span class="o">=</span><span class="n">user_id</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">user_key</span><span class="p">:</span>
+            <span class="n">sources</span><span class="o">.</span><span class="n">append</span><span class="p">({</span><span class="s2">"api_env_var"</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span> <span class="s2">"api_key"</span><span class="p">:</span> <span class="n">user_key</span><span class="p">})</span>
+
+        <span class="k">for</span> <span class="n">env_var</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_provider_api_env_vars</span><span class="p">(</span><span class="n">provider</span><span class="p">):</span>
+            <span class="n">sources</span><span class="o">.</span><span class="n">append</span><span class="p">({</span><span class="s2">"api_env_var"</span><span class="p">:</span> <span class="n">env_var</span><span class="p">,</span> <span class="s2">"api_key"</span><span class="p">:</span> <span class="kc">None</span><span class="p">})</span>
+
+        <span class="k">return</span> <span class="n">sources</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_build_provider</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">provider</span><span class="p">:</span> <span class="n">Provider</span><span class="p">,</span>
+        <span class="n">source</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]],</span>
+        <span class="n">model_name</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">IProvider</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Instantiate a provider from a resolved credential source.</span>
+
+<span class="sd">        :param provider: The provider to instantiate</span>
+<span class="sd">        :type provider: Provider</span>
+
+<span class="sd">        :param source: A credential source as returned by :meth:`_get_key_sources`</span>
+<span class="sd">        :type source: dict[str, Optional[str]]</span>
+
+<span class="sd">        :param model_name: The model name to instantiate the provider with</span>
+<span class="sd">        :type model_name: str</span>
+
+<span class="sd">        :return: An instance of the provider</span>
+<span class="sd">        :rtype: IProvider</span>
+<span class="sd">        """</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_instantiate_model</span><span class="p">(</span>
+            <span class="n">source</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"api_env_var"</span><span class="p">),</span> <span class="n">provider</span><span class="p">,</span> <span class="n">model_name</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">,</span>
+            <span class="n">api_key</span><span class="o">=</span><span class="n">source</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"api_key"</span><span class="p">),</span>
+        <span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_instantiate_model</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">api_env_var</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">provider</span><span class="p">:</span> <span class="n">Provider</span> <span class="o">=</span> <span class="n">Provider</span><span class="o">.</span><span class="n">GEMINI</span><span class="p">,</span>
+        <span class="n">model_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"gemini-2.0-flash"</span><span class="p">,</span>
+        <span class="n">config</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">api_key</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">IProvider</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Instantiate the model based on the provider name.</span>
+
+<span class="sd">        **Description:**</span>
+
+<span class="sd">            This method creates an instance of the provider class corresponding</span>
+<span class="sd">            to the specified provider name, using the provided API key/env var, model name,</span>
+<span class="sd">            and configuration. If ``api_key`` is given, it takes precedence over</span>
+<span class="sd">            ``api_env_var`` inside the provider (e.g. a user's stored token).</span>
+
+<span class="sd">        :param api_env_var: The environment variable name for the API key</span>
+<span class="sd">        :type api_env_var: str</span>
+
+<span class="sd">        :param provider: The name of the provider</span>
+<span class="sd">        :type provider: Provider</span>
+
+<span class="sd">        :param model_name: The name of the model</span>
+<span class="sd">        :type model_name: str</span>
+
+<span class="sd">        :param config: Additional configuration for the model</span>
+<span class="sd">        :type config: dict</span>
+
+<span class="sd">        :param api_key: An explicit API key to use instead of resolving from api_env_var</span>
+<span class="sd">            (e.g. a user's decrypted stored token)</span>
+<span class="sd">        :type api_key: str, optional</span>
+
+<span class="sd">        :return: An instance of the provider</span>
+<span class="sd">        :rtype: IProvider</span>
+
+<span class="sd">        **Example:**</span>
+
+<span class="sd">        .. code-block:: python</span>
+
+<span class="sd">            from squirrel.modules.agents.abstract.IAgent import IAgent</span>
+
+<span class="sd">            # Assume `agent` is an instance of a class derived from IAgent</span>
+
+<span class="sd">            provider_instance = agent._instantiate_model(</span>
+<span class="sd">                api_env_var="GEMINI_API_KEY_V1",</span>
+<span class="sd">                provider=Provider.GEMINI,</span>
+<span class="sd">                model_name="gemini-2.0-flash",</span>
+<span class="sd">                config={"temperature": 0.7, "max_tokens": 1000}</span>
+<span class="sd">            )</span>
+
+<span class="sd">            # Use the provider instance</span>
+
+<span class="sd">        """</span>
+        <span class="k">if</span> <span class="n">config</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">config</span> <span class="o">=</span> <span class="p">{}</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">api_env_var</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">api_key</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"Either api_env_var or api_key is required to instantiate the model."</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">provider</span> <span class="o">==</span> <span class="n">Provider</span><span class="o">.</span><span class="n">GEMINI</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">GeminiProvider</span><span class="p">(</span><span class="n">api_env_var</span><span class="p">,</span> <span class="n">model_name</span><span class="p">,</span> <span class="n">config</span><span class="p">,</span> <span class="n">api_key</span><span class="o">=</span><span class="n">api_key</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">provider</span> <span class="o">==</span> <span class="n">Provider</span><span class="o">.</span><span class="n">GROQ</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">GroqProvider</span><span class="p">(</span><span class="n">api_env_var</span><span class="p">,</span> <span class="n">model_name</span><span class="p">,</span> <span class="n">config</span><span class="p">,</span> <span class="n">api_key</span><span class="o">=</span><span class="n">api_key</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">provider</span> <span class="o">==</span> <span class="n">Provider</span><span class="o">.</span><span class="n">OPENROUTER</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">OpenRouterProvider</span><span class="p">(</span><span class="n">api_env_var</span><span class="p">,</span> <span class="n">model_name</span><span class="p">,</span> <span class="n">config</span><span class="p">,</span> <span class="n">api_key</span><span class="o">=</span><span class="n">api_key</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Unsupported provider: </span><span class="si">{</span><span class="n">provider</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_key_with_substring</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">substring</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Retrieve all environment variable keys that contain the specified substring.</span>
+
+<span class="sd">        :param substring: The substring to search for in environment variable keys</span>
+<span class="sd">        :type substring: str</span>
+
+<span class="sd">        :return: A list of matching environment variable keys</span>
+<span class="sd">        :rtype: list[str]</span>
+
+<span class="sd">        **Example:**</span>
+
+<span class="sd">        .. code-block:: python</span>
+
+<span class="sd">            from squirrel.modules.agents.abstract.IAgent import IAgent</span>
+
+<span class="sd">            # Assume `agent` is an instance of a class derived from IAgent</span>
+<span class="sd">            keys = agent._get_key_with_substring("GEMINI")</span>
+
+<span class="sd">            print(keys)</span>
+<span class="sd">            # Output: ['GEMINI_API_KEY_V1', 'GEMINI_API_KEY_V2']</span>
+
+<span class="sd">        """</span>
+        <span class="n">matching_keys</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">substring</span> <span class="ow">in</span> <span class="n">key</span><span class="p">:</span>
+                <span class="n">matching_keys</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">matching_keys</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_provider_type</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">provider</span><span class="p">:</span> <span class="n">Provider</span><span class="p">,</span>
+        <span class="n">user_id</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">IProvider</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Get the provider class based on the provider name.</span>
+
+<span class="sd">        **Description:**</span>
+
+<span class="sd">            This method returns an instance of the provider class corresponding</span>
+<span class="sd">            to the specified provider name. It first tries the requesting user's own</span>
+<span class="sd">            stored token (if any), then falls back to environment variables that</span>
+<span class="sd">            contain the provider's name as a substring.</span>
+
+<span class="sd">        :param provider: The name of the provider</span>
+<span class="sd">        :type provider: Provider</span>
+
+<span class="sd">        :param user_id: The user to resolve a personal token for. Falls back to self._user_id.</span>
+<span class="sd">        :type user_id: str, optional</span>
+
+<span class="sd">        :return: An instance of the provider class</span>
+<span class="sd">        :rtype: IProvider</span>
+
+<span class="sd">        **Example:**</span>
+
+<span class="sd">        .. code-block:: python</span>
+
+<span class="sd">            from squirrel.modules.agents.abstract.IAgent import IAgent</span>
+
+<span class="sd">            # Assume `agent` is an instance of a class derived from IAgent</span>
+<span class="sd">            provider_instance = agent._get_provider_type(Provider.GEMINI)</span>
+
+<span class="sd">            # Use the provider instance</span>
+
+<span class="sd">        """</span>
+        <span class="n">sources</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_key_sources</span><span class="p">(</span><span class="n">provider</span><span class="p">,</span> <span class="n">user_id</span><span class="o">=</span><span class="n">user_id</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">sources</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"No API key found for provider: </span><span class="si">{</span><span class="n">provider</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_build_provider</span><span class="p">(</span><span class="n">provider</span><span class="p">,</span> <span class="n">sources</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">model_name</span><span class="o">=</span><span class="s2">""</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_provider_api_env_vars</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">provider</span><span class="p">:</span> <span class="n">Provider</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Get the API environment variables for the given provider name.</span>
+
+<span class="sd">        **Description:**</span>
+
+<span class="sd">            This method retrieves all API keys associated with the specified provider</span>
+<span class="sd">            by searching environment variables that contain the provider's name as a substring.</span>
+
+<span class="sd">        :param provider: The name of the provider</span>
+<span class="sd">        :type provider: Provider</span>
+
+<span class="sd">        :return: A list of API keys for the provider</span>
+<span class="sd">        :rtype: list[str]</span>
+
+<span class="sd">        **Example:**</span>
+
+<span class="sd">        .. code-block:: python</span>
+
+<span class="sd">            from squirrel.modules.agents.abstract.IAgent import IAgent</span>
+
+<span class="sd">            # Assume `agent` is an instance of a class derived from IAgent</span>
+<span class="sd">            api_env_vars = agent._get_provider_api_env_vars(Provider.GEMINI)</span>
+
+<span class="sd">            print(api_env_vars)</span>
+<span class="sd">            # Output: ['GEMINI_API_KEY_V1', 'GEMINI_API_KEY_V2']</span>
+
+<span class="sd">        """</span>
+        <span class="k">if</span> <span class="n">provider</span> <span class="o">==</span> <span class="n">Provider</span><span class="o">.</span><span class="n">GEMINI</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_key_with_substring</span><span class="p">(</span><span class="s2">"GEMINI"</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">provider</span> <span class="o">==</span> <span class="n">Provider</span><span class="o">.</span><span class="n">GROQ</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_key_with_substring</span><span class="p">(</span><span class="s2">"GROQ"</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">provider</span> <span class="o">==</span> <span class="n">Provider</span><span class="o">.</span><span class="n">OPENROUTER</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_key_with_substring</span><span class="p">(</span><span class="s2">"OPENROUTER"</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Unsupported provider: </span><span class="si">{</span><span class="n">provider</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_call_available_model</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">provider</span><span class="p">:</span> <span class="n">Provider</span><span class="p">,</span>
+        <span class="n">fn_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="nb">input</span><span class="p">:</span> <span class="n">Dict</span><span class="p">,</span>
+        <span class="n">retry_attempt</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">3</span><span class="p">,</span>
+        <span class="n">available_models</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">[],</span>
+        <span class="n">base_delay</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.5</span><span class="p">,</span>
+        <span class="n">user_id</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Call a function on the provider model with retries and exponential backoff.</span>
+
+<span class="sd">        **Description:**</span>
+
+<span class="sd">            This method attempts to call a specified function (`fn_name`) on the model</span>
+<span class="sd">            for the given provider. It iterates through all available credential sources</span>
+<span class="sd">            (the requesting user's own stored token first, then shared env-var keys) and</span>
+<span class="sd">            model names, retrying the call up to `retry_attempt` times with exponential backoff.</span>
+
+<span class="sd">        :param provider: The provider to use (e.g., Gemini)</span>
+<span class="sd">        :type provider: Provider</span>
+
+<span class="sd">        :param fn_name: The function name to call on the provider model</span>
+<span class="sd">        :type fn_name: str</span>
+
+<span class="sd">        :param input: The input data passed to the function</span>
+<span class="sd">        :type input: dict</span>
+
+<span class="sd">        :param retry_attempt: Number of retry attempts per model</span>
+<span class="sd">        :type retry_attempt: int</span>
+
+<span class="sd">        :param available_models: List of model names to attempt</span>
+<span class="sd">        :type available_models: list[str]</span>
+
+<span class="sd">        :param base_delay: Base delay (in seconds) for exponential backoff</span>
+<span class="sd">        :type base_delay: float</span>
+
+<span class="sd">        :param user_id: The user to resolve a personal token for. Falls back to self._user_id.</span>
+<span class="sd">        :type user_id: str, optional</span>
+
+<span class="sd">        :return: The successful model output, or None if all attempts fail</span>
+<span class="sd">        :rtype: str or None</span>
+
+<span class="sd">        **Example:**</span>
+
+<span class="sd">        .. code-block:: python</span>
+
+<span class="sd">            from squirrel.modules.agents.abstract.IAgent import IAgent</span>
+
+<span class="sd">            # Assume `agent` is an instance of a class derived from IAgent</span>
+
+<span class="sd">            response = agent._call_available_model(</span>
+<span class="sd">                fn_name="generate_text",</span>
+<span class="sd">                provider=Provider.GEMINI,</span>
+<span class="sd">                input={"prompt": "Hello, world!"},</span>
+<span class="sd">                retry_attempt=3,</span>
+<span class="sd">                available_models=["gemini-2.5-pro", "gemini-2.5-flash"],</span>
+<span class="sd">                base_delay=1.0</span>
+<span class="sd">            )</span>
+
+<span class="sd">            print(response)</span>
+<span class="sd">            # Output: Generated text from the model</span>
+
+<span class="sd">        """</span>
+        <span class="n">provider_type</span><span class="p">:</span> <span class="n">IProvider</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_provider_type</span><span class="p">(</span><span class="n">provider</span><span class="p">,</span> <span class="n">user_id</span><span class="o">=</span><span class="n">user_id</span><span class="p">)</span>
+        <span class="n">available_model_list</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">available_models</span>
+            <span class="k">if</span> <span class="n">available_models</span>
+            <span class="k">else</span> <span class="n">provider_type</span><span class="o">.</span><span class="n">available_model_names</span><span class="p">()</span>
+        <span class="p">)</span>
+
+        <span class="n">sources</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_key_sources</span><span class="p">(</span><span class="n">provider</span><span class="p">,</span> <span class="n">user_id</span><span class="o">=</span><span class="n">user_id</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">_source</span> <span class="ow">in</span> <span class="n">sources</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">model_name</span> <span class="ow">in</span> <span class="n">available_model_list</span><span class="p">:</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="c1"># Delegate to _call_exact_model for actual model call + retry handling</span>
+                    <span class="n">output</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_call_exact_model</span><span class="p">(</span>
+                        <span class="n">provider</span><span class="o">=</span><span class="n">provider</span><span class="p">,</span>
+                        <span class="n">model_name</span><span class="o">=</span><span class="n">model_name</span><span class="p">,</span>
+                        <span class="n">fn_name</span><span class="o">=</span><span class="n">fn_name</span><span class="p">,</span>
+                        <span class="n">model_input</span><span class="o">=</span><span class="nb">input</span><span class="p">,</span>
+                        <span class="n">retry_attempt</span><span class="o">=</span><span class="n">retry_attempt</span><span class="p">,</span>
+                        <span class="n">base_delay</span><span class="o">=</span><span class="n">base_delay</span><span class="p">,</span>
+                        <span class="n">user_id</span><span class="o">=</span><span class="n">user_id</span>
+                    <span class="p">)</span>
+                    <span class="k">if</span> <span class="n">output</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                        <span class="k">return</span> <span class="n">output</span>
+
+                <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Failed with model '</span><span class="si">{</span><span class="n">model_name</span><span class="si">}</span><span class="s2">' under provider '</span><span class="si">{</span><span class="n">provider</span><span class="si">}</span><span class="s2">': </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+                    <span class="k">continue</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">"All models for provider '</span><span class="si">{</span><span class="n">provider</span><span class="si">}</span><span class="s2">' failed after exhausting retries and API keys."</span><span class="p">)</span>
+        <span class="k">return</span> <span class="kc">None</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_call_exact_model</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">provider</span><span class="p">:</span> <span class="n">Provider</span><span class="p">,</span>
+        <span class="n">model_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">fn_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">model_input</span><span class="p">:</span> <span class="n">Dict</span><span class="p">,</span>
+        <span class="n">retry_attempt</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">3</span><span class="p">,</span>
+        <span class="n">base_delay</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">5.0</span><span class="p">,</span>
+        <span class="n">user_id</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Call a specific model function with automatic retries and exponential backoff.</span>
+
+<span class="sd">        **Description:**</span>
+
+<span class="sd">            This method attempts to invoke a specified function (`fn_name`) on the</span>
+<span class="sd">            instantiated model corresponding to the given provider and model name.</span>
+<span class="sd">            Credentials are resolved via :meth:`_get_key_sources`: the requesting user's</span>
+<span class="sd">            own stored token is tried first (if a user is in scope), then the shared</span>
+<span class="sd">            env-var keys. If an exception occurs, it retries the operation up to</span>
+<span class="sd">            `retry_attempt` times per credential source, with delays between retries</span>
+<span class="sd">            increasing exponentially by `base_delay * 2^(attempt - 1)`.</span>
+
+<span class="sd">        :param provider: The name of the provider (e.g., 'Gemini')</span>
+<span class="sd">        :type provider: Provider</span>
+
+<span class="sd">        :param model_name: The exact model name to be used for the request</span>
+<span class="sd">        :type model_name: str</span>
+
+<span class="sd">        :param fn_name: The name of the method to call on the instantiated model</span>
+<span class="sd">        :type fn_name: str</span>
+
+<span class="sd">        :param model_input: The input data passed to the model function</span>
+<span class="sd">        :type model_input: dict</span>
+
+<span class="sd">        :param retry_attempt: Number of retry attempts per model (default: 3)</span>
+<span class="sd">        :type retry_attempt: int</span>
+
+<span class="sd">        :param base_delay: Base delay (in seconds) for exponential backoff (default: 0.5)</span>
+<span class="sd">        :type base_delay: float</span>
+
+<span class="sd">        :param user_id: The user to resolve a personal token for. Falls back to self._user_id.</span>
+<span class="sd">        :type user_id: str, optional</span>
+
+<span class="sd">        :return: The output returned by the model function, or None if all retries fail</span>
+<span class="sd">        :rtype: str or None</span>
+
+<span class="sd">        **Example:**</span>
+
+<span class="sd">        .. code-block:: python</span>
+
+<span class="sd">            from squirrel.modules.agents.abstract.IAgent import IAgent</span>
+
+<span class="sd">            # Assume `agent` is an instance of a class derived from IAgent</span>
+<span class="sd">            response = agent._call_exact_model(</span>
+<span class="sd">                provider=Provider.GEMINI,</span>
+<span class="sd">                model_name="gemini-2.5-pro",</span>
+<span class="sd">                fn_name="generate_text",</span>
+<span class="sd">                model_input={"prompt": "Hello, world!"},</span>
+<span class="sd">                retry_attempt=3,</span>
+<span class="sd">                base_delay=1.0</span>
+<span class="sd">            )</span>
+
+<span class="sd">            print(response)</span>
+<span class="sd">            # Output: Generated text from the model</span>
+
+<span class="sd">        .. note::</span>
+
+<span class="sd">            For each successful call, the method updates the agent's total token usage</span>
+<span class="sd">            and request count based on the model's reported usage statistics.</span>
+
+<span class="sd">        """</span>
+        <span class="n">sources</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_key_sources</span><span class="p">(</span><span class="n">provider</span><span class="p">,</span> <span class="n">user_id</span><span class="o">=</span><span class="n">user_id</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">source</span> <span class="ow">in</span> <span class="n">sources</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">attempt</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">retry_attempt</span> <span class="o">+</span> <span class="mi">1</span><span class="p">):</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_api_env_var</span> <span class="o">=</span> <span class="n">source</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"api_env_var"</span><span class="p">)</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">model_name</span> <span class="o">=</span> <span class="n">model_name</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">provider</span> <span class="o">=</span> <span class="n">provider</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_build_provider</span><span class="p">(</span><span class="n">provider</span><span class="p">,</span> <span class="n">source</span><span class="p">,</span> <span class="n">model_name</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">,</span> <span class="n">fn_name</span><span class="p">):</span>
+                        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Function </span><span class="si">{</span><span class="n">fn_name</span><span class="si">}</span><span class="s2"> not found in model </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+
+                    <span class="c1"># Execute request</span>
+                    <span class="n">fn</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">,</span> <span class="n">fn_name</span><span class="p">)</span>
+                    <span class="n">output</span> <span class="o">=</span> <span class="n">fn</span><span class="p">(</span><span class="n">model_input</span><span class="p">)</span>
+
+                    <span class="c1"># Update total tokens used</span>
+                    <span class="n">usage</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">get_total_usage</span><span class="p">()</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">total_input_tokens_used</span> <span class="o">+=</span> <span class="n">usage</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"input_tokens"</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">total_output_tokens_used</span> <span class="o">+=</span> <span class="n">usage</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"output_tokens"</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">total_tokens_used</span> <span class="o">+=</span> <span class="n">usage</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"total_tokens"</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">total_request_count</span> <span class="o">+=</span> <span class="n">usage</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"request_count"</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+
+                    <span class="c1"># Check if the model returned an API error (like 429)</span>
+                    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">output</span><span class="p">,</span> <span class="nb">dict</span><span class="p">)</span> <span class="ow">and</span> <span class="s2">"error"</span> <span class="ow">in</span> <span class="n">output</span><span class="p">:</span>
+                        <span class="n">error_code</span> <span class="o">=</span> <span class="n">output</span><span class="p">[</span><span class="s2">"error"</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"code"</span><span class="p">)</span>
+                        <span class="k">if</span> <span class="n">error_code</span> <span class="o">==</span> <span class="mi">429</span><span class="p">:</span>
+                            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Rate limit exceeded: </span><span class="si">{</span><span class="n">output</span><span class="p">[</span><span class="s1">'error'</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">'message'</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+                        <span class="k">else</span><span class="p">:</span>
+                            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"API error: </span><span class="si">{</span><span class="n">output</span><span class="p">[</span><span class="s1">'error'</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">'message'</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+
+                    <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+                        <span class="sa">f</span><span class="s2">"Getting response using provider: </span><span class="si">{</span><span class="n">provider</span><span class="si">}</span><span class="s2">, model: </span><span class="si">{</span><span class="n">model_name</span><span class="si">}</span><span class="s2">, "</span>
+                        <span class="sa">f</span><span class="s2">"function: </span><span class="si">{</span><span class="n">fn_name</span><span class="si">}</span><span class="s2">, user_id: </span><span class="si">{</span><span class="n">user_id</span><span class="w"> </span><span class="ow">or</span><span class="w"> </span><span class="bp">self</span><span class="o">.</span><span class="n">_user_id</span><span class="si">}</span><span class="s2">"</span>
+                    <span class="p">)</span>
+                    <span class="k">return</span> <span class="n">output</span>
+                <span class="k">except</span> <span class="p">(</span><span class="n">ssl</span><span class="o">.</span><span class="n">SSLError</span><span class="p">,</span> <span class="n">SSLError</span><span class="p">)</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">"[Attempt </span><span class="si">{</span><span class="n">attempt</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">retry_attempt</span><span class="si">}</span><span class="s2">] Error calling model </span><span class="si">{</span><span class="n">model_name</span><span class="si">}</span><span class="s2"> from provider </span><span class="si">{</span><span class="n">provider</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="n">attempt</span> <span class="o">&lt;</span> <span class="n">retry_attempt</span><span class="p">:</span>
+                        <span class="n">delay</span> <span class="o">=</span> <span class="n">base_delay</span> <span class="o">*</span> <span class="p">(</span><span class="mi">2</span> <span class="o">**</span> <span class="p">(</span><span class="n">attempt</span> <span class="o">-</span> <span class="mi">1</span><span class="p">))</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Retrying in </span><span class="si">{</span><span class="n">delay</span><span class="si">:</span><span class="s2">.1f</span><span class="si">}</span><span class="s2"> seconds..."</span><span class="p">)</span>
+                        <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="n">delay</span><span class="p">)</span>
+                        <span class="k">continue</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="k">raise</span> <span class="n">e</span>
+                <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">"[Attempt </span><span class="si">{</span><span class="n">attempt</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">retry_attempt</span><span class="si">}</span><span class="s2">] Error calling model </span><span class="si">{</span><span class="n">model_name</span><span class="si">}</span><span class="s2"> from provider </span><span class="si">{</span><span class="n">provider</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="n">attempt</span> <span class="o">&lt;</span> <span class="n">retry_attempt</span><span class="p">:</span>
+                        <span class="n">delay</span> <span class="o">=</span> <span class="n">base_delay</span> <span class="o">*</span> <span class="p">(</span><span class="mi">2</span> <span class="o">**</span> <span class="p">(</span><span class="n">attempt</span> <span class="o">-</span> <span class="mi">1</span><span class="p">))</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Retrying in </span><span class="si">{</span><span class="n">delay</span><span class="si">:</span><span class="s2">.1f</span><span class="si">}</span><span class="s2"> seconds..."</span><span class="p">)</span>
+                        <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="n">delay</span><span class="p">)</span>
+                        <span class="k">continue</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="k">raise</span> <span class="n">e</span>
+        <span class="k">return</span> <span class="kc">None</span>
+
+<div class="viewcode-block" id="IAgent.get_response">
+<a class="viewcode-back" href="../../../../../generated/squirrel_modules_agents_abstract_IAgent.html#squirrel.modules.agents.abstract.IAgent.IAgent.get_response">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_response</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">fn_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">model_input</span><span class="p">:</span> <span class="n">Dict</span><span class="p">,</span>
+        <span class="n">retry_attempt</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">3</span><span class="p">,</span>
+        <span class="n">strict</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="n">provider_order</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Provider</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">preference_model_names</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">user_id</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Execute a function on the model with retries and provider/model selection.</span>
+
+<span class="sd">        **Description:**</span>
+
+<span class="sd">            This method attempts to call a specified function (`fn_name`) on the model</span>
+<span class="sd">            using the provided input (`model_input`). It supports strict mode, where only</span>
+<span class="sd">            the current model is used, or a more flexible mode that tries multiple</span>
+<span class="sd">            providers and models based on preferences.</span>
+
+<span class="sd">            Credential resolution always prefers a per-request user's own stored provider</span>
+<span class="sd">            token over the shared, environment-variable based keys. Pass `user_id` to scope</span>
+<span class="sd">            a single call to a specific user without changing the agent's default</span>
+<span class="sd">            `self.user_id`; if omitted, `self.user_id` is used instead (if set).</span>
+
+<span class="sd">        :param fn_name: The name of the function to call on the model</span>
+<span class="sd">        :type fn_name: str</span>
+
+<span class="sd">        :param model_input: The input to pass to the model</span>
+<span class="sd">        :type model_input: dict</span>
+
+<span class="sd">        :param retry_attempt: The number of retry attempts (default: 3)</span>
+<span class="sd">        :type retry_attempt: int</span>
+
+<span class="sd">        :param strict: Whether to strictly use the current model or try others (default: True)</span>
+<span class="sd">        :type strict: bool</span>
+
+<span class="sd">        :param provider_order: The order of providers to try</span>
+<span class="sd">        :type provider_order: list[Provider]</span>
+
+<span class="sd">        :param preference_model_names: Preferred model names to try first</span>
+<span class="sd">        :type preference_model_names: list[str]</span>
+
+<span class="sd">        :param user_id: The user to make this call on behalf of. Overrides self.user_id</span>
+<span class="sd">            for this call only. Falls back to self.user_id if omitted.</span>
+<span class="sd">        :type user_id: str, optional</span>
+
+<span class="sd">        :return: The response from the model function</span>
+<span class="sd">        :rtype: Any</span>
+
+<span class="sd">        **Example:**</span>
+
+<span class="sd">        .. code-block:: python</span>
+
+<span class="sd">            from squirrel.modules.agents.abstract.IAgent import IAgent</span>
+
+<span class="sd">            # Assume `agent` is an instance of a class derived from IAgent</span>
+<span class="sd">            response = agent.get_response(</span>
+<span class="sd">                fn_name="generate_text",</span>
+<span class="sd">                model_input={"prompt": "Hello, world!"},</span>
+<span class="sd">                retry_attempt=3,</span>
+<span class="sd">                strict=False,</span>
+<span class="sd">                provider_order=[Provider.GEMINI],</span>
+<span class="sd">                preference_model_names=["gemini-2.5-pro"],</span>
+<span class="sd">                user_id="user_123"</span>
+<span class="sd">            )</span>
+<span class="sd">            print(response)</span>
+<span class="sd">            # Output: Generated text from the model</span>
+
+<span class="sd">        """</span>
+        <span class="c1"># If strict is True and no provider or model preferences are given, use the current model.</span>
+        <span class="k">if</span> <span class="n">preference_model_names</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">preference_model_names</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">if</span> <span class="n">provider_order</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">provider_order</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">if</span> <span class="n">strict</span> <span class="ow">or</span> <span class="p">(</span><span class="n">provider_order</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="nb">len</span><span class="p">(</span><span class="n">provider_order</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="n">preference_model_names</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="nb">len</span><span class="p">(</span><span class="n">preference_model_names</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">):</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">model_name</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">provider</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"Model name and provider must be set in strict mode."</span><span class="p">)</span>
+
+            <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">retry_attempt</span><span class="p">):</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="n">response</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_call_exact_model</span><span class="p">(</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">provider</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">model_name</span><span class="p">,</span> <span class="n">fn_name</span><span class="p">,</span> <span class="n">model_input</span><span class="p">,</span> <span class="n">retry_attempt</span><span class="p">,</span>
+                        <span class="n">user_id</span><span class="o">=</span><span class="n">user_id</span>
+                    <span class="p">)</span>
+                    <span class="k">if</span> <span class="n">response</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                        <span class="k">return</span> <span class="n">response</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Strict mode: Model </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">model_name</span><span class="si">}</span><span class="s2"> from provider </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">provider</span><span class="si">}</span><span class="s2"> returned None. Retrying..."</span><span class="p">)</span>
+                        <span class="k">continue</span>
+                <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Strict mode: Model </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">model_name</span><span class="si">}</span><span class="s2"> from provider </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">provider</span><span class="si">}</span><span class="s2"> failed with error: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">. Retrying..."</span><span class="p">)</span>
+                    <span class="k">continue</span>
+            <span class="k">return</span> <span class="kc">None</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">provider_order</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">provider_order</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">provider</span> <span class="ow">in</span> <span class="n">provider_order</span><span class="p">:</span>
+                    <span class="k">try</span><span class="p">:</span>
+                        <span class="k">if</span> <span class="n">preference_model_names</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">preference_model_names</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                            <span class="n">provider_type</span><span class="p">:</span> <span class="n">IProvider</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_provider_type</span><span class="p">(</span><span class="n">provider</span><span class="p">,</span> <span class="n">user_id</span><span class="o">=</span><span class="n">user_id</span><span class="p">)</span>
+                            <span class="n">available_models</span> <span class="o">=</span> <span class="n">provider_type</span><span class="o">.</span><span class="n">available_model_names</span><span class="p">()</span>
+                            <span class="k">for</span> <span class="n">model_name</span> <span class="ow">in</span> <span class="n">preference_model_names</span><span class="p">:</span>
+                                <span class="k">try</span><span class="p">:</span>
+                                    <span class="k">if</span> <span class="n">model_name</span> <span class="ow">in</span> <span class="n">available_models</span><span class="p">:</span>
+                                        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Trying preferred model </span><span class="si">{</span><span class="n">model_name</span><span class="si">}</span><span class="s2"> for provider </span><span class="si">{</span><span class="n">provider</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+                                        <span class="n">response</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_call_exact_model</span><span class="p">(</span>
+                                            <span class="n">provider</span><span class="p">,</span> <span class="n">model_name</span><span class="p">,</span> <span class="n">fn_name</span><span class="p">,</span> <span class="n">model_input</span><span class="p">,</span> <span class="n">retry_attempt</span><span class="p">,</span>
+                                            <span class="n">user_id</span><span class="o">=</span><span class="n">user_id</span>
+                                        <span class="p">)</span>
+                                        <span class="k">if</span> <span class="n">response</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                                            <span class="k">return</span> <span class="n">response</span>
+                                        <span class="k">else</span><span class="p">:</span>
+                                            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Preferred model </span><span class="si">{</span><span class="n">model_name</span><span class="si">}</span><span class="s2"> for provider </span><span class="si">{</span><span class="n">provider</span><span class="si">}</span><span class="s2"> returned None. Trying next..."</span><span class="p">)</span>
+                                            <span class="k">continue</span>
+                                    <span class="k">else</span><span class="p">:</span>
+                                        <span class="k">continue</span>
+                                <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                                    <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                                        <span class="sa">f</span><span class="s2">"Provider </span><span class="si">{</span><span class="n">provider</span><span class="si">}</span><span class="s2">, model </span><span class="si">{</span><span class="n">model_name</span><span class="si">}</span><span class="s2"> failed with error: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">. Trying next..."</span>
+                                    <span class="p">)</span>
+                                    <span class="k">continue</span>
+                        <span class="k">else</span><span class="p">:</span>
+                            <span class="n">response</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_call_available_model</span><span class="p">(</span>
+                                <span class="n">provider</span><span class="p">,</span> <span class="n">fn_name</span><span class="p">,</span> <span class="n">model_input</span><span class="p">,</span> <span class="n">retry_attempt</span><span class="p">,</span> <span class="n">user_id</span><span class="o">=</span><span class="n">user_id</span>
+                            <span class="p">)</span>
+                            <span class="k">return</span> <span class="n">response</span>
+                    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                            <span class="sa">f</span><span class="s2">"Provider </span><span class="si">{</span><span class="n">provider</span><span class="si">}</span><span class="s2"> failed with error: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">. Trying next..."</span>
+                        <span class="p">)</span>
+                        <span class="k">continue</span>
+                <span class="k">return</span> <span class="kc">None</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">provider</span> <span class="ow">in</span> <span class="n">provider_order</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">DEFAULT_PROVIDERS</span><span class="p">:</span>
+                    <span class="k">try</span><span class="p">:</span>
+                        <span class="n">provider_type</span><span class="p">:</span> <span class="n">IProvider</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_provider_type</span><span class="p">(</span><span class="n">provider</span><span class="p">,</span> <span class="n">user_id</span><span class="o">=</span><span class="n">user_id</span><span class="p">)</span>
+                        <span class="n">available_models</span> <span class="o">=</span> <span class="n">provider_type</span><span class="o">.</span><span class="n">available_model_names</span><span class="p">()</span>
+
+                        <span class="k">for</span> <span class="n">model_name</span> <span class="ow">in</span> <span class="p">(</span><span class="n">preference_model_names</span> <span class="ow">or</span> <span class="n">available_models</span><span class="p">):</span>
+                            <span class="k">if</span> <span class="n">model_name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">available_models</span><span class="p">:</span>
+                                <span class="k">continue</span>
+
+                            <span class="k">try</span><span class="p">:</span>
+                                <span class="n">response</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_call_exact_model</span><span class="p">(</span>
+                                    <span class="n">provider</span><span class="p">,</span> <span class="n">model_name</span><span class="p">,</span> <span class="n">fn_name</span><span class="p">,</span> <span class="n">model_input</span><span class="p">,</span> <span class="n">retry_attempt</span><span class="p">,</span>
+                                    <span class="n">user_id</span><span class="o">=</span><span class="n">user_id</span>
+                                <span class="p">)</span>
+                                <span class="k">if</span> <span class="n">response</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                                    <span class="k">return</span> <span class="n">response</span>
+                                <span class="k">else</span><span class="p">:</span>
+                                    <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Model </span><span class="si">{</span><span class="n">model_name</span><span class="si">}</span><span class="s2"> for provider </span><span class="si">{</span><span class="n">provider</span><span class="si">}</span><span class="s2"> returned None. Trying next..."</span><span class="p">)</span>
+                                    <span class="k">continue</span>
+                            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                                <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                                    <span class="sa">f</span><span class="s2">"Provider </span><span class="si">{</span><span class="n">provider</span><span class="si">}</span><span class="s2">, model </span><span class="si">{</span><span class="n">model_name</span><span class="si">}</span><span class="s2"> failed with error: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">. Trying next..."</span>
+                                <span class="p">)</span>
+                                <span class="k">continue</span>
+                    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                            <span class="sa">f</span><span class="s2">"Provider </span><span class="si">{</span><span class="n">provider</span><span class="si">}</span><span class="s2"> failed with error: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">. Trying next..."</span>
+                        <span class="p">)</span>
+                        <span class="k">continue</span>
+                <span class="k">return</span> <span class="kc">None</span></div>
+</div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, Mazen Soliman.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

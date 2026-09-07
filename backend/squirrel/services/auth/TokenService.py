@@ -10,10 +10,9 @@ never persisted and is only ever returned to the *owning* user via the
 `get_decrypted_token` method used internally by other services (never
 exposed over the API).
 
-Requires a TOKEN_ENCRYPTION_KEY env var - generate one with:
-    python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
-and add it to your .env (never commit it, same as the other secrets in
-that file).
+Requires a ``TOKEN_ENCRYPTION_KEY`` environment variable. Generate one with
+``python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"``
+and add it to your ``.env`` file (never commit it, same as the other secrets).
 """
 # ------------------------------------------------------------------------------
 # Imports

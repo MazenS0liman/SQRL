@@ -1,0 +1,837 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>squirrel.models.time_series &mdash; squirrel  documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/custom.css?v=adc7883a" />
+
+  
+    <link rel="shortcut icon" href="../../../_static/sqrl.png"/>
+      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="../../../_static/copybutton.js?v=a46eff05"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            squirrel
+              <img src="../../../_static/sqrl.png" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Python API Reference:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../api.html">Python API Reference</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">squirrel</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">squirrel.models.time_series</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for squirrel.models.time_series</h1><div class="highlight"><pre>
+<span></span><span class="c1"># ——————————————————————————————————————————————————————————————</span>
+<span class="c1"># Imports</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">ABC</span><span class="p">,</span> <span class="n">abstractmethod</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">Optional</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">tensorflow</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">tf</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.preprocessing</span><span class="w"> </span><span class="kn">import</span> <span class="n">StandardScaler</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.metrics</span><span class="w"> </span><span class="kn">import</span> <span class="n">mean_squared_error</span><span class="p">,</span> <span class="n">mean_absolute_error</span>
+
+<span class="n">tf</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">set_seed</span><span class="p">(</span><span class="mi">123</span><span class="p">)</span>
+<span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">seed</span><span class="p">(</span><span class="mi">123</span><span class="p">)</span>
+
+<span class="c1"># ——————————————————————————————————————————————————————————————</span>
+<span class="c1"># Time Series Predictor Base class</span>
+<div class="viewcode-block" id="TimeSeriesPredictor">
+<a class="viewcode-back" href="../../../generated/squirrel_models_time_series.html#squirrel.models.time_series.TimeSeriesPredictor">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">TimeSeriesPredictor</span><span class="p">(</span><span class="n">ABC</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">pass</span>
+
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">predict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">X</span><span class="p">):</span>
+        <span class="k">pass</span>
+
+<div class="viewcode-block" id="TimeSeriesPredictor.load_data">
+<a class="viewcode-back" href="../../../generated/squirrel_models_time_series.html#squirrel.models.time_series.TimeSeriesPredictor.load_data">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">load_data</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">data_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">target_column</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Load the time series data from the specified path and compute the first difference. </span>
+<span class="sd">        This method reads the time series data from a CSV file, selects the target column, computes the first difference of the target variable, and scales the differenced data for model training.</span>
+
+<span class="sd">        **Description:**</span>
+
+<span class="sd">            The `load_data` method takes the path to the data file and the name of the target column as input. </span>
+<span class="sd">            It reads the data from a CSV file into a pandas DataFrame, selects the specified target column, and computes the first difference of the target variable to capture the changes in the time series. </span>
+<span class="sd">            The differenced data is then scaled using a `StandardScaler` to ensure that it is on a similar scale for model training. </span>
+<span class="sd">            The method returns both the original target data and the scaled first difference, which are used in subsequent steps of the modeling process.</span>
+
+<span class="sd">        :param data_path: The file path to the CSV file containing the time series data.</span>
+<span class="sd">        :type data_path: str</span>
+
+<span class="sd">        :param target_column: The name of the column in the CSV file that contains the target variable for prediction.</span>
+<span class="sd">        :type target_column: str</span>
+
+<span class="sd">        :return: A tuple containing the original target data and the scaled first difference of the target variable.</span>
+<span class="sd">        :rtype: Tuple[np.ndarray, np.ndarray]</span>
+<span class="sd">        """</span>
+        <span class="k">if</span> <span class="n">data_path</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s1">'.csv'</span><span class="p">):</span>
+            <span class="c1"># Load CSV file</span>
+            <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="n">data_path</span><span class="p">)</span>
+                        
+            <span class="c1"># Select the target column</span>
+            <span class="n">target_data</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="n">target_column</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">float</span><span class="p">)</span>
+            
+            <span class="c1"># Calculate the nth difference</span>
+            <span class="n">target_data_diff</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">target_data</span><span class="p">,</span> <span class="n">n</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">difference_order</span><span class="p">)</span>
+            
+            <span class="c1"># Scale the target data</span>
+            <span class="n">target_data_diff_scaled</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">scaler</span><span class="o">.</span><span class="n">fit_transform</span><span class="p">(</span><span class="n">target_data_diff</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span><span class="o">.</span><span class="n">flatten</span><span class="p">()</span>
+
+            <span class="k">return</span> <span class="n">target_data</span><span class="p">,</span> <span class="n">target_data_diff_scaled</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"Unsupported file format. Please provide a CSV file."</span><span class="p">)</span></div>
+</div>
+
+
+<span class="c1"># ——————————————————————————————————————————————————————————————</span>
+<span class="c1"># BiLSTM Predictor for Time Series</span>
+<div class="viewcode-block" id="BiLSTMPredictor">
+<a class="viewcode-back" href="../../../generated/squirrel_models_time_series.html#squirrel.models.time_series.BiLSTMPredictor">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">BiLSTMPredictor</span><span class="p">(</span><span class="n">TimeSeriesPredictor</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    A BiLSTM-based predictor for time series data that incorporates differencing to handle non-stationarity. </span>
+<span class="sd">    This class implements a BiLSTM model for time series prediction, which includes methods for loading data, preparing it for training, fitting the model, evaluating its performance, and making predictions.</span>
+<span class="sd">    </span>
+<span class="sd">    **Description:**</span>
+
+<span class="sd">        The `BiLSTMPredictor` class is designed to handle time series data by first applying differencing to make the series stationary, which is a common requirement for many time series forecasting models. </span>
+<span class="sd">        The class includes methods to load data from a CSV file, prepare the data by creating input sequences and corresponding target values, split the data into training and testing sets, fit a BiLSTM model to the training data, evaluate the model's performance on the test set, and make future predictions based on the trained model.</span>
+<span class="sd">        The BiLSTM architecture allows the model to capture both past and future dependencies in the time series data, making it well-suited for forecasting tasks.</span>
+<span class="sd">        </span>
+<span class="sd">    **Example Usage:**</span>
+<span class="sd">    </span>
+<span class="sd">    .. code-block:: python</span>
+<span class="sd">    </span>
+<span class="sd">        from kraken.models.time_series import BiLSTMPredictor</span>
+<span class="sd">        </span>
+<span class="sd">        predictor = BiLSTMPredictor(</span>
+<span class="sd">            window_size=24,</span>
+<span class="sd">            data_path="./notebooks/data/AAPL.csv",</span>
+<span class="sd">            target_column="Close"</span>
+<span class="sd">        )</span>
+<span class="sd">        </span>
+<span class="sd">        predictor()</span>
+<span class="sd">        </span>
+<span class="sd">        predictions = predictor.predict(n_steps=5)</span>
+<span class="sd">        # Output</span>
+<span class="sd">        # [150.25, 151.30, 152.10, 153.00, 154.20]</span>
+<span class="sd">    """</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">window_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">30</span><span class="p">,</span>
+        <span class="n">difference_order</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+        <span class="n">data_path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">target_column</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">difference_order</span> <span class="o">&lt;</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"difference_order must be at least 1"</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">scaler</span> <span class="o">=</span> <span class="n">StandardScaler</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">window_size</span> <span class="o">=</span> <span class="n">window_size</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">difference_order</span> <span class="o">=</span> <span class="n">difference_order</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data_path</span> <span class="o">=</span> <span class="n">data_path</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">target_column</span> <span class="o">=</span> <span class="n">target_column</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">keras</span><span class="o">.</span><span class="n">Sequential</span><span class="p">([</span>
+            <span class="n">tf</span><span class="o">.</span><span class="n">keras</span><span class="o">.</span><span class="n">layers</span><span class="o">.</span><span class="n">Input</span><span class="p">(</span><span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="n">window_size</span><span class="p">,</span> <span class="mi">1</span><span class="p">)),</span>
+            <span class="n">tf</span><span class="o">.</span><span class="n">keras</span><span class="o">.</span><span class="n">layers</span><span class="o">.</span><span class="n">Bidirectional</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">keras</span><span class="o">.</span><span class="n">layers</span><span class="o">.</span><span class="n">LSTM</span><span class="p">(</span><span class="mi">64</span><span class="p">,</span> <span class="n">return_sequences</span><span class="o">=</span><span class="kc">True</span><span class="p">)),</span>
+            <span class="n">tf</span><span class="o">.</span><span class="n">keras</span><span class="o">.</span><span class="n">layers</span><span class="o">.</span><span class="n">Dropout</span><span class="p">(</span><span class="mf">0.2</span><span class="p">),</span>
+            <span class="n">tf</span><span class="o">.</span><span class="n">keras</span><span class="o">.</span><span class="n">layers</span><span class="o">.</span><span class="n">Bidirectional</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">keras</span><span class="o">.</span><span class="n">layers</span><span class="o">.</span><span class="n">LSTM</span><span class="p">(</span><span class="mi">32</span><span class="p">)),</span>
+            <span class="n">tf</span><span class="o">.</span><span class="n">keras</span><span class="o">.</span><span class="n">layers</span><span class="o">.</span><span class="n">Dropout</span><span class="p">(</span><span class="mf">0.2</span><span class="p">),</span>
+            <span class="n">tf</span><span class="o">.</span><span class="n">keras</span><span class="o">.</span><span class="n">layers</span><span class="o">.</span><span class="n">Dense</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+        <span class="p">])</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="n">optimizer</span><span class="o">=</span><span class="s1">'adam'</span><span class="p">,</span> <span class="n">loss</span><span class="o">=</span><span class="s1">'mse'</span><span class="p">,</span> <span class="n">metrics</span><span class="o">=</span><span class="p">[</span><span class="s1">'mae'</span><span class="p">])</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_inverse_difference</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">base_values</span><span class="p">,</span> <span class="n">difference_value</span><span class="p">):</span>
+        <span class="n">base_values</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">base_values</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">base_values</span><span class="o">.</span><span class="n">size</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">difference_order</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"Expected at least </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">difference_order</span><span class="si">}</span><span class="s2"> base values, got </span><span class="si">{</span><span class="n">base_values</span><span class="o">.</span><span class="n">size</span><span class="si">}</span><span class="s2">"</span>
+            <span class="p">)</span>
+
+        <span class="n">current_value</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">difference_value</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="k">for</span> <span class="n">order</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">difference_order</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">order</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">current_value</span> <span class="o">=</span> <span class="n">base_values</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">current_value</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">current_value</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">base_values</span><span class="p">,</span> <span class="n">n</span><span class="o">=</span><span class="n">order</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">current_value</span>
+
+        <span class="k">return</span> <span class="n">current_value</span>
+
+<div class="viewcode-block" id="BiLSTMPredictor.prepare_data">
+<a class="viewcode-back" href="../../../generated/squirrel_models_time_series.html#squirrel.models.time_series.BiLSTMPredictor.prepare_data">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">prepare_data</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">data</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+        <span class="n">data_diff</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Prepare the data for training the BiLSTM model by creating input sequences and corresponding target values.</span>
+<span class="sd">        This method takes the original time series data and its first difference, </span>
+<span class="sd">        and constructs input sequences of a specified window size along with their corresponding target values.</span>
+<span class="sd">        </span>
+<span class="sd">        **Description:**</span>
+<span class="sd">        </span>
+<span class="sd">            The `prepare_data` method iterates through the first difference of the time series data, starting from the index defined by the window size.</span>
+<span class="sd">            For each index, it creates an input sequence consisting of the previous `window_size` values of the first difference, and a corresponding target value which is the next value in the first difference.</span>
+<span class="sd">            Additionally, it keeps track of the base values (the original time series values) corresponding to each input sequence, which are used to reconstruct the predicted values from the predicted differences. </span>
+<span class="sd">            The method returns four arrays: the input sequences of the first difference, the target values of the first difference, the base values corresponding to each input sequence, and the actual target values corresponding to each input sequence.</span>
+<span class="sd">        </span>
+<span class="sd">        :param data: The original time series data as a 1D numpy array.</span>
+<span class="sd">        :type data: np.ndarray</span>
+<span class="sd">        </span>
+<span class="sd">        :param data_diff: The first difference of the time series data, scaled for model training.</span>
+<span class="sd">        :type data_diff: np.ndarray</span>
+<span class="sd">        </span>
+<span class="sd">        :return: A tuple containing the input sequences of the first difference, the target values of the first difference, the base values corresponding to each input sequence, and the actual target values corresponding to each input sequence.</span>
+<span class="sd">        :rtype: Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]</span>
+<span class="sd">        </span>
+<span class="sd">        """</span>
+        <span class="n">X_diff</span><span class="p">,</span> <span class="n">y_diff</span> <span class="o">=</span> <span class="p">[],</span> <span class="p">[]</span>
+        <span class="n">base_values</span><span class="p">,</span> <span class="n">target_values</span> <span class="o">=</span> <span class="p">[],</span> <span class="p">[]</span>
+    
+        <span class="k">for</span> <span class="n">idx</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">window_size</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">data_diff</span><span class="p">)):</span>
+            <span class="n">X_diff</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">data_diff</span><span class="p">[</span><span class="n">idx</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">window_size</span><span class="p">:</span><span class="n">idx</span><span class="p">]</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">window_size</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
+            <span class="n">y_diff</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">data_diff</span><span class="p">[</span><span class="n">idx</span><span class="p">])</span>
+            <span class="n">base_values</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">idx</span><span class="p">:</span><span class="n">idx</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">difference_order</span><span class="p">])</span>
+            <span class="n">target_values</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">idx</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">difference_order</span><span class="p">])</span>
+
+        <span class="n">X_diff</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">X_diff</span><span class="p">)</span>
+        <span class="n">y_diff</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">y_diff</span><span class="p">)</span>
+        <span class="n">base_values</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">base_values</span><span class="p">)</span>
+        <span class="n">target_values</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">target_values</span><span class="p">)</span>
+        
+        <span class="k">return</span> <span class="n">X_diff</span><span class="p">,</span> <span class="n">y_diff</span><span class="p">,</span> <span class="n">base_values</span><span class="p">,</span> <span class="n">target_values</span></div>
+
+
+<div class="viewcode-block" id="BiLSTMPredictor.split_data">
+<a class="viewcode-back" href="../../../generated/squirrel_models_time_series.html#squirrel.models.time_series.BiLSTMPredictor.split_data">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">split_data</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">X_diff</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+        <span class="n">y_diff</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+        <span class="n">base_values</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+        <span class="n">target_values</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+        <span class="n">train_ratio</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.8</span><span class="p">,</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Split the data into training and testing sets based on the specified train-test ratio.</span>
+<span class="sd">        This method divides the input data into training and testing subsets, ensuring that the temporal order of the time series is preserved. </span>
+<span class="sd">        The training set consists of the initial portion of the data, while the testing set contains the remaining portion.</span>
+<span class="sd">        </span>
+<span class="sd">        **Description:**</span>
+<span class="sd">        </span>
+<span class="sd">            The `split_data` method takes the input features, target values, base values, and target values, along with a train-test ratio.</span>
+<span class="sd">            It calculates the number of samples to be included in the training set based on the total number of samples and the specified train-test ratio.</span>
+<span class="sd">            The method then slices the input data into training and testing subsets accordingly, ensuring that the temporal order of the time series is maintained. </span>
+<span class="sd">            The training set includes the initial portion of the data, while the testing set contains the remaining portion. </span>
+<span class="sd">            Finally, it returns the training and testing datasets as tuples.</span>
+<span class="sd">        </span>
+<span class="sd">        :param X_diff: The input features for the model, typically the first difference of the target variable.</span>
+<span class="sd">        :type X_diff: np.ndarray</span>
+<span class="sd">        </span>
+<span class="sd">        :param y_diff: The target values for the model, typically the first difference of the target variable.</span>
+<span class="sd">        :type y_diff: np.ndarray</span>
+<span class="sd">        </span>
+<span class="sd">        :param base_values: The base values corresponding to the input features, which are used to reconstruct the predicted values from the predicted differences.</span>
+<span class="sd">        :type base_values: np.ndarray</span>
+<span class="sd">        </span>
+<span class="sd">        :param target_values: The actual target values corresponding to the input features, which are used to evaluate the predictions.</span>
+<span class="sd">        :type target_values: np.ndarray</span>
+<span class="sd">        </span>
+<span class="sd">        :param train_ratio: The ratio of the data to be used for training. Default is 0.8 (80% training, 20% testing).</span>
+<span class="sd">        :type train_ratio: float</span>
+<span class="sd">        </span>
+<span class="sd">        """</span>
+        <span class="n">total_samples</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">X_diff</span><span class="p">)</span>
+        <span class="n">train_samples</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">total_samples</span> <span class="o">*</span> <span class="n">train_ratio</span><span class="p">)</span>
+
+        <span class="n">X_train_diff</span> <span class="o">=</span> <span class="n">X_diff</span><span class="p">[:</span><span class="n">train_samples</span><span class="p">]</span>
+        <span class="n">y_train_diff</span> <span class="o">=</span> <span class="n">y_diff</span><span class="p">[:</span><span class="n">train_samples</span><span class="p">]</span>
+        <span class="n">base_train</span> <span class="o">=</span> <span class="n">base_values</span><span class="p">[:</span><span class="n">train_samples</span><span class="p">]</span>
+        <span class="n">target_train</span> <span class="o">=</span> <span class="n">target_values</span><span class="p">[:</span><span class="n">train_samples</span><span class="p">]</span>
+
+        <span class="n">X_test_diff</span> <span class="o">=</span> <span class="n">X_diff</span><span class="p">[</span><span class="n">train_samples</span><span class="p">:]</span>
+        <span class="n">y_test_diff</span> <span class="o">=</span> <span class="n">y_diff</span><span class="p">[</span><span class="n">train_samples</span><span class="p">:]</span>
+        <span class="n">base_test</span> <span class="o">=</span> <span class="n">base_values</span><span class="p">[</span><span class="n">train_samples</span><span class="p">:]</span>
+        <span class="n">target_test</span> <span class="o">=</span> <span class="n">target_values</span><span class="p">[</span><span class="n">train_samples</span><span class="p">:]</span>
+
+        <span class="k">return</span> <span class="p">(</span><span class="n">X_train_diff</span><span class="p">,</span> <span class="n">y_train_diff</span><span class="p">,</span> <span class="n">base_train</span><span class="p">,</span> <span class="n">target_train</span><span class="p">),</span> <span class="p">(</span><span class="n">X_test_diff</span><span class="p">,</span> <span class="n">y_test_diff</span><span class="p">,</span> <span class="n">base_test</span><span class="p">,</span> <span class="n">target_test</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="BiLSTMPredictor.fit">
+<a class="viewcode-back" href="../../../generated/squirrel_models_time_series.html#squirrel.models.time_series.BiLSTMPredictor.fit">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">fit</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">X_train</span><span class="p">,</span>
+        <span class="n">y_train</span><span class="p">,</span> 
+        <span class="n">X_test</span><span class="p">,</span> 
+        <span class="n">y_test</span><span class="p">,</span>
+        <span class="n">epochs</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">50</span><span class="p">,</span>
+        <span class="n">batch_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">32</span><span class="p">,</span>
+        <span class="n">verbose</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Fit the BiLSTM model to the training data.</span>
+<span class="sd">        This method trains the model using the provided training data and validates it on the test set to monitor for overfitting.</span>
+<span class="sd">        It uses early stopping to halt training if the validation loss does not improve for a specified number of epochs, restoring the best weights found during training.</span>
+<span class="sd">        </span>
+<span class="sd">        **Description:**</span>
+<span class="sd">        </span>
+<span class="sd">            The `fit` method takes the training and testing datasets, along with training parameters such as the number of epochs, batch size, and verbosity level.</span>
+<span class="sd">            It trains the BiLSTM model on the training data while validating on the test set. The method incorporates early stopping to prevent overfitting, which monitors the validation loss and stops training if it does not improve for 10 consecutive epochs, restoring the best weights found during training.</span>
+<span class="sd">            </span>
+<span class="sd">        :param X_train: The input features for the training set, typically the first difference of the target variable.</span>
+<span class="sd">        :type X_train: np.ndarray</span>
+<span class="sd">        </span>
+<span class="sd">        :param y_train: The target values for the training set, typically the first difference of the target variable.</span>
+<span class="sd">        :type y_train: np.ndarray</span>
+<span class="sd">        </span>
+<span class="sd">        :param X_test: The input features for the test set, typically the first difference of the target variable.</span>
+<span class="sd">        :type X_test: np.ndarray</span>
+<span class="sd">        </span>
+<span class="sd">        :param y_test: The target values for the test set, typically the first difference of the target variable.   </span>
+<span class="sd">        :type y_test: np.ndarray</span>
+<span class="sd">        </span>
+<span class="sd">        :param epochs: The number of epochs to train the model. Default is 50.</span>
+<span class="sd">        :type epochs: int</span>
+<span class="sd">        </span>
+<span class="sd">        :param batch_size: The batch size to use during training. Default is 32.</span>
+<span class="sd">        :type batch_size: int</span>
+<span class="sd">        </span>
+<span class="sd">        :param verbose: The verbosity level for training output. Default is 1 (progress bar).</span>
+<span class="sd">        :type verbose: int</span>
+<span class="sd">        </span>
+<span class="sd">        :return: None</span>
+<span class="sd">        :rtype: None</span>
+<span class="sd">        """</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span>
+            <span class="n">X_train</span><span class="p">,</span> <span class="n">y_train</span><span class="p">,</span>
+            <span class="n">epochs</span><span class="o">=</span><span class="n">epochs</span><span class="p">,</span>
+            <span class="n">batch_size</span><span class="o">=</span><span class="n">batch_size</span><span class="p">,</span>
+            <span class="n">validation_data</span><span class="o">=</span><span class="p">(</span><span class="n">X_test</span><span class="p">,</span> <span class="n">y_test</span><span class="p">),</span>
+            <span class="n">verbose</span><span class="o">=</span><span class="n">verbose</span><span class="p">,</span>
+            <span class="n">callbacks</span><span class="o">=</span><span class="p">[</span>
+                <span class="n">tf</span><span class="o">.</span><span class="n">keras</span><span class="o">.</span><span class="n">callbacks</span><span class="o">.</span><span class="n">EarlyStopping</span><span class="p">(</span><span class="n">monitor</span><span class="o">=</span><span class="s1">'val_loss'</span><span class="p">,</span> <span class="n">patience</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">restore_best_weights</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="n">verbose</span><span class="p">),</span>
+            <span class="p">]</span>
+        <span class="p">)</span></div>
+
+        
+<div class="viewcode-block" id="BiLSTMPredictor.eval">
+<a class="viewcode-back" href="../../../generated/squirrel_models_time_series.html#squirrel.models.time_series.BiLSTMPredictor.eval">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">eval</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> 
+        <span class="n">X_test</span><span class="p">,</span> 
+        <span class="n">y_test</span><span class="p">,</span> 
+        <span class="n">base_test</span><span class="p">,</span> 
+        <span class="n">target_test</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Evaluate the model's performance on the test set.</span>
+<span class="sd">        This method predicts the target values for the test set, inverse scales the predictions, and calculates the Mean Squared Error (MSE) and Mean Absolute Error (MAE) between the predicted values and the actual target values.</span>
+<span class="sd">        </span>
+<span class="sd">        **Description:**</span>
+<span class="sd">        </span>
+<span class="sd">            The `eval` method takes the test data and the corresponding base values and target values. It uses the trained model to predict the first difference of the target variable, then inverse scales the predictions</span>
+<span class="sd">            to get the actual predicted values. Finally, it computes the MSE and MAE between the predicted values and the actual target values, prints the results, and returns the MSE and MAE as a tuple.</span>
+<span class="sd">        </span>
+<span class="sd">        :param X_test: The input features for the test set, typically the first difference of the target variable.</span>
+<span class="sd">        :type X_test: np.ndarray</span>
+<span class="sd">        </span>
+<span class="sd">        :param y_test: The actual target values for the test set, typically the first difference of the target variable.</span>
+<span class="sd">        :type y_test: np.ndarray</span>
+<span class="sd">        </span>
+<span class="sd">        :param base_test: The base values corresponding to the test set, which are used to reconstruct the predicted values from the predicted differences.</span>
+<span class="sd">        :type base_test: np.ndarray</span>
+<span class="sd">        </span>
+<span class="sd">        :param target_test: The actual target values for the test set, which are used to evaluate the predictions.</span>
+<span class="sd">        :type target_test: np.ndarray</span>
+<span class="sd">        </span>
+<span class="sd">        :return: A tuple containing the Mean Squared Error (MSE) and Mean Absolute Error (MAE) of the predictions on the test set.</span>
+<span class="sd">        :rtype: Tuple[float, float]</span>
+<span class="sd">        </span>
+<span class="sd">        """</span>
+        <span class="c1"># Predict the differenced series using the model</span>
+        <span class="n">y_pred_diff</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">X_test</span><span class="p">)</span><span class="o">.</span><span class="n">flatten</span><span class="p">()</span>
+        
+        <span class="c1"># Inverse scale the predicted differences</span>
+        <span class="n">y_pred_diff_unscaled</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">scaler</span><span class="o">.</span><span class="n">inverse_transform</span><span class="p">(</span><span class="n">y_pred_diff</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span><span class="o">.</span><span class="n">flatten</span><span class="p">()</span>
+        
+        <span class="c1"># Reconstruct the final predicted values from the stored raw history</span>
+        <span class="n">y_pred</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_inverse_difference</span><span class="p">(</span><span class="n">base</span><span class="p">,</span> <span class="n">diff</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">base</span><span class="p">,</span> <span class="n">diff</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">base_test</span><span class="p">,</span> <span class="n">y_pred_diff_unscaled</span><span class="p">)</span>
+        <span class="p">])</span>
+        
+        <span class="n">mse</span> <span class="o">=</span> <span class="n">mean_squared_error</span><span class="p">(</span><span class="n">target_test</span><span class="p">,</span> <span class="n">y_pred</span><span class="p">)</span>
+        <span class="n">mae</span> <span class="o">=</span> <span class="n">mean_absolute_error</span><span class="p">(</span><span class="n">target_test</span><span class="p">,</span> <span class="n">y_pred</span><span class="p">)</span>
+        
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Test MSE: </span><span class="si">{</span><span class="n">mse</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">, Test MAE: </span><span class="si">{</span><span class="n">mae</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+        
+        <span class="k">return</span> <span class="n">mse</span><span class="p">,</span> <span class="n">mae</span></div>
+
+    
+    <span class="k">def</span><span class="w"> </span><span class="fm">__call__</span><span class="p">(</span>
+        <span class="bp">self</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Run the entire pipeline for training and evaluating the model. </span>
+<span class="sd">        This method orchestrates the loading of data, preparation of training and testing datasets, fitting the model, and evaluating its performance on the test set.</span>
+<span class="sd">        </span>
+<span class="sd">        **Description:**</span>
+<span class="sd">        </span>
+<span class="sd">            The `__call__` method is designed to be a convenient entry point for executing the full workflow of the time series prediction process.</span>
+<span class="sd">            When invoked, it performs the following steps in sequence:</span>
+<span class="sd">            - Loads the time series data from the specified path and computes the first difference, which is then scaled for model training.</span>
+<span class="sd">            - Prepares the training and testing datasets by creating input sequences of the specified window size and corresponding target values.</span>
+<span class="sd">            - Splits the prepared data into training and testing sets based on the defined train-test ratio.</span>
+<span class="sd">            - Fits the BiLSTM model using the training data, while also validating on the test set to monitor for overfitting.</span>
+<span class="sd">            - Evaluates the model's performance on the test set by calculating and printing the Mean Squared Error (MSE) and Mean Absolute Error (MAE) between the predicted values and the actual target values.</span>
+
+<span class="sd">        """</span>
+        <span class="c1"># Load data</span>
+        <span class="n">data</span><span class="p">,</span> <span class="n">data_diff_scaled</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">load_data</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data_path</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">target_column</span><span class="p">)</span>
+        
+        <span class="c1"># Prepare data</span>
+        <span class="n">X_diff</span><span class="p">,</span> <span class="n">y_diff</span><span class="p">,</span> <span class="n">base_values</span><span class="p">,</span> <span class="n">target_values</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">prepare_data</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">data_diff_scaled</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">window_size</span><span class="p">)</span>
+        
+        <span class="c1"># Split data</span>
+        <span class="p">(</span><span class="n">X_train_diff</span><span class="p">,</span> <span class="n">y_train_diff</span><span class="p">,</span> <span class="n">base_train</span><span class="p">,</span> <span class="n">target_train</span><span class="p">),</span> <span class="p">(</span><span class="n">X_test_diff</span><span class="p">,</span> <span class="n">y_test_diff</span><span class="p">,</span> <span class="n">base_test</span><span class="p">,</span> <span class="n">target_test</span><span class="p">)</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">split_data</span><span class="p">(</span><span class="n">X_diff</span><span class="p">,</span> <span class="n">y_diff</span><span class="p">,</span> <span class="n">base_values</span><span class="p">,</span> <span class="n">target_values</span><span class="p">)</span>
+        
+        <span class="c1"># Fit model</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X_train_diff</span><span class="p">,</span> <span class="n">y_train_diff</span><span class="p">,</span> <span class="n">X_test_diff</span><span class="p">,</span> <span class="n">y_test_diff</span><span class="p">)</span>
+        
+        <span class="c1"># Evaluate model</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">eval</span><span class="p">(</span><span class="n">X_test_diff</span><span class="p">,</span> <span class="n">y_test_diff</span><span class="p">,</span> <span class="n">base_test</span><span class="p">,</span> <span class="n">target_test</span><span class="p">)</span>
+
+<div class="viewcode-block" id="BiLSTMPredictor.predict">
+<a class="viewcode-back" href="../../../generated/squirrel_models_time_series.html#squirrel.models.time_series.BiLSTMPredictor.predict">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">predict</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> 
+        <span class="n">X</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">n_steps</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Predict future values based on the input data and the trained model. </span>
+<span class="sd">        The prediction is done iteratively, where each predicted value is fed back into the model to predict the next value.</span>
+<span class="sd">        </span>
+<span class="sd">        **Description:**</span>
+<span class="sd">        </span>
+<span class="sd">            The `predict` method takes the input data `X` and the number of future steps to predict. </span>
+<span class="sd">            It computes the first difference of the input data, scales it, and uses the trained model to predict the difference. </span>
+<span class="sd">            The predicted difference is then inverse scaled and added to the last value of the input to get the final prediction. </span>
+<span class="sd">            This process is repeated iteratively for the specified number of steps, with each new prediction being added to the input for the next prediction.</span>
+
+<span class="sd">        :param X: The input data for prediction, typically the most recent window of data.</span>
+<span class="sd">        :param n_steps: The number of future steps to predict.        </span>
+<span class="sd">        </span>
+<span class="sd">        :return: An array of predicted values for the next `n_steps` time points.</span>
+<span class="sd">        :rtype: np.ndarray</span>
+<span class="sd">        </span>
+<span class="sd">        .. note::</span>
+<span class="sd">        </span>
+<span class="sd">            - The input `X` should be a 1D array of the most recent time series values, with a length equal to or less than the `window_size` used during training. </span>
+<span class="sd">            - If the input length is less than the `window_size`, it will be padded with the last value to match the required input shape for the model.</span>
+<span class="sd">        </span>
+<span class="sd">        """</span>
+        <span class="k">if</span> <span class="n">X</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">X</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">load_data</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data_path</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">target_column</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+        
+        <span class="n">output</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">current_input</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="n">required_length</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">window_size</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">difference_order</span>
+        
+        <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_steps</span><span class="p">):</span>
+            <span class="c1"># Crop or pad to the minimum length needed to produce one full differenced window.</span>
+            <span class="n">current_window</span> <span class="o">=</span> <span class="n">current_input</span><span class="p">[</span><span class="o">-</span><span class="n">required_length</span><span class="p">:]</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">current_window</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">required_length</span><span class="p">:</span>
+                <span class="n">padding</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">((</span><span class="n">required_length</span> <span class="o">-</span> <span class="nb">len</span><span class="p">(</span><span class="n">current_window</span><span class="p">),),</span> <span class="n">current_window</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+                <span class="n">current_window</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">([</span><span class="n">current_window</span><span class="p">,</span> <span class="n">padding</span><span class="p">])</span>
+
+            <span class="c1"># Compute the nth difference</span>
+            <span class="n">X_diff</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">current_window</span><span class="p">,</span> <span class="n">n</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">difference_order</span><span class="p">)</span>
+            
+            <span class="c1"># Scale the difference</span>
+            <span class="n">X_diff_scaled</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">scaler</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">X_diff</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">window_size</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+            
+            <span class="c1"># Predict the difference</span>
+            <span class="n">y_pred_diff</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">X_diff_scaled</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">flatten</span><span class="p">()</span>
+            
+            <span class="c1"># Inverse scale the predicted difference</span>
+            <span class="n">y_pred_diff_unscaled</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">scaler</span><span class="o">.</span><span class="n">inverse_transform</span><span class="p">(</span><span class="n">y_pred_diff</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span><span class="o">.</span><span class="n">flatten</span><span class="p">()</span>
+            
+            <span class="c1"># Reconstruct the next raw value from the predicted differenced value</span>
+            <span class="n">y_pred</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_inverse_difference</span><span class="p">(</span><span class="n">current_window</span><span class="p">[</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">difference_order</span><span class="p">:],</span> <span class="n">y_pred_diff_unscaled</span><span class="p">)</span>
+            <span class="n">output</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">y_pred</span><span class="p">)</span>
+            
+            <span class="c1"># Update current_input for the next iteration</span>
+            <span class="n">current_input</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">current_input</span><span class="p">,</span> <span class="n">y_pred</span><span class="p">)</span>
+            
+        <span class="k">return</span> <span class="n">output</span></div>
+
+    
+    <span class="k">def</span><span class="w"> </span><span class="nf">save_model</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">file_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">file_path</span><span class="p">)</span>
+        
+    <span class="k">def</span><span class="w"> </span><span class="nf">load_model</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">file_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">keras</span><span class="o">.</span><span class="n">models</span><span class="o">.</span><span class="n">load_model</span><span class="p">(</span><span class="n">file_path</span><span class="p">)</span>
+        
+    <span class="k">def</span><span class="w"> </span><span class="nf">summary</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">summary</span><span class="p">()</span>
+    
+<div class="viewcode-block" id="BiLSTMPredictor.get_config">
+<a class="viewcode-back" href="../../../generated/squirrel_models_time_series.html#squirrel.models.time_series.BiLSTMPredictor.get_config">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_config</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Get the current configuration of the model, including window size, difference order, data path, and target column.</span>
+<span class="sd">        This method returns a dictionary containing the current configuration parameters of the model, which can be useful</span>
+<span class="sd">        for tracking the model's settings or for saving and loading configurations.</span>
+<span class="sd">        </span>
+<span class="sd">        **Description:**</span>
+<span class="sd">        </span>
+<span class="sd">            The `get_config` method compiles the current configuration of the model into a dictionary format.</span>
+<span class="sd">            The dictionary includes key parameters such as `window_size`, `difference_order`, `data_path`, and `target_column`, which define how the model processes the time series data and what data it uses for training and prediction.</span>
+<span class="sd">            </span>
+<span class="sd">        :return: A dictionary containing the current configuration parameters of the model.</span>
+<span class="sd">        :rtype: dict</span>
+<span class="sd">        """</span>
+        
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s2">"window_size"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">window_size</span><span class="p">,</span>
+            <span class="s2">"difference_order"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">difference_order</span><span class="p">,</span>
+            <span class="s2">"data_path"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">data_path</span><span class="p">,</span>
+            <span class="s2">"target_column"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">target_column</span>
+        <span class="p">}</span></div>
+
+        
+<div class="viewcode-block" id="BiLSTMPredictor.set_config">
+<a class="viewcode-back" href="../../../generated/squirrel_models_time_series.html#squirrel.models.time_series.BiLSTMPredictor.set_config">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">set_config</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Update the model configuration with the provided values.</span>
+<span class="sd">        </span>
+<span class="sd">        **Description:**</span>
+<span class="sd">        </span>
+<span class="sd">            The `set_config` method allows for updating the model's configuration parameters such as `window_size`, `difference_order`, `data_path`, and `target_column`.</span>
+<span class="sd">            It takes a dictionary `config` as input, where each key corresponds to a configuration parameter.</span>
+<span class="sd">            The method checks for the presence of each parameter in the input dictionary and updates the corresponding attribute</span>
+<span class="sd">            of the model if the parameter is provided. This allows for flexible reconfiguration of the model without needing to create a new instance.</span>
+<span class="sd">            </span>
+<span class="sd">        :param config: A dictionary containing the configuration parameters to be updated. Possible keys include "window_size", "difference_order", "data_path", and "target_column".</span>
+<span class="sd">        :type config: dict</span>
+<span class="sd">        </span>
+<span class="sd">        :param window_size: The size of the input sequences to be created for the model. If provided in the config, it will update the model's window_size attribute.</span>
+<span class="sd">        :type window_size: int</span>
+<span class="sd">        </span>
+<span class="sd">        :param difference_order: The order of differencing to be applied to the time series data. If provided in the config, it will update the model's difference_order attribute.</span>
+<span class="sd">        :type difference_order: int</span>
+<span class="sd">        </span>
+<span class="sd">        :param data_path: The file path to the CSV file containing the time series data. If provided in the config, it will update the model's data_path attribute.</span>
+<span class="sd">        :type data_path: str</span>
+<span class="sd">        </span>
+<span class="sd">        :param target_column: The name of the column in the CSV file that contains the target values for prediction. If provided in the config, it will update the model's target_column attribute.</span>
+<span class="sd">        :type target_column: str</span>
+<span class="sd">        </span>
+<span class="sd">        :return: None</span>
+<span class="sd">        :rtype: None</span>
+<span class="sd">        """</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">window_size</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"window_size"</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">window_size</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">difference_order</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"difference_order"</span><span class="p">,</span> <span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"num_differences"</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">difference_order</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data_path</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"data_path"</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">data_path</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">target_column</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"target_column"</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">target_column</span><span class="p">)</span></div>
+</div>
+
+
+<span class="c1"># ——————————————————————————————————————————————————————————————</span>
+<span class="c1"># LSTM with Attention Predictor for Time Series</span>
+<div class="viewcode-block" id="LSTMAttentionPredictor">
+<a class="viewcode-back" href="../../../generated/squirrel_models_time_series.html#squirrel.models.time_series.LSTMAttentionPredictor">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">LSTMAttentionPredictor</span><span class="p">(</span><span class="n">TimeSeriesPredictor</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">lstm_units</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">64</span><span class="p">,</span>
+        <span class="n">window_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">30</span><span class="p">,</span>
+        <span class="n">difference_order</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+        <span class="n">data_path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">target_column</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="k">if</span> <span class="n">difference_order</span> <span class="o">&lt;</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"difference_order must be at least 1"</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">window_size</span> <span class="o">=</span> <span class="n">window_size</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data_path</span> <span class="o">=</span> <span class="n">data_path</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">target_column</span> <span class="o">=</span> <span class="n">target_column</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">lstm_units</span> <span class="o">=</span> <span class="n">lstm_units</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">difference_order</span> <span class="o">=</span> <span class="n">difference_order</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">scaler</span> <span class="o">=</span> <span class="n">StandardScaler</span><span class="p">()</span>
+
+        <span class="n">inputs</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">keras</span><span class="o">.</span><span class="n">layers</span><span class="o">.</span><span class="n">Input</span><span class="p">(</span><span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="n">window_size</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
+        <span class="n">lstm_out</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">keras</span><span class="o">.</span><span class="n">layers</span><span class="o">.</span><span class="n">LSTM</span><span class="p">(</span><span class="n">lstm_units</span><span class="p">,</span> <span class="n">return_sequences</span><span class="o">=</span><span class="kc">True</span><span class="p">)(</span><span class="n">inputs</span><span class="p">)</span>
+        <span class="n">attention_out</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">keras</span><span class="o">.</span><span class="n">layers</span><span class="o">.</span><span class="n">Attention</span><span class="p">()([</span><span class="n">lstm_out</span><span class="p">,</span> <span class="n">lstm_out</span><span class="p">])</span>
+        <span class="n">pooled</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">keras</span><span class="o">.</span><span class="n">layers</span><span class="o">.</span><span class="n">GlobalAveragePooling1D</span><span class="p">()(</span><span class="n">attention_out</span><span class="p">)</span>
+        <span class="n">outputs</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">keras</span><span class="o">.</span><span class="n">layers</span><span class="o">.</span><span class="n">Dense</span><span class="p">(</span><span class="mi">1</span><span class="p">)(</span><span class="n">pooled</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">keras</span><span class="o">.</span><span class="n">Model</span><span class="p">(</span><span class="n">inputs</span><span class="o">=</span><span class="n">inputs</span><span class="p">,</span> <span class="n">outputs</span><span class="o">=</span><span class="n">outputs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="n">optimizer</span><span class="o">=</span><span class="s1">'adam'</span><span class="p">,</span> <span class="n">loss</span><span class="o">=</span><span class="s1">'mse'</span><span class="p">,</span> <span class="n">metrics</span><span class="o">=</span><span class="p">[</span><span class="s1">'mae'</span><span class="p">])</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_inverse_difference</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">base_values</span><span class="p">,</span> <span class="n">difference_value</span><span class="p">):</span>
+        <span class="n">base_values</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">base_values</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">base_values</span><span class="o">.</span><span class="n">size</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">difference_order</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"Expected at least </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">difference_order</span><span class="si">}</span><span class="s2"> base values, got </span><span class="si">{</span><span class="n">base_values</span><span class="o">.</span><span class="n">size</span><span class="si">}</span><span class="s2">"</span>
+            <span class="p">)</span>
+
+        <span class="n">current_value</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">difference_value</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="k">for</span> <span class="n">order</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">difference_order</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">order</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">current_value</span> <span class="o">=</span> <span class="n">base_values</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">current_value</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">current_value</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">base_values</span><span class="p">,</span> <span class="n">n</span><span class="o">=</span><span class="n">order</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">current_value</span>
+
+        <span class="k">return</span> <span class="n">current_value</span>
+
+<div class="viewcode-block" id="LSTMAttentionPredictor.load_data">
+<a class="viewcode-back" href="../../../generated/squirrel_models_time_series.html#squirrel.models.time_series.LSTMAttentionPredictor.load_data">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">load_data</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">data_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">target_column</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sd">"""Load raw values and their nth difference from a CSV file."""</span>
+        <span class="k">if</span> <span class="n">data_path</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s1">'.csv'</span><span class="p">):</span>
+            <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="n">data_path</span><span class="p">)</span>
+            <span class="n">target_data</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="n">target_column</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">float</span><span class="p">)</span>
+            <span class="n">target_data_diff</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">target_data</span><span class="p">,</span> <span class="n">n</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">difference_order</span><span class="p">)</span>
+            <span class="n">target_data_diff_scaled</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">scaler</span><span class="o">.</span><span class="n">fit_transform</span><span class="p">(</span><span class="n">target_data_diff</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span><span class="o">.</span><span class="n">flatten</span><span class="p">()</span>
+            <span class="k">return</span> <span class="n">target_data</span><span class="p">,</span> <span class="n">target_data_diff_scaled</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"Unsupported file format. Please provide a CSV file."</span><span class="p">)</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">prepare_data</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">data_diff</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]:</span>
+        <span class="n">X</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="p">[],</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">idx</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">window_size</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">data_diff</span><span class="p">)):</span>
+            <span class="n">X</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">data_diff</span><span class="p">[</span><span class="n">idx</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">window_size</span><span class="p">:</span><span class="n">idx</span><span class="p">]</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">window_size</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
+            <span class="n">y</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">data_diff</span><span class="p">[</span><span class="n">idx</span><span class="p">])</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">X</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">y</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">split_data</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">X</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+        <span class="n">y</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+        <span class="n">train_ratio</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.8</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]]:</span>
+        <span class="n">total_samples</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">X</span><span class="p">)</span>
+        <span class="n">train_samples</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">total_samples</span> <span class="o">*</span> <span class="n">train_ratio</span><span class="p">)</span>
+
+        <span class="n">X_train</span> <span class="o">=</span> <span class="n">X</span><span class="p">[:</span><span class="n">train_samples</span><span class="p">]</span>
+        <span class="n">y_train</span> <span class="o">=</span> <span class="n">y</span><span class="p">[:</span><span class="n">train_samples</span><span class="p">]</span>
+
+        <span class="n">X_test</span> <span class="o">=</span> <span class="n">X</span><span class="p">[</span><span class="n">train_samples</span><span class="p">:]</span>
+        <span class="n">y_test</span> <span class="o">=</span> <span class="n">y</span><span class="p">[</span><span class="n">train_samples</span><span class="p">:]</span>
+
+        <span class="k">return</span> <span class="p">(</span><span class="n">X_train</span><span class="p">,</span> <span class="n">y_train</span><span class="p">),</span> <span class="p">(</span><span class="n">X_test</span><span class="p">,</span> <span class="n">y_test</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">fit</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">X_train</span><span class="p">,</span>
+        <span class="n">y_train</span><span class="p">,</span>
+        <span class="n">X_test</span><span class="p">,</span>
+        <span class="n">y_test</span><span class="p">,</span>
+        <span class="n">epochs</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">50</span><span class="p">,</span>
+        <span class="n">batch_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">32</span><span class="p">,</span>
+        <span class="n">verbose</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span>
+            <span class="n">X_train</span><span class="p">,</span>
+            <span class="n">y_train</span><span class="p">,</span>
+            <span class="n">epochs</span><span class="o">=</span><span class="n">epochs</span><span class="p">,</span>
+            <span class="n">batch_size</span><span class="o">=</span><span class="n">batch_size</span><span class="p">,</span>
+            <span class="n">validation_data</span><span class="o">=</span><span class="p">(</span><span class="n">X_test</span><span class="p">,</span> <span class="n">y_test</span><span class="p">),</span>
+            <span class="n">verbose</span><span class="o">=</span><span class="n">verbose</span><span class="p">,</span>
+            <span class="n">callbacks</span><span class="o">=</span><span class="p">[</span>
+                <span class="n">tf</span><span class="o">.</span><span class="n">keras</span><span class="o">.</span><span class="n">callbacks</span><span class="o">.</span><span class="n">EarlyStopping</span><span class="p">(</span><span class="n">monitor</span><span class="o">=</span><span class="s1">'val_loss'</span><span class="p">,</span> <span class="n">patience</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">restore_best_weights</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="n">verbose</span><span class="p">),</span>
+            <span class="p">]</span>
+        <span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">eval</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">X_test</span><span class="p">,</span>
+        <span class="n">y_test</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">]:</span>
+        <span class="n">y_pred</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">X_test</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">flatten</span><span class="p">()</span>
+
+        <span class="n">y_pred_unscaled</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">scaler</span><span class="o">.</span><span class="n">inverse_transform</span><span class="p">(</span><span class="n">y_pred</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span><span class="o">.</span><span class="n">flatten</span><span class="p">()</span>
+        <span class="n">y_test_unscaled</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">scaler</span><span class="o">.</span><span class="n">inverse_transform</span><span class="p">(</span><span class="n">y_test</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span><span class="o">.</span><span class="n">flatten</span><span class="p">()</span>
+
+        <span class="n">mse</span> <span class="o">=</span> <span class="n">mean_squared_error</span><span class="p">(</span><span class="n">y_test_unscaled</span><span class="p">,</span> <span class="n">y_pred_unscaled</span><span class="p">)</span>
+        <span class="n">mae</span> <span class="o">=</span> <span class="n">mean_absolute_error</span><span class="p">(</span><span class="n">y_test_unscaled</span><span class="p">,</span> <span class="n">y_pred_unscaled</span><span class="p">)</span>
+
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Test Diff MSE: </span><span class="si">{</span><span class="n">mse</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">, Test Diff MAE: </span><span class="si">{</span><span class="n">mae</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">mse</span><span class="p">,</span> <span class="n">mae</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__call__</span><span class="p">(</span>
+        <span class="bp">self</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">data</span><span class="p">,</span> <span class="n">data_diff_scaled</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">load_data</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data_path</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">target_column</span><span class="p">)</span>
+        <span class="n">X</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">prepare_data</span><span class="p">(</span><span class="n">data_diff_scaled</span><span class="p">)</span>
+        <span class="p">(</span><span class="n">X_train</span><span class="p">,</span> <span class="n">y_train</span><span class="p">),</span> <span class="p">(</span><span class="n">X_test</span><span class="p">,</span> <span class="n">y_test</span><span class="p">)</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">split_data</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X_train</span><span class="p">,</span> <span class="n">y_train</span><span class="p">,</span> <span class="n">X_test</span><span class="p">,</span> <span class="n">y_test</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">predict</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">X</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">n_steps</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span>
+    <span class="p">):</span>
+        <span class="k">if</span> <span class="n">X</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">X</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">load_data</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data_path</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">target_column</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+
+        <span class="n">output</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">raw_input</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="n">required_length</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">window_size</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">difference_order</span>
+
+        <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_steps</span><span class="p">):</span>
+            <span class="n">current_window</span> <span class="o">=</span> <span class="n">raw_input</span><span class="p">[</span><span class="o">-</span><span class="n">required_length</span><span class="p">:]</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">current_window</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">required_length</span><span class="p">:</span>
+                <span class="n">padding</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">((</span><span class="n">required_length</span> <span class="o">-</span> <span class="nb">len</span><span class="p">(</span><span class="n">current_window</span><span class="p">),),</span> <span class="n">current_window</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+                <span class="n">current_window</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">([</span><span class="n">current_window</span><span class="p">,</span> <span class="n">padding</span><span class="p">])</span>
+
+            <span class="n">current_diff</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">current_window</span><span class="p">,</span> <span class="n">n</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">difference_order</span><span class="p">)</span>
+            <span class="n">current_diff_scaled</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">scaler</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">current_diff</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">window_size</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+
+            <span class="n">y_pred_diff_scaled</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">current_diff_scaled</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">flatten</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">y_pred_diff</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">scaler</span><span class="o">.</span><span class="n">inverse_transform</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="n">y_pred_diff_scaled</span><span class="p">]]))</span><span class="o">.</span><span class="n">flatten</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span>
+
+            <span class="n">y_pred</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_inverse_difference</span><span class="p">(</span><span class="n">current_window</span><span class="p">[</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">difference_order</span><span class="p">:],</span> <span class="n">y_pred_diff</span><span class="p">)</span>
+            <span class="n">output</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">y_pred</span><span class="p">)</span>
+
+            <span class="n">raw_input</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">raw_input</span><span class="p">,</span> <span class="n">y_pred</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">output</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">save_model</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">file_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">file_path</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">load_model</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">file_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">keras</span><span class="o">.</span><span class="n">models</span><span class="o">.</span><span class="n">load_model</span><span class="p">(</span><span class="n">file_path</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">summary</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">summary</span><span class="p">()</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_config</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s2">"window_size"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">window_size</span><span class="p">,</span>
+            <span class="s2">"data_path"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">data_path</span><span class="p">,</span>
+            <span class="s2">"target_column"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">target_column</span><span class="p">,</span>
+            <span class="s2">"difference_order"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">difference_order</span><span class="p">,</span>
+        <span class="p">}</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">set_config</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">window_size</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"window_size"</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">window_size</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data_path</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"data_path"</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">data_path</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">target_column</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"target_column"</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">target_column</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">difference_order</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"difference_order"</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">difference_order</span><span class="p">)</span></div>
+
+        
+<div class="viewcode-block" id="CNNPredictor">
+<a class="viewcode-back" href="../../../generated/squirrel_models_time_series.html#squirrel.models.time_series.CNNPredictor">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">CNNPredictor</span><span class="p">(</span><span class="n">TimeSeriesPredictor</span><span class="p">):</span>
+    <span class="k">pass</span></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, Mazen Soliman.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

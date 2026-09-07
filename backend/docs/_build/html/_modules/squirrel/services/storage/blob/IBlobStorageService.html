@@ -1,0 +1,321 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>squirrel.services.storage.blob.IBlobStorageService &mdash; squirrel  documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../../../../_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" type="text/css" href="../../../../../_static/css/custom.css?v=adc7883a" />
+
+  
+    <link rel="shortcut icon" href="../../../../../_static/sqrl.png"/>
+      <script src="../../../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../../../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../../../../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script src="../../../../../_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="../../../../../_static/copybutton.js?v=a46eff05"></script>
+    <script src="../../../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../../../index.html" class="icon icon-home">
+            squirrel
+              <img src="../../../../../_static/sqrl.png" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Python API Reference:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../api.html">Python API Reference</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../../index.html">squirrel</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">squirrel.services.storage.blob.IBlobStorageService</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for squirrel.services.storage.blob.IBlobStorageService</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/python</span>
+<span class="sd">"""</span>
+<span class="sd">Abstract Storage Service Module</span>
+<span class="sd">===============================</span>
+
+<span class="sd">Overview</span>
+<span class="sd">--------</span>
+
+<span class="sd">This module provides abstract service integration capabilities for SQRL .</span>
+<span class="sd">The AbstractStorageService class defines the interface for interacting with different storage backends.</span>
+
+<span class="sd">Features</span>
+<span class="sd">--------</span>
+
+<span class="sd">- Upload and download operations</span>
+<span class="sd">- Error handling and logging</span>
+
+<span class="sd">"""</span>
+<span class="c1"># ——————————————————————————————————————————————————————————————</span>
+<span class="c1"># Imports</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
+
+<span class="c1"># Standard Libraries</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">zipfile</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">hashlib</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="kn">import</span> <span class="n">datetime</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">ABC</span><span class="p">,</span> <span class="n">abstractmethod</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span>
+
+<span class="c1"># Models</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">squirrel.schemas.file</span><span class="w"> </span><span class="kn">import</span> <span class="n">FileType</span><span class="p">,</span> <span class="n">File</span>
+
+<span class="c1"># Logging</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">loguru</span><span class="w"> </span><span class="kn">import</span> <span class="n">logger</span>
+
+<span class="c1"># ——————————————————————————————————————————————————————————————</span>
+<span class="c1"># MinIO Service Class</span>
+<div class="viewcode-block" id="IBlobStorageService">
+<a class="viewcode-back" href="../../../../../generated/squirrel_services_storage_blob_IBlobStorageService.html#squirrel.services.storage.blob.IBlobStorageService.IBlobStorageService">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">IBlobStorageService</span><span class="p">(</span><span class="n">ABC</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Abstract Storage Service Class</span>
+<span class="sd">    -------------------------------</span>
+
+<span class="sd">    This abstract class defines the interface for storage services in SQRL. </span>
+<span class="sd">    It provides method signatures for uploading and downloading files, which must be implemented by any concrete storage service class.</span>
+
+<span class="sd">    **Methods:**</span>
+<span class="sd">    </span>
+<span class="sd">    - :meth:`retrieve_file`</span>
+<span class="sd">        Downloads a file from the storage backend.</span>
+<span class="sd">        </span>
+<span class="sd">    - :meth:`upload_file`</span>
+<span class="sd">        Uploads a file to the storage backend.</span>
+<span class="sd">    </span>
+<span class="sd">    """</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_file_type</span><span class="p">(</span>
+        <span class="n">extension</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">FileType</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Determine FileType from file extension.</span>
+<span class="sd">        </span>
+<span class="sd">        **Description:**</span>
+<span class="sd">        </span>
+<span class="sd">            This method maps file extensions to corresponding FileType enum values.</span>
+<span class="sd">        </span>
+<span class="sd">        :param extension: File extension (e.g., 'pdf', 'docx')</span>
+<span class="sd">        :type extension: str</span>
+<span class="sd">        </span>
+<span class="sd">        :return: Corresponding FileType enum value</span>
+<span class="sd">        :rtype: FileType</span>
+<span class="sd">        """</span>
+        <span class="n">extension</span> <span class="o">=</span> <span class="n">extension</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+
+        <span class="c1"># Map extensions to FileType enum</span>
+        <span class="n">type_mapping</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s1">'.pdf'</span><span class="p">:</span> <span class="n">FileType</span><span class="o">.</span><span class="n">PDF</span><span class="p">,</span>
+            <span class="s1">'.xlsx'</span><span class="p">:</span> <span class="n">FileType</span><span class="o">.</span><span class="n">XLSX</span><span class="p">,</span>
+            <span class="s1">'.xls'</span><span class="p">:</span> <span class="n">FileType</span><span class="o">.</span><span class="n">XLSX</span><span class="p">,</span>
+            <span class="s1">'.csv'</span><span class="p">:</span> <span class="n">FileType</span><span class="o">.</span><span class="n">CSV</span><span class="p">,</span>
+            <span class="s1">'.doc'</span><span class="p">:</span> <span class="n">FileType</span><span class="o">.</span><span class="n">DOCX</span><span class="p">,</span>
+            <span class="s1">'.docx'</span><span class="p">:</span> <span class="n">FileType</span><span class="o">.</span><span class="n">DOCX</span><span class="p">,</span>
+            <span class="s1">'.json'</span><span class="p">:</span> <span class="n">FileType</span><span class="o">.</span><span class="n">JSON</span><span class="p">,</span>
+            <span class="s1">'.md'</span><span class="p">:</span> <span class="n">FileType</span><span class="o">.</span><span class="n">MD</span><span class="p">,</span>
+            <span class="s1">'.html'</span><span class="p">:</span> <span class="n">FileType</span><span class="o">.</span><span class="n">HTML</span><span class="p">,</span>
+            <span class="s1">'.htm'</span><span class="p">:</span> <span class="n">FileType</span><span class="o">.</span><span class="n">HTML</span><span class="p">,</span>
+            <span class="s1">'.png'</span><span class="p">:</span> <span class="n">FileType</span><span class="o">.</span><span class="n">PNG</span><span class="p">,</span>
+            <span class="s1">'.jpg'</span><span class="p">:</span> <span class="n">FileType</span><span class="o">.</span><span class="n">JPG</span><span class="p">,</span>
+            <span class="s1">'.jpeg'</span><span class="p">:</span> <span class="n">FileType</span><span class="o">.</span><span class="n">JPG</span><span class="p">,</span>
+            <span class="s1">'.gif'</span><span class="p">:</span> <span class="n">FileType</span><span class="o">.</span><span class="n">GIF</span><span class="p">,</span>
+        <span class="p">}</span>
+
+        <span class="k">return</span> <span class="n">type_mapping</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">extension</span><span class="p">,</span> <span class="n">FileType</span><span class="o">.</span><span class="n">UNKNOWN</span><span class="p">)</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_calculate_file_md5</span><span class="p">(</span>
+        <span class="n">file_byte</span><span class="p">:</span> <span class="nb">bytes</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Calculate the MD5 hash of a file.</span>
+<span class="sd">        </span>
+<span class="sd">        **Description:**</span>
+<span class="sd">        </span>
+<span class="sd">            This method computes MD5 hash of file content in chunks for memory efficiency.</span>
+
+<span class="sd">        :param file_byte: The file content as bytes for which to calculate the MD5 hash</span>
+<span class="sd">        :type file_byte: bytes</span>
+
+<span class="sd">        :return: MD5 hash as hexadecimal string, empty string if calculation fails</span>
+<span class="sd">        :rtype: str</span>
+<span class="sd">        """</span>
+        <span class="n">md5_hash</span> <span class="o">=</span> <span class="n">hashlib</span><span class="o">.</span><span class="n">md5</span><span class="p">()</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">md5_hash</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">file_byte</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">md5_hash</span><span class="o">.</span><span class="n">hexdigest</span><span class="p">()</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">exception</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Failed to calculate MD5 for file: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+            <span class="k">return</span> <span class="s2">""</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_extract_zip_metadata</span><span class="p">(</span>
+        <span class="n">zip_path</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Extract metadata from the ZIP archive.</span>
+<span class="sd">        </span>
+<span class="sd">        **Description:**</span>
+<span class="sd">        </span>
+<span class="sd">            This method extracts file information including name, type, size, creation date,</span>
+<span class="sd">            and MD5 hash for each file in the ZIP archive.</span>
+
+<span class="sd">        :param zip_path: Path to the ZIP file</span>
+<span class="sd">        :type zip_path: str</span>
+<span class="sd">        </span>
+<span class="sd">        :return: Dictionary mapping filename to metadata (size, md5, type, created_at)</span>
+<span class="sd">        :rtype: Dict[str, str]</span>
+<span class="sd">        """</span>
+        <span class="n">metadata</span> <span class="o">=</span> <span class="p">{}</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">with</span> <span class="n">zipfile</span><span class="o">.</span><span class="n">ZipFile</span><span class="p">(</span><span class="n">zip_path</span><span class="p">,</span> <span class="s1">'r'</span><span class="p">)</span> <span class="k">as</span> <span class="n">zip_ref</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">file_info</span> <span class="ow">in</span> <span class="n">zip_ref</span><span class="o">.</span><span class="n">filelist</span><span class="p">:</span>
+                    <span class="c1"># Skip directories</span>
+                    <span class="k">if</span> <span class="n">file_info</span><span class="o">.</span><span class="n">is_dir</span><span class="p">():</span>
+                        <span class="k">continue</span>
+
+                    <span class="n">file_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">file_info</span><span class="o">.</span><span class="n">filename</span><span class="p">)</span><span class="o">.</span><span class="n">name</span>
+                    <span class="n">file_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">file_info</span><span class="o">.</span><span class="n">file_size</span>
+
+                    <span class="c1"># Calculate MD5 hash of the file content</span>
+                    <span class="k">with</span> <span class="n">zip_ref</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">file_info</span><span class="o">.</span><span class="n">filename</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+                        <span class="n">md5_hash</span> <span class="o">=</span> <span class="n">hashlib</span><span class="o">.</span><span class="n">md5</span><span class="p">()</span>
+                        <span class="k">for</span> <span class="n">chunk</span> <span class="ow">in</span> <span class="nb">iter</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="n">f</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="mi">4096</span><span class="p">),</span> <span class="sa">b</span><span class="s2">""</span><span class="p">):</span>
+                            <span class="n">md5_hash</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">chunk</span><span class="p">)</span>
+
+                    <span class="n">metadata</span><span class="p">[</span><span class="n">file_name</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+                        <span class="s2">"name"</span><span class="p">:</span> <span class="n">file_name</span><span class="p">,</span>
+                        <span class="s2">"type"</span><span class="p">:</span> <span class="n">IBlobStorageService</span><span class="o">.</span><span class="n">_get_file_type</span><span class="p">(</span><span class="n">Path</span><span class="p">(</span><span class="n">file_name</span><span class="p">)</span><span class="o">.</span><span class="n">suffix</span><span class="p">),</span>
+                        <span class="s2">"size"</span><span class="p">:</span> <span class="n">file_info</span><span class="o">.</span><span class="n">file_size</span><span class="p">,</span>
+                        <span class="s2">"created_at"</span><span class="p">:</span> <span class="n">datetime</span><span class="p">(</span><span class="o">*</span><span class="n">file_info</span><span class="o">.</span><span class="n">date_time</span><span class="p">),</span>
+                        <span class="s2">"md5"</span><span class="p">:</span> <span class="n">md5_hash</span><span class="o">.</span><span class="n">hexdigest</span><span class="p">()</span>
+                    <span class="p">}</span>
+
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">exception</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Failed to extract ZIP metadata: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">metadata</span>
+
+<div class="viewcode-block" id="IBlobStorageService.retrieve_file">
+<a class="viewcode-back" href="../../../../../generated/squirrel_services_storage_blob_IBlobStorageService.html#squirrel.services.storage.blob.IBlobStorageService.IBlobStorageService.retrieve_file">[docs]</a>
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">retrieve_file</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">file_url</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">File</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Abstract method to download a file from the storage backend.</span>
+
+<span class="sd">        :param file_url: URL of the file to download</span>
+<span class="sd">        :type file_url: str</span>
+
+<span class="sd">        :return: File object representing the downloaded file, or None if retrieval fails</span>
+<span class="sd">        :rtype: Optional[File]</span>
+<span class="sd">        """</span>
+        <span class="k">pass</span></div>
+
+    
+<div class="viewcode-block" id="IBlobStorageService.upload_file">
+<a class="viewcode-back" href="../../../../../generated/squirrel_services_storage_blob_IBlobStorageService.html#squirrel.services.storage.blob.IBlobStorageService.IBlobStorageService.upload_file">[docs]</a>
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">upload_file</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">file_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">object_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">File</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Abstract method to upload a file to the storage backend.</span>
+
+<span class="sd">        :param file_path: Local path of the file to upload</span>
+<span class="sd">        :type file_path: str</span>
+
+<span class="sd">        :return: File object representing the uploaded file, or None if upload fails</span>
+<span class="sd">        :rtype: Optional[File]</span>
+<span class="sd">        """</span>
+        <span class="k">pass</span></div>
+</div>
+
+
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, Mazen Soliman.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -1,0 +1,525 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>squirrel.schemas.workspace &mdash; squirrel  documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/custom.css?v=adc7883a" />
+
+  
+    <link rel="shortcut icon" href="../../../_static/sqrl.png"/>
+      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="../../../_static/copybutton.js?v=a46eff05"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            squirrel
+              <img src="../../../_static/sqrl.png" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Python API Reference:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../api.html">Python API Reference</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">squirrel</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">squirrel.schemas.workspace</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for squirrel.schemas.workspace</h1><div class="highlight"><pre>
+<span></span><span class="sd">"""</span>
+<span class="sd">Workspace Schemas</span>
+<span class="sd">=================</span>
+
+<span class="sd">Pydantic models for the workspace CRUD, upload, and build endpoints.</span>
+
+<span class="sd">All response models share a common ``WorkspaceRecord`` that mirrors the</span>
+<span class="sd">``workspaces`` database row so that callers can track artifacts across</span>
+<span class="sd">multiple pipeline runs. Every workspace is keyed on ``workspace_id`` (the</span>
+<span class="sd">same value used throughout ``WorkspaceService``) — there is no separate</span>
+<span class="sd">integer id in play.</span>
+
+<span class="sd">"""</span>
+<span class="c1"># ——————————————————————————————————————————————————————————————</span>
+<span class="c1"># Imports</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
+
+<span class="c1"># Standard Libraries</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="kn">import</span> <span class="n">datetime</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Optional</span>
+
+<span class="c1"># Third-Party Libraries</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pydantic</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseModel</span><span class="p">,</span> <span class="n">Field</span>
+
+<span class="c1"># Schemas</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">squirrel.schemas.api</span><span class="w"> </span><span class="kn">import</span> <span class="n">LLMTokens</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">squirrel.schemas.file</span><span class="w"> </span><span class="kn">import</span> <span class="n">UploadedSourceOut</span>
+
+<span class="c1"># Constants</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">squirrel.constants.workspace</span><span class="w"> </span><span class="kn">import</span> <span class="n">DataType</span>
+
+<span class="c1"># ——————————————————————————————————————————————————————————————</span>
+<span class="c1"># Datasource Model</span>
+
+<div class="viewcode-block" id="DataSource">
+<a class="viewcode-back" href="../../../generated/squirrel_schemas_workspace.html#squirrel.schemas.workspace.DataSource">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">DataSource</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    A single input source attached to a workspace.</span>
+
+<span class="sd">    Generic across source kinds ("upload" | "connector") and, within</span>
+<span class="sd">    uploads, across file types — a CSV source populates ``columns`` /</span>
+<span class="sd">    ``row_count``; other file types (once implemented) may leave those</span>
+<span class="sd">    unset and rely on ``connector_id`` being absent to distinguish</span>
+<span class="sd">    themselves from connector sources.</span>
+<span class="sd">    """</span>
+
+    <span class="n">source_id</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">kind</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">file_type</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">file_url</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">columns</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">all_columns</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span>   <span class="c1"># NEW — full column set, for uploads</span>
+    <span class="n">row_count</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">connector_id</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">table</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">query</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span></div>
+
+
+<div class="viewcode-block" id="SourceColumnsRequest">
+<a class="viewcode-back" href="../../../generated/squirrel_schemas_workspace.html#squirrel.schemas.workspace.SourceColumnsRequest">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">SourceColumnsRequest</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+    <span class="n">columns</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span>  <span class="c1"># None/full list =&gt; use every column</span></div>
+
+
+<span class="c1"># ——————————————————————————————————————————————————————————————</span>
+<span class="c1"># Workspace &amp; Workspace Run Record Model</span>
+
+
+<div class="viewcode-block" id="WorkspaceRecord">
+<a class="viewcode-back" href="../../../generated/squirrel_schemas_workspace.html#squirrel.schemas.workspace.WorkspaceRecord">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">WorkspaceRecord</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    A single row from the ``workspaces`` table, keyed on ``workspace_id``.</span>
+<span class="sd">    """</span>
+
+    <span class="n">workspaceId</span><span class="p">:</span>   <span class="nb">str</span>                 <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="o">...</span><span class="p">,</span> <span class="n">alias</span><span class="o">=</span><span class="s2">"workspace_id"</span><span class="p">)</span>
+    <span class="n">name</span><span class="p">:</span>          <span class="nb">str</span>
+    <span class="n">status</span><span class="p">:</span>        <span class="nb">str</span>
+    <span class="n">dataType</span><span class="p">:</span>      <span class="nb">str</span>                 <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="n">DataType</span><span class="o">.</span><span class="n">STRUCTURED</span><span class="p">,</span> <span class="n">alias</span><span class="o">=</span><span class="s2">"data_type"</span><span class="p">)</span>
+    <span class="n">targetColumn</span><span class="p">:</span>  <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>       <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">alias</span><span class="o">=</span><span class="s2">"target_column"</span><span class="p">)</span>
+    <span class="n">inputSources</span><span class="p">:</span>  <span class="n">List</span><span class="p">[</span><span class="n">DataSource</span><span class="p">]</span>    <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="p">[],</span> <span class="n">alias</span><span class="o">=</span><span class="s2">"input_sources"</span><span class="p">)</span>
+    <span class="n">error</span><span class="p">:</span>         <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>       <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">created_at</span><span class="p">:</span>    <span class="n">Any</span>
+    <span class="n">updated_at</span><span class="p">:</span>    <span class="n">Any</span>
+
+    <span class="k">class</span><span class="w"> </span><span class="nc">Config</span><span class="p">:</span>
+        <span class="n">populate_by_name</span> <span class="o">=</span> <span class="kc">True</span></div>
+
+
+
+<div class="viewcode-block" id="WorkspaceRunRecord">
+<a class="viewcode-back" href="../../../generated/squirrel_schemas_workspace.html#squirrel.schemas.workspace.WorkspaceRunRecord">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">WorkspaceRunRecord</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    A single row from the ``workspace_runs`` table.</span>
+<span class="sd">    """</span>
+
+    <span class="nb">id</span><span class="p">:</span>               <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span>       <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">workspaceId</span><span class="p">:</span>      <span class="nb">str</span>                 <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="o">...</span><span class="p">,</span> <span class="n">alias</span><span class="o">=</span><span class="s2">"workspace_id"</span><span class="p">)</span>
+    <span class="n">agentType</span><span class="p">:</span>        <span class="nb">str</span>                 <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="o">...</span><span class="p">,</span> <span class="n">alias</span><span class="o">=</span><span class="s2">"agent_type"</span><span class="p">)</span>
+    <span class="n">inputFileUrls</span><span class="p">:</span>    <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>           <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">list</span><span class="p">,</span> <span class="n">alias</span><span class="o">=</span><span class="s2">"input_file_urls"</span><span class="p">)</span>
+    <span class="n">outputFileUrls</span><span class="p">:</span>   <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>           <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">list</span><span class="p">,</span> <span class="n">alias</span><span class="o">=</span><span class="s2">"output_file_urls"</span><span class="p">)</span>
+    <span class="n">agentSummary</span><span class="p">:</span>     <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span>      <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">dict</span><span class="p">,</span> <span class="n">alias</span><span class="o">=</span><span class="s2">"agent_summary"</span><span class="p">)</span>
+    <span class="n">promptTokens</span><span class="p">:</span>     <span class="nb">int</span>                 <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">alias</span><span class="o">=</span><span class="s2">"prompt_tokens"</span><span class="p">)</span>
+    <span class="n">completionTokens</span><span class="p">:</span> <span class="nb">int</span>                 <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">alias</span><span class="o">=</span><span class="s2">"completion_tokens"</span><span class="p">)</span>
+    <span class="n">totalTokens</span><span class="p">:</span>      <span class="nb">int</span>                 <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">alias</span><span class="o">=</span><span class="s2">"total_tokens"</span><span class="p">)</span>
+    <span class="n">responseTime</span><span class="p">:</span>     <span class="nb">int</span>                 <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">alias</span><span class="o">=</span><span class="s2">"response_time_ms"</span><span class="p">)</span>
+    <span class="n">createdAt</span><span class="p">:</span>        <span class="n">Optional</span><span class="p">[</span><span class="n">datetime</span><span class="p">]</span>  <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="n">alias</span><span class="o">=</span><span class="s2">"created_at"</span><span class="p">)</span>
+
+    <span class="k">class</span><span class="w"> </span><span class="nc">Config</span><span class="p">:</span>
+        <span class="n">populate_by_name</span> <span class="o">=</span> <span class="kc">True</span></div>
+
+
+
+<span class="c1"># ——————————————————————————————————————————————————————————————</span>
+<span class="c1"># Workspace mutation requests</span>
+
+
+<div class="viewcode-block" id="WorkspaceCreateRequest">
+<a class="viewcode-back" href="../../../generated/squirrel_schemas_workspace.html#squirrel.schemas.workspace.WorkspaceCreateRequest">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">WorkspaceCreateRequest</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="o">...</span><span class="p">,</span> <span class="n">min_length</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">max_length</span><span class="o">=</span><span class="mi">200</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">"Display name for the workspace."</span><span class="p">)</span>
+    <span class="n">data_type</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span>
+        <span class="n">default</span><span class="o">=</span><span class="n">DataType</span><span class="o">.</span><span class="n">STRUCTURED</span><span class="p">,</span>
+        <span class="n">description</span><span class="o">=</span><span class="s2">"Kind of data this workspace holds: structured, image, text, audio, or other."</span><span class="p">,</span>
+    <span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="WorkspaceUpdateRequest">
+<a class="viewcode-back" href="../../../generated/squirrel_schemas_workspace.html#squirrel.schemas.workspace.WorkspaceUpdateRequest">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">WorkspaceUpdateRequest</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+    <span class="n">name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">min_length</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">max_length</span><span class="o">=</span><span class="mi">200</span><span class="p">)</span>
+    <span class="n">data_type</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span></div>
+
+
+
+<div class="viewcode-block" id="ConnectorSourceRequest">
+<a class="viewcode-back" href="../../../generated/squirrel_schemas_workspace.html#squirrel.schemas.workspace.ConnectorSourceRequest">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">ConnectorSourceRequest</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+    <span class="n">connector_id</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">query</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span>
+        <span class="o">...</span><span class="p">,</span>
+        <span class="n">min_length</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+        <span class="n">description</span><span class="o">=</span><span class="p">(</span>
+            <span class="s2">"SQL query selecting exactly the data this source should provide "</span>
+            <span class="s2">"— built from a table picked via GET /connectors/</span><span class="si">{connector_id}</span><span class="s2">/tables, "</span>
+            <span class="s2">"or typed freehand and checked via POST /connectors/</span><span class="si">{connector_id}</span><span class="s2">/preview."</span>
+        <span class="p">),</span>
+    <span class="p">)</span></div>
+
+
+<span class="c1"># ——————————————————————————————————————————————————————————————</span>
+<span class="c1"># Upload endpoint</span>
+
+
+<div class="viewcode-block" id="UploadResponse">
+<a class="viewcode-back" href="../../../generated/squirrel_schemas_workspace.html#squirrel.schemas.workspace.UploadResponse">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">UploadResponse</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Response payload for ``POST /workspace/{workspace_id}/upload``.</span>
+
+<span class="sd">    Generic across every file type accepted by the upload endpoint — see</span>
+<span class="sd">    ``UploadedSourceOut`` for why its fields are mostly optional.</span>
+<span class="sd">    """</span>
+
+    <span class="n">workspace_id</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">uploaded</span><span class="p">:</span>     <span class="n">List</span><span class="p">[</span><span class="n">UploadedSourceOut</span><span class="p">]</span>
+    <span class="n">sources</span><span class="p">:</span>      <span class="n">List</span><span class="p">[</span><span class="n">DataSource</span><span class="p">]</span>          <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">list</span><span class="p">)</span></div>
+
+
+
+<span class="c1"># ——————————————————————————————————————————————————————————————</span>
+<span class="c1"># Build endpoint</span>
+
+
+<div class="viewcode-block" id="BuildRequest">
+<a class="viewcode-back" href="../../../generated/squirrel_schemas_workspace.html#squirrel.schemas.workspace.BuildRequest">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">BuildRequest</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+    <span class="n">target_column</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="o">...</span><span class="p">,</span> <span class="n">min_length</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">"Column to predict, chosen from the union of source columns."</span><span class="p">)</span>
+    <span class="n">query</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span>
+        <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">description</span><span class="o">=</span><span class="p">(</span>
+            <span class="s2">"Optional free-text instruction describing how the workspace's "</span>
+            <span class="s2">"input sources relate to one another (e.g. 'join on customer_id') "</span>
+            <span class="s2">"and/or what the resulting model should optimize for. Passed "</span>
+            <span class="s2">"through to the preprocessing and model-building agents as "</span>
+            <span class="s2">"additional grounding — most useful when sources don't share an "</span>
+            <span class="s2">"identical or obviously-disjoint schema and the agent has to "</span>
+            <span class="s2">"infer a relationship between them."</span>
+        <span class="p">),</span>
+    <span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="ModelMetric">
+<a class="viewcode-back" href="../../../generated/squirrel_schemas_workspace.html#squirrel.schemas.workspace.ModelMetric">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">ModelMetric</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+    <span class="n">model_key</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">metric_name</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">mean</span><span class="p">:</span> <span class="nb">float</span>
+    <span class="n">std</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span></div>
+
+
+
+<div class="viewcode-block" id="ModelFileOut">
+<a class="viewcode-back" href="../../../generated/squirrel_schemas_workspace.html#squirrel.schemas.workspace.ModelFileOut">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">ModelFileOut</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+    <span class="n">model_key</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">file_url</span><span class="p">:</span> <span class="nb">str</span></div>
+
+
+
+<div class="viewcode-block" id="BuildResponse">
+<a class="viewcode-back" href="../../../generated/squirrel_schemas_workspace.html#squirrel.schemas.workspace.BuildResponse">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">BuildResponse</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+    <span class="n">workspace_id</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">status</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">preprocessing_summary</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span>
+    <span class="n">model_summary</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span>
+    <span class="n">model_comparison</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">ModelMetric</span><span class="p">]</span>
+    <span class="n">best_model</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">output_file_urls</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">model_files</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">ModelFileOut</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span></div>
+
+
+
+<div class="viewcode-block" id="ModelsResponse">
+<a class="viewcode-back" href="../../../generated/squirrel_schemas_workspace.html#squirrel.schemas.workspace.ModelsResponse">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">ModelsResponse</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+    <span class="n">workspace_id</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">status</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">target_column</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">preprocessing_summary</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">model_summary</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">model_comparison</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">ModelMetric</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">best_model</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">output_file_urls</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">model_files</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">ModelFileOut</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span></div>
+
+
+
+<div class="viewcode-block" id="PreprocessedDataResponse">
+<a class="viewcode-back" href="../../../generated/squirrel_schemas_workspace.html#squirrel.schemas.workspace.PreprocessedDataResponse">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">PreprocessedDataResponse</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+    <span class="n">workspace_id</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">target_column</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">columns</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">rows</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">row_count</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">file_url</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span></div>
+
+
+
+<span class="c1"># ——————————————————————————————————————————————————————————————</span>
+<span class="c1"># Chat-driven preprocessing / model-build endpoints (legacy conversational</span>
+<span class="c1"># flow, kept alongside the workspace-pipeline endpoints above)</span>
+
+
+<div class="viewcode-block" id="PreprocessRequest">
+<a class="viewcode-back" href="../../../generated/squirrel_schemas_workspace.html#squirrel.schemas.workspace.PreprocessRequest">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">PreprocessRequest</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Request payload for ``POST /preprocess``.</span>
+
+<span class="sd">    Callers must supply a ``conversationId`` so the workspace row can be</span>
+<span class="sd">    linked to the chat history, and a ``workspaceId`` for workspace-level</span>
+<span class="sd">    queries. The ``fileUrls`` list must contain at least one ``s3://`` URL</span>
+<span class="sd">    pointing to the raw CSV that the preprocessing agent should clean.</span>
+<span class="sd">    """</span>
+
+    <span class="n">workspaceId</span><span class="p">:</span>    <span class="nb">str</span>                      <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="o">...</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">"Owning workspace identifier."</span><span class="p">)</span>
+    <span class="n">conversationId</span><span class="p">:</span> <span class="nb">str</span>                      <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="o">...</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">"Links this run to a chat conversation."</span><span class="p">)</span>
+    <span class="n">fileUrls</span><span class="p">:</span>       <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>                <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="o">...</span><span class="p">,</span> <span class="n">min_length</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">"s3:// URLs of raw input files."</span><span class="p">)</span>
+    <span class="n">edaSummary</span><span class="p">:</span>     <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">"Structured EDA output from the inspector agent."</span><span class="p">)</span>
+    <span class="n">objective</span><span class="p">:</span>      <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>            <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">"Free-text preprocessing goal."</span><span class="p">)</span>
+    <span class="n">query</span><span class="p">:</span>          <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>            <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">"Optional natural-language instruction."</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="PreprocessResponse">
+<a class="viewcode-back" href="../../../generated/squirrel_schemas_workspace.html#squirrel.schemas.workspace.PreprocessResponse">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">PreprocessResponse</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Response payload for ``POST /preprocess``.</span>
+
+<span class="sd">    On success ``workspaceId`` and ``outputFileUrls`` are populated so the</span>
+<span class="sd">    caller can immediately chain into the model-building endpoint.</span>
+<span class="sd">    """</span>
+
+    <span class="n">reply</span><span class="p">:</span>          <span class="nb">str</span>                      <span class="o">=</span> <span class="s2">""</span>
+    <span class="n">workspaceId</span><span class="p">:</span>    <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>            <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">outputFileUrls</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>               <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">list</span><span class="p">)</span>
+    <span class="n">summary</span><span class="p">:</span>        <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">llmTokens</span><span class="p">:</span>      <span class="n">Optional</span><span class="p">[</span><span class="n">LLMTokens</span><span class="p">]</span>      <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">responseTime</span><span class="p">:</span>   <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span>            <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">metadata</span><span class="p">:</span>       <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span></div>
+
+
+
+<div class="viewcode-block" id="ModelBuildRequest">
+<a class="viewcode-back" href="../../../generated/squirrel_schemas_workspace.html#squirrel.schemas.workspace.ModelBuildRequest">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">ModelBuildRequest</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Request payload for ``POST /model-build``.</span>
+
+<span class="sd">    ``fileUrls`` should point to the processed CSV(s) produced by the</span>
+<span class="sd">    preprocessing pipeline (i.e. ``outputFileUrls`` from a</span>
+<span class="sd">    :class:`PreprocessResponse`).  ``targetColumn`` is the name of the label</span>
+<span class="sd">    column in that CSV.</span>
+
+<span class="sd">    """</span>
+
+    <span class="n">workspaceId</span><span class="p">:</span>          <span class="nb">str</span>                      <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="o">...</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">"Owning workspace identifier."</span><span class="p">)</span>
+    <span class="n">conversationId</span><span class="p">:</span>       <span class="nb">str</span>                      <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="o">...</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">"Links this run to a chat conversation."</span><span class="p">)</span>
+    <span class="n">fileUrls</span><span class="p">:</span>             <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>                <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="o">...</span><span class="p">,</span> <span class="n">min_length</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">"s3:// URLs of processed input files."</span><span class="p">)</span>
+    <span class="n">targetColumn</span><span class="p">:</span>         <span class="nb">str</span>                      <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="o">...</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">"Name of the target / label column."</span><span class="p">)</span>
+    <span class="n">preprocessingSummary</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">"Structured output from the preprocessing agent."</span><span class="p">)</span>
+    <span class="n">objective</span><span class="p">:</span>            <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>            <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">"Free-text modelling goal."</span><span class="p">)</span>
+    <span class="n">query</span><span class="p">:</span>                <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>            <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">"Optional natural-language instruction."</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="ModelBuildResponse">
+<a class="viewcode-back" href="../../../generated/squirrel_schemas_workspace.html#squirrel.schemas.workspace.ModelBuildResponse">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">ModelBuildResponse</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Response payload for ``POST /model-build``.</span>
+
+<span class="sd">    ``outputFileUrls`` contains ``s3://`` URLs for every ``*.joblib`` model</span>
+<span class="sd">    file written to MinIO so callers can download or reference them later.</span>
+<span class="sd">    """</span>
+
+    <span class="n">reply</span><span class="p">:</span>          <span class="nb">str</span>                      <span class="o">=</span> <span class="s2">""</span>
+    <span class="n">workspaceId</span><span class="p">:</span>    <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>            <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">outputFileUrls</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>               <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">list</span><span class="p">)</span>
+    <span class="n">summary</span><span class="p">:</span>        <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">llmTokens</span><span class="p">:</span>      <span class="n">Optional</span><span class="p">[</span><span class="n">LLMTokens</span><span class="p">]</span>      <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">responseTime</span><span class="p">:</span>   <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span>            <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">metadata</span><span class="p">:</span>       <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span></div>
+
+
+
+<span class="c1"># ——————————————————————————————————————————————————————————————</span>
+<span class="c1"># Workspace retrieval endpoint</span>
+
+
+<div class="viewcode-block" id="WorkspaceListResponse">
+<a class="viewcode-back" href="../../../generated/squirrel_schemas_workspace.html#squirrel.schemas.workspace.WorkspaceListResponse">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">WorkspaceListResponse</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Paginated list of workspace records."""</span>
+
+    <span class="n">total</span><span class="p">:</span>      <span class="nb">int</span>                  <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">workspaces</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">WorkspaceRecord</span><span class="p">]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">list</span><span class="p">)</span></div>
+
+
+
+
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Optional</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pydantic</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseModel</span><span class="p">,</span> <span class="n">Field</span>
+
+
+<div class="viewcode-block" id="PredictRequest">
+<a class="viewcode-back" href="../../../generated/squirrel_schemas_workspace.html#squirrel.schemas.workspace.PredictRequest">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">PredictRequest</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Body for ``POST /workspace/{workspace_id}/predict``.</span>
+<span class="sd">    </span>
+<span class="sd">    ``rows`` should be shaped like the workspace's original raw input</span>
+<span class="sd">    source(s) — i.e. exactly what you'd upload as a CSV row or pull from a</span>
+<span class="sd">    connector — *not* already preprocessed. The saved fitted pipeline</span>
+<span class="sd">    handles cleaning/encoding/scaling internally.</span>
+<span class="sd">    """</span>
+
+    <span class="n">rows</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span>
+        <span class="o">...</span><span class="p">,</span>
+        <span class="n">description</span><span class="o">=</span><span class="p">(</span>
+            <span class="s2">"One or more raw rows to predict on, each a column-name -&gt; "</span>
+            <span class="s2">"value mapping matching the workspace's original input schema."</span>
+        <span class="p">),</span>
+        <span class="n">min_length</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">model_key</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span>
+        <span class="kc">None</span><span class="p">,</span>
+        <span class="n">description</span><span class="o">=</span><span class="p">(</span>
+            <span class="s2">"Which fitted model to use (see GET /workspace/</span><span class="si">{workspace_id}</span><span class="s2">/models "</span>
+            <span class="s2">"for available keys). Omit to use the workspace's recommended "</span>
+            <span class="s2">"'best_model' from the most recent model-building run."</span>
+        <span class="p">),</span>
+    <span class="p">)</span></div>
+
+    
+
+<div class="viewcode-block" id="PredictResponse">
+<a class="viewcode-back" href="../../../generated/squirrel_schemas_workspace.html#squirrel.schemas.workspace.PredictResponse">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">PredictResponse</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Response for ``POST /workspace/{workspace_id}/predict``."""</span>
+ 
+    <span class="n">workspace_id</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">model_key</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="o">...</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">"The fitted model actually used."</span><span class="p">)</span>
+    <span class="n">predictions</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span>
+        <span class="o">...</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">"One prediction per input row, in the same order as `rows`."</span>
+    <span class="p">)</span>
+    <span class="n">probabilities</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">float</span><span class="p">]]]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span>
+        <span class="kc">None</span><span class="p">,</span>
+        <span class="n">description</span><span class="o">=</span><span class="p">(</span>
+            <span class="s2">"Per-row class probabilities, only present for classifiers "</span>
+            <span class="s2">"exposing predict_proba(). Column order matches `classes`."</span>
+        <span class="p">),</span>
+    <span class="p">)</span>
+    <span class="n">classes</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span>
+        <span class="kc">None</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">"Class labels corresponding to each column of `probabilities`."</span>
+    <span class="p">)</span></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, Mazen Soliman.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

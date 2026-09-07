@@ -1,0 +1,510 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>squirrel.modules.agents.preprocessor.TabularDataProcessorAgent &mdash; squirrel  documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/custom.css?v=adc7883a" />
+
+  
+    <link rel="shortcut icon" href="../_static/sqrl.png"/>
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="../_static/copybutton.js?v=a46eff05"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="squirrel.modules.inspectors.tabular" href="squirrel_modules_inspectors_tabular.html" />
+    <link rel="prev" title="squirrel.modules.agents.orchestrator.OrchestratorAgent" href="squirrel_modules_agents_orchestrator_OrchestratorAgent.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            squirrel
+              <img src="../_static/sqrl.png" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Python API Reference:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="../api.html">Python API Reference</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="../generated_classes.html">Generated API classes</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="squirrel_constants_connector.html">squirrel.constants.connector</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_constants_workspace.html">squirrel.constants.workspace</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_core_config.html">squirrel.core.config</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_core_error_handlers.html">squirrel.core.error_handlers</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_core_logging.html">squirrel.core.logging</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_core_middleware.html">squirrel.core.middleware</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_models_classification.html">squirrel.models.classification</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_models_time_series.html">squirrel.models.time_series</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_modules_agents_abstract_IAgent.html">squirrel.modules.agents.abstract.IAgent</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_modules_agents_builder_TabularDataModelBuilderAgent.html">squirrel.modules.agents.builder.TabularDataModelBuilderAgent</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_modules_agents_exploratory_TabularDataExploratoryAgent.html">squirrel.modules.agents.exploratory.TabularDataExploratoryAgent</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_modules_agents_inspector_TabularDataInsepctorAgent.html">squirrel.modules.agents.inspector.TabularDataInsepctorAgent</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_modules_agents_orchestrator_OrchestratorAgent.html">squirrel.modules.agents.orchestrator.OrchestratorAgent</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">squirrel.modules.agents.preprocessor.TabularDataProcessorAgent</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#squirrel.modules.agents.preprocessor.TabularDataProcessorAgent.TabularDataProcessorAgent"><code class="docutils literal notranslate"><span class="pre">TabularDataProcessorAgent</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#squirrel.modules.agents.preprocessor.TabularDataProcessorAgent._AgentMergeRejected"><code class="docutils literal notranslate"><span class="pre">_AgentMergeRejected</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_modules_inspectors_tabular.html">squirrel.modules.inspectors.tabular</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_modules_preprocessors_cleaning_tabular.html">squirrel.modules.preprocessors.cleaning.tabular</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_modules_preprocessors_transformers_tabular.html">squirrel.modules.preprocessors.transformers.tabular</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_modules_prompts_abstract_IPromptGenerator.html">squirrel.modules.prompts.abstract.IPromptGenerator</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_modules_prompts_builder_TabularDataPromptGenerator.html">squirrel.modules.prompts.builder.TabularDataPromptGenerator</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_modules_prompts_exploratory_ExploratoryPromptGenerator.html">squirrel.modules.prompts.exploratory.ExploratoryPromptGenerator</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_modules_prompts_inspect_InspectPromptGenerator.html">squirrel.modules.prompts.inspect.InspectPromptGenerator</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_modules_prompts_orchestrator_OrchestratorPromptGenerator.html">squirrel.modules.prompts.orchestrator.OrchestratorPromptGenerator</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_modules_prompts_preprocess_PreprocessPromptGenerator.html">squirrel.modules.prompts.preprocess.PreprocessPromptGenerator</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_modules_providers_abstract_IProvider.html">squirrel.modules.providers.abstract.IProvider</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_modules_providers_gemini_GeminiProvider.html">squirrel.modules.providers.gemini.GeminiProvider</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_modules_providers_groq_GroqProvider.html">squirrel.modules.providers.groq.GroqProvider</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_modules_providers_openrouter_OpenRouterProvider.html">squirrel.modules.providers.openrouter.OpenRouterProvider</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_schemas_api.html">squirrel.schemas.api</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_schemas_argument_spec.html">squirrel.schemas.argument_spec</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_schemas_auth.html">squirrel.schemas.auth</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_schemas_connector.html">squirrel.schemas.connector</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_schemas_eda.html">squirrel.schemas.eda</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_schemas_error.html">squirrel.schemas.error</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_schemas_file.html">squirrel.schemas.file</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_schemas_notebook.html">squirrel.schemas.notebook</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_schemas_token.html">squirrel.schemas.token</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_schemas_workspace.html">squirrel.schemas.workspace</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_services_auth_AuthService.html">squirrel.services.auth.AuthService</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_services_auth_TokenService.html">squirrel.services.auth.TokenService</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_services_chat_MessagingService.html">squirrel.services.chat.MessagingService</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_services_data_connector_DataConnectorService.html">squirrel.services.data_connector.DataConnectorService</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_services_file_FileService.html">squirrel.services.file.FileService</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_services_notebook_NotebookService.html">squirrel.services.notebook.NotebookService</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_services_orchestrator_OrchestratorService.html">squirrel.services.orchestrator.OrchestratorService</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_services_storage_blob_IBlobStorageService.html">squirrel.services.storage.blob.IBlobStorageService</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_services_storage_blob_MinIOService.html">squirrel.services.storage.blob.MinIOService</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_services_storage_database_IDatabaseService.html">squirrel.services.storage.database.IDatabaseService</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_services_storage_database_PostgresService.html">squirrel.services.storage.database.PostgresService</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_services_workspace_WorkspaceService.html">squirrel.services.workspace.WorkspaceService</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">squirrel</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../api.html">Python API Reference</a></li>
+          <li class="breadcrumb-item"><a href="../generated_classes.html">Generated API classes</a></li>
+      <li class="breadcrumb-item active">squirrel.modules.agents.preprocessor.TabularDataProcessorAgent</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/generated/squirrel_modules_agents_preprocessor_TabularDataProcessorAgent.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="squirrel-modules-agents-preprocessor-tabulardataprocessoragent">
+<h1>squirrel.modules.agents.preprocessor.TabularDataProcessorAgent<a class="headerlink" href="#squirrel-modules-agents-preprocessor-tabulardataprocessoragent" title="Link to this heading"></a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="squirrel.modules.agents.preprocessor.TabularDataProcessorAgent.TabularDataProcessorAgent">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">squirrel.modules.agents.preprocessor.TabularDataProcessorAgent.</span></span><span class="sig-name descname"><span class="pre">TabularDataProcessorAgent</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">prompt_generator</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/modules/agents/preprocessor/TabularDataProcessorAgent.html#TabularDataProcessorAgent"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.modules.agents.preprocessor.TabularDataProcessorAgent.TabularDataProcessorAgent" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="squirrel_modules_agents_abstract_IAgent.html#squirrel.modules.agents.abstract.IAgent.IAgent" title="squirrel.modules.agents.abstract.IAgent.IAgent"><code class="xref py py-class docutils literal notranslate"><span class="pre">IAgent</span></code></a></p>
+<p>Agent for cleaning and transforming tabular datasets.</p>
+<p><strong>Description:</strong></p>
+<blockquote>
+<div><p>The agent accepts an optional EDA summary (from <code class="docutils literal notranslate"><span class="pre">TabularDataInspectorAgent</span></code>)
+to ground its preprocessing plan in concrete findings rather than relying on
+generic heuristics.</p>
+</div></blockquote>
+<dl class="simple">
+<dt>Lifecycle:</dt><dd><ol class="arabic simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">plan</span></code>     — asks the LLM to build an ordered preprocessing plan.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">execute</span></code>  — runs each planned step and collects structured outputs.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">summarize</span></code>— asks the LLM to interpret results into a concise report.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">run</span></code>      — convenience wrapper chaining all three stages.</p></li>
+</ol>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>prompt_generator</strong> (<em>Any</em>)</p>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="squirrel.modules.agents.preprocessor.TabularDataProcessorAgent.TabularDataProcessorAgent.detect_column_conflicts">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">detect_column_conflicts</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dataframes</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target_column</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/modules/agents/preprocessor/TabularDataProcessorAgent.html#TabularDataProcessorAgent.detect_column_conflicts"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.modules.agents.preprocessor.TabularDataProcessorAgent.TabularDataProcessorAgent.detect_column_conflicts" title="Link to this definition"></a></dt>
+<dd><p>Return the list of column names that appear in more than one of
+<em>dataframes</em>, excluding <code class="docutils literal notranslate"><span class="pre">target_column</span></code> (the predicted column is
+expected to live in exactly one source and is validated separately).</p>
+<p>This is used as a fast, deterministic signal — not a hard veto — for
+whether a column-wise merge would be ambiguous. See
+<a class="reference internal" href="#squirrel.modules.agents.preprocessor.TabularDataProcessorAgent.TabularDataProcessorAgent.merge_sources" title="squirrel.modules.agents.preprocessor.TabularDataProcessorAgent.TabularDataProcessorAgent.merge_sources"><code class="xref py py-meth docutils literal notranslate"><span class="pre">merge_sources()</span></code></a> for how it’s used.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>dataframes</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">DataFrame</span></code>]</span>) – Mapping of source_id -&gt; DataFrame, as returned by
+<code class="docutils literal notranslate"><span class="pre">WorkspaceService.load_source_dataframes</span></code>.</p></li>
+<li><p><strong>target_column</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]</span>) – Column the user picked to predict, if any;
+excluded from the conflict check since the target is allowed (and
+expected) to be named the same as feature columns in spirit, but
+must exist in exactly one source — that’s enforced by the caller.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]</span></p>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Sorted list of conflicting column names. Empty if none.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="squirrel.modules.agents.preprocessor.TabularDataProcessorAgent.TabularDataProcessorAgent.merge_sources">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">merge_sources</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dataframes</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target_column</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">objective</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">agent</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">merge_recommendation</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/modules/agents/preprocessor/TabularDataProcessorAgent.html#TabularDataProcessorAgent.merge_sources"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.modules.agents.preprocessor.TabularDataProcessorAgent.TabularDataProcessorAgent.merge_sources" title="Link to this definition"></a></dt>
+<dd><p>Fold two or more source DataFrames into a single DataFrame ready for
+the rest of the preprocessing pipeline.</p>
+<dl class="simple">
+<dt>Merge strategy:</dt><dd><ul class="simple">
+<li><p>A single source is returned as-is (no-op — covers the common
+single-CSV workspace).</p></li>
+<li><p>Multiple sources with an identical column set and no conflicts
+are merged row-wise (<code class="docutils literal notranslate"><span class="pre">pd.concat(axis=0)</span></code>) — the common case
+of several batches/exports of the same schema (e.g. monthly
+extracts).</p></li>
+<li><p>Multiple sources with the same row count, disjoint columns,
+and no name conflicts are merged column-wise
+(<code class="docutils literal notranslate"><span class="pre">pd.concat(axis=1)</span></code>), on the assumption that row <em>i</em> in
+every source describes the same entity (e.g. one CSV of
+customer demographics and another of customer usage stats,
+both ordered by the same customer list).</p></li>
+<li><p>Anything else — different schemas that don’t obviously stack
+or align, and/or column-name collisions — is handed to
+<code class="xref py py-meth docutils literal notranslate"><span class="pre">_merge_via_agent()</span></code>, which asks the LLM to inspect each
+source’s schema/sample rows and infer a relationship (most
+commonly a shared join key), grounded in <code class="docutils literal notranslate"><span class="pre">target_column</span></code> and
+<code class="docutils literal notranslate"><span class="pre">objective</span></code>. If the LLM can’t find a defensible
+relationship, the merge is refused with an explanation.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>objective</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></span>) – Optional free-text context from the caller (e.g.
+“join the two sources on customer_id”, or a description of what
+the eventual model should optimize for). Passed to the LLM
+fallback path only — it doesn’t affect the deterministic
+heuristics above.</p></li>
+<li><p><strong>agent</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<a class="reference internal" href="#squirrel.modules.agents.preprocessor.TabularDataProcessorAgent.TabularDataProcessorAgent" title="squirrel.modules.agents.preprocessor.TabularDataProcessorAgent.TabularDataProcessorAgent"><code class="xref py py-class docutils literal notranslate"><span class="pre">TabularDataProcessorAgent</span></code></a>]</span>) – Optional existing agent instance to reuse for the LLM
+fallback path (avoids constructing a second one when called from
+<a class="reference internal" href="#squirrel.modules.agents.preprocessor.TabularDataProcessorAgent.TabularDataProcessorAgent.run_multi" title="squirrel.modules.agents.preprocessor.TabularDataProcessorAgent.TabularDataProcessorAgent.run_multi"><code class="xref py py-meth docutils literal notranslate"><span class="pre">run_multi()</span></code></a>). A fresh instance is created if omitted.</p></li>
+<li><p><strong>dataframes</strong> (<em>Dict</em><em>[</em><em>str</em><em>, </em><em>DataFrame</em><em>]</em>)</p></li>
+<li><p><strong>target_column</strong> (<em>str</em><em> | </em><em>None</em>)</p></li>
+<li><p><strong>merge_recommendation</strong> (<em>Dict</em><em>[</em><em>str</em><em>, </em><em>Any</em><em>] </em><em>| </em><em>None</em>)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><a class="reference internal" href="squirrel_schemas_error.html#id0" title="squirrel.schemas.error.DuplicateColumnError"><strong>DuplicateColumnError</strong></a> – if a column-wise merge would collide
+on a non-target column name and the LLM fallback can’t resolve it.</p></li>
+<li><p><strong>ValueError</strong> – if no defensible merge strategy applies, including
+when the LLM fallback explicitly rejects the sources as unrelated.</p></li>
+</ul>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataFrame</span></code></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="squirrel.modules.agents.preprocessor.TabularDataProcessorAgent.TabularDataProcessorAgent.run_multi">
+<span class="sig-name descname"><span class="pre">run_multi</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dataframes</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target_column</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">eda_summary</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">objective</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">merge_recommendation</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_refinements</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/modules/agents/preprocessor/TabularDataProcessorAgent.html#TabularDataProcessorAgent.run_multi"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.modules.agents.preprocessor.TabularDataProcessorAgent.TabularDataProcessorAgent.run_multi" title="Link to this definition"></a></dt>
+<dd><p>Multi-source convenience wrapper: merge every source into one
+DataFrame (see <a class="reference internal" href="#squirrel.modules.agents.preprocessor.TabularDataProcessorAgent.TabularDataProcessorAgent.merge_sources" title="squirrel.modules.agents.preprocessor.TabularDataProcessorAgent.TabularDataProcessorAgent.merge_sources"><code class="xref py py-meth docutils literal notranslate"><span class="pre">merge_sources()</span></code></a>), then run the normal
+plan → execute → summarize pipeline on the result.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>dataframes</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">DataFrame</span></code>]</span>) – Mapping of source_id -&gt; DataFrame.</p></li>
+<li><p><strong>target_column</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]</span>) – Column the user chose to predict; used both to
+exclude it from the duplicate-column check (see
+<a class="reference internal" href="#squirrel.modules.agents.preprocessor.TabularDataProcessorAgent.TabularDataProcessorAgent.detect_column_conflicts" title="squirrel.modules.agents.preprocessor.TabularDataProcessorAgent.TabularDataProcessorAgent.detect_column_conflicts"><code class="xref py py-meth docutils literal notranslate"><span class="pre">detect_column_conflicts()</span></code></a>) and to ground the LLM’s
+relationship-finding when sources need to be joined.</p></li>
+<li><p><strong>objective</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></span>) – Optional free-text instruction describing how the
+sources relate and/or what the model should optimize for.
+Forwarded to <a class="reference internal" href="#squirrel.modules.agents.preprocessor.TabularDataProcessorAgent.TabularDataProcessorAgent.merge_sources" title="squirrel.modules.agents.preprocessor.TabularDataProcessorAgent.TabularDataProcessorAgent.merge_sources"><code class="xref py py-meth docutils literal notranslate"><span class="pre">merge_sources()</span></code></a>’s LLM fallback, and to the
+preprocessing plan/summarize stages as the run’s objective.</p></li>
+<li><p><strong>eda_summary</strong> (<em>dict</em><em> | </em><em>None</em>)</p></li>
+<li><p><strong>merge_recommendation</strong> (<em>Dict</em><em>[</em><em>str</em><em>, </em><em>Any</em><em>] </em><em>| </em><em>None</em>)</p></li>
+<li><p><strong>max_refinements</strong> (<em>int</em>)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">DataFrame</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]</span></p>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">(processed_df,</span> <span class="pre">summary,</span> <span class="pre">plan_json,</span> <span class="pre">execution_report_json)</span></code>
+— the last two are the raw plan and execution report, returned
+so the caller can persist them as the “fitted pipeline” artifact
+needed by <a class="reference internal" href="#squirrel.modules.agents.preprocessor.TabularDataProcessorAgent.TabularDataProcessorAgent.apply_fitted_pipeline" title="squirrel.modules.agents.preprocessor.TabularDataProcessorAgent.TabularDataProcessorAgent.apply_fitted_pipeline"><code class="xref py py-meth docutils literal notranslate"><span class="pre">apply_fitted_pipeline()</span></code></a> at inference time.</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><a class="reference internal" href="squirrel_schemas_error.html#id0" title="squirrel.schemas.error.DuplicateColumnError"><strong>DuplicateColumnError</strong></a> – propagated from <a class="reference internal" href="#squirrel.modules.agents.preprocessor.TabularDataProcessorAgent.TabularDataProcessorAgent.merge_sources" title="squirrel.modules.agents.preprocessor.TabularDataProcessorAgent.TabularDataProcessorAgent.merge_sources"><code class="xref py py-meth docutils literal notranslate"><span class="pre">merge_sources()</span></code></a>.</p></li>
+<li><p><strong>ValueError</strong> – propagated from <a class="reference internal" href="#squirrel.modules.agents.preprocessor.TabularDataProcessorAgent.TabularDataProcessorAgent.merge_sources" title="squirrel.modules.agents.preprocessor.TabularDataProcessorAgent.TabularDataProcessorAgent.merge_sources"><code class="xref py py-meth docutils literal notranslate"><span class="pre">merge_sources()</span></code></a> when no
+relationship between sources could be established.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="squirrel.modules.agents.preprocessor.TabularDataProcessorAgent.TabularDataProcessorAgent.run">
+<span class="sig-name descname"><span class="pre">run</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">eda_summary</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">objective</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target_column</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_refinements</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/modules/agents/preprocessor/TabularDataProcessorAgent.html#TabularDataProcessorAgent.run"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.modules.agents.preprocessor.TabularDataProcessorAgent.TabularDataProcessorAgent.run" title="Link to this definition"></a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>target_column</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]</span>) – The column the downstream model will predict, if
+known. When given, the planner is told to preserve it and any step
+that would drop it is defensively stripped/skipped in execute() —
+preprocessing has no other way to know a column it judges
+“redundant” (e.g. highly collinear with another feature) is
+actually the label, and losing it here surfaces only much later
+as a hard failure in the model-builder stage.</p></li>
+<li><p><strong>data</strong> (<em>DataFrame</em>)</p></li>
+<li><p><strong>eda_summary</strong> (<em>dict</em><em> | </em><em>None</em>)</p></li>
+<li><p><strong>objective</strong> (<em>str</em>)</p></li>
+<li><p><strong>max_refinements</strong> (<em>int</em>)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">DataFrame</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]</span></p>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">(processed_df,</span> <span class="pre">summary_dict,</span> <span class="pre">plan_json,</span> <span class="pre">execution_report_json)</span></code>.
+<code class="docutils literal notranslate"><span class="pre">plan_json</span></code> and <code class="docutils literal notranslate"><span class="pre">execution_report_json</span></code> are the plan/execution
+report from whichever attempt was selected as <code class="docutils literal notranslate"><span class="pre">best</span></code> — this is
+the pair to persist (e.g. via
+<code class="docutils literal notranslate"><span class="pre">WorkspaceService.save_pipeline_artifact</span></code>) if you want to be
+able to replay this exact preprocessing against new data later
+via <a class="reference internal" href="#squirrel.modules.agents.preprocessor.TabularDataProcessorAgent.TabularDataProcessorAgent.apply_fitted_pipeline" title="squirrel.modules.agents.preprocessor.TabularDataProcessorAgent.TabularDataProcessorAgent.apply_fitted_pipeline"><code class="xref py py-meth docutils literal notranslate"><span class="pre">apply_fitted_pipeline()</span></code></a>.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="squirrel.modules.agents.preprocessor.TabularDataProcessorAgent.TabularDataProcessorAgent.plan">
+<span class="sig-name descname"><span class="pre">plan</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">eda_summary</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">objective</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target_column</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/modules/agents/preprocessor/TabularDataProcessorAgent.html#TabularDataProcessorAgent.plan"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.modules.agents.preprocessor.TabularDataProcessorAgent.TabularDataProcessorAgent.plan" title="Link to this definition"></a></dt>
+<dd><p>Ask the LLM to build an ordered preprocessing plan.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataFrame</span></code></span>) – Input DataFrame.</p></li>
+<li><p><strong>eda_summary</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code>]</span>) – Optional structured EDA findings.</p></li>
+<li><p><strong>objective</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></span>) – Optional caller-supplied goal.</p></li>
+<li><p><strong>target_column</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]</span>) – The column the downstream model will predict, if
+known. Passed through to the prompt so the planner doesn’t drop,
+encode-away, or otherwise destroy it while cleaning “redundant”
+columns (e.g. a feature highly correlated with the target itself).</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></span></p>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>JSON plan string.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="squirrel.modules.agents.preprocessor.TabularDataProcessorAgent.TabularDataProcessorAgent.execute">
+<span class="sig-name descname"><span class="pre">execute</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">plan</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target_column</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/modules/agents/preprocessor/TabularDataProcessorAgent.html#TabularDataProcessorAgent.execute"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.modules.agents.preprocessor.TabularDataProcessorAgent.TabularDataProcessorAgent.execute" title="Link to this definition"></a></dt>
+<dd><p>Execute the preprocessing plan produced by <code class="docutils literal notranslate"><span class="pre">plan()</span></code> in “fit” mode:
+every strategy computes its parameters (means, bounds, encoding
+maps, …) fresh from <em>data</em>. This is always the training-time path.</p>
+<p>Cleaning steps are dispatched through <code class="docutils literal notranslate"><span class="pre">TabularDataCleaner</span></code> and
+transformation steps through <code class="docutils literal notranslate"><span class="pre">TabularDataTransformer</span></code>.  Unknown or
+failed steps are recorded in the report rather than raising, so the
+pipeline always produces a complete result.</p>
+<p>A strategy can report a top-level status of “completed” while one or
+more of its columns silently failed internally (e.g. a step
+referencing a column an earlier step already dropped/renamed —
+strategies record this as <code class="docutils literal notranslate"><span class="pre">per_column:</span> <span class="pre">{col:</span> <span class="pre">{&quot;error&quot;:</span> <span class="pre">...}}</span></code>
+rather than raising). Left unchecked, this produces a pipeline that
+“trains successfully” but can never be replayed against new data at
+inference time (see <a class="reference internal" href="#squirrel.modules.agents.preprocessor.TabularDataProcessorAgent.TabularDataProcessorAgent.apply_fitted_pipeline" title="squirrel.modules.agents.preprocessor.TabularDataProcessorAgent.TabularDataProcessorAgent.apply_fitted_pipeline"><code class="xref py py-meth docutils literal notranslate"><span class="pre">apply_fitted_pipeline()</span></code></a>, which already
+checks for exactly this). Every step here is now checked the same
+way immediately after execution, and demoted to “failed” if any
+column silently failed — so the problem surfaces at build time,
+feeds into refinement, and doesn’t wait until a predict request to
+appear.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataFrame</span></code></span>) – Input DataFrame.</p></li>
+<li><p><strong>plan</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code> | <code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></span>) – JSON plan string or dict from <code class="docutils literal notranslate"><span class="pre">plan()</span></code>.</p></li>
+<li><p><strong>target_column</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]</span>) – The column the downstream model will predict, if
+known. Prompting the planner to preserve it (see <a class="reference internal" href="#squirrel.modules.agents.preprocessor.TabularDataProcessorAgent.TabularDataProcessorAgent.plan" title="squirrel.modules.agents.preprocessor.TabularDataProcessorAgent.TabularDataProcessorAgent.plan"><code class="xref py py-meth docutils literal notranslate"><span class="pre">plan()</span></code></a>) is
+not sufficient on its own — the LLM can and does drop it anyway
+(e.g. judging it “redundant” against a near-duplicate feature it
+doesn’t recognise as the label). Every step is defensively
+checked here and the target column is stripped out of any
+drop-columns arguments before execution, independent of what the
+plan says.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">DataFrame</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]</span></p>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">(processed_df,</span> <span class="pre">json_execution_report_string)</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="squirrel.modules.agents.preprocessor.TabularDataProcessorAgent.TabularDataProcessorAgent.apply_fitted_pipeline">
+<span class="sig-name descname"><span class="pre">apply_fitted_pipeline</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">new_data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">execution_report</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/modules/agents/preprocessor/TabularDataProcessorAgent.html#TabularDataProcessorAgent.apply_fitted_pipeline"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.modules.agents.preprocessor.TabularDataProcessorAgent.TabularDataProcessorAgent.apply_fitted_pipeline" title="Link to this definition"></a></dt>
+<dd><p>Inference-time counterpart to <a class="reference internal" href="#squirrel.modules.agents.preprocessor.TabularDataProcessorAgent.TabularDataProcessorAgent.execute" title="squirrel.modules.agents.preprocessor.TabularDataProcessorAgent.TabularDataProcessorAgent.execute"><code class="xref py py-meth docutils literal notranslate"><span class="pre">execute()</span></code></a>: replay a previously
+completed preprocessing run against <em>new_data</em>, reusing each step’s
+already-fitted parameters instead of recomputing them.</p>
+<p>This walks <code class="docutils literal notranslate"><span class="pre">execution_report[&quot;steps&quot;]</span></code> in the same order they ran
+at training time. Completed steps are re-applied to <em>new_data</em> with
+their recorded <code class="docutils literal notranslate"><span class="pre">per_column</span></code> fitted state, including means, bounds,
+encoding maps, fitted lambda values, and dummy-column sets. Each
+data-dependent strategy therefore reuses its training-time value
+instead of re-fitting from <em>new_data</em>.
+Steps that were <code class="docutils literal notranslate"><span class="pre">&quot;failed&quot;</span></code> or <code class="docutils literal notranslate"><span class="pre">&quot;skipped&quot;</span></code> during training are
+skipped here too, since they never touched the training frame either.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>new_data</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataFrame</span></code></span>) – Raw new data to transform into the same feature
+space the model was trained on.</p></li>
+<li><p><strong>execution_report</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code> | <code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></span>) – The JSON execution report string or dict
+returned by <a class="reference internal" href="#squirrel.modules.agents.preprocessor.TabularDataProcessorAgent.TabularDataProcessorAgent.execute" title="squirrel.modules.agents.preprocessor.TabularDataProcessorAgent.TabularDataProcessorAgent.execute"><code class="xref py py-meth docutils literal notranslate"><span class="pre">execute()</span></code></a> (or, equivalently,
+<code class="docutils literal notranslate"><span class="pre">run()</span></code>’s fourth return value) during training. This is what
+<code class="docutils literal notranslate"><span class="pre">WorkspaceService.save_pipeline_artifact</span></code> persists and
+<code class="docutils literal notranslate"><span class="pre">WorkspaceService.predict</span></code> loads back.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataFrame</span></code></span></p>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p><em>new_data</em> transformed through the identical pipeline the
+training data went through, ready to feed to the fitted model
+(after dropping the target column, if present).</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>ValueError</strong> – if <em>execution_report</em> can’t be parsed.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="squirrel.modules.agents.preprocessor.TabularDataProcessorAgent.TabularDataProcessorAgent.summarize">
+<span class="sig-name descname"><span class="pre">summarize</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">original_df</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">processed_df</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">execution_report</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/modules/agents/preprocessor/TabularDataProcessorAgent.html#TabularDataProcessorAgent.summarize"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.modules.agents.preprocessor.TabularDataProcessorAgent.TabularDataProcessorAgent.summarize" title="Link to this definition"></a></dt>
+<dd><p>Ask the LLM to interpret the execution report and return a structured
+preprocessing summary.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>original_df</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataFrame</span></code></span>) – The unprocessed input DataFrame.</p></li>
+<li><p><strong>processed_df</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataFrame</span></code></span>) – The DataFrame after all steps have been applied.</p></li>
+<li><p><strong>execution_report</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code> | <code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></span>) – JSON execution report from <code class="docutils literal notranslate"><span class="pre">execute()</span></code>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></span></p>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>JSON summary string.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="squirrel.modules.agents.preprocessor.TabularDataProcessorAgent._AgentMergeRejected">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">squirrel.modules.agents.preprocessor.TabularDataProcessorAgent.</span></span><span class="sig-name descname"><span class="pre">_AgentMergeRejected</span></span><a class="reference internal" href="../_modules/squirrel/modules/agents/preprocessor/TabularDataProcessorAgent.html#_AgentMergeRejected"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.modules.agents.preprocessor.TabularDataProcessorAgent._AgentMergeRejected" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Exception</span></code></p>
+<p>Internal signal used within <a class="reference internal" href="#squirrel.modules.agents.preprocessor.TabularDataProcessorAgent.TabularDataProcessorAgent.merge_sources" title="squirrel.modules.agents.preprocessor.TabularDataProcessorAgent.TabularDataProcessorAgent.merge_sources"><code class="xref py py-meth docutils literal notranslate"><span class="pre">TabularDataProcessorAgent.merge_sources()</span></code></a>
+to distinguish “the LLM looked and found nothing usable” from a normal
+Python exception, so the caller can decide whether to surface it as a
+<code class="docutils literal notranslate"><span class="pre">DuplicateColumnError</span></code> (409, name collision) or a plain <code class="docutils literal notranslate"><span class="pre">ValueError</span></code>
+(409, no relationship found). Never escapes <code class="docutils literal notranslate"><span class="pre">merge_sources</span></code> itself.</p>
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="squirrel_modules_agents_orchestrator_OrchestratorAgent.html" class="btn btn-neutral float-left" title="squirrel.modules.agents.orchestrator.OrchestratorAgent" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="squirrel_modules_inspectors_tabular.html" class="btn btn-neutral float-right" title="squirrel.modules.inspectors.tabular" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, Mazen Soliman.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

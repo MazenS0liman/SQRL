@@ -1,0 +1,541 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>squirrel.schemas.eda &mdash; squirrel  documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/custom.css?v=adc7883a" />
+
+  
+    <link rel="shortcut icon" href="../../../_static/sqrl.png"/>
+      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="../../../_static/copybutton.js?v=a46eff05"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            squirrel
+              <img src="../../../_static/sqrl.png" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Python API Reference:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../api.html">Python API Reference</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">squirrel</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">squirrel.schemas.eda</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for squirrel.schemas.eda</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/python</span>
+<span class="sd">"""</span>
+<span class="sd">EDA Models Module</span>
+<span class="sd">=================</span>
+
+<span class="sd">Pydantic data-transfer objects for the Tabular Data Exploratory Agent pipeline.</span>
+
+<span class="sd">Models</span>
+<span class="sd">------</span>
+
+<span class="sd">- AxisSpec     — describes one axis (x or y) of a chart.</span>
+<span class="sd">- Hypothesis   — a single analytical hypothesis to be tested.</span>
+<span class="sd">- SqlSpec      — SQL query with chart axis metadata.</span>
+<span class="sd">- ChartResult  — fully resolved chart: hypothesis + data + observation.</span>
+
+<span class="sd">"""</span>
+
+<span class="c1"># ——————————————————————————————————————————————————————————————</span>
+<span class="c1"># Imports</span>
+
+<span class="c1"># Standard Libraries</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Final</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Dict</span>
+
+<span class="c1"># Third-Party Libraries</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pydantic</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseModel</span><span class="p">,</span> <span class="n">Field</span><span class="p">,</span> <span class="n">ConfigDict</span><span class="p">,</span> <span class="n">Field</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Dict</span>
+
+<span class="c1"># ---------------------------------------------------------------------------</span>
+<span class="c1"># Shared sub-schemas</span>
+<span class="c1"># ---------------------------------------------------------------------------</span>
+
+<span class="n">_AXIS_SPEC</span><span class="p">:</span> <span class="n">Dict</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">"type"</span><span class="p">:</span> <span class="s2">"object"</span><span class="p">,</span>
+    <span class="s2">"description"</span><span class="p">:</span> <span class="s2">"Metadata for a single chart axis."</span><span class="p">,</span>
+    <span class="s2">"properties"</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s2">"column"</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">"type"</span><span class="p">:</span> <span class="s2">"string"</span><span class="p">,</span>
+            <span class="s2">"description"</span><span class="p">:</span> <span class="s2">"Exact column alias used in the SELECT clause."</span><span class="p">,</span>
+        <span class="p">},</span>
+        <span class="s2">"label"</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">"type"</span><span class="p">:</span> <span class="s2">"string"</span><span class="p">,</span>
+            <span class="s2">"description"</span><span class="p">:</span> <span class="s2">"Human-readable axis label shown in the chart."</span><span class="p">,</span>
+        <span class="p">},</span>
+        <span class="s2">"type"</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">"type"</span><span class="p">:</span> <span class="s2">"string"</span><span class="p">,</span>
+            <span class="s2">"enum"</span><span class="p">:</span> <span class="p">[</span><span class="s2">"temporal"</span><span class="p">,</span> <span class="s2">"quantitative"</span><span class="p">,</span> <span class="s2">"ordinal"</span><span class="p">,</span> <span class="s2">"nominal"</span><span class="p">],</span>
+            <span class="s2">"description"</span><span class="p">:</span> <span class="s2">"Vega-Lite scale type for the axis."</span><span class="p">,</span>
+        <span class="p">},</span>
+    <span class="p">},</span>
+    <span class="s2">"required"</span><span class="p">:</span> <span class="p">[</span><span class="s2">"column"</span><span class="p">,</span> <span class="s2">"label"</span><span class="p">,</span> <span class="s2">"type"</span><span class="p">],</span>
+<span class="p">}</span>
+
+<span class="n">_KPI</span><span class="p">:</span> <span class="n">Dict</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">"type"</span><span class="p">:</span> <span class="s2">"object"</span><span class="p">,</span>
+    <span class="s2">"properties"</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s2">"name"</span><span class="p">:</span>             <span class="p">{</span><span class="s2">"type"</span><span class="p">:</span> <span class="s2">"string"</span><span class="p">},</span>
+        <span class="s2">"description"</span><span class="p">:</span>      <span class="p">{</span><span class="s2">"type"</span><span class="p">:</span> <span class="s2">"string"</span><span class="p">},</span>
+        <span class="s2">"tables_involved"</span><span class="p">:</span>  <span class="p">{</span><span class="s2">"type"</span><span class="p">:</span> <span class="s2">"array"</span><span class="p">,</span> <span class="s2">"items"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"type"</span><span class="p">:</span> <span class="s2">"string"</span><span class="p">}},</span>
+        <span class="s2">"sql_hint"</span><span class="p">:</span>         <span class="p">{</span><span class="s2">"type"</span><span class="p">:</span> <span class="s2">"string"</span><span class="p">},</span>
+    <span class="p">},</span>
+    <span class="s2">"required"</span><span class="p">:</span> <span class="p">[</span><span class="s2">"name"</span><span class="p">,</span> <span class="s2">"description"</span><span class="p">,</span> <span class="s2">"tables_involved"</span><span class="p">,</span> <span class="s2">"sql_hint"</span><span class="p">],</span>
+<span class="p">}</span>
+
+<span class="n">_METRIC</span><span class="p">:</span> <span class="n">Dict</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">"type"</span><span class="p">:</span> <span class="s2">"object"</span><span class="p">,</span>
+    <span class="s2">"properties"</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s2">"name"</span><span class="p">:</span>           <span class="p">{</span><span class="s2">"type"</span><span class="p">:</span> <span class="s2">"string"</span><span class="p">,</span> <span class="s2">"description"</span><span class="p">:</span> <span class="s2">"Display name for the metric."</span><span class="p">},</span>
+        <span class="s2">"sql_expression"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"type"</span><span class="p">:</span> <span class="s2">"string"</span><span class="p">,</span> <span class="s2">"description"</span><span class="p">:</span> <span class="s2">"Aggregation SQL, e.g. SUM(o.total_amount)."</span><span class="p">},</span>
+        <span class="s2">"tables"</span><span class="p">:</span>         <span class="p">{</span><span class="s2">"type"</span><span class="p">:</span> <span class="s2">"array"</span><span class="p">,</span> <span class="s2">"items"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"type"</span><span class="p">:</span> <span class="s2">"string"</span><span class="p">}},</span>
+        <span class="s2">"description"</span><span class="p">:</span>    <span class="p">{</span><span class="s2">"type"</span><span class="p">:</span> <span class="s2">"string"</span><span class="p">},</span>
+    <span class="p">},</span>
+    <span class="s2">"required"</span><span class="p">:</span> <span class="p">[</span><span class="s2">"name"</span><span class="p">,</span> <span class="s2">"sql_expression"</span><span class="p">,</span> <span class="s2">"tables"</span><span class="p">,</span> <span class="s2">"description"</span><span class="p">],</span>
+<span class="p">}</span>
+
+<span class="n">_DIMENSION</span><span class="p">:</span> <span class="n">Dict</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">"type"</span><span class="p">:</span> <span class="s2">"object"</span><span class="p">,</span>
+    <span class="s2">"properties"</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s2">"name"</span><span class="p">:</span>        <span class="p">{</span><span class="s2">"type"</span><span class="p">:</span> <span class="s2">"string"</span><span class="p">,</span> <span class="s2">"description"</span><span class="p">:</span> <span class="s2">"Display name for the dimension."</span><span class="p">},</span>
+        <span class="s2">"column"</span><span class="p">:</span>      <span class="p">{</span><span class="s2">"type"</span><span class="p">:</span> <span class="s2">"string"</span><span class="p">,</span> <span class="s2">"description"</span><span class="p">:</span> <span class="s2">"Exact column name from the schema."</span><span class="p">},</span>
+        <span class="s2">"type"</span><span class="p">:</span>        <span class="p">{</span>
+            <span class="s2">"type"</span><span class="p">:</span> <span class="s2">"string"</span><span class="p">,</span>
+            <span class="s2">"enum"</span><span class="p">:</span> <span class="p">[</span><span class="s2">"temporal"</span><span class="p">,</span> <span class="s2">"categorical"</span><span class="p">,</span> <span class="s2">"geographic"</span><span class="p">,</span> <span class="s2">"boolean"</span><span class="p">],</span>
+        <span class="p">},</span>
+        <span class="s2">"description"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"type"</span><span class="p">:</span> <span class="s2">"string"</span><span class="p">},</span>
+    <span class="p">},</span>
+    <span class="s2">"required"</span><span class="p">:</span> <span class="p">[</span><span class="s2">"name"</span><span class="p">,</span> <span class="s2">"column"</span><span class="p">,</span> <span class="s2">"type"</span><span class="p">,</span> <span class="s2">"description"</span><span class="p">],</span>
+<span class="p">}</span>
+
+<span class="n">_KEY_FINDING</span><span class="p">:</span> <span class="n">Dict</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">"type"</span><span class="p">:</span> <span class="s2">"object"</span><span class="p">,</span>
+    <span class="s2">"properties"</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s2">"finding"</span><span class="p">:</span>          <span class="p">{</span><span class="s2">"type"</span><span class="p">:</span> <span class="s2">"string"</span><span class="p">,</span> <span class="s2">"description"</span><span class="p">:</span> <span class="s2">"Specific, quantified insight."</span><span class="p">},</span>
+        <span class="s2">"source_analyses"</span><span class="p">:</span>  <span class="p">{</span><span class="s2">"type"</span><span class="p">:</span> <span class="s2">"array"</span><span class="p">,</span> <span class="s2">"items"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"type"</span><span class="p">:</span> <span class="s2">"string"</span><span class="p">}},</span>
+        <span class="s2">"business_impact"</span><span class="p">:</span>  <span class="p">{</span><span class="s2">"type"</span><span class="p">:</span> <span class="s2">"string"</span><span class="p">,</span> <span class="s2">"enum"</span><span class="p">:</span> <span class="p">[</span><span class="s2">"high"</span><span class="p">,</span> <span class="s2">"medium"</span><span class="p">,</span> <span class="s2">"low"</span><span class="p">]},</span>
+    <span class="p">},</span>
+    <span class="s2">"required"</span><span class="p">:</span> <span class="p">[</span><span class="s2">"finding"</span><span class="p">,</span> <span class="s2">"source_analyses"</span><span class="p">,</span> <span class="s2">"business_impact"</span><span class="p">],</span>
+<span class="p">}</span>
+
+<span class="c1"># ---------------------------------------------------------------------------</span>
+<span class="c1"># Stage 2 — Domain context</span>
+<span class="c1"># ---------------------------------------------------------------------------</span>
+
+<span class="n">DOMAIN_CONTEXT_SCHEMA</span><span class="p">:</span> <span class="n">Final</span><span class="p">[</span><span class="n">Dict</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">"type"</span><span class="p">:</span> <span class="s2">"object"</span><span class="p">,</span>
+    <span class="s2">"description"</span><span class="p">:</span> <span class="p">(</span>
+        <span class="s2">"Business-domain inference produced from schema statistics. "</span>
+        <span class="s2">"Returned by Stage 2 (generate_domain_context)."</span>
+    <span class="p">),</span>
+    <span class="s2">"properties"</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s2">"domain"</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">"type"</span><span class="p">:</span> <span class="s2">"string"</span><span class="p">,</span>
+            <span class="s2">"description"</span><span class="p">:</span> <span class="s2">"Industry / business domain, e.g. 'e-commerce', 'SaaS', 'healthcare'."</span><span class="p">,</span>
+        <span class="p">},</span>
+        <span class="s2">"domain_confidence"</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">"type"</span><span class="p">:</span> <span class="s2">"string"</span><span class="p">,</span>
+            <span class="s2">"enum"</span><span class="p">:</span> <span class="p">[</span><span class="s2">"high"</span><span class="p">,</span> <span class="s2">"medium"</span><span class="p">,</span> <span class="s2">"low"</span><span class="p">],</span>
+        <span class="p">},</span>
+        <span class="s2">"main_entities"</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">"type"</span><span class="p">:</span> <span class="s2">"array"</span><span class="p">,</span>
+            <span class="s2">"items"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"type"</span><span class="p">:</span> <span class="s2">"string"</span><span class="p">},</span>
+            <span class="s2">"description"</span><span class="p">:</span> <span class="s2">"Core business objects, e.g. ['Customer', 'Order', 'Product']."</span><span class="p">,</span>
+        <span class="p">},</span>
+        <span class="s2">"fact_tables"</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">"type"</span><span class="p">:</span> <span class="s2">"array"</span><span class="p">,</span>
+            <span class="s2">"items"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"type"</span><span class="p">:</span> <span class="s2">"string"</span><span class="p">},</span>
+            <span class="s2">"description"</span><span class="p">:</span> <span class="s2">"Tables containing transactional / event data."</span><span class="p">,</span>
+        <span class="p">},</span>
+        <span class="s2">"dimension_tables"</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">"type"</span><span class="p">:</span> <span class="s2">"array"</span><span class="p">,</span>
+            <span class="s2">"items"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"type"</span><span class="p">:</span> <span class="s2">"string"</span><span class="p">},</span>
+            <span class="s2">"description"</span><span class="p">:</span> <span class="s2">"Tables containing descriptive / reference data."</span><span class="p">,</span>
+        <span class="p">},</span>
+        <span class="s2">"kpis"</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">"type"</span><span class="p">:</span> <span class="s2">"array"</span><span class="p">,</span>
+            <span class="s2">"items"</span><span class="p">:</span> <span class="n">_KPI</span><span class="p">,</span>
+            <span class="s2">"description"</span><span class="p">:</span> <span class="s2">"Candidate KPIs inferred from the schema."</span><span class="p">,</span>
+        <span class="p">},</span>
+        <span class="s2">"exploration_goals"</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">"type"</span><span class="p">:</span> <span class="s2">"array"</span><span class="p">,</span>
+            <span class="s2">"items"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"type"</span><span class="p">:</span> <span class="s2">"string"</span><span class="p">},</span>
+            <span class="s2">"description"</span><span class="p">:</span> <span class="s2">"High-value analytical questions for this domain."</span><span class="p">,</span>
+        <span class="p">},</span>
+        <span class="s2">"data_quality_flags"</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">"type"</span><span class="p">:</span> <span class="s2">"array"</span><span class="p">,</span>
+            <span class="s2">"items"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"type"</span><span class="p">:</span> <span class="s2">"string"</span><span class="p">},</span>
+            <span class="s2">"description"</span><span class="p">:</span> <span class="s2">"Concerns such as sparse columns, likely PII, or potential duplicates."</span><span class="p">,</span>
+        <span class="p">},</span>
+    <span class="p">},</span>
+    <span class="s2">"required"</span><span class="p">:</span> <span class="p">[</span>
+        <span class="s2">"domain"</span><span class="p">,</span>
+        <span class="s2">"domain_confidence"</span><span class="p">,</span>
+        <span class="s2">"main_entities"</span><span class="p">,</span>
+        <span class="s2">"fact_tables"</span><span class="p">,</span>
+        <span class="s2">"dimension_tables"</span><span class="p">,</span>
+        <span class="s2">"kpis"</span><span class="p">,</span>
+        <span class="s2">"exploration_goals"</span><span class="p">,</span>
+        <span class="s2">"data_quality_flags"</span><span class="p">,</span>
+    <span class="p">],</span>
+<span class="p">}</span>
+
+<span class="c1"># ---------------------------------------------------------------------------</span>
+<span class="c1"># Stage 3 — Entities and metrics</span>
+<span class="c1"># ---------------------------------------------------------------------------</span>
+
+<span class="n">ENTITIES_AND_METRICS_SCHEMA</span><span class="p">:</span> <span class="n">Final</span><span class="p">[</span><span class="n">Dict</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">"type"</span><span class="p">:</span> <span class="s2">"object"</span><span class="p">,</span>
+    <span class="s2">"description"</span><span class="p">:</span> <span class="p">(</span>
+        <span class="s2">"Concrete measurable metrics and grouping dimensions resolved from "</span>
+        <span class="s2">"the domain context. Returned by Stage 3 (extract_entities_and_metrics)."</span>
+    <span class="p">),</span>
+    <span class="s2">"properties"</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s2">"metrics"</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">"type"</span><span class="p">:</span> <span class="s2">"array"</span><span class="p">,</span>
+            <span class="s2">"items"</span><span class="p">:</span> <span class="n">_METRIC</span><span class="p">,</span>
+            <span class="s2">"minItems"</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+            <span class="s2">"description"</span><span class="p">:</span> <span class="s2">"Numeric columns or SQL expressions that can be aggregated."</span><span class="p">,</span>
+        <span class="p">},</span>
+        <span class="s2">"dimensions"</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">"type"</span><span class="p">:</span> <span class="s2">"array"</span><span class="p">,</span>
+            <span class="s2">"items"</span><span class="p">:</span> <span class="n">_DIMENSION</span><span class="p">,</span>
+            <span class="s2">"minItems"</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+            <span class="s2">"description"</span><span class="p">:</span> <span class="s2">"Categorical / temporal columns useful for slicing metrics."</span><span class="p">,</span>
+        <span class="p">},</span>
+    <span class="p">},</span>
+    <span class="s2">"required"</span><span class="p">:</span> <span class="p">[</span><span class="s2">"metrics"</span><span class="p">,</span> <span class="s2">"dimensions"</span><span class="p">],</span>
+<span class="p">}</span>
+
+<span class="c1"># ---------------------------------------------------------------------------</span>
+<span class="c1"># Stage 4 — Hypotheses</span>
+<span class="c1"># ---------------------------------------------------------------------------</span>
+
+<span class="n">_HYPOTHESIS_ITEM</span><span class="p">:</span> <span class="n">Dict</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">"type"</span><span class="p">:</span> <span class="s2">"object"</span><span class="p">,</span>
+    <span class="s2">"properties"</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s2">"id"</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">"type"</span><span class="p">:</span> <span class="s2">"string"</span><span class="p">,</span>
+            <span class="s2">"description"</span><span class="p">:</span> <span class="s2">"Unique slug, e.g. 'h_01'."</span><span class="p">,</span>
+            <span class="s2">"pattern"</span><span class="p">:</span> <span class="sa">r</span><span class="s2">"^h_\d+$"</span><span class="p">,</span>
+        <span class="p">},</span>
+        <span class="s2">"question"</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">"type"</span><span class="p">:</span> <span class="s2">"string"</span><span class="p">,</span>
+            <span class="s2">"description"</span><span class="p">:</span> <span class="s2">"Precise analytical question the chart will answer."</span><span class="p">,</span>
+        <span class="p">},</span>
+        <span class="s2">"title"</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">"type"</span><span class="p">:</span> <span class="s2">"string"</span><span class="p">,</span>
+            <span class="s2">"description"</span><span class="p">:</span> <span class="s2">"Chart title — eight words or fewer."</span><span class="p">,</span>
+            <span class="s2">"maxLength"</span><span class="p">:</span> <span class="mi">80</span><span class="p">,</span>
+        <span class="p">},</span>
+        <span class="s2">"description"</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">"type"</span><span class="p">:</span> <span class="s2">"string"</span><span class="p">,</span>
+            <span class="s2">"description"</span><span class="p">:</span> <span class="s2">"What the chart shows and why it is interesting."</span><span class="p">,</span>
+        <span class="p">},</span>
+        <span class="s2">"why_it_matters"</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">"type"</span><span class="p">:</span> <span class="s2">"string"</span><span class="p">,</span>
+            <span class="s2">"description"</span><span class="p">:</span> <span class="s2">"Business implication if the hypothesis is confirmed."</span><span class="p">,</span>
+        <span class="p">},</span>
+        <span class="s2">"plot_type"</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">"type"</span><span class="p">:</span> <span class="s2">"string"</span><span class="p">,</span>
+            <span class="s2">"enum"</span><span class="p">:</span> <span class="p">[</span><span class="s2">"line"</span><span class="p">,</span> <span class="s2">"bar"</span><span class="p">,</span> <span class="s2">"scatter"</span><span class="p">,</span> <span class="s2">"boxplot"</span><span class="p">,</span> <span class="s2">"heatmap"</span><span class="p">],</span>
+        <span class="p">},</span>
+        <span class="s2">"analytical_type"</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">"type"</span><span class="p">:</span> <span class="s2">"string"</span><span class="p">,</span>
+            <span class="s2">"enum"</span><span class="p">:</span> <span class="p">[</span>
+                <span class="s2">"segmentation"</span><span class="p">,</span>
+                <span class="s2">"concentration"</span><span class="p">,</span>
+                <span class="s2">"seasonality"</span><span class="p">,</span>
+                <span class="s2">"outlier_detection"</span><span class="p">,</span>
+                <span class="s2">"anomaly_detection"</span><span class="p">,</span>
+                <span class="s2">"cohort_behavior"</span><span class="p">,</span>
+                <span class="s2">"change_point_detection"</span><span class="p">,</span>
+                <span class="s2">"growth_drivers"</span><span class="p">,</span>
+                <span class="s2">"retention"</span><span class="p">,</span>
+                <span class="s2">"funnel_analysis"</span><span class="p">,</span>
+                <span class="s2">"behavioral_clusters"</span><span class="p">,</span>
+                <span class="s2">"pareto_effect"</span><span class="p">,</span>
+                <span class="s2">"variance_decomposition"</span><span class="p">,</span>
+                <span class="s2">"correlation"</span><span class="p">,</span>
+            <span class="p">],</span>
+        <span class="p">},</span>
+    <span class="p">},</span>
+    <span class="s2">"required"</span><span class="p">:</span> <span class="p">[</span>
+        <span class="s2">"id"</span><span class="p">,</span>
+        <span class="s2">"question"</span><span class="p">,</span>
+        <span class="s2">"title"</span><span class="p">,</span>
+        <span class="s2">"description"</span><span class="p">,</span>
+        <span class="s2">"why_it_matters"</span><span class="p">,</span>
+        <span class="s2">"plot_type"</span><span class="p">,</span>
+        <span class="s2">"analytical_type"</span><span class="p">,</span>
+    <span class="p">],</span>
+<span class="p">}</span>
+
+<span class="n">HYPOTHESES_SCHEMA</span><span class="p">:</span> <span class="n">Final</span><span class="p">[</span><span class="n">Dict</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">"type"</span><span class="p">:</span> <span class="s2">"array"</span><span class="p">,</span>
+    <span class="s2">"description"</span><span class="p">:</span> <span class="p">(</span>
+        <span class="s2">"Ordered list of analytical hypotheses generated by Stage 4 "</span>
+        <span class="s2">"(generate_hypotheses). Each item maps 1-to-1 with a ChartResult."</span>
+    <span class="p">),</span>
+    <span class="s2">"items"</span><span class="p">:</span> <span class="n">_HYPOTHESIS_ITEM</span><span class="p">,</span>
+    <span class="s2">"minItems"</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+<span class="p">}</span>
+
+<span class="c1"># ---------------------------------------------------------------------------</span>
+<span class="c1"># Stage 5 — SQL spec</span>
+<span class="c1"># ---------------------------------------------------------------------------</span>
+
+<span class="n">SQL_SPEC_SCHEMA</span><span class="p">:</span> <span class="n">Final</span><span class="p">[</span><span class="n">Dict</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">"type"</span><span class="p">:</span> <span class="s2">"object"</span><span class="p">,</span>
+    <span class="s2">"description"</span><span class="p">:</span> <span class="p">(</span>
+        <span class="s2">"PostgreSQL query and axis metadata generated by Stage 5 (generate_sql). "</span>
+        <span class="s2">"x / y columns must be aliases present in the SELECT clause."</span>
+    <span class="p">),</span>
+    <span class="s2">"properties"</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s2">"sql"</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">"type"</span><span class="p">:</span> <span class="s2">"string"</span><span class="p">,</span>
+            <span class="s2">"description"</span><span class="p">:</span> <span class="p">(</span>
+                <span class="s2">"Valid PostgreSQL SELECT statement. "</span>
+                <span class="s2">"No DDL, no DML, LIMIT 1000 maximum."</span>
+            <span class="p">),</span>
+        <span class="p">},</span>
+        <span class="s2">"x"</span><span class="p">:</span> <span class="n">_AXIS_SPEC</span><span class="p">,</span>
+        <span class="s2">"y"</span><span class="p">:</span> <span class="n">_AXIS_SPEC</span><span class="p">,</span>
+        <span class="s2">"group_by"</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">"type"</span><span class="p">:</span> <span class="p">[</span><span class="s2">"string"</span><span class="p">,</span> <span class="s2">"null"</span><span class="p">],</span>
+            <span class="s2">"description"</span><span class="p">:</span> <span class="p">(</span>
+                <span class="s2">"Column alias used for colour / series grouping, "</span>
+                <span class="s2">"or null when no grouping is needed."</span>
+            <span class="p">),</span>
+        <span class="p">},</span>
+    <span class="p">},</span>
+    <span class="s2">"required"</span><span class="p">:</span> <span class="p">[</span><span class="s2">"sql"</span><span class="p">,</span> <span class="s2">"x"</span><span class="p">,</span> <span class="s2">"y"</span><span class="p">,</span> <span class="s2">"group_by"</span><span class="p">],</span>
+<span class="p">}</span>
+
+<span class="c1"># ---------------------------------------------------------------------------</span>
+<span class="c1"># Stage 8 — Executive summary</span>
+<span class="c1"># ---------------------------------------------------------------------------</span>
+
+<span class="n">SUMMARY_SCHEMA</span><span class="p">:</span> <span class="n">Final</span><span class="p">[</span><span class="n">Dict</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">"type"</span><span class="p">:</span> <span class="s2">"object"</span><span class="p">,</span>
+    <span class="s2">"description"</span><span class="p">:</span> <span class="p">(</span>
+        <span class="s2">"Board-level executive summary synthesised from all succeeded chart "</span>
+        <span class="s2">"observations. Returned by Stage 8 (generate_summary)."</span>
+    <span class="p">),</span>
+    <span class="s2">"properties"</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s2">"dataset_description"</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">"type"</span><span class="p">:</span> <span class="s2">"string"</span><span class="p">,</span>
+            <span class="s2">"description"</span><span class="p">:</span> <span class="p">(</span>
+                <span class="s2">"2-3 sentences describing what this dataset contains "</span>
+                <span class="s2">"and its analytical richness."</span>
+            <span class="p">),</span>
+        <span class="p">},</span>
+        <span class="s2">"key_findings"</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">"type"</span><span class="p">:</span> <span class="s2">"array"</span><span class="p">,</span>
+            <span class="s2">"items"</span><span class="p">:</span> <span class="n">_KEY_FINDING</span><span class="p">,</span>
+            <span class="s2">"minItems"</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+            <span class="s2">"description"</span><span class="p">:</span> <span class="s2">"Most important, quantified insights from the analyses."</span><span class="p">,</span>
+        <span class="p">},</span>
+        <span class="s2">"recommended_next_steps"</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">"type"</span><span class="p">:</span> <span class="s2">"array"</span><span class="p">,</span>
+            <span class="s2">"items"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"type"</span><span class="p">:</span> <span class="s2">"string"</span><span class="p">},</span>
+            <span class="s2">"minItems"</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+            <span class="s2">"description"</span><span class="p">:</span> <span class="p">(</span>
+                <span class="s2">"Concrete, prioritised actions such as deep-dives, "</span>
+                <span class="s2">"data collection, or experiments."</span>
+            <span class="p">),</span>
+        <span class="p">},</span>
+    <span class="p">},</span>
+    <span class="s2">"required"</span><span class="p">:</span> <span class="p">[</span><span class="s2">"dataset_description"</span><span class="p">,</span> <span class="s2">"key_findings"</span><span class="p">,</span> <span class="s2">"recommended_next_steps"</span><span class="p">],</span>
+<span class="p">}</span>
+
+<span class="c1"># ---------------------------------------------------------------------------</span>
+<span class="c1"># Convenience export — index by ExplorePromptType value string</span>
+<span class="c1"># ---------------------------------------------------------------------------</span>
+
+<span class="n">SCHEMA_BY_STAGE</span><span class="p">:</span> <span class="n">Final</span><span class="p">[</span><span class="n">Dict</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">"generate_domain_context"</span><span class="p">:</span>       <span class="n">DOMAIN_CONTEXT_SCHEMA</span><span class="p">,</span>
+    <span class="s2">"extract_entities_and_metrics"</span><span class="p">:</span>  <span class="n">ENTITIES_AND_METRICS_SCHEMA</span><span class="p">,</span>
+    <span class="s2">"generate_hypotheses"</span><span class="p">:</span>           <span class="n">HYPOTHESES_SCHEMA</span><span class="p">,</span>
+    <span class="s2">"generate_sql"</span><span class="p">:</span>                  <span class="n">SQL_SPEC_SCHEMA</span><span class="p">,</span>
+    <span class="s2">"generate_summary"</span><span class="p">:</span>              <span class="n">SUMMARY_SCHEMA</span><span class="p">,</span>
+<span class="p">}</span>
+
+<span class="c1"># ——————————————————————————————————————————————————————————————</span>
+<span class="c1"># Data-transfer objects</span>
+
+<div class="viewcode-block" id="AxisSpec">
+<a class="viewcode-back" href="../../../generated/squirrel_schemas_eda.html#squirrel.schemas.eda.AxisSpec">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">AxisSpec</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Describes one axis (x or y) of a chart.</span>
+<span class="sd">    """</span>
+
+    <span class="n">column</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">label</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="nb">type</span><span class="p">:</span> <span class="nb">str</span>  <span class="c1"># "temporal" | "quantitative" | "ordinal" | "nominal"</span></div>
+
+
+
+<div class="viewcode-block" id="Hypothesis">
+<a class="viewcode-back" href="../../../generated/squirrel_schemas_eda.html#squirrel.schemas.eda.Hypothesis">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">Hypothesis</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    A single analytical hypothesis to be tested.</span>
+<span class="sd">    """</span>
+
+    <span class="nb">id</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">question</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">title</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">description</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">why_it_matters</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">plot_type</span><span class="p">:</span> <span class="nb">str</span>        <span class="c1"># "line" | "bar" | "scatter" | "boxplot" | "heatmap"</span>
+    <span class="n">analytical_type</span><span class="p">:</span> <span class="nb">str</span>  <span class="c1"># "segmentation" | "cohort" | "anomaly" | …</span></div>
+
+
+
+<div class="viewcode-block" id="SqlSpec">
+<a class="viewcode-back" href="../../../generated/squirrel_schemas_eda.html#squirrel.schemas.eda.SqlSpec">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">SqlSpec</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    SQL query with chart axis metadata.</span>
+<span class="sd">    """</span>
+
+    <span class="n">sql</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">x</span><span class="p">:</span> <span class="n">AxisSpec</span>
+    <span class="n">y</span><span class="p">:</span> <span class="n">AxisSpec</span>
+    <span class="n">group_by</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span></div>
+
+
+
+<div class="viewcode-block" id="ChartResult">
+<a class="viewcode-back" href="../../../generated/squirrel_schemas_eda.html#squirrel.schemas.eda.ChartResult">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">ChartResult</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Fully resolved chart — hypothesis + data + observation.</span>
+<span class="sd">    """</span>
+
+    <span class="n">model_config</span> <span class="o">=</span> <span class="n">ConfigDict</span><span class="p">(</span><span class="n">arbitrary_types_allowed</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="n">hypothesis</span><span class="p">:</span> <span class="n">Hypothesis</span>
+    <span class="n">sql_spec</span><span class="p">:</span> <span class="n">SqlSpec</span>
+    <span class="n">data</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">)</span>
+    <span class="n">observation</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">error</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">succeeded</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">error</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">empty</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">to_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s2">"id"</span><span class="p">:</span>              <span class="bp">self</span><span class="o">.</span><span class="n">hypothesis</span><span class="o">.</span><span class="n">id</span><span class="p">,</span>
+            <span class="s2">"question"</span><span class="p">:</span>        <span class="bp">self</span><span class="o">.</span><span class="n">hypothesis</span><span class="o">.</span><span class="n">question</span><span class="p">,</span>
+            <span class="s2">"title"</span><span class="p">:</span>           <span class="bp">self</span><span class="o">.</span><span class="n">hypothesis</span><span class="o">.</span><span class="n">title</span><span class="p">,</span>
+            <span class="s2">"description"</span><span class="p">:</span>     <span class="bp">self</span><span class="o">.</span><span class="n">hypothesis</span><span class="o">.</span><span class="n">description</span><span class="p">,</span>
+            <span class="s2">"plot_type"</span><span class="p">:</span>       <span class="bp">self</span><span class="o">.</span><span class="n">hypothesis</span><span class="o">.</span><span class="n">plot_type</span><span class="p">,</span>
+            <span class="s2">"analytical_type"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">hypothesis</span><span class="o">.</span><span class="n">analytical_type</span><span class="p">,</span>
+            <span class="s2">"sql"</span><span class="p">:</span>             <span class="bp">self</span><span class="o">.</span><span class="n">sql_spec</span><span class="o">.</span><span class="n">sql</span><span class="p">,</span>
+            <span class="s2">"x"</span><span class="p">:</span> <span class="p">{</span>
+                <span class="s2">"column"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">sql_spec</span><span class="o">.</span><span class="n">x</span><span class="o">.</span><span class="n">column</span><span class="p">,</span>
+                <span class="s2">"label"</span><span class="p">:</span>  <span class="bp">self</span><span class="o">.</span><span class="n">sql_spec</span><span class="o">.</span><span class="n">x</span><span class="o">.</span><span class="n">label</span><span class="p">,</span>
+                <span class="s2">"type"</span><span class="p">:</span>   <span class="bp">self</span><span class="o">.</span><span class="n">sql_spec</span><span class="o">.</span><span class="n">x</span><span class="o">.</span><span class="n">type</span><span class="p">,</span>
+            <span class="p">},</span>
+            <span class="s2">"y"</span><span class="p">:</span> <span class="p">{</span>
+                <span class="s2">"column"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">sql_spec</span><span class="o">.</span><span class="n">y</span><span class="o">.</span><span class="n">column</span><span class="p">,</span>
+                <span class="s2">"label"</span><span class="p">:</span>  <span class="bp">self</span><span class="o">.</span><span class="n">sql_spec</span><span class="o">.</span><span class="n">y</span><span class="o">.</span><span class="n">label</span><span class="p">,</span>
+                <span class="s2">"type"</span><span class="p">:</span>   <span class="bp">self</span><span class="o">.</span><span class="n">sql_spec</span><span class="o">.</span><span class="n">y</span><span class="o">.</span><span class="n">type</span><span class="p">,</span>
+            <span class="p">},</span>
+            <span class="s2">"group_by"</span><span class="p">:</span>    <span class="bp">self</span><span class="o">.</span><span class="n">sql_spec</span><span class="o">.</span><span class="n">group_by</span><span class="p">,</span>
+            <span class="s2">"observation"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">observation</span><span class="p">,</span>
+            <span class="s2">"data"</span><span class="p">:</span>        <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">to_dict</span><span class="p">(</span><span class="s2">"records"</span><span class="p">),</span>
+            <span class="s2">"error"</span><span class="p">:</span>       <span class="bp">self</span><span class="o">.</span><span class="n">error</span><span class="p">,</span>
+        <span class="p">}</span></div>
+
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, Mazen Soliman.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

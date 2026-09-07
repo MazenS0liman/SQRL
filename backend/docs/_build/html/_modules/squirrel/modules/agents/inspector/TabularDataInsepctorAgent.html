@@ -1,0 +1,924 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>squirrel.modules.agents.inspector.TabularDataInsepctorAgent &mdash; squirrel  documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../../../../_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" type="text/css" href="../../../../../_static/css/custom.css?v=adc7883a" />
+
+  
+    <link rel="shortcut icon" href="../../../../../_static/sqrl.png"/>
+      <script src="../../../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../../../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../../../../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script src="../../../../../_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="../../../../../_static/copybutton.js?v=a46eff05"></script>
+    <script src="../../../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../../../index.html" class="icon icon-home">
+            squirrel
+              <img src="../../../../../_static/sqrl.png" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Python API Reference:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../api.html">Python API Reference</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../../index.html">squirrel</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">squirrel.modules.agents.inspector.TabularDataInsepctorAgent</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for squirrel.modules.agents.inspector.TabularDataInsepctorAgent</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/python</span>
+<span class="sd">"""</span>
+
+<span class="sd">Tabular Data Inspector Agent — plans, executes, and summarizes EDA over a DataFrame.</span>
+
+<span class="sd">"""</span>
+
+<span class="c1"># ——————————————————————————————————————————————————————————————</span>
+<span class="c1"># Imports</span>
+
+<span class="c1"># Standard Libraries</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">copy</span><span class="w"> </span><span class="kn">import</span> <span class="n">deepcopy</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Dict</span>
+
+<span class="c1"># Abstract Base Class</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">squirrel.modules.agents.abstract</span><span class="w"> </span><span class="kn">import</span> <span class="n">IAgent</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">squirrel.modules.providers</span><span class="w"> </span><span class="kn">import</span> <span class="n">Provider</span>
+
+<span class="c1"># Prompt Generators</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">squirrel.modules.prompts.inspect.InspectPromptGenerator</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">InspectPromptGenerator</span><span class="p">,</span>
+    <span class="n">InspectPromptType</span>
+<span class="p">)</span>
+
+<span class="c1"># Data Inspector Classes</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">squirrel.modules.inspectors.tabular</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">DataInspectStrategy</span>
+<span class="p">)</span>
+
+<span class="c1"># Logging</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">loguru</span><span class="w"> </span><span class="kn">import</span> <span class="n">logger</span>
+
+<span class="c1"># ——————————————————————————————————————————————————————————————</span>
+<span class="c1"># Catalog builder function</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">build_inspection_catalog</span><span class="p">(</span>
+    <span class="n">base</span><span class="p">:</span> <span class="nb">type</span><span class="p">[</span><span class="n">DataInspectStrategy</span><span class="p">]</span> <span class="o">=</span> <span class="n">DataInspectStrategy</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">Dict</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Dynamically build the inspection catalog by walking all registered</span>
+<span class="sd">    DataInspectStrategy subclasses and calling ``to_catalog_entry()`` on each.</span>
+
+<span class="sd">    Adding a new strategy requires only:</span>
+<span class="sd">        1. Subclass DataInspectStrategy.</span>
+<span class="sd">        2. Declare ``argument_specs``.</span>
+<span class="sd">        3. Override ``_example()`` and optionally ``_arguments_description()``.</span>
+
+<span class="sd">    No changes to this function, the agent registry, or the prompt generator.</span>
+<span class="sd">    """</span>
+    <span class="k">return</span> <span class="p">[</span><span class="bp">cls</span><span class="o">.</span><span class="n">to_catalog_entry</span><span class="p">()</span> <span class="k">for</span> <span class="bp">cls</span> <span class="ow">in</span> <span class="n">base</span><span class="o">.</span><span class="n">__subclasses__</span><span class="p">()]</span>
+
+<span class="c1"># ——————————————————————————————————————————————————————————————</span>
+<span class="c1"># Tabular Data Inspector Agent</span>
+<div class="viewcode-block" id="TabularDataInspectorAgent">
+<a class="viewcode-back" href="../../../../../generated/squirrel_modules_agents_inspector_TabularDataInsepctorAgent.html#squirrel.modules.agents.inspector.TabularDataInsepctorAgent.TabularDataInspectorAgent">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">TabularDataInspectorAgent</span><span class="p">(</span><span class="n">IAgent</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Agent for inspecting tabular data and generating insights based on the analysis.</span>
+
+<span class="sd">    Lifecycle:</span>
+<span class="sd">        1. ``plan``    — asks the LLM to choose and order inspection strategies.</span>
+<span class="sd">        2. ``execute`` — runs each planned strategy and collects structured outputs.</span>
+<span class="sd">        3. ``summarize``— asks the LLM to interpret execution results and emit</span>
+<span class="sd">                         findings, anomalies, and recommended next steps.</span>
+<span class="sd">        4. ``run``     — convenience wrapper that chains all three stages.</span>
+<span class="sd">    """</span>
+
+    <span class="c1"># Single source of truth for all registered strategies.</span>
+    <span class="n">_REGISTRY</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">type</span><span class="p">[</span><span class="n">DataInspectStrategy</span><span class="p">]]</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="bp">cls</span><span class="o">.</span><span class="vm">__name__</span><span class="p">:</span> <span class="bp">cls</span>
+        <span class="k">for</span> <span class="bp">cls</span> <span class="ow">in</span> <span class="n">DataInspectStrategy</span><span class="o">.</span><span class="n">__subclasses__</span><span class="p">()</span>
+    <span class="p">}</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">prompt_generator</span><span class="p">:</span> <span class="n">Any</span> <span class="o">=</span> <span class="n">InspectPromptGenerator</span><span class="p">()):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">prompt_generator</span><span class="o">=</span><span class="n">prompt_generator</span><span class="p">)</span>
+
+<div class="viewcode-block" id="TabularDataInspectorAgent.visualize">
+<a class="viewcode-back" href="../../../../../generated/squirrel_modules_agents_inspector_TabularDataInsepctorAgent.html#squirrel.modules.agents.inspector.TabularDataInsepctorAgent.TabularDataInspectorAgent.visualize">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">visualize</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> 
+        <span class="n">data</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Generate visualizations for the given DataFrame.</span>
+
+<span class="sd">        **Description:**</span>
+
+<span class="sd">            This method generates visualizations for the given DataFrame. It can be used to create charts, graphs, or other visual representations of the data to help with analysis and interpretation.</span>
+
+<span class="sd">        :param data: Input dataset.</span>
+<span class="sd">        :type data: pd.DataFrame</span>
+
+<span class="sd">        :return: A string representation of the generated visualizations.</span>
+<span class="sd">        :rtype: str</span>
+<span class="sd">        """</span>
+        <span class="c1"># Placeholder implementation - replace with actual visualization logic</span>
+        <span class="k">return</span> <span class="s2">"Visualization generation is not yet implemented."</span></div>
+
+
+<div class="viewcode-block" id="TabularDataInspectorAgent.inspect">
+<a class="viewcode-back" href="../../../../../generated/squirrel_modules_agents_inspector_TabularDataInsepctorAgent.html#squirrel.modules.agents.inspector.TabularDataInsepctorAgent.TabularDataInspectorAgent.inspect">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">inspect</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> 
+        <span class="n">data</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span> 
+        <span class="n">objective</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">""</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Inspect the given DataFrame and return a JSON summary report with findings,</span>
+<span class="sd">        </span>
+<span class="sd">        **Description:**</span>
+
+<span class="sd">            Inspect the given DataFrame and return a JSON summary report with findings,</span>
+<span class="sd">            anomalies, and recommended next steps. The agent will first ask the LLM to</span>
+<span class="sd">            plan an ordered sequence of inspection strategies, then execute each strategy</span>
+<span class="sd">            while capturing structured outputs and any errors, and finally ask the LLM</span>
+<span class="sd">            to interpret the execution results and produce a final summary.</span>
+
+<span class="sd">        :param data: Input dataset.</span>
+<span class="sd">        :type data: pd.DataFrame</span>
+<span class="sd">        :param objective: Optional free-text goal passed to the planner.</span>
+<span class="sd">        :type objective: str</span>
+
+<span class="sd">        :return: JSON summary report.</span>
+<span class="sd">        :rtype: str</span>
+<span class="sd">        """</span>
+        <span class="n">plan</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">plan</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">objective</span><span class="o">=</span><span class="n">objective</span><span class="p">)</span>
+        <span class="n">execution</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">plan</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">summarize</span><span class="p">(</span><span class="n">execution</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="TabularDataInspectorAgent.plan">
+<a class="viewcode-back" href="../../../../../generated/squirrel_modules_agents_inspector_TabularDataInsepctorAgent.html#squirrel.modules.agents.inspector.TabularDataInsepctorAgent.TabularDataInspectorAgent.plan">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">plan</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> 
+        <span class="n">data</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span> 
+        <span class="n">objective</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">""</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Ask the LLM to build an ordered inspection plan from the available</span>
+<span class="sd">        inspection strategies, tailored to the shape and column types of *data*.</span>
+<span class="sd">        </span>
+<span class="sd">        **Description:**</span>
+<span class="sd">        </span>
+<span class="sd">            The agent sends a dataset profile and the catalog of available inspections to the LLM, </span>
+<span class="sd">            which responds with a JSON plan specifying which inspections to run, in what order</span>
+<span class="sd">            and with what arguments. The agent validates the plan against the registry and, if any</span>
+<span class="sd">            steps specify unknown inspections or are missing required arguments, </span>
+<span class="sd">            the agent will ask the LLM to regenerate those specific steps, up to a max number of attempts per step.</span>
+
+<span class="sd">        :param data: Input dataset.</span>
+<span class="sd">        :type data: pd.DataFrame</span>
+<span class="sd">        :param objective: Optional caller-supplied goal.</span>
+<span class="sd">        :type objective: str</span>
+
+<span class="sd">        :return: JSON plan string.</span>
+<span class="sd">        :rtype: str</span>
+<span class="sd">        """</span>
+        <span class="n">dataset_profile</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_dataset_profile</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+        <span class="n">dataset_profile</span><span class="p">[</span><span class="s2">"available_inspections"</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_available_inspections</span><span class="p">()</span>
+
+        <span class="n">system_prompt</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">prompt_generator</span><span class="o">.</span><span class="n">generate_system_prompt</span><span class="p">(</span>
+            <span class="n">prompt_type</span><span class="o">=</span><span class="n">InspectPromptType</span><span class="o">.</span><span class="n">GENERATE_PLAN</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">user_prompt</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">prompt_generator</span><span class="o">.</span><span class="n">generate_user_prompt</span><span class="p">(</span>
+            <span class="n">prompt_type</span><span class="o">=</span><span class="n">InspectPromptType</span><span class="o">.</span><span class="n">GENERATE_PLAN</span><span class="p">,</span>
+            <span class="n">objective</span><span class="o">=</span><span class="n">objective</span> <span class="ow">or</span> <span class="s2">"Choose and order the best inspection strategies for this dataset."</span><span class="p">,</span>
+            <span class="n">dataset_profile</span><span class="o">=</span><span class="n">dataset_profile</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="n">response</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_response</span><span class="p">(</span>
+            <span class="n">fn_name</span><span class="o">=</span><span class="s2">"generate_json"</span><span class="p">,</span>
+            <span class="n">model_input</span><span class="o">=</span><span class="p">{</span>
+                <span class="s2">"system_prompt"</span><span class="p">:</span> <span class="n">system_prompt</span><span class="p">,</span>
+                <span class="s2">"user_prompt"</span><span class="p">:</span> <span class="n">user_prompt</span><span class="p">,</span>
+                <span class="s2">"schema"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_plan_schema</span><span class="p">(),</span>
+            <span class="p">},</span>
+            <span class="n">strict</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+            <span class="n">provider_order</span><span class="o">=</span><span class="p">[</span><span class="n">Provider</span><span class="o">.</span><span class="n">GEMINI</span><span class="p">,</span> <span class="n">Provider</span><span class="o">.</span><span class="n">GROQ</span><span class="p">],</span>
+            <span class="n">preference_model_names</span><span class="o">=</span><span class="p">[</span>
+                <span class="c1"># GEMINI</span>
+                <span class="s2">"models/gemini-2.5-flash"</span><span class="p">,</span>
+                <span class="c1"># GROQ</span>
+                <span class="s2">"openai/gpt-oss-120b"</span><span class="p">,</span>
+                <span class="s2">"openai/gpt-oss-20b"</span><span class="p">,</span>
+                <span class="s2">"meta-llama/llama-4-scout-17b-16e-instruct"</span><span class="p">,</span>
+            <span class="p">]</span>
+        <span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">response</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_error_json</span><span class="p">(</span><span class="s2">"plan"</span><span class="p">,</span> <span class="s2">"Provider did not return a response."</span><span class="p">)</span>
+
+        <span class="c1"># Validate and regenerate any steps with unknown inspections or missing required arguments, up to a max number of attempts per step.</span>
+        <span class="n">plan_obj</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_parse_plan</span><span class="p">(</span><span class="n">response</span><span class="p">)</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">response</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="k">else</span> <span class="n">response</span>
+        <span class="k">if</span> <span class="s2">"error"</span> <span class="ow">in</span> <span class="n">plan_obj</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_error_json</span><span class="p">(</span><span class="s2">"plan"</span><span class="p">,</span> <span class="n">plan_obj</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"error"</span><span class="p">,</span> <span class="s2">"Unknown error from plan parsing."</span><span class="p">))</span>
+
+        <span class="n">step_schema</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_plan_schema</span><span class="p">()[</span><span class="s2">"properties"</span><span class="p">][</span><span class="s2">"steps"</span><span class="p">][</span><span class="s2">"items"</span><span class="p">]</span>
+        <span class="n">available_inspections</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_REGISTRY</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+        <span class="n">max_regen_attempts</span> <span class="o">=</span> <span class="mi">2</span>
+
+        <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">step</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">plan_obj</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"steps"</span><span class="p">,</span> <span class="p">[])):</span>
+            <span class="n">need_regen</span> <span class="o">=</span> <span class="kc">False</span>
+            <span class="n">inspection_name</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">step</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"inspection"</span><span class="p">,</span> <span class="s2">""</span><span class="p">))</span>
+            <span class="n">reason</span> <span class="o">=</span> <span class="s2">""</span>
+            <span class="k">if</span> <span class="n">inspection_name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">available_inspections</span><span class="p">:</span>
+                <span class="n">need_regen</span> <span class="o">=</span> <span class="kc">True</span>
+                <span class="n">reason</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"Unknown inspection '</span><span class="si">{</span><span class="n">inspection_name</span><span class="si">}</span><span class="s2">'"</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="bp">cls</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_REGISTRY</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">inspection_name</span><span class="p">)</span>
+                <span class="n">required_specs</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="s2">"argument_specs"</span><span class="p">,</span> <span class="p">[])</span> <span class="ow">or</span> <span class="p">[]</span>
+                <span class="n">arguments</span> <span class="o">=</span> <span class="n">step</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"arguments"</span><span class="p">)</span> <span class="ow">or</span> <span class="p">{}</span>
+                <span class="n">missing_required</span> <span class="o">=</span> <span class="p">[</span>
+                    <span class="n">spec</span><span class="o">.</span><span class="n">name</span> <span class="k">for</span> <span class="n">spec</span> <span class="ow">in</span> <span class="n">required_specs</span>
+                    <span class="k">if</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">spec</span><span class="p">,</span> <span class="s2">"required"</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span> <span class="ow">and</span> <span class="n">spec</span><span class="o">.</span><span class="n">name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">arguments</span>
+                <span class="p">]</span>
+                <span class="k">if</span> <span class="n">missing_required</span><span class="p">:</span>
+                    <span class="n">need_regen</span> <span class="o">=</span> <span class="kc">True</span>
+                    <span class="n">reason</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"Missing required arguments: </span><span class="si">{</span><span class="s1">', '</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">missing_required</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span>
+
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">need_regen</span><span class="p">:</span>
+                <span class="n">plan_obj</span><span class="p">[</span><span class="s2">"steps"</span><span class="p">][</span><span class="n">idx</span><span class="p">][</span><span class="s2">"status"</span><span class="p">]</span> <span class="o">=</span> <span class="s2">"valid"</span>
+                <span class="k">continue</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">plan_obj</span><span class="p">[</span><span class="s2">"steps"</span><span class="p">][</span><span class="n">idx</span><span class="p">][</span><span class="s2">"status"</span><span class="p">]</span> <span class="o">=</span> <span class="s2">"invalid"</span>
+                <span class="n">plan_obj</span><span class="p">[</span><span class="s2">"steps"</span><span class="p">][</span><span class="n">idx</span><span class="p">][</span><span class="s2">"error"</span><span class="p">]</span> <span class="o">=</span> <span class="n">reason</span>
+
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">"Plan step </span><span class="si">%s</span><span class="s2"> needs regeneration: </span><span class="si">%s</span><span class="s2">"</span><span class="p">,</span> <span class="n">idx</span><span class="p">,</span> <span class="n">reason</span><span class="p">)</span>
+
+            <span class="n">regenerated</span> <span class="o">=</span> <span class="kc">False</span>
+            <span class="k">for</span> <span class="n">attempt</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">max_regen_attempts</span><span class="p">):</span>                
+                <span class="c1"># Create a regeneration prompt for this specific step, including the reason for regeneration and any relevant inspection specs.</span>
+                <span class="n">regen_step_schema</span> <span class="o">=</span> <span class="n">deepcopy</span><span class="p">(</span><span class="n">step_schema</span><span class="p">)</span>
+                <span class="n">regen_inspection</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_REGISTRY</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">inspection_name</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">regen_inspection</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="n">regen_step_schema</span><span class="p">[</span><span class="s2">"properties"</span><span class="p">][</span><span class="s2">"arguments"</span><span class="p">]</span> <span class="o">=</span> <span class="n">regen_inspection</span><span class="o">.</span><span class="n">to_json_schema</span><span class="p">()</span>
+
+                <span class="n">system_prompt</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">prompt_generator</span><span class="o">.</span><span class="n">generate_system_prompt</span><span class="p">(</span>
+                    <span class="n">prompt_type</span><span class="o">=</span><span class="n">InspectPromptType</span><span class="o">.</span><span class="n">GENERATE_STEP</span><span class="p">,</span>
+                <span class="p">)</span>
+                <span class="n">user_prompt</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">prompt_generator</span><span class="o">.</span><span class="n">generate_user_prompt</span><span class="p">(</span>
+                    <span class="n">prompt_type</span><span class="o">=</span><span class="n">InspectPromptType</span><span class="o">.</span><span class="n">GENERATE_STEP</span><span class="p">,</span>
+                    <span class="n">objective</span><span class="o">=</span><span class="p">(</span>
+                        <span class="sa">f</span><span class="s2">"Regenerate step </span><span class="si">{</span><span class="n">idx</span><span class="si">}</span><span class="s2">. Fix the issue: </span><span class="si">{</span><span class="n">reason</span><span class="si">}</span><span class="s2">. "</span>
+                        <span class="s2">"Return a single step object matching the step schema."</span>
+                    <span class="p">),</span>
+                    <span class="n">dataset_profile</span><span class="o">=</span><span class="n">dataset_profile</span><span class="p">,</span>
+                    <span class="n">step</span><span class="o">=</span><span class="n">step</span><span class="p">,</span>
+                    <span class="n">inspection_catalog</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_available_inspections</span><span class="p">()</span>
+                <span class="p">)</span>
+                
+                <span class="n">regen_resp</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_response</span><span class="p">(</span>
+                    <span class="n">fn_name</span><span class="o">=</span><span class="s2">"generate_json"</span><span class="p">,</span>
+                    <span class="n">model_input</span><span class="o">=</span><span class="p">{</span>
+                        <span class="s2">"system_prompt"</span><span class="p">:</span> <span class="n">system_prompt</span><span class="p">,</span>
+                        <span class="s2">"user_prompt"</span><span class="p">:</span> <span class="n">user_prompt</span><span class="p">,</span>
+                        <span class="s2">"schema"</span><span class="p">:</span> <span class="n">regen_step_schema</span><span class="p">,</span>
+                    <span class="p">},</span>
+                    <span class="n">strict</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                    <span class="n">provider_order</span><span class="o">=</span><span class="p">[</span><span class="n">Provider</span><span class="o">.</span><span class="n">GEMINI</span><span class="p">,</span> <span class="n">Provider</span><span class="o">.</span><span class="n">GROQ</span><span class="p">],</span>
+                    <span class="n">preference_model_names</span><span class="o">=</span><span class="p">[</span>
+                        <span class="c1"># GEMINI</span>
+                        <span class="s2">"models/gemini-2.5-flash"</span><span class="p">,</span>
+                        <span class="c1"># GROQ</span>
+                        <span class="s2">"openai/gpt-oss-120b"</span><span class="p">,</span>
+                        <span class="s2">"openai/gpt-oss-20b"</span><span class="p">,</span>
+                        <span class="s2">"meta-llama/llama-4-scout-17b-16e-instruct"</span><span class="p">,</span>
+                    <span class="p">]</span>
+                <span class="p">)</span>
+
+                <span class="k">if</span> <span class="n">regen_resp</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="k">continue</span>
+
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="n">new_step</span> <span class="o">=</span> <span class="n">regen_resp</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">regen_resp</span><span class="p">,</span> <span class="n">Dict</span><span class="p">)</span> <span class="k">else</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">regen_resp</span><span class="p">)</span>
+                <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+                    <span class="k">continue</span>
+
+                <span class="c1"># If the LLM returned an object with 'steps', extract the first.</span>
+                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">new_step</span><span class="p">,</span> <span class="n">Dict</span><span class="p">)</span> <span class="ow">and</span> <span class="s2">"steps"</span> <span class="ow">in</span> <span class="n">new_step</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">new_step</span><span class="p">[</span><span class="s2">"steps"</span><span class="p">],</span> <span class="nb">list</span><span class="p">):</span>
+                    <span class="n">new_step</span> <span class="o">=</span> <span class="n">new_step</span><span class="p">[</span><span class="s2">"steps"</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="k">if</span> <span class="n">new_step</span><span class="p">[</span><span class="s2">"steps"</span><span class="p">]</span> <span class="k">else</span> <span class="n">new_step</span>
+
+                <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">new_step</span><span class="p">,</span> <span class="n">Dict</span><span class="p">):</span>
+                    <span class="k">continue</span>
+
+                <span class="n">plan_obj</span><span class="p">[</span><span class="s2">"steps"</span><span class="p">][</span><span class="n">idx</span><span class="p">]</span> <span class="o">=</span> <span class="n">new_step</span>
+
+                <span class="c1"># Re-validate the regenerated step</span>
+                <span class="n">inspection_name</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">new_step</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"inspection"</span><span class="p">,</span> <span class="s2">""</span><span class="p">))</span>
+                <span class="k">if</span> <span class="n">inspection_name</span> <span class="ow">in</span> <span class="n">available_inspections</span><span class="p">:</span>
+                    <span class="bp">cls</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_REGISTRY</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">inspection_name</span><span class="p">)</span>
+                    <span class="n">required_specs</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="s2">"argument_specs"</span><span class="p">,</span> <span class="p">[])</span> <span class="ow">or</span> <span class="p">[]</span>
+                    <span class="n">arguments</span> <span class="o">=</span> <span class="n">new_step</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"arguments"</span><span class="p">)</span> <span class="ow">or</span> <span class="p">{}</span>
+                    <span class="n">missing_required</span> <span class="o">=</span> <span class="p">[</span>
+                        <span class="n">spec</span><span class="o">.</span><span class="n">name</span> <span class="k">for</span> <span class="n">spec</span> <span class="ow">in</span> <span class="n">required_specs</span>
+                        <span class="k">if</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">spec</span><span class="p">,</span> <span class="s2">"required"</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span> <span class="ow">and</span> <span class="n">spec</span><span class="o">.</span><span class="n">name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">arguments</span>
+                    <span class="p">]</span>
+                    <span class="k">if</span> <span class="ow">not</span> <span class="n">missing_required</span><span class="p">:</span>
+                        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">"Successfully regenerated step </span><span class="si">%s</span><span class="s2">"</span><span class="p">,</span> <span class="n">idx</span><span class="p">)</span>
+                        <span class="n">regenerated</span> <span class="o">=</span> <span class="kc">True</span>
+                        <span class="k">break</span>
+
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">regenerated</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">"Failed to regenerate valid step </span><span class="si">%s</span><span class="s2"> after </span><span class="si">%s</span><span class="s2"> attempts"</span><span class="p">,</span> <span class="n">idx</span><span class="p">,</span> <span class="n">max_regen_attempts</span><span class="p">)</span>
+                <span class="n">plan_obj</span><span class="p">[</span><span class="s2">"steps"</span><span class="p">][</span><span class="n">idx</span><span class="p">][</span><span class="s2">"status"</span><span class="p">]</span> <span class="o">=</span> <span class="s2">"invalid"</span>
+                <span class="n">plan_obj</span><span class="p">[</span><span class="s2">"steps"</span><span class="p">][</span><span class="n">idx</span><span class="p">][</span><span class="s2">"error"</span><span class="p">]</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"Failed to regenerate valid step after </span><span class="si">{</span><span class="n">max_regen_attempts</span><span class="si">}</span><span class="s2"> attempts: </span><span class="si">{</span><span class="n">reason</span><span class="si">}</span><span class="s2">"</span>
+
+        <span class="k">return</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">plan_obj</span><span class="p">,</span> <span class="n">indent</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="TabularDataInspectorAgent.execute">
+<a class="viewcode-back" href="../../../../../generated/squirrel_modules_agents_inspector_TabularDataInsepctorAgent.html#squirrel.modules.agents.inspector.TabularDataInsepctorAgent.TabularDataInspectorAgent.execute">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">execute</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> 
+        <span class="n">data</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span> 
+        <span class="n">plan</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">Dict</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Execute the inspection plan produced by ``plan()``.</span>
+
+<span class="sd">        Unknown or failed strategies are recorded in the report rather than</span>
+<span class="sd">        raising so the pipeline always produces a complete result.</span>
+
+<span class="sd">        :param data: Input dataset.</span>
+<span class="sd">        :param plan: JSON plan string or dict from ``plan()``.</span>
+<span class="sd">        :return: JSON execution report string.</span>
+<span class="sd">        :rtype: str</span>
+<span class="sd">        """</span>
+        <span class="n">plan_obj</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_parse_plan</span><span class="p">(</span><span class="n">plan</span><span class="p">)</span>
+        <span class="k">if</span> <span class="s2">"error"</span> <span class="ow">in</span> <span class="n">plan_obj</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span>
+                <span class="p">{</span>
+                    <span class="s2">"task"</span><span class="p">:</span> <span class="s2">"inspection"</span><span class="p">,</span> 
+                    <span class="s2">"status"</span><span class="p">:</span> <span class="s2">"failed"</span><span class="p">,</span> 
+                    <span class="o">**</span><span class="n">plan_obj</span>
+                <span class="p">},</span> 
+                <span class="n">indent</span><span class="o">=</span><span class="mi">2</span>
+            <span class="p">)</span>
+
+        <span class="n">registry</span> <span class="o">=</span> <span class="p">{</span><span class="n">name</span><span class="p">:</span> <span class="bp">cls</span><span class="p">()</span> <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="bp">cls</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_REGISTRY</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
+        <span class="n">executed_steps</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="k">for</span> <span class="n">step</span> <span class="ow">in</span> <span class="n">plan_obj</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"steps"</span><span class="p">,</span> <span class="p">[]):</span>
+            <span class="n">executed_steps</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_run_step</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">step</span><span class="p">,</span> <span class="n">registry</span><span class="p">))</span>
+
+        <span class="k">return</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_execution_report</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">executed_steps</span><span class="p">),</span> <span class="n">indent</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="nb">str</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="TabularDataInspectorAgent.summarize">
+<a class="viewcode-back" href="../../../../../generated/squirrel_modules_agents_inspector_TabularDataInsepctorAgent.html#squirrel.modules.agents.inspector.TabularDataInsepctorAgent.TabularDataInspectorAgent.summarize">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">summarize</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> 
+        <span class="n">execution_report</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">Dict</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Ask the LLM to interpret the execution results and return a structured</span>
+<span class="sd">        summary with findings, anomalies, and recommended next steps.</span>
+
+<span class="sd">        :param execution_report: JSON execution report from ``execute()``.</span>
+<span class="sd">        </span>
+<span class="sd">        :return: JSON summary string.</span>
+<span class="sd">        :rtype: str</span>
+<span class="sd">        """</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">execution_report</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">report_obj</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">execution_report</span><span class="p">)</span>
+            <span class="k">except</span> <span class="n">json</span><span class="o">.</span><span class="n">JSONDecodeError</span><span class="p">:</span>
+                <span class="n">report_obj</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"raw"</span><span class="p">:</span> <span class="n">execution_report</span><span class="p">}</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">report_obj</span> <span class="o">=</span> <span class="n">execution_report</span>
+
+        <span class="c1"># Strip raw outlier index lists — they bloat the prompt without adding</span>
+        <span class="c1"># interpretive value; the LLM needs counts and severities, not indices.</span>
+        <span class="n">report_obj</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_sanitize_for_prompt</span><span class="p">(</span><span class="n">report_obj</span><span class="p">)</span>
+
+        <span class="n">system_prompt</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">prompt_generator</span><span class="o">.</span><span class="n">generate_system_prompt</span><span class="p">(</span>
+            <span class="n">prompt_type</span><span class="o">=</span><span class="n">InspectPromptType</span><span class="o">.</span><span class="n">GENERATE_SUMMARY</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">user_prompt</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">prompt_generator</span><span class="o">.</span><span class="n">generate_user_prompt</span><span class="p">(</span>
+            <span class="n">prompt_type</span><span class="o">=</span><span class="n">InspectPromptType</span><span class="o">.</span><span class="n">GENERATE_SUMMARY</span><span class="p">,</span>
+            <span class="n">objective</span><span class="o">=</span><span class="p">(</span>
+                <span class="s2">"Interpret the EDA execution results. Identify key findings, "</span>
+                <span class="s2">"data quality issues, anomalies, and recommend concrete next steps."</span>
+            <span class="p">),</span>
+            <span class="n">dataset_profile</span><span class="o">=</span><span class="n">report_obj</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="n">response</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_response</span><span class="p">(</span>
+            <span class="n">fn_name</span><span class="o">=</span><span class="s2">"generate_json"</span><span class="p">,</span>
+            <span class="n">model_input</span><span class="o">=</span><span class="p">{</span>
+                <span class="s2">"system_prompt"</span><span class="p">:</span> <span class="n">system_prompt</span><span class="p">,</span>
+                <span class="s2">"user_prompt"</span><span class="p">:</span> <span class="n">user_prompt</span><span class="p">,</span>
+                <span class="s2">"schema"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_summary_schema</span><span class="p">(),</span>
+            <span class="p">},</span>
+            <span class="n">strict</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+            <span class="n">provider_order</span><span class="o">=</span><span class="p">[</span><span class="n">Provider</span><span class="o">.</span><span class="n">GEMINI</span><span class="p">,</span> <span class="n">Provider</span><span class="o">.</span><span class="n">GROQ</span><span class="p">],</span>
+            <span class="n">preference_model_names</span><span class="o">=</span><span class="p">[</span>
+                <span class="c1"># GEMINI</span>
+                <span class="s2">"models/gemini-2.5-flash"</span><span class="p">,</span>
+                <span class="c1"># GROQ</span>
+                <span class="s2">"openai/gpt-oss-120b"</span><span class="p">,</span>
+                <span class="s2">"openai/gpt-oss-20b"</span><span class="p">,</span>
+                <span class="s2">"meta-llama/llama-4-scout-17b-16e-instruct"</span><span class="p">,</span>
+            <span class="p">]</span>
+        <span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">response</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_error_json</span><span class="p">(</span><span class="s2">"summarize"</span><span class="p">,</span> <span class="s2">"Provider did not return a response."</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">response</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">response</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="k">else</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">response</span><span class="p">,</span> <span class="n">indent</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="TabularDataInspectorAgent.inspect_multi">
+<a class="viewcode-back" href="../../../../../generated/squirrel_modules_agents_inspector_TabularDataInsepctorAgent.html#squirrel.modules.agents.inspector.TabularDataInsepctorAgent.TabularDataInspectorAgent.inspect_multi">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">inspect_multi</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">dataframes</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">],</span>
+        <span class="n">objective</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">""</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Inspect every input source individually, then reason about how the</span>
+<span class="sd">        sources relate to each other, grounded in the caller's objective/query.</span>
+<span class="sd">        Must run BEFORE TabularDataProcessorAgent so that merging/preprocessing</span>
+<span class="sd">        is informed by real findings instead of shape-only guessing.</span>
+<span class="sd">        """</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">dataframes</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_error_json</span><span class="p">(</span><span class="s2">"inspect_multi"</span><span class="p">,</span> <span class="s2">"No input sources provided."</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">dataframes</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">only_df</span> <span class="o">=</span> <span class="nb">next</span><span class="p">(</span><span class="nb">iter</span><span class="p">(</span><span class="n">dataframes</span><span class="o">.</span><span class="n">values</span><span class="p">()))</span>
+            <span class="n">single</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">inspect</span><span class="p">(</span><span class="n">only_df</span><span class="p">,</span> <span class="n">objective</span><span class="o">=</span><span class="n">objective</span><span class="p">))</span>
+            <span class="n">single</span><span class="p">[</span><span class="s2">"n_sources"</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+            <span class="n">single</span><span class="p">[</span><span class="s2">"relationship"</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="s2">"strategy"</span><span class="p">:</span> <span class="s2">"single_source"</span><span class="p">,</span>
+                <span class="s2">"rationale"</span><span class="p">:</span> <span class="s2">"Only one input source."</span><span class="p">,</span>
+                <span class="s2">"confidence"</span><span class="p">:</span> <span class="s2">"high"</span><span class="p">,</span>
+            <span class="p">}</span>
+            <span class="k">return</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">single</span><span class="p">,</span> <span class="n">indent</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+
+        <span class="c1"># 1. Inspect every source on its own — reuses the existing</span>
+        <span class="c1">#    plan -&gt; execute -&gt; summarize lifecycle per source.</span>
+        <span class="n">per_source_reports</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Dict</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="n">source_id</span><span class="p">:</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">inspect</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">objective</span><span class="o">=</span><span class="n">objective</span><span class="p">))</span>
+            <span class="k">for</span> <span class="n">source_id</span><span class="p">,</span> <span class="n">df</span> <span class="ow">in</span> <span class="n">dataframes</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+        <span class="p">}</span>
+
+        <span class="c1"># 2. Cheap deterministic signals (schema/row-count overlap) — computed</span>
+        <span class="c1">#    first so the LLM call below is grounded in facts, not just samples.</span>
+        <span class="n">signals</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_relationship_signals</span><span class="p">(</span><span class="n">dataframes</span><span class="p">)</span>
+
+        <span class="c1"># 3. Ask the LLM how the sources relate, using the objective/query,</span>
+        <span class="c1">#    the deterministic signals, and each source's own EDA findings.</span>
+        <span class="n">relationship</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_infer_relationship</span><span class="p">(</span>
+            <span class="n">dataframes</span><span class="o">=</span><span class="n">dataframes</span><span class="p">,</span>
+            <span class="n">per_source_reports</span><span class="o">=</span><span class="n">per_source_reports</span><span class="p">,</span>
+            <span class="n">signals</span><span class="o">=</span><span class="n">signals</span><span class="p">,</span>
+            <span class="n">objective</span><span class="o">=</span><span class="n">objective</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">({</span>
+            <span class="s2">"task"</span><span class="p">:</span> <span class="s2">"multi_source_inspection"</span><span class="p">,</span>
+            <span class="s2">"status"</span><span class="p">:</span> <span class="s2">"completed"</span><span class="p">,</span>
+            <span class="s2">"n_sources"</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">dataframes</span><span class="p">),</span>
+            <span class="s2">"sources"</span><span class="p">:</span> <span class="n">per_source_reports</span><span class="p">,</span>
+            <span class="s2">"relationship_signals"</span><span class="p">:</span> <span class="n">signals</span><span class="p">,</span>
+            <span class="s2">"relationship"</span><span class="p">:</span> <span class="n">relationship</span><span class="p">,</span>   <span class="c1"># {strategy, join_keys?, join_type?, rationale, confidence}</span>
+        <span class="p">},</span> <span class="n">indent</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="nb">str</span><span class="p">)</span></div>
+
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_relationship_signals</span><span class="p">(</span>
+        <span class="n">dataframes</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">]</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+        <span class="n">column_sets</span> <span class="o">=</span> <span class="p">{</span><span class="n">sid</span><span class="p">:</span> <span class="nb">set</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">columns</span><span class="p">)</span> <span class="k">for</span> <span class="n">sid</span><span class="p">,</span> <span class="n">df</span> <span class="ow">in</span> <span class="n">dataframes</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
+        <span class="n">row_counts</span> <span class="o">=</span> <span class="p">{</span><span class="n">sid</span><span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="k">for</span> <span class="n">sid</span><span class="p">,</span> <span class="n">df</span> <span class="ow">in</span> <span class="n">dataframes</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
+        <span class="n">identical_schema</span> <span class="o">=</span> <span class="nb">len</span><span class="p">({</span><span class="nb">frozenset</span><span class="p">(</span><span class="n">c</span><span class="p">)</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">column_sets</span><span class="o">.</span><span class="n">values</span><span class="p">()})</span> <span class="o">==</span> <span class="mi">1</span>
+        <span class="n">same_row_count</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">row_counts</span><span class="o">.</span><span class="n">values</span><span class="p">()))</span> <span class="o">==</span> <span class="mi">1</span>
+
+        <span class="n">overlap</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">list</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">ids</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">column_sets</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">ids</span><span class="p">)):</span>
+            <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">ids</span><span class="p">)):</span>
+                <span class="n">shared</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">column_sets</span><span class="p">[</span><span class="n">ids</span><span class="p">[</span><span class="n">i</span><span class="p">]]</span> <span class="o">&amp;</span> <span class="n">column_sets</span><span class="p">[</span><span class="n">ids</span><span class="p">[</span><span class="n">j</span><span class="p">]])</span>
+                <span class="k">if</span> <span class="n">shared</span><span class="p">:</span>
+                    <span class="n">overlap</span><span class="p">[</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">ids</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="si">}</span><span class="s2">__</span><span class="si">{</span><span class="n">ids</span><span class="p">[</span><span class="n">j</span><span class="p">]</span><span class="si">}</span><span class="s2">"</span><span class="p">]</span> <span class="o">=</span> <span class="n">shared</span>
+
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s2">"identical_schema"</span><span class="p">:</span> <span class="n">identical_schema</span><span class="p">,</span>
+            <span class="s2">"same_row_count"</span><span class="p">:</span> <span class="n">same_row_count</span><span class="p">,</span>
+            <span class="s2">"row_counts"</span><span class="p">:</span> <span class="n">row_counts</span><span class="p">,</span>
+            <span class="s2">"shared_columns_by_pair"</span><span class="p">:</span> <span class="n">overlap</span><span class="p">,</span>
+        <span class="p">}</span>
+    
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_infer_relationship</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">dataframes</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">],</span>
+        <span class="n">per_source_reports</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Dict</span><span class="p">],</span>
+        <span class="n">signals</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span>
+        <span class="n">objective</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+        <span class="n">profiles</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="n">sid</span><span class="p">:</span> <span class="p">{</span>
+                <span class="s2">"row_count"</span><span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span>
+                <span class="s2">"columns"</span><span class="p">:</span> <span class="nb">list</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">columns</span><span class="p">),</span>
+                <span class="s2">"sample_rows"</span><span class="p">:</span> <span class="n">df</span><span class="o">.</span><span class="n">head</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">notnull</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">head</span><span class="p">(</span><span class="mi">3</span><span class="p">)),</span> <span class="kc">None</span><span class="p">)</span><span class="o">.</span><span class="n">to_dict</span><span class="p">(</span><span class="n">orient</span><span class="o">=</span><span class="s2">"records"</span><span class="p">),</span>
+                <span class="s2">"eda_findings"</span><span class="p">:</span> <span class="n">per_source_reports</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">sid</span><span class="p">,</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"findings"</span><span class="p">,</span> <span class="p">[]),</span>   
+            <span class="p">}</span>
+            <span class="k">for</span> <span class="n">sid</span><span class="p">,</span> <span class="n">df</span> <span class="ow">in</span> <span class="n">dataframes</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+        <span class="p">}</span>
+        
+        <span class="n">system_prompt</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">prompt_generator</span><span class="o">.</span><span class="n">generate_system_prompt</span><span class="p">(</span>
+            <span class="n">prompt_type</span><span class="o">=</span><span class="n">InspectPromptType</span><span class="o">.</span><span class="n">GENERATE_SUMMARY</span>
+        <span class="p">)</span>
+        <span class="n">user_prompt</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="s2">"Multiple input sources were provided. Decide how they should be "</span>
+            <span class="s2">"combined into a single training frame before any preprocessing "</span>
+            <span class="s2">"happens, grounded in the user's objective/query.</span><span class="se">\n\n</span><span class="s2">"</span>
+            <span class="sa">f</span><span class="s2">"User objective/query: </span><span class="si">{</span><span class="n">objective</span><span class="w"> </span><span class="ow">or</span><span class="w"> </span><span class="s1">'(none given)'</span><span class="si">}</span><span class="se">\n\n</span><span class="s2">"</span>
+            <span class="sa">f</span><span class="s2">"Deterministic signals:</span><span class="se">\n</span><span class="si">{</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">signals</span><span class="p">,</span><span class="w"> </span><span class="n">indent</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="n">default</span><span class="o">=</span><span class="nb">str</span><span class="p">)</span><span class="si">}</span><span class="se">\n\n</span><span class="s2">"</span>
+            <span class="s2">"Choose exactly one strategy:</span><span class="se">\n</span><span class="s2">"</span>
+            <span class="s2">"  - 'union': sources are batches of the same kind of record — stack row-wise.</span><span class="se">\n</span><span class="s2">"</span>
+            <span class="s2">"  - 'join': sources describe related entities sharing a key column.</span><span class="se">\n</span><span class="s2">"</span>
+            <span class="s2">"  - 'unrelated': no defensible relationship — explain why in 'rationale'.</span><span class="se">\n\n</span><span class="s2">"</span>
+            <span class="sa">f</span><span class="s2">"Per-source profiles:</span><span class="se">\n</span><span class="si">{</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">profiles</span><span class="p">,</span><span class="w"> </span><span class="n">indent</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="n">default</span><span class="o">=</span><span class="nb">str</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span>
+        <span class="p">)</span>
+        
+        <span class="n">schema</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">"type"</span><span class="p">:</span> <span class="s2">"object"</span><span class="p">,</span>
+            <span class="s2">"properties"</span><span class="p">:</span> <span class="p">{</span>
+                <span class="s2">"strategy"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"type"</span><span class="p">:</span> <span class="s2">"string"</span><span class="p">,</span> <span class="s2">"enum"</span><span class="p">:</span> <span class="p">[</span><span class="s2">"union"</span><span class="p">,</span> <span class="s2">"join"</span><span class="p">,</span> <span class="s2">"unrelated"</span><span class="p">]},</span>
+                <span class="s2">"join_keys"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"type"</span><span class="p">:</span> <span class="s2">"array"</span><span class="p">,</span> <span class="s2">"items"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"type"</span><span class="p">:</span> <span class="s2">"string"</span><span class="p">}},</span>
+                <span class="s2">"join_type"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"type"</span><span class="p">:</span> <span class="s2">"string"</span><span class="p">,</span> <span class="s2">"enum"</span><span class="p">:</span> <span class="p">[</span><span class="s2">"inner"</span><span class="p">,</span> <span class="s2">"left"</span><span class="p">,</span> <span class="s2">"right"</span><span class="p">,</span> <span class="s2">"outer"</span><span class="p">]},</span>
+                <span class="s2">"rationale"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"type"</span><span class="p">:</span> <span class="s2">"string"</span><span class="p">},</span>
+                <span class="s2">"confidence"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"type"</span><span class="p">:</span> <span class="s2">"string"</span><span class="p">,</span> <span class="s2">"enum"</span><span class="p">:</span> <span class="p">[</span><span class="s2">"low"</span><span class="p">,</span> <span class="s2">"medium"</span><span class="p">,</span> <span class="s2">"high"</span><span class="p">]},</span>
+            <span class="p">},</span>
+            <span class="s2">"required"</span><span class="p">:</span> <span class="p">[</span><span class="s2">"strategy"</span><span class="p">,</span> <span class="s2">"rationale"</span><span class="p">]</span>
+        <span class="p">}</span>
+
+        <span class="n">response</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_response</span><span class="p">(</span>
+            <span class="n">fn_name</span><span class="o">=</span><span class="s2">"generate_json"</span><span class="p">,</span>
+            <span class="n">model_input</span><span class="o">=</span><span class="p">{</span><span class="s2">"system_prompt"</span><span class="p">:</span> <span class="n">system_prompt</span><span class="p">,</span> <span class="s2">"user_prompt"</span><span class="p">:</span> <span class="n">user_prompt</span><span class="p">,</span> <span class="s2">"schema"</span><span class="p">:</span> <span class="n">schema</span><span class="p">},</span>
+            <span class="n">strict</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+            <span class="n">provider_order</span><span class="o">=</span><span class="p">[</span><span class="n">Provider</span><span class="o">.</span><span class="n">GROQ</span><span class="p">,</span> <span class="n">Provider</span><span class="o">.</span><span class="n">GEMINI</span><span class="p">],</span>
+            <span class="n">preference_model_names</span><span class="o">=</span><span class="p">[</span>
+                <span class="c1"># GEMINI</span>
+                <span class="s2">"models/gemini-2.5-flash"</span><span class="p">,</span>
+                <span class="c1"># GROQ</span>
+                <span class="s2">"openai/gpt-oss-120b"</span><span class="p">,</span>
+                <span class="s2">"openai/gpt-oss-20b"</span><span class="p">,</span>
+                <span class="s2">"meta-llama/llama-4-scout-17b-16e-instruct"</span><span class="p">,</span>
+            <span class="p">]</span>
+        <span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">response</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">{</span><span class="s2">"strategy"</span><span class="p">:</span> <span class="s2">"unrelated"</span><span class="p">,</span> <span class="s2">"rationale"</span><span class="p">:</span> <span class="s2">"Planner returned no response."</span><span class="p">,</span> <span class="s2">"confidence"</span><span class="p">:</span> <span class="s2">"low"</span><span class="p">}</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">response</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">response</span><span class="p">,</span> <span class="n">Dict</span><span class="p">)</span> <span class="k">else</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">response</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">{</span><span class="s2">"strategy"</span><span class="p">:</span> <span class="s2">"unrelated"</span><span class="p">,</span> <span class="s2">"rationale"</span><span class="p">:</span> <span class="s2">"Could not parse relationship response."</span><span class="p">,</span> <span class="s2">"confidence"</span><span class="p">:</span> <span class="s2">"low"</span><span class="p">}</span>
+
+
+    <span class="c1"># ── Internal helpers ──────────────────────────────────────────────────────</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_available_inspections</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]]:</span>
+        <span class="k">return</span> <span class="n">build_inspection_catalog</span><span class="p">()</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_dataset_profile</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">"""Lightweight dataset descriptor sent to the planner."""</span>
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s2">"rows"</span><span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span>
+            <span class="s2">"columns"</span><span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]),</span>
+            <span class="s2">"column_names"</span><span class="p">:</span> <span class="nb">list</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">columns</span><span class="p">),</span>
+            <span class="s2">"dtypes"</span><span class="p">:</span> <span class="p">{</span><span class="n">col</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">dtype</span><span class="p">)</span> <span class="k">for</span> <span class="n">col</span><span class="p">,</span> <span class="n">dtype</span> <span class="ow">in</span> <span class="n">data</span><span class="o">.</span><span class="n">dtypes</span><span class="o">.</span><span class="n">items</span><span class="p">()},</span>
+            <span class="s2">"missing_counts"</span><span class="p">:</span> <span class="n">data</span><span class="o">.</span><span class="n">isna</span><span class="p">()</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span><span class="o">.</span><span class="n">to_dict</span><span class="p">(),</span>
+        <span class="p">}</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_run_step</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">data</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span>
+        <span class="n">step</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span>
+        <span class="n">registry</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">DataInspectStrategy</span><span class="p">],</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Execute a single plan step and return a structured step result.</span>
+<span class="sd">        """</span>
+        <span class="n">inspection_name</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">step</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"inspection"</span><span class="p">,</span> <span class="s2">""</span><span class="p">))</span>
+        <span class="n">base</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">"step"</span><span class="p">:</span> <span class="n">step</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"step"</span><span class="p">),</span>
+            <span class="s2">"name"</span><span class="p">:</span> <span class="n">step</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"name"</span><span class="p">),</span>
+            <span class="s2">"inspection"</span><span class="p">:</span> <span class="n">inspection_name</span><span class="p">,</span>
+            <span class="s2">"objective"</span><span class="p">:</span> <span class="n">step</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"objective"</span><span class="p">),</span>
+            <span class="s2">"actions"</span><span class="p">:</span> <span class="n">step</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"actions"</span><span class="p">,</span> <span class="p">[]),</span>
+            <span class="s2">"expected_output"</span><span class="p">:</span> <span class="n">step</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"expected_output"</span><span class="p">,</span> <span class="p">[]),</span>
+        <span class="p">}</span>
+
+        <span class="n">strategy</span> <span class="o">=</span> <span class="n">registry</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">inspection_name</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">strategy</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">"Unknown inspection strategy: </span><span class="si">%s</span><span class="s2">"</span><span class="p">,</span> <span class="n">inspection_name</span><span class="p">)</span>
+            <span class="k">return</span> <span class="p">{</span><span class="o">**</span><span class="n">base</span><span class="p">,</span> <span class="s2">"status"</span><span class="p">:</span> <span class="s2">"skipped"</span><span class="p">,</span> <span class="s2">"error"</span><span class="p">:</span> <span class="sa">f</span><span class="s2">"Unknown strategy: </span><span class="si">{</span><span class="n">inspection_name</span><span class="si">}</span><span class="s2">"</span><span class="p">}</span>
+
+        <span class="n">arguments</span> <span class="o">=</span> <span class="n">step</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"arguments"</span><span class="p">)</span> <span class="ow">or</span> <span class="p">{}</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">arguments</span><span class="p">,</span> <span class="n">Dict</span><span class="p">):</span>
+            <span class="n">arguments</span> <span class="o">=</span> <span class="p">{}</span>
+
+        <span class="c1"># Validate required arguments declared by the strategy before executing.</span>
+        <span class="n">required_specs</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">strategy</span><span class="o">.</span><span class="vm">__class__</span><span class="p">,</span> <span class="s2">"argument_specs"</span><span class="p">,</span> <span class="p">[])</span> <span class="ow">or</span> <span class="p">[]</span>
+        <span class="n">missing_required</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="n">spec</span><span class="o">.</span><span class="n">name</span> <span class="k">for</span> <span class="n">spec</span> <span class="ow">in</span> <span class="n">required_specs</span> <span class="k">if</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">spec</span><span class="p">,</span> <span class="s2">"required"</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span>
+            <span class="ow">and</span> <span class="n">spec</span><span class="o">.</span><span class="n">name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">arguments</span>
+        <span class="p">]</span>
+        <span class="k">if</span> <span class="n">missing_required</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                <span class="s2">"Strategy </span><span class="si">%s</span><span class="s2"> missing required arguments: </span><span class="si">%s</span><span class="s2">"</span><span class="p">,</span>
+                <span class="n">inspection_name</span><span class="p">,</span>
+                <span class="n">missing_required</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="k">return</span> <span class="p">{</span>
+                <span class="o">**</span><span class="n">base</span><span class="p">,</span>
+                <span class="s2">"status"</span><span class="p">:</span> <span class="s2">"failed"</span><span class="p">,</span>
+                <span class="s2">"error"</span><span class="p">:</span> <span class="sa">f</span><span class="s2">"Missing required arguments: </span><span class="si">{</span><span class="s1">', '</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">missing_required</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
+            <span class="p">}</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">output</span> <span class="o">=</span> <span class="n">strategy</span><span class="o">.</span><span class="n">inspect</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="o">**</span><span class="n">arguments</span><span class="p">)</span>
+            <span class="k">return</span> <span class="p">{</span><span class="o">**</span><span class="n">base</span><span class="p">,</span> <span class="s2">"status"</span><span class="p">:</span> <span class="s2">"completed"</span><span class="p">,</span> <span class="s2">"output"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_serialize</span><span class="p">(</span><span class="n">output</span><span class="p">)}</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">exception</span><span class="p">(</span><span class="s2">"Strategy </span><span class="si">%s</span><span class="s2"> failed: </span><span class="si">%s</span><span class="s2">"</span><span class="p">,</span> <span class="n">inspection_name</span><span class="p">,</span> <span class="n">exc</span><span class="p">)</span>
+            <span class="k">return</span> <span class="p">{</span><span class="o">**</span><span class="n">base</span><span class="p">,</span> <span class="s2">"status"</span><span class="p">:</span> <span class="s2">"failed"</span><span class="p">,</span> <span class="s2">"error"</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">exc</span><span class="p">)}</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_execution_report</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span> <span class="n">executed_steps</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">"""Assemble the top-level execution report dict."""</span>
+        <span class="n">counts</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"completed"</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="s2">"failed"</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="s2">"skipped"</span><span class="p">:</span> <span class="mi">0</span><span class="p">}</span>
+        <span class="k">for</span> <span class="n">step</span> <span class="ow">in</span> <span class="n">executed_steps</span><span class="p">:</span>
+            <span class="n">status</span> <span class="o">=</span> <span class="n">step</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"status"</span><span class="p">,</span> <span class="s2">"skipped"</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">status</span> <span class="ow">in</span> <span class="n">counts</span><span class="p">:</span>
+                <span class="n">counts</span><span class="p">[</span><span class="n">status</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
+
+        <span class="n">overall</span> <span class="o">=</span> <span class="s2">"completed"</span> <span class="k">if</span> <span class="n">counts</span><span class="p">[</span><span class="s2">"failed"</span><span class="p">]</span> <span class="o">==</span> <span class="mi">0</span> <span class="k">else</span> <span class="s2">"completed_with_errors"</span>
+
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s2">"task"</span><span class="p">:</span> <span class="s2">"inspection"</span><span class="p">,</span>
+            <span class="s2">"status"</span><span class="p">:</span> <span class="n">overall</span><span class="p">,</span>
+            <span class="s2">"dataset"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_dataset_profile</span><span class="p">(</span><span class="n">data</span><span class="p">),</span>
+            <span class="s2">"summary"</span><span class="p">:</span> <span class="p">{</span>
+                <span class="s2">"completed_steps"</span><span class="p">:</span> <span class="n">counts</span><span class="p">[</span><span class="s2">"completed"</span><span class="p">],</span>
+                <span class="s2">"failed_steps"</span><span class="p">:</span> <span class="n">counts</span><span class="p">[</span><span class="s2">"failed"</span><span class="p">],</span>
+                <span class="s2">"skipped_steps"</span><span class="p">:</span> <span class="n">counts</span><span class="p">[</span><span class="s2">"skipped"</span><span class="p">],</span>
+            <span class="p">},</span>
+            <span class="s2">"steps"</span><span class="p">:</span> <span class="n">executed_steps</span><span class="p">,</span>
+        <span class="p">}</span>
+
+    <span class="c1"># ── Serialization helpers ─────────────────────────────────────────────────</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_serialize</span><span class="p">(</span><span class="n">value</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Recursively convert strategy output to JSON-serializable primitives."""</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">Dict</span><span class="p">):</span>
+            <span class="k">return</span> <span class="p">{</span><span class="nb">str</span><span class="p">(</span><span class="n">k</span><span class="p">):</span> <span class="n">TabularDataInspectorAgent</span><span class="o">.</span><span class="n">_serialize</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">value</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="k">return</span> <span class="p">[</span><span class="n">TabularDataInspectorAgent</span><span class="o">.</span><span class="n">_serialize</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">value</span><span class="p">]</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="s2">"to_dict"</span><span class="p">):</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">TabularDataInspectorAgent</span><span class="o">.</span><span class="n">_serialize</span><span class="p">(</span><span class="n">value</span><span class="o">.</span><span class="n">to_dict</span><span class="p">())</span>
+            <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+                <span class="k">pass</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="s2">"tolist"</span><span class="p">):</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">value</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+            <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+                <span class="k">pass</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="nb">float</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="n">value</span> <span class="o">!=</span> <span class="n">value</span><span class="p">):</span>  <span class="c1"># NaN check</span>
+            <span class="k">return</span> <span class="kc">None</span>
+        <span class="k">return</span> <span class="n">value</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_sanitize_for_prompt</span><span class="p">(</span><span class="n">obj</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="n">_depth</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Recursively trim the execution report before sending to the LLM:</span>
+<span class="sd">        - Drop ``outlier_indices`` and ``missing_indices`` lists (too verbose).</span>
+<span class="sd">        - Truncate any list longer than 20 items.</span>
+<span class="sd">        - Cap recursion at depth 10 to guard against pathological nesting.</span>
+<span class="sd">        """</span>
+        <span class="n">_SKIP_KEYS</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"outlier_indices"</span><span class="p">,</span> <span class="s2">"missing_indices"</span><span class="p">}</span>
+        <span class="n">_MAX_LIST_LEN</span> <span class="o">=</span> <span class="mi">20</span>
+        <span class="n">_MAX_DEPTH</span> <span class="o">=</span> <span class="mi">10</span>
+
+        <span class="k">if</span> <span class="n">_depth</span> <span class="o">&gt;</span> <span class="n">_MAX_DEPTH</span><span class="p">:</span>
+            <span class="k">return</span> <span class="s2">"__truncated__"</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">Dict</span><span class="p">):</span>
+            <span class="k">return</span> <span class="p">{</span>
+                <span class="n">k</span><span class="p">:</span> <span class="n">TabularDataInspectorAgent</span><span class="o">.</span><span class="n">_sanitize_for_prompt</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">_depth</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">obj</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+                <span class="k">if</span> <span class="n">k</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">_SKIP_KEYS</span>
+            <span class="p">}</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="n">truncated</span> <span class="o">=</span> <span class="n">obj</span><span class="p">[:</span><span class="n">_MAX_LIST_LEN</span><span class="p">]</span>
+            <span class="k">return</span> <span class="p">[</span>
+                <span class="n">TabularDataInspectorAgent</span><span class="o">.</span><span class="n">_sanitize_for_prompt</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">_depth</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">truncated</span>
+            <span class="p">]</span>
+        <span class="k">return</span> <span class="n">obj</span>
+
+    <span class="c1"># ── Parsing helpers ───────────────────────────────────────────────────────</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_parse_plan</span><span class="p">(</span><span class="n">plan</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">Dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">:</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">plan</span><span class="p">,</span> <span class="n">Dict</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">plan</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">plan</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">plan</span><span class="p">)</span>
+            <span class="k">except</span> <span class="n">json</span><span class="o">.</span><span class="n">JSONDecodeError</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+                <span class="k">return</span> <span class="p">{</span><span class="s2">"error"</span><span class="p">:</span> <span class="sa">f</span><span class="s2">"Plan is not valid JSON: </span><span class="si">{</span><span class="n">exc</span><span class="si">}</span><span class="s2">"</span><span class="p">}</span>
+        <span class="k">return</span> <span class="p">{</span><span class="s2">"error"</span><span class="p">:</span> <span class="sa">f</span><span class="s2">"Plan must be a JSON string or dict, got </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">plan</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">."</span><span class="p">}</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_error_json</span><span class="p">(</span><span class="n">stage</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">message</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">({</span>
+            <span class="s2">"stage"</span><span class="p">:</span> <span class="n">stage</span><span class="p">,</span> 
+            <span class="s2">"status"</span><span class="p">:</span> <span class="s2">"failed"</span><span class="p">,</span> 
+            <span class="s2">"error"</span><span class="p">:</span> <span class="n">message</span>
+        <span class="p">},</span> <span class="n">indent</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+
+    <span class="c1"># ── Response schemas ──────────────────────────────────────────────────────</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_plan_schema</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s2">"type"</span><span class="p">:</span> <span class="s2">"object"</span><span class="p">,</span>
+            <span class="s2">"properties"</span><span class="p">:</span> <span class="p">{</span>
+                <span class="s2">"task"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"type"</span><span class="p">:</span> <span class="s2">"string"</span><span class="p">},</span>
+                <span class="s2">"dataset"</span><span class="p">:</span> <span class="p">{</span>
+                    <span class="s2">"type"</span><span class="p">:</span> <span class="s2">"object"</span><span class="p">,</span>
+                    <span class="s2">"properties"</span><span class="p">:</span> <span class="p">{</span>
+                        <span class="s2">"rows"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"type"</span><span class="p">:</span> <span class="s2">"integer"</span><span class="p">},</span>
+                        <span class="s2">"columns"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"type"</span><span class="p">:</span> <span class="s2">"integer"</span><span class="p">},</span>
+                        <span class="s2">"column_names"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"type"</span><span class="p">:</span> <span class="s2">"array"</span><span class="p">,</span> <span class="s2">"items"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"type"</span><span class="p">:</span> <span class="s2">"string"</span><span class="p">}},</span>
+                    <span class="p">},</span>
+                    <span class="s2">"required"</span><span class="p">:</span> <span class="p">[</span><span class="s2">"rows"</span><span class="p">,</span> <span class="s2">"columns"</span><span class="p">,</span> <span class="s2">"column_names"</span><span class="p">],</span>
+                <span class="p">},</span>
+                <span class="s2">"steps"</span><span class="p">:</span> <span class="p">{</span>
+                    <span class="s2">"type"</span><span class="p">:</span> <span class="s2">"array"</span><span class="p">,</span>
+                    <span class="s2">"items"</span><span class="p">:</span> <span class="p">{</span>
+                        <span class="s2">"type"</span><span class="p">:</span> <span class="s2">"object"</span><span class="p">,</span>
+                        <span class="s2">"properties"</span><span class="p">:</span> <span class="p">{</span>
+                            <span class="s2">"step"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"type"</span><span class="p">:</span> <span class="s2">"integer"</span><span class="p">},</span>
+                            <span class="s2">"name"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"type"</span><span class="p">:</span> <span class="s2">"string"</span><span class="p">},</span>
+                            <span class="s2">"inspection"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"type"</span><span class="p">:</span> <span class="s2">"string"</span><span class="p">},</span>
+                            <span class="s2">"objective"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"type"</span><span class="p">:</span> <span class="s2">"string"</span><span class="p">},</span>
+                            <span class="s2">"actions"</span><span class="p">:</span> <span class="p">{</span>
+                                <span class="s2">"type"</span><span class="p">:</span> <span class="s2">"array"</span><span class="p">,</span> 
+                                <span class="s2">"items"</span><span class="p">:</span> <span class="p">{</span>
+                                    <span class="s2">"type"</span><span class="p">:</span> <span class="s2">"string"</span><span class="p">,</span>
+                                    <span class="s2">"maxLength"</span><span class="p">:</span> <span class="mi">120</span>
+                                <span class="p">},</span>
+                                <span class="s2">"maxItems"</span><span class="p">:</span> <span class="mi">5</span>
+                            <span class="p">},</span>
+                            <span class="s2">"arguments"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"type"</span><span class="p">:</span> <span class="s2">"object"</span><span class="p">},</span>
+                            <span class="s2">"expected_output"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"type"</span><span class="p">:</span> <span class="s2">"array"</span><span class="p">,</span> <span class="s2">"items"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"type"</span><span class="p">:</span> <span class="s2">"string"</span><span class="p">}},</span>
+                        <span class="p">},</span>
+                        <span class="s2">"required"</span><span class="p">:</span> <span class="p">[</span><span class="s2">"step"</span><span class="p">,</span> <span class="s2">"name"</span><span class="p">,</span> <span class="s2">"inspection"</span><span class="p">,</span> <span class="s2">"objective"</span><span class="p">,</span> <span class="s2">"actions"</span><span class="p">,</span> <span class="s2">"expected_output"</span><span class="p">],</span>
+                    <span class="p">},</span>
+                <span class="p">},</span>
+            <span class="p">},</span>
+            <span class="s2">"required"</span><span class="p">:</span> <span class="p">[</span><span class="s2">"task"</span><span class="p">,</span> <span class="s2">"dataset"</span><span class="p">,</span> <span class="s2">"steps"</span><span class="p">],</span>
+        <span class="p">}</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_summary_schema</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s2">"type"</span><span class="p">:</span> <span class="s2">"object"</span><span class="p">,</span>
+            <span class="s2">"properties"</span><span class="p">:</span> <span class="p">{</span>
+                <span class="s2">"overall_assessment"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"type"</span><span class="p">:</span> <span class="s2">"string"</span><span class="p">},</span>
+                <span class="s2">"data_quality_score"</span><span class="p">:</span> <span class="p">{</span>
+                    <span class="s2">"type"</span><span class="p">:</span> <span class="s2">"number"</span><span class="p">,</span>
+                    <span class="s2">"description"</span><span class="p">:</span> <span class="s2">"0–1 heuristic quality score based on missingness, outliers, and type issues."</span><span class="p">,</span>
+                <span class="p">},</span>
+                <span class="s2">"findings"</span><span class="p">:</span> <span class="p">{</span>
+                    <span class="s2">"type"</span><span class="p">:</span> <span class="s2">"array"</span><span class="p">,</span>
+                    <span class="s2">"items"</span><span class="p">:</span> <span class="p">{</span>
+                        <span class="s2">"type"</span><span class="p">:</span> <span class="s2">"object"</span><span class="p">,</span>
+                        <span class="s2">"properties"</span><span class="p">:</span> <span class="p">{</span>
+                            <span class="s2">"column"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"type"</span><span class="p">:</span> <span class="s2">"string"</span><span class="p">},</span>
+                            <span class="s2">"finding"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"type"</span><span class="p">:</span> <span class="s2">"string"</span><span class="p">},</span>
+                            <span class="s2">"severity"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"type"</span><span class="p">:</span> <span class="s2">"string"</span><span class="p">,</span> <span class="s2">"enum"</span><span class="p">:</span> <span class="p">[</span><span class="s2">"low"</span><span class="p">,</span> <span class="s2">"medium"</span><span class="p">,</span> <span class="s2">"high"</span><span class="p">]},</span>
+                        <span class="p">},</span>
+                        <span class="s2">"required"</span><span class="p">:</span> <span class="p">[</span><span class="s2">"column"</span><span class="p">,</span> <span class="s2">"finding"</span><span class="p">,</span> <span class="s2">"severity"</span><span class="p">],</span>
+                    <span class="p">},</span>
+                <span class="p">},</span>
+                <span class="s2">"anomalies"</span><span class="p">:</span> <span class="p">{</span>
+                    <span class="s2">"type"</span><span class="p">:</span> <span class="s2">"array"</span><span class="p">,</span>
+                    <span class="s2">"items"</span><span class="p">:</span> <span class="p">{</span>
+                        <span class="s2">"type"</span><span class="p">:</span> <span class="s2">"object"</span><span class="p">,</span>
+                        <span class="s2">"properties"</span><span class="p">:</span> <span class="p">{</span>
+                            <span class="s2">"column"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"type"</span><span class="p">:</span> <span class="s2">"string"</span><span class="p">},</span>
+                            <span class="s2">"anomaly"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"type"</span><span class="p">:</span> <span class="s2">"string"</span><span class="p">},</span>
+                        <span class="p">},</span>
+                        <span class="s2">"required"</span><span class="p">:</span> <span class="p">[</span><span class="s2">"column"</span><span class="p">,</span> <span class="s2">"anomaly"</span><span class="p">],</span>
+                    <span class="p">},</span>
+                <span class="p">},</span>
+                <span class="s2">"recommended_next_steps"</span><span class="p">:</span> <span class="p">{</span>
+                    <span class="s2">"type"</span><span class="p">:</span> <span class="s2">"array"</span><span class="p">,</span>
+                    <span class="s2">"items"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"type"</span><span class="p">:</span> <span class="s2">"string"</span><span class="p">},</span>
+                <span class="p">},</span>
+            <span class="p">},</span>
+            <span class="s2">"required"</span><span class="p">:</span> <span class="p">[</span>
+                <span class="s2">"overall_assessment"</span><span class="p">,</span>
+                <span class="s2">"data_quality_score"</span><span class="p">,</span>
+                <span class="s2">"findings"</span><span class="p">,</span>
+                <span class="s2">"anomalies"</span><span class="p">,</span>
+                <span class="s2">"recommended_next_steps"</span><span class="p">,</span>
+            <span class="p">],</span>
+        <span class="p">}</span></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, Mazen Soliman.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -1,0 +1,272 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>squirrel.services.storage.database.IDatabaseService &mdash; squirrel  documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../../../../_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" type="text/css" href="../../../../../_static/css/custom.css?v=adc7883a" />
+
+  
+    <link rel="shortcut icon" href="../../../../../_static/sqrl.png"/>
+      <script src="../../../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../../../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../../../../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script src="../../../../../_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="../../../../../_static/copybutton.js?v=a46eff05"></script>
+    <script src="../../../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../../../index.html" class="icon icon-home">
+            squirrel
+              <img src="../../../../../_static/sqrl.png" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Python API Reference:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../api.html">Python API Reference</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../../index.html">squirrel</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">squirrel.services.storage.database.IDatabaseService</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for squirrel.services.storage.database.IDatabaseService</h1><div class="highlight"><pre>
+<span></span><span class="sd">"""</span>
+<span class="sd">Abstract base class defining the database service interface.</span>
+<span class="sd">"""</span>
+<span class="c1"># ——————————————————————————————————————————————————————————————</span>
+<span class="c1"># Imports</span>
+
+<span class="c1"># Standard Libraries</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">ABC</span><span class="p">,</span> <span class="n">abstractmethod</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Optional</span>
+
+<span class="c1"># ——————————————————————————————————————————————————————————————</span>
+<span class="c1"># Database Service Interface</span>
+<div class="viewcode-block" id="IDatabaseService">
+<a class="viewcode-back" href="../../../../../generated/squirrel_services_storage_database_IDatabaseService.html#squirrel.services.storage.database.IDatabaseService.IDatabaseService">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">IDatabaseService</span><span class="p">(</span><span class="n">ABC</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Abstract base class for database service implementations.</span>
+
+<span class="sd">    Subclasses must implement all abstract methods for their specific database</span>
+<span class="sd">    backend. Optional lifecycle methods (``connect`` / ``disconnect``) have</span>
+<span class="sd">    no-op defaults so lightweight implementations can skip them.</span>
+
+<span class="sd">    The class also supports the context-manager protocol so callers can write::</span>
+
+<span class="sd">        with MyDatabaseService() as db:</span>
+<span class="sd">            db.query("SELECT 1")</span>
+<span class="sd">    """</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">pass</span>
+
+    <span class="c1"># ------------------------------------------------------------------</span>
+    <span class="c1"># Lifecycle</span>
+
+<div class="viewcode-block" id="IDatabaseService.connect">
+<a class="viewcode-back" href="../../../../../generated/squirrel_services_storage_database_IDatabaseService.html#squirrel.services.storage.database.IDatabaseService.IDatabaseService.connect">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">connect</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Establish a connection to the database.</span>
+
+<span class="sd">        Subclasses should override this to open a real connection.</span>
+
+<span class="sd">        :return: Connection object, or ``None`` for no-op defaults.</span>
+<span class="sd">        :rtype: Any</span>
+<span class="sd">        """</span>
+        <span class="k">pass</span></div>
+
+
+<div class="viewcode-block" id="IDatabaseService.disconnect">
+<a class="viewcode-back" href="../../../../../generated/squirrel_services_storage_database_IDatabaseService.html#squirrel.services.storage.database.IDatabaseService.IDatabaseService.disconnect">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">disconnect</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Close the database connection.</span>
+
+<span class="sd">        Subclasses should override this to cleanly release resources.</span>
+
+<span class="sd">        :return: None</span>
+<span class="sd">        :rtype: None</span>
+<span class="sd">        """</span>
+        <span class="k">pass</span></div>
+
+
+    <span class="c1"># ------------------------------------------------------------------</span>
+    <span class="c1"># Context-manager support</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__enter__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"IDatabaseService"</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">connect</span><span class="p">()</span>
+        <span class="k">return</span> <span class="bp">self</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__exit__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">exc_type</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="n">exc_val</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="n">exc_tb</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">disconnect</span><span class="p">()</span>
+
+    <span class="c1"># ------------------------------------------------------------------</span>
+    <span class="c1"># Core CRUD</span>
+
+<div class="viewcode-block" id="IDatabaseService.query">
+<a class="viewcode-back" href="../../../../../generated/squirrel_services_storage_database_IDatabaseService.html#squirrel.services.storage.database.IDatabaseService.IDatabaseService.query">[docs]</a>
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">query</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">query</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">dict</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">"""Execute a read query and return all matching rows.</span>
+
+<span class="sd">        :param query: Raw SQL string to execute.</span>
+<span class="sd">        :type query: str</span>
+<span class="sd">        :return: Mapping like ``{"success": True, "rows": [...], "columns": [...], "rowcount": N}`` on success, or ``None`` on failure.</span>
+<span class="sd">        :rtype: Optional[dict]</span>
+<span class="sd">        """</span>
+        <span class="k">pass</span></div>
+
+
+<div class="viewcode-block" id="IDatabaseService.insert">
+<a class="viewcode-back" href="../../../../../generated/squirrel_services_storage_database_IDatabaseService.html#squirrel.services.storage.database.IDatabaseService.IDatabaseService.insert">[docs]</a>
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">insert</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Insert one row into the database.</span>
+
+<span class="sd">        :param data: Either ``{"sql": "&lt;raw SQL&gt;", "params": {...}}`` for a prepared statement, or ``{"table": "&lt;name&gt;", "values": {...}}`` (plus any extra flat key/value pairs) for structured insertion.</span>
+<span class="sd">        :type data: dict</span>
+<span class="sd">        :return: ``True`` on success, ``False`` on failure.</span>
+<span class="sd">        :rtype: bool</span>
+<span class="sd">        """</span>
+        <span class="k">pass</span></div>
+
+
+<div class="viewcode-block" id="IDatabaseService.update">
+<a class="viewcode-back" href="../../../../../generated/squirrel_services_storage_database_IDatabaseService.html#squirrel.services.storage.database.IDatabaseService.IDatabaseService.update">[docs]</a>
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">update</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">query</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Update rows identified by *query* with the values in *data*.</span>
+
+<span class="sd">        :param query: WHERE clause (with or without the ``WHERE`` keyword) used to narrow which rows are updated, or a full SQL string when ``data`` contains ``"sql"``.</span>
+<span class="sd">        :type query: str</span>
+<span class="sd">        :param data: Either ``{"sql": "&lt;raw SQL&gt;", "params": {...}}`` for a prepared statement, or ``{"table": "&lt;name&gt;", "values": {...}, "where": "…"}`` for structured updates.</span>
+<span class="sd">        :type data: dict</span>
+<span class="sd">        :return: ``True`` on success, ``False`` on failure.</span>
+<span class="sd">        :rtype: bool</span>
+<span class="sd">        """</span>
+        <span class="k">pass</span></div>
+
+
+<div class="viewcode-block" id="IDatabaseService.delete">
+<a class="viewcode-back" href="../../../../../generated/squirrel_services_storage_database_IDatabaseService.html#squirrel.services.storage.database.IDatabaseService.IDatabaseService.delete">[docs]</a>
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">delete</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">query</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Delete rows matching *query*.</span>
+
+<span class="sd">        :param query: Full ``DELETE FROM … WHERE …`` SQL statement.</span>
+<span class="sd">        :type query: str</span>
+<span class="sd">        :return: ``True`` on success, ``False`` on failure.</span>
+<span class="sd">        :rtype: bool</span>
+<span class="sd">        """</span>
+        <span class="k">pass</span></div>
+
+
+<div class="viewcode-block" id="IDatabaseService.retrieve">
+<a class="viewcode-back" href="../../../../../generated/squirrel_services_storage_database_IDatabaseService.html#squirrel.services.storage.database.IDatabaseService.IDatabaseService.retrieve">[docs]</a>
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">retrieve</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">table</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">filters</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">dict</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">dict</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">"""Fetch rows from *table*, optionally filtered by *filters*.</span>
+
+<span class="sd">        :param table: Name of the table to query.</span>
+<span class="sd">        :type table: str</span>
+<span class="sd">        :param filters: Column/value pairs applied as ``col = value`` AND conditions. Pass ``None`` or ``{}`` to return all rows.</span>
+<span class="sd">        :type filters: Optional[dict]</span>
+<span class="sd">        :return: Same shape as :meth:`query` on success, or ``None`` on failure.</span>
+<span class="sd">        :rtype: Optional[dict]</span>
+<span class="sd">        """</span>
+        <span class="k">pass</span></div>
+
+
+<div class="viewcode-block" id="IDatabaseService.execute_many">
+<a class="viewcode-back" href="../../../../../generated/squirrel_services_storage_database_IDatabaseService.html#squirrel.services.storage.database.IDatabaseService.IDatabaseService.execute_many">[docs]</a>
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">execute_many</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">statement</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">params_seq</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Execute *statement* once for each parameter mapping in *params_seq*.</span>
+
+<span class="sd">        Useful for bulk inserts or batch updates within a single transaction.</span>
+
+<span class="sd">        :param statement: Parameterised SQL string (``%(col)s`` placeholders).</span>
+<span class="sd">        :type statement: str</span>
+<span class="sd">        :param params_seq: List of parameter dictionaries, one per execution.</span>
+<span class="sd">        :type params_seq: list[dict]</span>
+<span class="sd">        :return: ``True`` if all executions succeeded, ``False`` otherwise.</span>
+<span class="sd">        :rtype: bool</span>
+<span class="sd">        """</span>
+        <span class="k">pass</span></div>
+</div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, Mazen Soliman.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

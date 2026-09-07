@@ -1807,20 +1807,15 @@ class WorkspaceService:
 
         Two distinct prediction paths, depending on the resolved model:
 
-        - **Sequential models** (``bilstm``, ``lstm_attention``): these are
-        fit purely on the target column's own historical values (see
-        ``TabularDataModelBuilderAgent._fit_time_series_model``) — the
-        feature matrix is never used. Predicting with them replays that
-        same contract: the target column's raw history is reconstructed
-        from this workspace's original input sources (see
-        :meth:`_load_target_history`) and forecast forward by
-        ``len(new_data)`` steps. *new_data* itself only determines how many
-        steps to forecast — its feature columns are not used.
-        - **Everything else**: replays the saved preprocessing pipeline on
-        *new_data* via ``TabularDataProcessorAgent.apply_fitted_pipeline``
-        (reusing training-time fitted parameters rather than re-fitting
-        from the new rows), then predicts on the transformed result — the
-        original behaviour.
+                - **Sequential models** (``bilstm``, ``lstm_attention``): these are
+                    fit purely on the target column's own historical values (see
+                    ``TabularDataModelBuilderAgent._fit_time_series_model``). The
+                    target history is reconstructed from the workspace's original input
+                    sources and forecast forward by ``len(new_data)`` steps.
+                - **Everything else**: replays the saved preprocessing pipeline on
+                    *new_data* via ``TabularDataProcessorAgent.apply_fitted_pipeline``
+                    using training-time fitted parameters, then predicts on the
+                    transformed result.
 
         :param workspace_id: Workspace to predict against.
         :type workspace_id: str

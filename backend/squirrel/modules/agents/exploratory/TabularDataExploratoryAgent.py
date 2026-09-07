@@ -735,35 +735,20 @@ class TabularDataExploratoryAgent(IAgent):
             ``AVAILABLE COLUMNS`` only ever showed a name, not a type the LLM
             could trust.
 
-        **Behavior (LLM-first):**
+                Behavior (LLM-first):
 
-            - Only considers columns whose *live* Postgres type is
-              ``text``/``character varying`` — already-typed columns
-              (including ones this method fixed on a previous call) are
-              skipped, making repeated calls cheap and idempotent.
-            - Samples up to 200 distinct non-null values per candidate
-              column.
-            - **Primary path:** the sample is handed to
-              :meth:`_infer_column_type_via_llm`, which returns a
-              ``pg_type``/``date_format``/``confidence`` verdict. The column
-              is altered only when the verdict's ``confidence`` is
-              ``"high"``:
-                - ``DATE``/``TIMESTAMP`` → ``ALTER TABLE ... USING
-                  TO_DATE(...)``/``TO_TIMESTAMP(...)`` with the LLM-provided
-                  format string.
-                - ``DOUBLE PRECISION`` → ``ALTER TABLE ... USING col::double
-                  precision``.
-            - **Fallback path:** if the LLM call fails outright, returns
-              malformed JSON, or answers with anything less than
-              ``"high"`` confidence, the original deterministic heuristic
-              (:meth:`_infer_date_format` / :meth:`_is_numeric_column`) is
-              tried instead — so a flaky LLM call never regresses coverage
-              versus the pre-LLM behavior.
-            - Ambiguous or mixed columns (low confidence from the LLM *and*
-              no deterministic match) are left untouched.
-            - Any failure (sampling, LLM call, or the ``ALTER TABLE``
-              itself) is logged and that column is left as-is; a single bad
-              column never takes down the whole reconciliation pass.
+                - Only considers columns whose live Postgres type is
+                    ``text``/``character varying``. Already-typed columns are skipped,
+                    making repeated calls cheap and idempotent.
+                - Samples up to 200 distinct non-null values per candidate column.
+                - The primary path hands the sample to
+                    :meth:`_infer_column_type_via_llm`, which returns a
+                    ``pg_type``/``date_format``/``confidence`` verdict. The column is
+                    altered only when confidence is ``"high"``.
+                - If the LLM call fails, returns malformed JSON, or has lower
+                    confidence, deterministic date and numeric heuristics are used.
+                - Ambiguous or mixed columns are left untouched. Any sampling, LLM,
+                    or ``ALTER TABLE`` failure is logged and isolated to that column.
 
         :param schema_metadata: Reconciled schema dict (same shape as
             :meth:`reconcile_schema_with_database`'s output — this is

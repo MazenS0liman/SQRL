@@ -1,0 +1,229 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>squirrel.core.middleware &mdash; squirrel  documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/custom.css?v=adc7883a" />
+
+  
+    <link rel="shortcut icon" href="../../../_static/sqrl.png"/>
+      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="../../../_static/copybutton.js?v=a46eff05"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            squirrel
+              <img src="../../../_static/sqrl.png" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Python API Reference:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../api.html">Python API Reference</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">squirrel</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">squirrel.core.middleware</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for squirrel.core.middleware</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/python</span>
+<span class="sd">"""</span>
+<span class="sd">Middleware Module</span>
+<span class="sd">=================</span>
+
+<span class="sd">Overview</span>
+<span class="sd">--------</span>
+
+<span class="sd">This module provides FastAPI middleware components for request/response processing,</span>
+<span class="sd">logging, and context management. Middleware components handle cross-cutting concerns</span>
+<span class="sd">like request tracking, logging, and context propagation.</span>
+
+<span class="sd">Middleware Classes</span>
+<span class="sd">------------------</span>
+
+<span class="sd">:py:class:`RequestLoggingMiddleware`</span>
+<span class="sd">    Middleware for request ID generation, request/response logging, and processing time tracking.</span>
+
+<span class="sd">"""</span>
+<span class="c1"># ——————————————————————————————————————————————————————————————</span>
+<span class="c1"># Imports</span>
+
+<span class="c1"># Standard Libraries</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">time</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">uuid</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fastapi</span><span class="w"> </span><span class="kn">import</span> <span class="n">Request</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">starlette.middleware.base</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseHTTPMiddleware</span>
+
+<span class="c1"># Logging</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">loguru</span><span class="w"> </span><span class="kn">import</span> <span class="n">logger</span>
+
+<span class="c1"># Request Context</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">squirrel.core.request_context</span><span class="w"> </span><span class="kn">import</span> <span class="n">set_request_id</span>
+
+<span class="c1"># Middleware Classes</span>
+<div class="viewcode-block" id="RequestLoggingMiddleware">
+<a class="viewcode-back" href="../../../generated/squirrel_core_middleware.html#squirrel.core.middleware.RequestLoggingMiddleware">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">RequestLoggingMiddleware</span><span class="p">(</span><span class="n">BaseHTTPMiddleware</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Middleware for request ID generation and request/response logging.</span>
+
+<span class="sd">    Functionality:</span>
+<span class="sd">    ==============</span>
+<span class="sd">    - Generates unique request IDs for tracking requests through the system</span>
+<span class="sd">    - Logs incoming requests with method, path, and client information</span>
+<span class="sd">    - Tracks request processing time and logs responses with status codes</span>
+<span class="sd">    - Stores request ID in request state and context variables for access in handlers</span>
+<span class="sd">    - Adds request ID to response headers (X-Request-ID) for client correlation</span>
+<span class="sd">    - Logs errors with timing and exception information if request processing fails</span>
+<span class="sd">    """</span>
+
+<div class="viewcode-block" id="RequestLoggingMiddleware.dispatch">
+<a class="viewcode-back" href="../../../generated/squirrel_core_middleware.html#squirrel.core.middleware.RequestLoggingMiddleware.dispatch">[docs]</a>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">dispatch</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">:</span> <span class="n">Request</span><span class="p">,</span> <span class="n">call_next</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Process an incoming request and generate logging output.</span>
+
+<span class="sd">        Processing Pipeline:</span>
+<span class="sd">        ====================</span>
+
+<span class="sd">        1. **Generate Request ID** - Create unique UUID for request tracking</span>
+<span class="sd">        2. **Store in Request State** - Make ID accessible in request context</span>
+<span class="sd">        3. **Set in Context Variable** - Store for cross-context access</span>
+<span class="sd">        4. **Log Incoming Request** - Record request method, path, and client</span>
+<span class="sd">        5. **Process Request** - Call next middleware/handler</span>
+<span class="sd">        6. **Calculate Processing Time** - Measure request duration</span>
+<span class="sd">        7. **Log Response** - Record status code and timing (success path)</span>
+<span class="sd">        8. **Add Response Header** - Include X-Request-ID in response headers</span>
+<span class="sd">        9. **Handle Errors** - Log exceptions and re-raise (error path)</span>
+
+<span class="sd">        :param request: The incoming HTTP request</span>
+<span class="sd">        :type request: Request</span>
+<span class="sd">        </span>
+<span class="sd">        :param call_next: Callable to process the request through next middleware</span>
+<span class="sd">        :type call_next: Callable</span>
+<span class="sd">        </span>
+<span class="sd">        :returns: Response object with X-Request-ID header</span>
+<span class="sd">        :rtype: Response</span>
+<span class="sd">        </span>
+<span class="sd">        :raises Exception: Re-raises any exceptions from request processing</span>
+<span class="sd">        """</span>
+        <span class="c1"># Generate unique request ID</span>
+        <span class="n">request_id</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">uuid</span><span class="o">.</span><span class="n">uuid4</span><span class="p">())</span>
+
+        <span class="c1"># Store request ID in request state for access in other parts of the app</span>
+        <span class="n">request</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">request_id</span> <span class="o">=</span> <span class="n">request_id</span>
+
+        <span class="c1"># Also set in context variable for easier access</span>
+        <span class="n">set_request_id</span><span class="p">(</span><span class="n">request_id</span><span class="p">)</span>
+
+        <span class="n">start_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+
+        <span class="c1"># Log the incoming request (basic info only)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">"🔵 REQUEST [</span><span class="si">{</span><span class="n">request_id</span><span class="si">}</span><span class="s2">] </span><span class="si">{</span><span class="n">request</span><span class="o">.</span><span class="n">method</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">request</span><span class="o">.</span><span class="n">url</span><span class="o">.</span><span class="n">path</span><span class="si">}</span><span class="s2"> from </span><span class="si">{</span><span class="n">request</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">host</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="n">request</span><span class="o">.</span><span class="n">client</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="s1">'unknown'</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="c1"># Process the request</span>
+            <span class="n">response</span> <span class="o">=</span> <span class="k">await</span> <span class="n">call_next</span><span class="p">(</span><span class="n">request</span><span class="p">)</span>
+
+            <span class="c1"># Calculate processing time</span>
+            <span class="n">process_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">start_time</span>
+
+            <span class="c1"># Log successful response (basic info only)</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">"🟢 RESPONSE [</span><span class="si">{</span><span class="n">request_id</span><span class="si">}</span><span class="s2">] - </span><span class="si">{</span><span class="n">response</span><span class="o">.</span><span class="n">status_code</span><span class="si">}</span><span class="s2"> (</span><span class="si">{</span><span class="n">process_time</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">s)"</span><span class="p">)</span>
+
+            <span class="c1"># Add request ID to response headers</span>
+            <span class="n">response</span><span class="o">.</span><span class="n">headers</span><span class="p">[</span><span class="s2">"X-Request-ID"</span><span class="p">]</span> <span class="o">=</span> <span class="n">request_id</span>
+
+            <span class="k">return</span> <span class="n">response</span>
+
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="c1"># Calculate processing time for error case</span>
+            <span class="n">process_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">start_time</span>
+
+            <span class="c1"># Log the error</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">"🔴 ERROR [</span><span class="si">{</span><span class="n">request_id</span><span class="si">}</span><span class="s2">] - </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="si">}</span><span class="s2"> (</span><span class="si">{</span><span class="n">process_time</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">s)"</span><span class="p">)</span>
+
+            <span class="c1"># Re-raise the exception to let the exception handlers deal with it</span>
+            <span class="k">raise</span></div>
+</div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, Mazen Soliman.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -722,12 +722,14 @@ class CorrelationInspectionStrategy(DataInspectStrategy):
 
         :param data: DataFrame containing the tabular data to inspect.
         :type data: pd.DataFrame
-        :param kwargs: Keyword arguments:
-            - ``column_1`` (str): first column name.
-            - ``column_2`` (str): second column name.
-            - ``threshold`` (float, optional): strength cutoff, default ``0.3``.
-            - ``ordinal_columns`` (list[str], optional): columns to treat as ordinal
-              (triggers Spearman instead of Pearson for numeric-looking columns).
+                :param kwargs: Keyword arguments:
+
+                        - ``column_1`` (str): first column name.
+                        - ``column_2`` (str): second column name.
+                        - ``threshold`` (float, optional): strength cutoff, default ``0.3``.
+                        - ``ordinal_columns`` (list[str], optional): columns to treat as
+                            ordinal (triggers Spearman instead of Pearson for numeric-looking
+                            columns).
         :return: Structured association result for agent consumption.
         :rtype: dict
         """
@@ -1065,11 +1067,12 @@ class MissingValuesInspectionStrategy(DataInspectStrategy):
 
         :param data: DataFrame containing the data to inspect.
         :type data: pd.DataFrame
-        :param kwargs: Keyword arguments:
-            - ``column_1`` / ``column`` / ``target_column`` (str): target column name.
-            - ``column_2`` / ``related_column`` / ``comparison_column`` (str, optional):
-              column to test for missingness dependence.
-            - ``threshold`` (float, optional): dependence sensitivity, default ``0.1``.
+                :param kwargs: Keyword arguments:
+
+                        - ``column_1`` / ``column`` / ``target_column`` (str): target column name.
+                        - ``column_2`` / ``related_column`` / ``comparison_column`` (str, optional):
+                            column to test for missingness dependence.
+                        - ``threshold`` (float, optional): dependence sensitivity, default ``0.1``.
         :return: Summary dict with missing stats and, when a related column is
             supplied, a ``dependency`` and ``missingness_type`` classification.
         :rtype: dict

@@ -1,0 +1,641 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>squirrel.modules.prompts.preprocess.PreprocessPromptGenerator &mdash; squirrel  documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../../../../_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" type="text/css" href="../../../../../_static/css/custom.css?v=adc7883a" />
+
+  
+    <link rel="shortcut icon" href="../../../../../_static/sqrl.png"/>
+      <script src="../../../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../../../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../../../../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script src="../../../../../_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="../../../../../_static/copybutton.js?v=a46eff05"></script>
+    <script src="../../../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../../../index.html" class="icon icon-home">
+            squirrel
+              <img src="../../../../../_static/sqrl.png" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Python API Reference:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../api.html">Python API Reference</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../../index.html">squirrel</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">squirrel.modules.prompts.preprocess.PreprocessPromptGenerator</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for squirrel.modules.prompts.preprocess.PreprocessPromptGenerator</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/python</span>
+<span class="sd">"""</span>
+<span class="sd">Explore Prompt Generator Module</span>
+<span class="sd">================================</span>
+
+<span class="sd">Generates prompts for the TabularDataProcessorAgent across two stages:</span>
+
+<span class="sd">    1. GENERATE_PLAN  — ask the LLM to choose and order cleaning/transformation</span>
+<span class="sd">                        strategies tailored to a given dataset and objective.</span>
+<span class="sd">    2. GENERATE_STEP  — ask the LLM to regenerate a single invalid or failed</span>
+<span class="sd">                        plan step, fixing argument errors or unknown strategy names.</span>
+
+<span class="sd">The module intentionally mirrors the architecture of InspectPromptGenerator so</span>
+<span class="sd">that both generators share the same caller contract:</span>
+<span class="sd">    ``generate_system_prompt(prompt_type)``  →  stage-scoped role + rules</span>
+<span class="sd">    ``generate_user_prompt(prompt_type, **kwargs)``  →  context-injected task</span>
+
+<span class="sd">"""</span>
+
+<span class="c1"># ——————————————————————————————————————————————————————————————</span>
+<span class="c1"># Imports</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">textwrap</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">enum</span><span class="w"> </span><span class="kn">import</span> <span class="n">Enum</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing_extensions</span><span class="w"> </span><span class="kn">import</span> <span class="n">override</span>
+
+<span class="c1"># Abstract Class</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">squirrel.modules.prompts.abstract</span><span class="w"> </span><span class="kn">import</span> <span class="n">IPromptGenerator</span>
+
+
+<span class="c1"># —— Prompt type discriminator ——————————————————————————————————————————</span>
+
+<div class="viewcode-block" id="PreprocessPromptType">
+<a class="viewcode-back" href="../../../../../generated/squirrel_modules_prompts_preprocess_PreprocessPromptGenerator.html#squirrel.modules.prompts.preprocess.PreprocessPromptGenerator.PreprocessPromptType">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">PreprocessPromptType</span><span class="p">(</span><span class="n">Enum</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Discriminator for the two prompt stages in the preprocessing pipeline.</span>
+
+<span class="sd">    - ``GENERATE_PLAN``: Given a dataset profile, an EDA summary, and the full</span>
+<span class="sd">      cleaning + transformation catalogs, produce an ordered preprocessing plan.</span>
+<span class="sd">    - ``GENERATE_STEP``: Given a single invalid step and the relevant strategy</span>
+<span class="sd">      spec, regenerate that step with corrected arguments or strategy name.</span>
+<span class="sd">    """</span>
+    <span class="n">GENERATE_PLAN</span> <span class="o">=</span> <span class="s2">"generate_plan"</span>
+    <span class="n">GENERATE_STEP</span> <span class="o">=</span> <span class="s2">"generate_step"</span></div>
+
+
+
+<span class="c1"># —— Prompt generator implementation —————————————————————————————————————————</span>
+
+<div class="viewcode-block" id="PreprocessPromptGenerator">
+<a class="viewcode-back" href="../../../../../generated/squirrel_modules_prompts_preprocess_PreprocessPromptGenerator.html#squirrel.modules.prompts.preprocess.PreprocessPromptGenerator.PreprocessPromptGenerator">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">PreprocessPromptGenerator</span><span class="p">(</span><span class="n">IPromptGenerator</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Prompt generator for the tabular data preprocessing (clean + transform) agent.</span>
+
+<span class="sd">    Description:</span>
+
+<span class="sd">    Each prompt type has a dedicated system prompt (role + constraints) and a</span>
+<span class="sd">    dedicated user prompt (task-specific context injection). The two halves are</span>
+<span class="sd">    kept separate so callers can pass the system prompt to the provider once at</span>
+<span class="sd">    session start and regenerate only the user prompt per call.</span>
+
+<span class="sd">    The ``generate_system_prompt`` and ``generate_user_prompt`` methods provide</span>
+<span class="sd">    the stage-specific rules and context-injected task respectively.</span>
+<span class="sd">    """</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+
+    <span class="c1"># ── System prompts ────────────────────────────────────────────────────────</span>
+
+<div class="viewcode-block" id="PreprocessPromptGenerator.generate_system_prompt">
+<a class="viewcode-back" href="../../../../../generated/squirrel_modules_prompts_preprocess_PreprocessPromptGenerator.html#squirrel.modules.prompts.preprocess.PreprocessPromptGenerator.PreprocessPromptGenerator.generate_system_prompt">[docs]</a>
+    <span class="nd">@override</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">generate_system_prompt</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">prompt_type</span><span class="p">:</span> <span class="n">PreprocessPromptType</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Generate stage-specific system-level instructions.</span>
+
+<span class="sd">        :param prompt_type: Which pipeline stage to generate instructions for.</span>
+<span class="sd">        :type prompt_type: ExplorePromptType</span>
+
+<span class="sd">        :return: System prompt string.</span>
+<span class="sd">        :rtype: str</span>
+
+<span class="sd">        :raises ValueError: If ``prompt_type`` is not a recognised ExplorePromptType.</span>
+<span class="sd">        """</span>
+        <span class="n">dispatch</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="n">PreprocessPromptType</span><span class="o">.</span><span class="n">GENERATE_PLAN</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_system_plan</span><span class="p">,</span>
+            <span class="n">PreprocessPromptType</span><span class="o">.</span><span class="n">GENERATE_STEP</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_system_step</span><span class="p">,</span>
+        <span class="p">}</span>
+
+        <span class="k">if</span> <span class="n">prompt_type</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">prompt_type</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">dispatch</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"Unsupported prompt type: </span><span class="si">{</span><span class="n">prompt_type</span><span class="si">!r}</span><span class="s2">. "</span>
+                <span class="sa">f</span><span class="s2">"Expected one of: </span><span class="si">{</span><span class="p">[</span><span class="n">t</span><span class="o">.</span><span class="n">value</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">t</span><span class="w"> </span><span class="ow">in</span><span class="w"> </span><span class="n">PreprocessPromptType</span><span class="p">]</span><span class="si">}</span><span class="s2">"</span>
+            <span class="p">)</span>
+
+        <span class="n">handler</span> <span class="o">=</span> <span class="n">dispatch</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">prompt_type</span><span class="p">,</span> <span class="k">lambda</span><span class="p">:</span> <span class="s2">"You are a helpful assistant."</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">handler</span><span class="p">()</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_system_plan</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">textwrap</span><span class="o">.</span><span class="n">dedent</span><span class="p">(</span><span class="s2">"""</span>
+<span class="s2">            # Role:</span>
+<span class="s2">            You are a senior data engineer designing a preprocessing pipeline.</span>
+<span class="s2">            Your role in this stage is PLANNING ONLY — you must not read,</span>
+<span class="s2">            compute, or invent any statistics about the data.</span>
+
+<span class="s2">            # Rules:</span>
+<span class="s2">            - Output valid JSON only. No markdown, no code fences, no prose.</span>
+<span class="s2">            - Choose strategies exclusively from the provided cleaning and</span>
+<span class="s2">              transformation catalogs. Never invent strategy names.</span>
+<span class="s2">            - Order steps logically:</span>
+<span class="s2">                1. Structural fixes first  (drop columns, rename, cast dtypes).</span>
+<span class="s2">                2. Data quality next       (drop duplicates, impute missing, clip outliers).</span>
+<span class="s2">                3. Feature engineering     (bin, datetime parts, interactions, polynomial).</span>
+<span class="s2">                4. Encoding last           (one-hot, ordinal, target, frequency, binary).</span>
+<span class="s2">                5. Normalisation last      (scale, log-transform, power-transform).</span>
+<span class="s2">            - Include an ``arguments`` object for every strategy; populate ALL</span>
+<span class="s2">              required fields and any optional fields that add value for this</span>
+<span class="s2">              dataset.  Use ``</span><span class="si">{}</span><span class="s2">`` only for strategies that accept no arguments.</span>
+<span class="s2">            - Use only column names that exist in the dataset profile.</span>
+<span class="s2">            - Skip strategies that are irrelevant (e.g. do not encode columns</span>
+<span class="s2">              that will be dropped; do not normalise columns that are already</span>
+<span class="s2">              on a bounded scale).</span>
+<span class="s2">            - Each step must have a single, clearly stated objective.</span>
+<span class="s2">            - Prefer conservative defaults unless the EDA summary indicates a</span>
+<span class="s2">              specific issue (e.g. use robust scaling only when outliers are</span>
+<span class="s2">              flagged as high-severity).</span>
+<span class="s2">        """</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_system_step</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">textwrap</span><span class="o">.</span><span class="n">dedent</span><span class="p">(</span><span class="s2">"""</span>
+<span class="s2">            # Role:</span>
+<span class="s2">            You are a senior data engineer regenerating a single preprocessing step.</span>
+<span class="s2">            Your role is REGENERATION ONLY — fix the specified issue while</span>
+<span class="s2">            adhering to the same planning rules.</span>
+
+<span class="s2">            # Rules:</span>
+<span class="s2">            - Output valid JSON only. No markdown, no code fences, no prose.</span>
+<span class="s2">            - Regenerate only the single step specified in the prompt.</span>
+<span class="s2">            - The ``strategy`` field must exactly match one of the available</span>
+<span class="s2">              strategy names listed in the catalog (case-sensitive).</span>
+<span class="s2">            - Populate all required arguments and any optional arguments that</span>
+<span class="s2">              are relevant for this dataset.</span>
+<span class="s2">            - Use only column names that appear in the dataset profile.</span>
+<span class="s2">            - Do not invent column names, categories, or statistics.</span>
+<span class="s2">            - If the original step used the wrong strategy for the operation,</span>
+<span class="s2">              pick the closest correct one from the catalog.</span>
+<span class="s2">        """</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+
+    <span class="c1"># ── User prompts ──────────────────────────────────────────────────────────</span>
+
+<div class="viewcode-block" id="PreprocessPromptGenerator.generate_user_prompt">
+<a class="viewcode-back" href="../../../../../generated/squirrel_modules_prompts_preprocess_PreprocessPromptGenerator.html#squirrel.modules.prompts.preprocess.PreprocessPromptGenerator.PreprocessPromptGenerator.generate_user_prompt">[docs]</a>
+    <span class="nd">@override</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">generate_user_prompt</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">prompt_type</span><span class="p">:</span> <span class="n">PreprocessPromptType</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Dispatch to the correct user prompt builder based on ``prompt_type``.</span>
+
+<span class="sd">        :param prompt_type: Which pipeline stage to build a user prompt for.</span>
+<span class="sd">        :type prompt_type: ExplorePromptType</span>
+
+<span class="sd">        :param kwargs: Stage-dependent context — see each builder's docstring.</span>
+
+<span class="sd">        :return: User prompt string ready to send to the LLM.</span>
+<span class="sd">        :rtype: str</span>
+
+<span class="sd">        :raises ValueError: If ``prompt_type`` is missing or unrecognised.</span>
+<span class="sd">        """</span>
+        <span class="n">dispatch</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="n">PreprocessPromptType</span><span class="o">.</span><span class="n">GENERATE_PLAN</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_user_plan</span><span class="p">,</span>
+            <span class="n">PreprocessPromptType</span><span class="o">.</span><span class="n">GENERATE_STEP</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_user_step</span><span class="p">,</span>
+        <span class="p">}</span>
+
+        <span class="n">handler</span> <span class="o">=</span> <span class="n">dispatch</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">prompt_type</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">handler</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"Unsupported prompt type: </span><span class="si">{</span><span class="n">prompt_type</span><span class="si">!r}</span><span class="s2">. "</span>
+                <span class="sa">f</span><span class="s2">"Expected one of: </span><span class="si">{</span><span class="p">[</span><span class="n">t</span><span class="o">.</span><span class="n">value</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">t</span><span class="w"> </span><span class="ow">in</span><span class="w"> </span><span class="n">PreprocessPromptType</span><span class="p">]</span><span class="si">}</span><span class="s2">"</span>
+            <span class="p">)</span>
+        <span class="k">return</span> <span class="n">handler</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_user_plan</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Prompt for the GENERATE_PLAN stage.</span>
+
+<span class="sd">        Expected kwargs:</span>
+<span class="sd">            - ``dataset_profile``  (dict): shape, column names, dtypes, missing counts.</span>
+<span class="sd">            - ``eda_summary``       (dict, optional): structured EDA findings from the</span>
+<span class="sd">            inspector agent (findings, anomalies, recommended_next_steps).</span>
+<span class="sd">            - ``objective``         (str, optional): caller-supplied preprocessing goal.</span>
+<span class="sd">            - ``cleaning_catalog``  (list[dict]): entries from DataCleanStrategy subclasses.</span>
+<span class="sd">            - ``transform_catalog`` (list[dict]): entries from DataTransformStrategy subclasses.</span>
+<span class="sd">            - ``target_column``     (str, optional): the column the downstream model</span>
+<span class="sd">            will predict. When given, the plan must not drop, encode away, or</span>
+<span class="sd">            otherwise destroy it.</span>
+<span class="sd">        """</span>
+        <span class="n">profile</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"dataset_profile"</span><span class="p">,</span> <span class="p">{})</span>
+        <span class="n">eda_summary</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"eda_summary"</span><span class="p">,</span> <span class="p">{})</span>
+        <span class="n">objective</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+            <span class="s2">"objective"</span><span class="p">,</span>
+            <span class="s2">"Prepare the dataset for downstream modelling by cleaning and transforming all relevant columns."</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">cleaning_catalog</span><span class="p">:</span> <span class="nb">list</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"cleaning_catalog"</span><span class="p">,</span> <span class="p">[])</span>
+        <span class="n">transform_catalog</span><span class="p">:</span> <span class="nb">list</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"transform_catalog"</span><span class="p">,</span> <span class="p">[])</span>
+        <span class="n">target_column</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"target_column"</span><span class="p">)</span>
+
+        <span class="n">eda_block</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_render_eda_summary</span><span class="p">(</span><span class="n">eda_summary</span><span class="p">)</span>
+        <span class="n">cleaning_block</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_render_catalog</span><span class="p">(</span><span class="n">cleaning_catalog</span><span class="p">,</span> <span class="n">kind</span><span class="o">=</span><span class="s2">"cleaning"</span><span class="p">,</span> <span class="n">slim</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">transform_block</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_render_catalog</span><span class="p">(</span><span class="n">transform_catalog</span><span class="p">,</span> <span class="n">kind</span><span class="o">=</span><span class="s2">"transform"</span><span class="p">,</span> <span class="n">slim</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+        <span class="n">target_block</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="sa">f</span><span class="s2">"## Prediction target</span><span class="se">\n</span><span class="s2">"</span>
+            <span class="sa">f</span><span class="s2">"Column '</span><span class="si">{</span><span class="n">target_column</span><span class="si">}</span><span class="s2">' is the label the downstream model will predict. "</span>
+            <span class="sa">f</span><span class="s2">"Do NOT drop it, rename it away, bin/encode/scale it, or otherwise remove "</span>
+            <span class="sa">f</span><span class="s2">"or transform it out of the frame — even if it looks redundant or highly "</span>
+            <span class="sa">f</span><span class="s2">"correlated with another feature. If a feature is highly correlated with "</span>
+            <span class="sa">f</span><span class="s2">"'</span><span class="si">{</span><span class="n">target_column</span><span class="si">}</span><span class="s2">', drop the OTHER feature, not the target.</span><span class="se">\n</span><span class="s2">"</span>
+            <span class="k">if</span> <span class="n">target_column</span> <span class="k">else</span>
+            <span class="s2">"## Prediction target</span><span class="se">\n</span><span class="s2">(not specified — no column is protected from dropping)</span><span class="se">\n</span><span class="s2">"</span>
+        <span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">textwrap</span><span class="o">.</span><span class="n">dedent</span><span class="p">(</span><span class="sa">f</span><span class="s2">"""</span>
+<span class="s2">            ## Preprocessing objective</span>
+<span class="s2">            </span><span class="si">{</span><span class="n">objective</span><span class="si">}</span>
+
+<span class="s2">            </span><span class="si">{</span><span class="n">target_block</span><span class="si">}</span>
+<span class="s2">            ## Dataset shape</span>
+<span class="s2">            - Rows    : </span><span class="si">{</span><span class="n">profile</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">'rows'</span><span class="p">,</span><span class="w"> </span><span class="s1">'unknown'</span><span class="p">)</span><span class="si">}</span>
+<span class="s2">            - Columns : </span><span class="si">{</span><span class="n">profile</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">'columns'</span><span class="p">,</span><span class="w"> </span><span class="s1">'unknown'</span><span class="p">)</span><span class="si">}</span>
+
+<span class="s2">            ## Column names</span>
+<span class="s2">            </span><span class="si">{</span><span class="s1">', '</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">profile</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">'column_names'</span><span class="p">,</span><span class="w"> </span><span class="p">[]))</span><span class="si">}</span>
+
+<span class="s2">            ## Column types</span>
+<span class="s2">            </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_column_type_hints</span><span class="p">(</span><span class="n">profile</span><span class="p">)</span><span class="si">}</span>
+
+<span class="s2">            ## Missing value counts</span>
+<span class="s2">            </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_missing_hint</span><span class="p">(</span><span class="n">profile</span><span class="p">)</span><span class="si">}</span>
+
+<span class="s2">            ## EDA findings (from inspector agent)</span>
+<span class="s2">            </span><span class="si">{</span><span class="n">eda_block</span><span class="si">}</span>
+
+<span class="s2">            ## Available CLEANING strategies</span>
+<span class="s2">            Study each strategy carefully before planning. Each entry shows what</span>
+<span class="s2">            the strategy does, which arguments it accepts, and a complete example</span>
+<span class="s2">            step you can adapt.</span>
+
+<span class="s2">            </span><span class="si">{</span><span class="n">cleaning_block</span><span class="si">}</span>
+
+<span class="s2">            ## Available TRANSFORMATION strategies</span>
+<span class="s2">            </span><span class="si">{</span><span class="n">transform_block</span><span class="si">}</span>
+
+<span class="s2">            ## Task</span>
+<span class="s2">            Produce an ordered preprocessing plan. Each step must include:</span>
+<span class="s2">            - step            (integer, 1-based)</span>
+<span class="s2">            - name            (short title, ≤ 6 words)</span>
+<span class="s2">            - strategy_type   ("cleaning" or "transform")</span>
+<span class="s2">            - strategy        (exact name from the relevant catalog above)</span>
+<span class="s2">            - objective       (one sentence: why this step is needed for THIS dataset)</span>
+<span class="s2">            - actions         (list of concrete sub-tasks the strategy will perform)</span>
+<span class="s2">            - arguments       (dict — copy the argument structure from the example and</span>
+<span class="s2">                            substitute real column names; use </span><span class="se">{{}}</span><span class="s2"> only for strategies</span>
+<span class="s2">                            that genuinely accept no arguments)</span>
+<span class="s2">            - expected_output (list of artifact or quality types this step produces)</span>
+
+<span class="s2">            Rules:</span>
+<span class="s2">            - Use only column names that appear in the dataset above.</span>
+<span class="s2">            - Do not invent column names, dtypes, or statistics.</span>
+<span class="s2">            - Populate ALL required arguments and relevant optional arguments.</span>
+<span class="s2">            - Skip strategies that are not applicable to this dataset.</span>
+<span class="s2">            - Ground every decision in the EDA findings where possible.</span>
+<span class="s2">            - Never drop, rename away, or transform the prediction target column</span>
+<span class="s2">            named above, if one is specified.</span>
+<span class="s2">        """</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_user_step</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Prompt for the GENERATE_STEP stage.</span>
+
+<span class="sd">        Expected kwargs:</span>
+<span class="sd">            - ``dataset_profile``   (dict): shape, dtypes, missing counts.</span>
+<span class="sd">            - ``objective``          (str): reason for regeneration + fix required.</span>
+<span class="sd">            - ``step``               (dict): the original invalid step dict.</span>
+<span class="sd">            - ``cleaning_catalog``   (list[dict]): full cleaning catalog.</span>
+<span class="sd">            - ``transform_catalog``  (list[dict]): full transform catalog.</span>
+<span class="sd">        """</span>
+        <span class="n">profile</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"dataset_profile"</span><span class="p">,</span> <span class="p">{})</span>
+        <span class="n">objective</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+            <span class="s2">"objective"</span><span class="p">,</span>
+            <span class="s2">"Regenerate the step with correct arguments based on the dataset profile and strategy requirements."</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">step</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"step"</span><span class="p">,</span> <span class="p">{})</span>
+        <span class="n">cleaning_catalog</span><span class="p">:</span> <span class="nb">list</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"cleaning_catalog"</span><span class="p">,</span> <span class="p">[])</span>
+        <span class="n">transform_catalog</span><span class="p">:</span> <span class="nb">list</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"transform_catalog"</span><span class="p">,</span> <span class="p">[])</span>
+
+        <span class="c1"># Only render the catalog half relevant to this step's type. A</span>
+        <span class="c1"># regeneration call is fixing exactly one step, so it never needs both</span>
+        <span class="c1"># the full cleaning AND full transform catalogs (~24 strategies with</span>
+        <span class="c1"># complete examples) — that was the main driver of oversized regen</span>
+        <span class="c1"># prompts on datasets with several invalid steps. Fall back to slim</span>
+        <span class="c1"># renderings of both halves only if the type is missing/unrecognised.</span>
+        <span class="n">strategy_type</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">step</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"strategy_type"</span><span class="p">,</span> <span class="s2">""</span><span class="p">))</span>
+        <span class="k">if</span> <span class="n">strategy_type</span> <span class="o">==</span> <span class="s2">"cleaning"</span><span class="p">:</span>
+            <span class="n">catalog_block</span> <span class="o">=</span> <span class="s2">"## Available CLEANING strategies</span><span class="se">\n</span><span class="s2">"</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">_render_catalog</span><span class="p">(</span><span class="n">cleaning_catalog</span><span class="p">,</span> <span class="n">kind</span><span class="o">=</span><span class="s2">"cleaning"</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">strategy_type</span> <span class="o">==</span> <span class="s2">"transform"</span><span class="p">:</span>
+            <span class="n">catalog_block</span> <span class="o">=</span> <span class="s2">"## Available TRANSFORMATION strategies</span><span class="se">\n</span><span class="s2">"</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">_render_catalog</span><span class="p">(</span><span class="n">transform_catalog</span><span class="p">,</span> <span class="n">kind</span><span class="o">=</span><span class="s2">"transform"</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">catalog_block</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="s2">"## Available CLEANING strategies</span><span class="se">\n</span><span class="s2">"</span>
+                <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">_render_catalog</span><span class="p">(</span><span class="n">cleaning_catalog</span><span class="p">,</span> <span class="n">kind</span><span class="o">=</span><span class="s2">"cleaning"</span><span class="p">,</span> <span class="n">slim</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+                <span class="o">+</span> <span class="s2">"</span><span class="se">\n\n</span><span class="s2">## Available TRANSFORMATION strategies</span><span class="se">\n</span><span class="s2">"</span>
+                <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">_render_catalog</span><span class="p">(</span><span class="n">transform_catalog</span><span class="p">,</span> <span class="n">kind</span><span class="o">=</span><span class="s2">"transform"</span><span class="p">,</span> <span class="n">slim</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+            <span class="p">)</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">step_json</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">step</span><span class="p">,</span> <span class="n">indent</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="nb">str</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+            <span class="n">step_json</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">step</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">textwrap</span><span class="o">.</span><span class="n">dedent</span><span class="p">(</span><span class="sa">f</span><span class="s2">"""</span>
+<span class="s2">            ## Regeneration objective</span>
+<span class="s2">            </span><span class="si">{</span><span class="n">objective</span><span class="si">}</span>
+
+<span class="s2">            ## Dataset shape</span>
+<span class="s2">            - Rows    : </span><span class="si">{</span><span class="n">profile</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">'rows'</span><span class="p">,</span><span class="w"> </span><span class="s1">'unknown'</span><span class="p">)</span><span class="si">}</span>
+<span class="s2">            - Columns : </span><span class="si">{</span><span class="n">profile</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">'columns'</span><span class="p">,</span><span class="w"> </span><span class="s1">'unknown'</span><span class="p">)</span><span class="si">}</span>
+
+<span class="s2">            ## Column names</span>
+<span class="s2">            </span><span class="si">{</span><span class="s1">', '</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">profile</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">'column_names'</span><span class="p">,</span><span class="w"> </span><span class="p">[]))</span><span class="si">}</span>
+
+<span class="s2">            ## Column types</span>
+<span class="s2">            </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_column_type_hints</span><span class="p">(</span><span class="n">profile</span><span class="p">)</span><span class="si">}</span>
+
+<span class="s2">            ## Missing value counts</span>
+<span class="s2">            </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_missing_hint</span><span class="p">(</span><span class="n">profile</span><span class="p">)</span><span class="si">}</span>
+
+<span class="s2">            ## Original (invalid) step</span>
+<span class="s2">            </span><span class="si">{</span><span class="n">step_json</span><span class="si">}</span>
+
+<span class="s2">            </span><span class="si">{</span><span class="n">catalog_block</span><span class="si">}</span>
+
+<span class="s2">            ## Task</span>
+<span class="s2">            Regenerate the step with corrected arguments and/or strategy name.</span>
+<span class="s2">            - Ensure ``strategy`` exactly matches an entry in the relevant catalog.</span>
+<span class="s2">            - Populate all required arguments in the correct format.</span>
+<span class="s2">            - Use only column names from the dataset above.</span>
+<span class="s2">            - Do not invent column names or statistics.</span>
+<span class="s2">            - Return a single step object (not wrapped in a list or plan).</span>
+<span class="s2">        """</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+
+    <span class="c1"># ── Rendering helpers ─────────────────────────────────────────────────────</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_render_catalog</span><span class="p">(</span>
+        <span class="n">catalog</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">],</span> 
+        <span class="n">kind</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"strategy"</span><span class="p">,</span> 
+        <span class="n">slim</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Render a cleaning or transformation catalog as structured text blocks.</span>
+
+<span class="sd">        :param slim: When True (used for GENERATE_PLAN), emit a compact one-line-per-arg</span>
+<span class="sd">                     format plus the example ``arguments`` dict only — no full example step</span>
+<span class="sd">                     JSON.  This keeps the plan prompt well within token limits even when</span>
+<span class="sd">                     24 strategies are listed.  When False (used for GENERATE_STEP), emit</span>
+<span class="sd">                     the full example step so the LLM has maximum detail for repair.</span>
+<span class="sd">        """</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">catalog</span><span class="p">:</span>
+            <span class="k">return</span> <span class="sa">f</span><span class="s2">"  (no </span><span class="si">{</span><span class="n">kind</span><span class="si">}</span><span class="s2"> strategies available)"</span>
+
+        <span class="n">blocks</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">entry</span> <span class="ow">in</span> <span class="n">catalog</span><span class="p">:</span>
+            <span class="n">name</span> <span class="o">=</span> <span class="n">entry</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"name"</span><span class="p">,</span> <span class="s2">"(unnamed)"</span><span class="p">)</span>
+            <span class="n">description</span> <span class="o">=</span> <span class="n">entry</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"description"</span><span class="p">,</span> <span class="s2">"(no description)"</span><span class="p">)</span>
+            <span class="n">schema</span><span class="p">:</span> <span class="nb">list</span> <span class="o">=</span> <span class="n">entry</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"arguments_schema"</span><span class="p">)</span> <span class="ow">or</span> <span class="p">[]</span>
+
+            <span class="c1"># Build compact argument lines: one line per argument, required first.</span>
+            <span class="n">req_parts</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="n">opt_parts</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="n">example_arguments</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="p">{}</span>
+
+            <span class="k">for</span> <span class="n">spec</span> <span class="ow">in</span> <span class="n">schema</span><span class="p">:</span>
+                <span class="n">sname</span>    <span class="o">=</span> <span class="n">spec</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"name"</span><span class="p">,</span> <span class="s2">"?"</span><span class="p">)</span>
+                <span class="n">stype</span>    <span class="o">=</span> <span class="n">spec</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"type"</span><span class="p">,</span> <span class="s2">"?"</span><span class="p">)</span>
+                <span class="n">required</span> <span class="o">=</span> <span class="n">spec</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"required"</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span>
+                <span class="n">default</span>  <span class="o">=</span> <span class="n">spec</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"default"</span><span class="p">)</span>
+                <span class="n">desc</span>     <span class="o">=</span> <span class="n">spec</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"description"</span><span class="p">,</span> <span class="s2">""</span><span class="p">)</span>
+                <span class="n">possible</span> <span class="o">=</span> <span class="n">spec</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"possible_values"</span><span class="p">,</span> <span class="s2">""</span><span class="p">)</span>
+                <span class="c1"># Truncate long possible_values strings to keep lines short</span>
+                <span class="k">if</span> <span class="n">possible</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">possible</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">80</span><span class="p">:</span>
+                    <span class="n">possible</span> <span class="o">=</span> <span class="n">possible</span><span class="p">[:</span><span class="mi">77</span><span class="p">]</span> <span class="o">+</span> <span class="s2">"..."</span>
+                <span class="n">line</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"  </span><span class="si">{</span><span class="n">sname</span><span class="si">}</span><span class="s2"> (</span><span class="si">{</span><span class="n">stype</span><span class="si">}</span><span class="s2">, </span><span class="si">{</span><span class="s1">'required'</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="n">required</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="s1">'optional'</span><span class="si">}</span><span class="s2">)"</span>
+                <span class="k">if</span> <span class="n">desc</span><span class="p">:</span>
+                    <span class="c1"># Keep description to ≤60 chars to avoid line bloat</span>
+                    <span class="n">short_desc</span> <span class="o">=</span> <span class="n">desc</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">desc</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="mi">60</span> <span class="k">else</span> <span class="n">desc</span><span class="p">[:</span><span class="mi">57</span><span class="p">]</span> <span class="o">+</span> <span class="s2">"..."</span>
+                    <span class="n">line</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">": </span><span class="si">{</span><span class="n">short_desc</span><span class="si">}</span><span class="s2">"</span>
+                <span class="k">if</span> <span class="n">possible</span><span class="p">:</span>
+                    <span class="n">line</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">" [</span><span class="si">{</span><span class="n">possible</span><span class="si">}</span><span class="s2">]"</span>
+                <span class="k">if</span> <span class="n">required</span><span class="p">:</span>
+                    <span class="n">req_parts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
+                    <span class="n">example_arguments</span><span class="p">[</span><span class="n">sname</span><span class="p">]</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"&lt;</span><span class="si">{</span><span class="n">stype</span><span class="si">}</span><span class="s2">&gt;"</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">opt_parts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
+
+            <span class="n">args_section</span> <span class="o">=</span> <span class="s2">""</span>
+            <span class="k">if</span> <span class="n">req_parts</span><span class="p">:</span>
+                <span class="n">args_section</span> <span class="o">+=</span> <span class="s2">"  Required:</span><span class="se">\n</span><span class="s2">"</span> <span class="o">+</span> <span class="s2">"</span><span class="se">\n</span><span class="s2">"</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">req_parts</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">opt_parts</span><span class="p">:</span>
+                <span class="n">args_section</span> <span class="o">+=</span> <span class="p">(</span><span class="s2">"</span><span class="se">\n</span><span class="s2">"</span> <span class="k">if</span> <span class="n">args_section</span> <span class="k">else</span> <span class="s2">""</span><span class="p">)</span> <span class="o">+</span> <span class="s2">"  Optional:</span><span class="se">\n</span><span class="s2">"</span> <span class="o">+</span> <span class="s2">"</span><span class="se">\n</span><span class="s2">"</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">opt_parts</span><span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">args_section</span><span class="p">:</span>
+                <span class="n">args_section</span> <span class="o">=</span> <span class="s2">"  (none)"</span>
+
+            <span class="k">if</span> <span class="n">slim</span><span class="p">:</span>
+                <span class="c1"># Compact format: no full example step JSON</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="n">args_json</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">example_arguments</span><span class="p">,</span> <span class="n">indent</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+                <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+                    <span class="n">args_json</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">example_arguments</span><span class="p">)</span>
+                <span class="n">block</span> <span class="o">=</span> <span class="n">textwrap</span><span class="o">.</span><span class="n">dedent</span><span class="p">(</span><span class="sa">f</span><span class="s2">"""</span>
+<span class="s2">                    ### </span><span class="si">{</span><span class="n">name</span><span class="si">}</span>
+<span class="s2">                    </span><span class="si">{</span><span class="n">description</span><span class="si">}</span>
+<span class="s2">                    Arguments:</span>
+<span class="s2">                    </span><span class="si">{</span><span class="n">args_section</span><span class="si">}</span>
+<span class="s2">                    Example arguments: </span><span class="si">{</span><span class="n">args_json</span><span class="si">}</span>
+<span class="s2">                """</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="c1"># Full format: include complete example step for repair prompts</span>
+                <span class="n">example</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="n">entry</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"example"</span><span class="p">)</span> <span class="ow">or</span> <span class="p">{}</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="n">example_json</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">example</span><span class="p">,</span> <span class="n">indent</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="nb">str</span><span class="p">)</span>
+                <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+                    <span class="n">example_json</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">example</span><span class="p">)</span>
+                <span class="n">args_description</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">entry</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"arguments_description"</span><span class="p">,</span> <span class="s2">"No arguments required."</span><span class="p">)</span>
+                <span class="n">block</span> <span class="o">=</span> <span class="n">textwrap</span><span class="o">.</span><span class="n">dedent</span><span class="p">(</span><span class="sa">f</span><span class="s2">"""</span>
+<span class="s2">                    ### </span><span class="si">{</span><span class="n">name</span><span class="si">}</span>
+<span class="s2">                    </span><span class="si">{</span><span class="n">description</span><span class="si">}</span>
+
+<span class="s2">                    Arguments:</span>
+<span class="s2">                    </span><span class="si">{</span><span class="n">args_section</span><span class="si">}</span>
+<span class="s2">                    Note: </span><span class="si">{</span><span class="n">args_description</span><span class="si">}</span>
+
+<span class="s2">                    Example step:</span>
+<span class="s2">                    </span><span class="si">{</span><span class="n">example_json</span><span class="si">}</span>
+<span class="s2">                """</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+
+            <span class="n">blocks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">block</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="s2">"</span><span class="se">\n\n</span><span class="s2">"</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">blocks</span><span class="p">)</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_render_eda_summary</span><span class="p">(</span><span class="n">eda_summary</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Render the EDA summary dict as a concise, LLM-readable block.</span>
+<span class="sd">        Caps findings/anomalies at 10 entries and truncates the overall_assessment</span>
+<span class="sd">        to 300 characters so the block stays well within token budgets.</span>
+<span class="sd">        """</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">eda_summary</span><span class="p">:</span>
+            <span class="k">return</span> <span class="s2">"  (no EDA summary provided — plan conservatively)"</span>
+
+        <span class="n">lines</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="n">overall</span> <span class="o">=</span> <span class="n">eda_summary</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"overall_assessment"</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">""</span>
+        <span class="k">if</span> <span class="n">overall</span><span class="p">:</span>
+            <span class="c1"># Truncate to 300 chars to avoid bloating the prompt</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">overall</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">300</span><span class="p">:</span>
+                <span class="n">overall</span> <span class="o">=</span> <span class="n">overall</span><span class="p">[:</span><span class="mi">297</span><span class="p">]</span> <span class="o">+</span> <span class="s2">"..."</span>
+            <span class="n">lines</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Overall: </span><span class="si">{</span><span class="n">overall</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+
+        <span class="n">score</span> <span class="o">=</span> <span class="n">eda_summary</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"data_quality_score"</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">score</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">lines</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Quality score: </span><span class="si">{</span><span class="n">score</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">/1.0"</span><span class="p">)</span>
+
+        <span class="n">findings</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">]</span> <span class="o">=</span> <span class="n">eda_summary</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"findings"</span><span class="p">)</span> <span class="ow">or</span> <span class="p">[]</span>
+        <span class="k">if</span> <span class="n">findings</span><span class="p">:</span>
+            <span class="n">lines</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">"Key findings (high/medium severity):"</span><span class="p">)</span>
+            <span class="c1"># Show at most 10, prioritise high severity</span>
+            <span class="n">sorted_f</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">findings</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="p">{</span><span class="s2">"high"</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="s2">"medium"</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s2">"low"</span><span class="p">:</span> <span class="mi">2</span><span class="p">}</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"severity"</span><span class="p">,</span> <span class="s2">"low"</span><span class="p">),</span> <span class="mi">3</span><span class="p">))</span>
+            <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">sorted_f</span><span class="p">[:</span><span class="mi">10</span><span class="p">]:</span>
+                <span class="n">col</span>      <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"column"</span><span class="p">,</span> <span class="s2">"?"</span><span class="p">)</span>
+                <span class="n">finding</span>  <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"finding"</span><span class="p">,</span> <span class="s2">""</span><span class="p">)</span>
+                <span class="n">severity</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"severity"</span><span class="p">,</span> <span class="s2">"?"</span><span class="p">)</span>
+                <span class="c1"># Truncate long finding strings</span>
+                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">finding</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">100</span><span class="p">:</span>
+                    <span class="n">finding</span> <span class="o">=</span> <span class="n">finding</span><span class="p">[:</span><span class="mi">97</span><span class="p">]</span> <span class="o">+</span> <span class="s2">"..."</span>
+                <span class="n">lines</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">"  [</span><span class="si">{</span><span class="n">severity</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span><span class="si">}</span><span class="s2">] </span><span class="si">{</span><span class="n">col</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">finding</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+
+        <span class="n">anomalies</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">]</span> <span class="o">=</span> <span class="n">eda_summary</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"anomalies"</span><span class="p">)</span> <span class="ow">or</span> <span class="p">[]</span>
+        <span class="k">if</span> <span class="n">anomalies</span><span class="p">:</span>
+            <span class="n">lines</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">"Anomalies:"</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="n">anomalies</span><span class="p">[:</span><span class="mi">5</span><span class="p">]:</span>
+                <span class="n">col</span>     <span class="o">=</span> <span class="n">a</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"column"</span><span class="p">,</span> <span class="s2">"?"</span><span class="p">)</span>
+                <span class="n">anomaly</span> <span class="o">=</span> <span class="n">a</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"anomaly"</span><span class="p">,</span> <span class="s2">""</span><span class="p">)</span>
+                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">anomaly</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">100</span><span class="p">:</span>
+                    <span class="n">anomaly</span> <span class="o">=</span> <span class="n">anomaly</span><span class="p">[:</span><span class="mi">97</span><span class="p">]</span> <span class="o">+</span> <span class="s2">"..."</span>
+                <span class="n">lines</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">"  </span><span class="si">{</span><span class="n">col</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">anomaly</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+
+        <span class="n">next_steps</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="n">eda_summary</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"recommended_next_steps"</span><span class="p">)</span> <span class="ow">or</span> <span class="p">[]</span>
+        <span class="k">if</span> <span class="n">next_steps</span><span class="p">:</span>
+            <span class="n">lines</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">"Recommended steps (from EDA):"</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">step</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">next_steps</span><span class="p">[:</span><span class="mi">5</span><span class="p">],</span> <span class="mi">1</span><span class="p">):</span>
+                <span class="n">lines</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">"  </span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2">. </span><span class="si">{</span><span class="n">step</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="s2">"</span><span class="se">\n</span><span class="s2">"</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">lines</span><span class="p">)</span> <span class="k">if</span> <span class="n">lines</span> <span class="k">else</span> <span class="s2">"  (EDA summary contained no actionable content)"</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_column_type_hints</span><span class="p">(</span><span class="n">profile</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Render a compact dtype table from the dataset profile."""</span>
+        <span class="n">dtypes</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="n">profile</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"dtypes"</span><span class="p">,</span> <span class="p">{})</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">dtypes</span><span class="p">:</span>
+            <span class="k">return</span> <span class="s2">"  (not provided)"</span>
+        <span class="k">return</span> <span class="s2">"</span><span class="se">\n</span><span class="s2">"</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="sa">f</span><span class="s2">"  </span><span class="si">{</span><span class="n">col</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">dtype</span><span class="si">}</span><span class="s2">"</span> <span class="k">for</span> <span class="n">col</span><span class="p">,</span> <span class="n">dtype</span> <span class="ow">in</span> <span class="n">dtypes</span><span class="o">.</span><span class="n">items</span><span class="p">())</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_missing_hint</span><span class="p">(</span><span class="n">profile</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Render only columns that have at least one missing value."""</span>
+        <span class="n">missing</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="n">profile</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"missing_counts"</span><span class="p">,</span> <span class="p">{})</span>
+        <span class="n">non_zero</span> <span class="o">=</span> <span class="p">{</span><span class="n">col</span><span class="p">:</span> <span class="n">count</span> <span class="k">for</span> <span class="n">col</span><span class="p">,</span> <span class="n">count</span> <span class="ow">in</span> <span class="n">missing</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">count</span><span class="p">}</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">non_zero</span><span class="p">:</span>
+            <span class="k">return</span> <span class="s2">"  (no missing values detected)"</span>
+        <span class="k">return</span> <span class="s2">"</span><span class="se">\n</span><span class="s2">"</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="sa">f</span><span class="s2">"  </span><span class="si">{</span><span class="n">col</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">count</span><span class="si">}</span><span class="s2"> missing"</span> <span class="k">for</span> <span class="n">col</span><span class="p">,</span> <span class="n">count</span> <span class="ow">in</span> <span class="n">non_zero</span><span class="o">.</span><span class="n">items</span><span class="p">())</span></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, Mazen Soliman.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

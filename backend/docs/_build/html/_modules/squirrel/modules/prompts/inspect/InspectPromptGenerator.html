@@ -1,0 +1,609 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>squirrel.modules.prompts.inspect.InspectPromptGenerator &mdash; squirrel  documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../../../../_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" type="text/css" href="../../../../../_static/css/custom.css?v=adc7883a" />
+
+  
+    <link rel="shortcut icon" href="../../../../../_static/sqrl.png"/>
+      <script src="../../../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../../../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../../../../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script src="../../../../../_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="../../../../../_static/copybutton.js?v=a46eff05"></script>
+    <script src="../../../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../../../index.html" class="icon icon-home">
+            squirrel
+              <img src="../../../../../_static/sqrl.png" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Python API Reference:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../api.html">Python API Reference</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../../index.html">squirrel</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">squirrel.modules.prompts.inspect.InspectPromptGenerator</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for squirrel.modules.prompts.inspect.InspectPromptGenerator</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/python</span>
+<span class="sd">"""</span>
+<span class="sd">Inspect Prompt Generator Module</span>
+<span class="sd">===============================</span>
+
+<span class="sd">Generates prompts for the TabularDataInspectorAgent across three stages:</span>
+
+<span class="sd">    1. GENERATE_PLAN     — ask the LLM to choose and order inspection strategies.</span>
+<span class="sd">    2. GENERATE_SUMMARY  — ask the LLM to interpret execution results into findings.</span>
+<span class="sd">    3. EXTRACT_KEY_INSIGHTS — ask the LLM to surface patterns and recommendations.</span>
+
+<span class="sd">"""</span>
+
+<span class="c1"># ——————————————————————————————————————————————————————————————</span>
+<span class="c1"># Imports</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">textwrap</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">enum</span><span class="w"> </span><span class="kn">import</span> <span class="n">Enum</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing_extensions</span><span class="w"> </span><span class="kn">import</span> <span class="n">override</span>
+
+<span class="c1"># Abstract Class</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">squirrel.modules.prompts.abstract</span><span class="w"> </span><span class="kn">import</span> <span class="n">IPromptGenerator</span>
+
+<span class="c1"># —— Prompt type discriminator ——————————————————————————————————————————</span>
+<div class="viewcode-block" id="InspectPromptType">
+<a class="viewcode-back" href="../../../../../generated/squirrel_modules_prompts_inspect_InspectPromptGenerator.html#squirrel.modules.prompts.inspect.InspectPromptGenerator.InspectPromptType">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">InspectPromptType</span><span class="p">(</span><span class="n">Enum</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Discriminator for the three prompt stages in the Inspect pipeline.</span>
+
+<span class="sd">    - ``GENERATE_PLAN``: Given a dataset profile and inspection catalog,</span>
+<span class="sd">      produce an ordered EDA execution plan (no data is read yet).</span>
+<span class="sd">    - ``GENERATE_SUMMARY``: Given a completed execution report, interpret</span>
+<span class="sd">      results into findings, anomalies, and recommended next steps.</span>
+<span class="sd">    - ``EXTRACT_KEY_INSIGHTS``: Given findings and anomalies, surface the</span>
+<span class="sd">      most actionable patterns and produce a narrative for stakeholders.</span>
+<span class="sd">    </span>
+<span class="sd">    """</span>
+    <span class="n">GENERATE_PLAN</span> <span class="o">=</span> <span class="s2">"generate_plan"</span>
+    <span class="n">GENERATE_SUMMARY</span> <span class="o">=</span> <span class="s2">"generate_summary"</span>
+    <span class="n">GENERATE_STEP</span> <span class="o">=</span> <span class="s2">"generate_step"</span>
+    <span class="n">EXTRACT_KEY_INSIGHTS</span> <span class="o">=</span> <span class="s2">"extract_key_insights"</span></div>
+
+
+
+<span class="c1"># —— Prompt generator implementation —————————————————————————————————————————</span>
+<div class="viewcode-block" id="InspectPromptGenerator">
+<a class="viewcode-back" href="../../../../../generated/squirrel_modules_prompts_inspect_InspectPromptGenerator.html#squirrel.modules.prompts.inspect.InspectPromptGenerator.InspectPromptGenerator">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">InspectPromptGenerator</span><span class="p">(</span><span class="n">IPromptGenerator</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Prompt generator for data inspection agents.</span>
+
+<span class="sd">    Each prompt type has a dedicated system prompt (role + constraints) and</span>
+<span class="sd">    a dedicated user prompt (task-specific context injection). The two halves</span>
+<span class="sd">    are kept separate so callers can pass the system prompt to the provider</span>
+<span class="sd">    once at session start and regenerate only the user prompt per call.</span>
+
+<span class="sd">    **Methods:**</span>
+<span class="sd">        - ``generate_system_prompt(prompt_type)`` — role + rules for this stage.</span>
+<span class="sd">        - ``generate_user_prompt(**kwargs)``       — context-injected task prompt.</span>
+<span class="sd">    </span>
+<span class="sd">    """</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+
+    <span class="c1"># ── System prompts ────────────────────────────────────────────────────────</span>
+<div class="viewcode-block" id="InspectPromptGenerator.generate_system_prompt">
+<a class="viewcode-back" href="../../../../../generated/squirrel_modules_prompts_inspect_InspectPromptGenerator.html#squirrel.modules.prompts.inspect.InspectPromptGenerator.InspectPromptGenerator.generate_system_prompt">[docs]</a>
+    <span class="nd">@override</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">generate_system_prompt</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> 
+        <span class="n">prompt_type</span><span class="p">:</span> <span class="n">InspectPromptType</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Generate stage-specific system-level instructions.</span>
+
+<span class="sd">        :param prompt_type: Which pipeline stage to generate instructions for.</span>
+<span class="sd">        :type prompt_type: InspectPromptType</span>
+<span class="sd">        </span>
+<span class="sd">        :return: System prompt string.</span>
+<span class="sd">        :rtype: str</span>
+<span class="sd">        """</span>
+        <span class="n">dispatch</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="n">InspectPromptType</span><span class="o">.</span><span class="n">GENERATE_PLAN</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_system_plan</span><span class="p">,</span>
+            <span class="n">InspectPromptType</span><span class="o">.</span><span class="n">GENERATE_SUMMARY</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_system_summary</span><span class="p">,</span>
+            <span class="n">InspectPromptType</span><span class="o">.</span><span class="n">GENERATE_STEP</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_system_step</span><span class="p">,</span>
+            <span class="n">InspectPromptType</span><span class="o">.</span><span class="n">EXTRACT_KEY_INSIGHTS</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_system_insights</span><span class="p">,</span>
+        <span class="p">}</span>
+
+        <span class="k">if</span> <span class="n">prompt_type</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">prompt_type</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">dispatch</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"Unsupported prompt type: </span><span class="si">{</span><span class="n">prompt_type</span><span class="si">!r}</span><span class="s2">. "</span>
+                <span class="sa">f</span><span class="s2">"Expected one of: </span><span class="si">{</span><span class="p">[</span><span class="n">t</span><span class="o">.</span><span class="n">value</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">t</span><span class="w"> </span><span class="ow">in</span><span class="w"> </span><span class="n">InspectPromptType</span><span class="p">]</span><span class="si">}</span><span class="s2">"</span>
+            <span class="p">)</span>
+
+        <span class="n">handler</span> <span class="o">=</span> <span class="n">dispatch</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">prompt_type</span><span class="p">,</span> <span class="k">lambda</span><span class="p">:</span> <span class="s2">"You are a helpful assistant."</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">handler</span><span class="p">()</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_system_plan</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">textwrap</span><span class="o">.</span><span class="n">dedent</span><span class="p">(</span><span class="s2">"""</span>
+<span class="s2">            # Role:</span>
+<span class="s2">            You are a senior data analyst designing an EDA pipeline.</span>
+<span class="s2">            Your role in this stage is PLANNING ONLY — you must not read,</span>
+<span class="s2">            compute, or invent any statistics about the data.</span>
+<span class="s2">            </span>
+<span class="s2">            # Rules:</span>
+<span class="s2">            - Output valid JSON only. No markdown, no code fences, no prose.</span>
+<span class="s2">            - Choose inspection strategies exclusively from the provided catalog.</span>
+<span class="s2">            - Order steps so that cheap, structural inspections (data types,</span>
+<span class="s2">              summary statistics) precede expensive or dependent ones</span>
+<span class="s2">              (correlation, outlier detection).</span>
+<span class="s2">            - Include an `arguments` object for strategies that accept parameters</span>
+<span class="s2">              (e.g. column names, thresholds, method). Leave it as </span><span class="si">{}</span><span class="s2"> when none</span>
+<span class="s2">              are needed.</span>
+<span class="s2">            - Skip strategies that are irrelevant for the dataset's column types</span>
+<span class="s2">              (e.g. correlation when there is only one numeric column).</span>
+<span class="s2">            - Each step must have a clear, single objective.</span>
+<span class="s2">        """</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+        
+    <span class="k">def</span><span class="w"> </span><span class="nf">_system_step</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">textwrap</span><span class="o">.</span><span class="n">dedent</span><span class="p">(</span><span class="s2">"""</span>
+<span class="s2">            # Role:</span>
+<span class="s2">            You are a senior data analyst regenerating a single EDA step.</span>
+<span class="s2">            Your role in this stage is REGENERATION ONLY — fix the specified</span>
+<span class="s2">            issue with the step while adhering to the same planning rules.</span>
+
+<span class="s2">            # Rules:</span>
+<span class="s2">            - Output valid JSON only. No markdown, no code fences, no prose.</span>
+<span class="s2">            - Regenerate only the single step specified in the prompt.</span>
+<span class="s2">            - Ensure the `inspection` field matches one of the available strategies.</span>
+<span class="s2">            - Ensure all required arguments for that strategy are present and</span>
+<span class="s2">              correctly formatted. Use optional arguments if they add value.</span>
+<span class="s2">            - Use only column names that appear in the dataset profile.</span>
+<span class="s2">            - Do not invent column names or statistics that are not in the profile.</span>
+<span class="s2">        """</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_system_summary</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">textwrap</span><span class="o">.</span><span class="n">dedent</span><span class="p">(</span><span class="s2">"""</span>
+<span class="s2">            # Role:</span>
+<span class="s2">            You are a senior data analyst interpreting completed EDA results.</span>
+<span class="s2">            Your role is INTERPRETATION — translate raw inspection outputs into</span>
+<span class="s2">            human-readable findings an engineer or stakeholder can act on.</span>
+
+<span class="s2">            # Rules:</span>
+<span class="s2">            - Output valid JSON only. No markdown, no code fences, no prose.</span>
+<span class="s2">            - Ground every finding in the provided execution output. Do not invent</span>
+<span class="s2">              statistics, percentages, or column names that are not in the data.</span>
+<span class="s2">            - Assign severity (low / medium / high) based on the magnitude of the</span>
+<span class="s2">              issue (e.g. &gt;30% missingness = high, &lt;5% = low).</span>
+<span class="s2">            - Use `recommended_action` strings from strategy outputs when present.</span>
+<span class="s2">            - Be concise: one finding per column per issue type.</span>
+<span class="s2">            - Produce a `data_quality_score` between 0 and 1:</span>
+<span class="s2">                1.0 = no issues detected</span>
+<span class="s2">                0.0 = severe, pervasive issues across most columns.</span>
+<span class="s2">        """</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_system_insights</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">textwrap</span><span class="o">.</span><span class="n">dedent</span><span class="p">(</span><span class="s2">"""</span>
+<span class="s2">            # Role:</span>
+<span class="s2">            You are a senior data scientist surfacing patterns for a business audience.</span>
+<span class="s2">            Your role is SYNTHESIS — take structured findings and anomalies and</span>
+<span class="s2">            produce a concise, prioritised narrative of what matters most and why.</span>
+
+<span class="s2">            # Rules:</span>
+<span class="s2">            - Output valid JSON only. No markdown, no code fences, no prose.</span>
+<span class="s2">            - Prioritise insights by business impact, not technical severity.</span>
+<span class="s2">            - Each insight must include a plain-language explanation requiring no</span>
+<span class="s2">              statistical background to understand.</span>
+<span class="s2">            - Proposed actions must be specific and implementable (not "investigate further").</span>
+<span class="s2">            - Group related column-level findings into dataset-level themes where possible.</span>
+<span class="s2">            - Do not repeat findings verbatim — synthesise and interpret.</span>
+<span class="s2">        """</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+
+    <span class="c1"># ── User prompts ──────────────────────────────────────────────────────────</span>
+<div class="viewcode-block" id="InspectPromptGenerator.generate_user_prompt">
+<a class="viewcode-back" href="../../../../../generated/squirrel_modules_prompts_inspect_InspectPromptGenerator.html#squirrel.modules.prompts.inspect.InspectPromptGenerator.InspectPromptGenerator.generate_user_prompt">[docs]</a>
+    <span class="nd">@override</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">generate_user_prompt</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">prompt_type</span><span class="p">:</span> <span class="n">InspectPromptType</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Dispatch to the correct user prompt builder based on ``prompt_type``.</span>
+
+<span class="sd">        :param kwargs: Must include ``prompt_type`` (InspectPromptType).</span>
+<span class="sd">            Additional keys depend on the stage — see each builder's docstring.</span>
+<span class="sd">            </span>
+<span class="sd">        :return: User prompt string ready to send to the LLM.</span>
+<span class="sd">        :rtype: str</span>
+<span class="sd">        </span>
+<span class="sd">        :raises ValueError: If ``prompt_type`` is missing or unrecognised.</span>
+<span class="sd">        """</span>
+        <span class="n">dispatch</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="n">InspectPromptType</span><span class="o">.</span><span class="n">GENERATE_PLAN</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_user_plan</span><span class="p">,</span>
+            <span class="n">InspectPromptType</span><span class="o">.</span><span class="n">GENERATE_SUMMARY</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_user_summary</span><span class="p">,</span>
+            <span class="n">InspectPromptType</span><span class="o">.</span><span class="n">GENERATE_STEP</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_user_step</span><span class="p">,</span>
+            <span class="n">InspectPromptType</span><span class="o">.</span><span class="n">EXTRACT_KEY_INSIGHTS</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_user_insights</span><span class="p">,</span>
+        <span class="p">}</span>
+        <span class="n">handler</span> <span class="o">=</span> <span class="n">dispatch</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">prompt_type</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">handler</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"Unsupported prompt type: </span><span class="si">{</span><span class="n">prompt_type</span><span class="si">!r}</span><span class="s2">. "</span>
+                <span class="sa">f</span><span class="s2">"Expected one of: </span><span class="si">{</span><span class="p">[</span><span class="n">t</span><span class="o">.</span><span class="n">value</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">t</span><span class="w"> </span><span class="ow">in</span><span class="w"> </span><span class="n">InspectPromptType</span><span class="p">]</span><span class="si">}</span><span class="s2">"</span>
+            <span class="p">)</span>
+        <span class="k">return</span> <span class="n">handler</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
+
+    
+    <span class="k">def</span><span class="w"> </span><span class="nf">_user_step</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="n">profile</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"dataset_profile"</span><span class="p">,</span> <span class="p">{})</span>
+        <span class="n">objective</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"objective"</span><span class="p">,</span> <span class="s2">"Regenerate the step with correct arguments based on the dataset profile and strategy requirements."</span><span class="p">)</span>
+        <span class="n">inspection_catalog</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"inspection_catalog"</span><span class="p">,</span> <span class="p">[])</span>
+
+        <span class="k">return</span> <span class="n">textwrap</span><span class="o">.</span><span class="n">dedent</span><span class="p">(</span><span class="sa">f</span><span class="s2">"""</span>
+<span class="s2">            ## Regeneration objective</span>
+<span class="s2">            </span><span class="si">{</span><span class="n">objective</span><span class="si">}</span>
+<span class="s2">            </span>
+<span class="s2">            ## Dataset shape</span>
+<span class="s2">            - Rows: </span><span class="si">{</span><span class="n">profile</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">'rows'</span><span class="p">,</span><span class="w"> </span><span class="s1">'unknown'</span><span class="p">)</span><span class="si">}</span>
+<span class="s2">            - Columns: </span><span class="si">{</span><span class="n">profile</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">'columns'</span><span class="p">,</span><span class="w"> </span><span class="s1">'unknown'</span><span class="p">)</span><span class="si">}</span>
+<span class="s2">            </span>
+<span class="s2">            ## Column names: </span><span class="si">{</span><span class="s1">', '</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">profile</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">'column_names'</span><span class="p">,</span><span class="w"> </span><span class="p">[]))</span><span class="si">}</span>
+<span class="s2">            </span>
+<span class="s2">            ## Column types</span>
+<span class="s2">            </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_column_type_hints</span><span class="p">(</span><span class="n">profile</span><span class="p">)</span><span class="si">}</span>
+
+<span class="s2">            ## Missing value counts</span>
+<span class="s2">            </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_missing_hint</span><span class="p">(</span><span class="n">profile</span><span class="p">)</span><span class="si">}</span>
+<span class="s2">            </span>
+<span class="s2">            ## Available inspection strategies</span>
+<span class="s2">            Study the catalog carefully before regenerating. Each entry shows:</span>
+<span class="s2">            - What the strategy does</span>
+<span class="s2">            - Which arguments it accepts and what they mean</span>
+<span class="s2">                - A complete example step you can adapt</span>
+<span class="s2">            </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_render_catalog</span><span class="p">(</span><span class="n">inspection_catalog</span><span class="p">)</span><span class="si">}</span>
+<span class="s2">            </span>
+<span class="s2">            ## Task</span>
+<span class="s2">            Regenerate the step with correct arguments based on the dataset profile and strategy requirements.</span>
+<span class="s2">            - Ensure to generate arguments in the correct format and with the right keys as shown in the</span>
+<span class="s2">                strategy specification.</span>
+<span class="s2">            - Use only column names that appear in the dataset above.</span>
+<span class="s2">            - Do not invent column names or statistics.</span>
+<span class="s2">        """</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_user_plan</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="n">profile</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"dataset_profile"</span><span class="p">,</span> <span class="p">{})</span>
+        <span class="n">objective</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"objective"</span><span class="p">,</span> <span class="s2">"Perform comprehensive exploratory data analysis."</span><span class="p">)</span>
+
+        <span class="n">catalog_block</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_render_catalog</span><span class="p">(</span>
+            <span class="n">profile</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"available_inspections"</span><span class="p">,</span> <span class="p">[])</span>
+        <span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">textwrap</span><span class="o">.</span><span class="n">dedent</span><span class="p">(</span><span class="sa">f</span><span class="s2">"""</span>
+<span class="s2">            ## Analysis objective</span>
+<span class="s2">            </span><span class="si">{</span><span class="n">objective</span><span class="si">}</span>
+
+<span class="s2">            ## Dataset shape</span>
+<span class="s2">            - Rows: </span><span class="si">{</span><span class="n">profile</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">'rows'</span><span class="p">,</span><span class="w"> </span><span class="s1">'unknown'</span><span class="p">)</span><span class="si">}</span>
+<span class="s2">            - Columns: </span><span class="si">{</span><span class="n">profile</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">'columns'</span><span class="p">,</span><span class="w"> </span><span class="s1">'unknown'</span><span class="p">)</span><span class="si">}</span>
+<span class="s2">            - Column names: </span><span class="si">{</span><span class="s1">', '</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">profile</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">'column_names'</span><span class="p">,</span><span class="w"> </span><span class="p">[]))</span><span class="si">}</span>
+
+<span class="s2">            ## Column types</span>
+<span class="s2">            </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_column_type_hints</span><span class="p">(</span><span class="n">profile</span><span class="p">)</span><span class="si">}</span>
+
+<span class="s2">            ## Missing value counts</span>
+<span class="s2">            </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_missing_hint</span><span class="p">(</span><span class="n">profile</span><span class="p">)</span><span class="si">}</span>
+
+<span class="s2">            ## Available inspection strategies</span>
+<span class="s2">            Study each strategy carefully before planning. Each entry shows:</span>
+<span class="s2">            - What the strategy does</span>
+<span class="s2">            - Which arguments it accepts and what they mean</span>
+<span class="s2">            - A complete example step you can adapt</span>
+
+<span class="s2">            </span><span class="si">{</span><span class="n">catalog_block</span><span class="si">}</span>
+
+<span class="s2">            ## Task</span>
+<span class="s2">            Produce an ordered EDA plan. Each step must include:</span>
+<span class="s2">            - step            (integer, 1-based)</span>
+<span class="s2">            - name            (short title, ≤ 6 words)</span>
+<span class="s2">            - inspection      (exact name from the catalog above)</span>
+<span class="s2">            - objective       (one sentence: why this step is needed for THIS dataset)</span>
+<span class="s2">            - actions         (list of concrete sub-tasks the strategy will perform)</span>
+<span class="s2">            - arguments       (dict — copy the argument structure from the example and</span>
+<span class="s2">                                substitute real column names from this dataset;</span>
+<span class="s2">                                use </span><span class="se">{{}}</span><span class="s2"> only for strategies that take no arguments)</span>
+<span class="s2">            - expected_output (list of insight types or artifacts this step produces)</span>
+
+<span class="s2">            Rules:</span>
+<span class="s2">            - Use only column names that appear in the dataset above.</span>
+<span class="s2">            - Do not invent column names or statistics.</span>
+<span class="s2">                        - If a strategy has any entries in its argument schema, populate the</span>
+<span class="s2">                            `arguments` object with every required field and any optional fields</span>
+<span class="s2">                            that have defaults. Only use `</span><span class="se">{{}}</span><span class="s2">` for strategies whose catalog shows</span>
+<span class="s2">                            no arguments.</span>
+<span class="s2">            - Skip strategies irrelevant to this dataset</span>
+<span class="s2">                (e.g. skip CorrelationInspectionStrategy if there is only one numeric column).</span>
+<span class="s2">            - For MissingValuesInspectionStrategy and CorrelationInspectionStrategy,</span>
+<span class="s2">                produce one step per column pair you want to examine.</span>
+<span class="s2">            - Ensure to generate arguments in the correct format and with the right keys as shown in the examples above.</span>
+<span class="s2">        """</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_render_catalog</span><span class="p">(</span><span class="n">available</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Render the inspection catalog as a structured block.</span>
+<span class="sd">        Each entry shows name, description, accepted arguments, and a full example step.</span>
+<span class="sd">        Falls back to a name+description-only block for any strategy not in INSPECTION_CATALOG.</span>
+<span class="sd">        """</span>
+        <span class="n">blocks</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="k">for</span> <span class="n">entry</span> <span class="ow">in</span> <span class="n">available</span><span class="p">:</span>
+            <span class="n">name</span> <span class="o">=</span> <span class="n">entry</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"name"</span><span class="p">,</span> <span class="s2">"(unnamed)"</span><span class="p">)</span>
+            <span class="n">description</span> <span class="o">=</span> <span class="n">entry</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"description"</span><span class="p">,</span> <span class="n">entry</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"doc"</span><span class="p">,</span> <span class="s2">"(no description)"</span><span class="p">))</span>
+
+            <span class="n">args_lines</span> <span class="o">=</span> <span class="s2">"      (none)"</span>
+            <span class="k">if</span> <span class="n">entry</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"arguments"</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">entry</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"arguments"</span><span class="p">),</span> <span class="nb">dict</span><span class="p">):</span>
+                <span class="n">args_lines</span> <span class="o">=</span> <span class="s2">"</span><span class="se">\n</span><span class="s2">"</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="sa">f</span><span class="s2">"      </span><span class="si">{</span><span class="n">k</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">v</span><span class="si">}</span><span class="s2">"</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">entry</span><span class="p">[</span><span class="s2">"arguments"</span><span class="p">]</span><span class="o">.</span><span class="n">items</span><span class="p">())</span> <span class="ow">or</span> <span class="n">args_lines</span>
+            <span class="k">elif</span> <span class="n">entry</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"arguments_schema"</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">entry</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"arguments_schema"</span><span class="p">),</span> <span class="nb">list</span><span class="p">):</span>
+                <span class="n">parts</span> <span class="o">=</span> <span class="p">[]</span>
+                <span class="k">for</span> <span class="n">spec</span> <span class="ow">in</span> <span class="n">entry</span><span class="p">[</span><span class="s2">"arguments_schema"</span><span class="p">]:</span>
+                    <span class="n">name_s</span> <span class="o">=</span> <span class="n">spec</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"name"</span><span class="p">)</span>
+                    <span class="n">typ</span> <span class="o">=</span> <span class="n">spec</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"type"</span><span class="p">)</span>
+                    <span class="n">default</span> <span class="o">=</span> <span class="n">spec</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"default"</span><span class="p">)</span>
+                    <span class="n">req</span> <span class="o">=</span> <span class="n">spec</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"required"</span><span class="p">)</span>
+                    <span class="n">desc</span> <span class="o">=</span> <span class="n">spec</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"description"</span><span class="p">)</span>
+                    <span class="n">part</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">name_s</span><span class="si">}</span><span class="s2">: type=</span><span class="si">{</span><span class="n">typ</span><span class="si">}</span><span class="s2">, required=</span><span class="si">{</span><span class="n">req</span><span class="si">}</span><span class="s2">, default=</span><span class="si">{</span><span class="n">default</span><span class="si">}</span><span class="s2">"</span>
+                    <span class="k">if</span> <span class="n">desc</span><span class="p">:</span>
+                        <span class="n">part</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">", </span><span class="si">{</span><span class="n">desc</span><span class="si">}</span><span class="s2">"</span>
+                    <span class="n">parts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">"      </span><span class="si">{</span><span class="n">part</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">parts</span><span class="p">:</span>
+                    <span class="n">args_lines</span> <span class="o">=</span> <span class="s2">"</span><span class="se">\n</span><span class="s2">"</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">parts</span><span class="p">)</span>
+
+            <span class="n">example</span> <span class="o">=</span> <span class="n">entry</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"example"</span><span class="p">)</span> <span class="ow">or</span> <span class="p">{}</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">example_json</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">example</span><span class="p">,</span> <span class="n">indent</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="nb">str</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+                <span class="n">example_json</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">example</span><span class="p">)</span>
+
+            <span class="n">args_description</span> <span class="o">=</span> <span class="n">entry</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"arguments_description"</span><span class="p">,</span> <span class="s2">"No arguments required."</span><span class="p">)</span>
+
+            <span class="c1"># NOTE: previously also dumped the full raw `entry` dict as a "Full spec"</span>
+            <span class="c1"># block here — removed. It duplicated everything above (and more),</span>
+            <span class="c1"># roughly doubling token cost per catalog entry for no comprehension</span>
+            <span class="c1"># benefit, and was the primary cause of 413s on Groq's 8K TPM tier.</span>
+            <span class="n">blocks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">textwrap</span><span class="o">.</span><span class="n">dedent</span><span class="p">(</span><span class="sa">f</span><span class="s2">"""</span>
+<span class="s2">                ### </span><span class="si">{</span><span class="n">name</span><span class="si">}</span>
+<span class="s2">                </span><span class="si">{</span><span class="n">description</span><span class="si">}</span>
+
+<span class="s2">                Arguments:</span>
+<span class="s2">                </span><span class="si">{</span><span class="n">args_lines</span><span class="si">}</span>
+<span class="s2">                Note: </span><span class="si">{</span><span class="n">args_description</span><span class="si">}</span>
+
+<span class="s2">                Example step:</span>
+<span class="s2">                </span><span class="si">{</span><span class="n">example_json</span><span class="si">}</span>
+<span class="s2">            """</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">())</span>
+
+        <span class="k">return</span> <span class="s2">"</span><span class="se">\n\n</span><span class="s2">"</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">blocks</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_user_summary</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Prompt for the GENERATE_SUMMARY stage.</span>
+
+<span class="sd">        Expected kwargs:</span>
+<span class="sd">            - ``dataset_profile`` (dict): sanitized execution report from ``execute()``.</span>
+<span class="sd">            - ``objective`` (str, optional): interpretation goal.</span>
+<span class="sd">        """</span>
+        <span class="n">report</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"dataset_profile"</span><span class="p">,</span> <span class="p">{})</span>
+        <span class="n">objective</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"objective"</span><span class="p">,</span> <span class="s2">"Interpret the EDA execution results."</span><span class="p">)</span>
+
+        <span class="n">step_summaries</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_execution_step_summaries</span><span class="p">(</span><span class="n">report</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">textwrap</span><span class="o">.</span><span class="n">dedent</span><span class="p">(</span><span class="sa">f</span><span class="s2">"""</span>
+<span class="s2">            ## Interpretation objective</span>
+<span class="s2">            </span><span class="si">{</span><span class="n">objective</span><span class="si">}</span>
+
+<span class="s2">            ## Execution overview</span>
+<span class="s2">            - Status : </span><span class="si">{</span><span class="n">report</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">'status'</span><span class="p">,</span><span class="w"> </span><span class="s1">'unknown'</span><span class="p">)</span><span class="si">}</span>
+<span class="s2">            - Steps completed : </span><span class="si">{</span><span class="n">report</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">'summary'</span><span class="p">,</span><span class="w"> </span><span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">'completed_steps'</span><span class="p">,</span><span class="w"> </span><span class="s1">'?'</span><span class="p">)</span><span class="si">}</span>
+<span class="s2">            - Steps failed    : </span><span class="si">{</span><span class="n">report</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">'summary'</span><span class="p">,</span><span class="w"> </span><span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">'failed_steps'</span><span class="p">,</span><span class="w"> </span><span class="s1">'?'</span><span class="p">)</span><span class="si">}</span>
+<span class="s2">            - Steps skipped   : </span><span class="si">{</span><span class="n">report</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">'summary'</span><span class="p">,</span><span class="w"> </span><span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">'skipped_steps'</span><span class="p">,</span><span class="w"> </span><span class="s1">'?'</span><span class="p">)</span><span class="si">}</span>
+
+<span class="s2">            ## Dataset</span>
+<span class="s2">            - Rows    : </span><span class="si">{</span><span class="n">report</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">'dataset'</span><span class="p">,</span><span class="w"> </span><span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">'rows'</span><span class="p">,</span><span class="w"> </span><span class="s1">'unknown'</span><span class="p">)</span><span class="si">}</span>
+<span class="s2">            - Columns : </span><span class="si">{</span><span class="n">report</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">'dataset'</span><span class="p">,</span><span class="w"> </span><span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">'columns'</span><span class="p">,</span><span class="w"> </span><span class="s1">'unknown'</span><span class="p">)</span><span class="si">}</span>
+
+<span class="s2">            ## Inspection results</span>
+<span class="s2">            </span><span class="si">{</span><span class="n">step_summaries</span><span class="si">}</span>
+
+<span class="s2">            ## Task</span>
+<span class="s2">            Produce a structured summary with:</span>
+<span class="s2">              - overall_assessment     (one paragraph describing dataset health)</span>
+<span class="s2">              - data_quality_score     (float 0–1; 1 = no issues)</span>
+<span class="s2">              - findings               (per-column issues with severity)</span>
+<span class="s2">              - anomalies              (unexpected patterns worth flagging)</span>
+<span class="s2">              - recommended_next_steps (ordered list of concrete actions)</span>
+<span class="s2">        """</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_user_insights</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Prompt for the EXTRACT_KEY_INSIGHTS stage.</span>
+
+<span class="sd">        Expected kwargs:</span>
+<span class="sd">            - ``dataset_profile`` (dict): summary report from ``summarize()``.</span>
+<span class="sd">            - ``objective`` (str, optional): audience or framing for the narrative.</span>
+<span class="sd">            - ``audience`` (str, optional): "technical" | "business" (default "business").</span>
+<span class="sd">        """</span>
+        <span class="n">summary</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"dataset_profile"</span><span class="p">,</span> <span class="p">{})</span>
+        <span class="n">objective</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"objective"</span><span class="p">,</span> <span class="s2">"Surface the most actionable patterns in the data."</span><span class="p">)</span>
+        <span class="n">audience</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"audience"</span><span class="p">,</span> <span class="s2">"business"</span><span class="p">)</span>
+
+        <span class="n">findings_block</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">summary</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"findings"</span><span class="p">,</span> <span class="p">[]),</span> <span class="n">indent</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="nb">str</span><span class="p">)</span>
+        <span class="n">anomalies_block</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">summary</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"anomalies"</span><span class="p">,</span> <span class="p">[]),</span> <span class="n">indent</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="nb">str</span><span class="p">)</span>
+        <span class="n">next_steps_block</span> <span class="o">=</span> <span class="s2">"</span><span class="se">\n</span><span class="s2">"</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">"  </span><span class="si">{</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="si">}</span><span class="s2">. </span><span class="si">{</span><span class="n">s</span><span class="si">}</span><span class="s2">"</span>
+            <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">s</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">summary</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"recommended_next_steps"</span><span class="p">,</span> <span class="p">[]))</span>
+        <span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">textwrap</span><span class="o">.</span><span class="n">dedent</span><span class="p">(</span><span class="sa">f</span><span class="s2">"""</span>
+<span class="s2">            ## Synthesis objective</span>
+<span class="s2">            </span><span class="si">{</span><span class="n">objective</span><span class="si">}</span>
+
+<span class="s2">            ## Target audience</span>
+<span class="s2">            </span><span class="si">{</span><span class="n">audience</span><span class="si">}</span>
+
+<span class="s2">            ## Data quality score</span>
+<span class="s2">            </span><span class="si">{</span><span class="n">summary</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">'data_quality_score'</span><span class="p">,</span><span class="w"> </span><span class="s1">'not computed'</span><span class="p">)</span><span class="si">}</span><span class="s2"> / 1.0</span>
+
+<span class="s2">            ## Overall assessment</span>
+<span class="s2">            </span><span class="si">{</span><span class="n">summary</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">'overall_assessment'</span><span class="p">,</span><span class="w"> </span><span class="s1">'not provided'</span><span class="p">)</span><span class="si">}</span>
+
+<span class="s2">            ## Per-column findings</span>
+<span class="s2">            </span><span class="si">{</span><span class="n">findings_block</span><span class="si">}</span>
+
+<span class="s2">            ## Anomalies</span>
+<span class="s2">            </span><span class="si">{</span><span class="n">anomalies_block</span><span class="si">}</span>
+
+<span class="s2">            ## Suggested next steps (from previous stage)</span>
+<span class="s2">            </span><span class="si">{</span><span class="n">next_steps_block</span><span class="si">}</span>
+
+<span class="s2">            ## Task</span>
+<span class="s2">            Synthesise the above into a business-ready insight report with:</span>
+<span class="s2">              - executive_summary   (2–3 sentences for a non-technical reader)</span>
+<span class="s2">              - key_insights        (list; each has: theme, explanation, impacted_columns,</span>
+<span class="s2">                                     proposed_action)</span>
+<span class="s2">              - risk_flags          (list of high-severity items that block modelling or</span>
+<span class="s2">                                     reporting)</span>
+<span class="s2">              - quick_wins          (list of low-effort, high-impact fixes)</span>
+<span class="s2">              - open_questions      (list of questions the data alone cannot answer)</span>
+<span class="s2">        """</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+
+    <span class="c1"># ── Prompt construction helpers ───────────────────────────────────────────</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_column_type_hints</span><span class="p">(</span><span class="n">profile</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Render a compact dtype table from the dataset profile."""</span>
+        <span class="n">dtypes</span> <span class="o">=</span> <span class="n">profile</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"dtypes"</span><span class="p">,</span> <span class="p">{})</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">dtypes</span><span class="p">:</span>
+            <span class="k">return</span> <span class="s2">"  (not provided)"</span>
+        <span class="n">lines</span> <span class="o">=</span> <span class="p">[</span><span class="sa">f</span><span class="s2">"  </span><span class="si">{</span><span class="n">col</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">dtype</span><span class="si">}</span><span class="s2">"</span> <span class="k">for</span> <span class="n">col</span><span class="p">,</span> <span class="n">dtype</span> <span class="ow">in</span> <span class="n">dtypes</span><span class="o">.</span><span class="n">items</span><span class="p">()]</span>
+        <span class="k">return</span> <span class="s2">"</span><span class="se">\n</span><span class="s2">"</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">lines</span><span class="p">)</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_missing_hint</span><span class="p">(</span><span class="n">profile</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Render only columns that have at least one missing value."""</span>
+        <span class="n">missing</span> <span class="o">=</span> <span class="n">profile</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"missing_counts"</span><span class="p">,</span> <span class="p">{})</span>
+        <span class="n">non_zero</span> <span class="o">=</span> <span class="p">{</span><span class="n">col</span><span class="p">:</span> <span class="n">count</span> <span class="k">for</span> <span class="n">col</span><span class="p">,</span> <span class="n">count</span> <span class="ow">in</span> <span class="n">missing</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">count</span><span class="p">}</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">non_zero</span><span class="p">:</span>
+            <span class="k">return</span> <span class="s2">"  (no missing values detected)"</span>
+        <span class="k">return</span> <span class="s2">"</span><span class="se">\n</span><span class="s2">"</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="sa">f</span><span class="s2">"  </span><span class="si">{</span><span class="n">col</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">count</span><span class="si">}</span><span class="s2"> missing"</span> <span class="k">for</span> <span class="n">col</span><span class="p">,</span> <span class="n">count</span> <span class="ow">in</span> <span class="n">non_zero</span><span class="o">.</span><span class="n">items</span><span class="p">())</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_execution_step_summaries</span><span class="p">(</span><span class="n">report</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Render completed step outputs as compact blocks.</span>
+<span class="sd">        Failed and skipped steps are included with their error message so the</span>
+<span class="sd">        LLM knows what information is absent from the interpretation.</span>
+<span class="sd">        """</span>
+        <span class="n">steps</span> <span class="o">=</span> <span class="n">report</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"steps"</span><span class="p">,</span> <span class="p">[])</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">steps</span><span class="p">:</span>
+            <span class="k">return</span> <span class="s2">"  (no steps recorded)"</span>
+
+        <span class="n">blocks</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">step</span> <span class="ow">in</span> <span class="n">steps</span><span class="p">:</span>
+            <span class="n">status</span> <span class="o">=</span> <span class="n">step</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"status"</span><span class="p">,</span> <span class="s2">"unknown"</span><span class="p">)</span>
+            <span class="n">header</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"### Step </span><span class="si">{</span><span class="n">step</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">'step'</span><span class="p">)</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">step</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">'name'</span><span class="p">)</span><span class="si">}</span><span class="s2"> [</span><span class="si">{</span><span class="n">status</span><span class="si">}</span><span class="s2">]"</span>
+
+            <span class="k">if</span> <span class="n">status</span> <span class="o">==</span> <span class="s2">"completed"</span><span class="p">:</span>
+                <span class="n">output_json</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">step</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"output"</span><span class="p">,</span> <span class="p">{}),</span> <span class="n">indent</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="nb">str</span><span class="p">)</span>
+                <span class="n">blocks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">header</span><span class="si">}</span><span class="se">\n</span><span class="s2">Objective: </span><span class="si">{</span><span class="n">step</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">'objective'</span><span class="p">)</span><span class="si">}</span><span class="se">\n</span><span class="si">{</span><span class="n">output_json</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">status</span> <span class="o">==</span> <span class="s2">"failed"</span><span class="p">:</span>
+                <span class="n">blocks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">header</span><span class="si">}</span><span class="se">\n</span><span class="s2">Error: </span><span class="si">{</span><span class="n">step</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">'error'</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">blocks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">header</span><span class="si">}</span><span class="se">\n</span><span class="s2">Reason: </span><span class="si">{</span><span class="n">step</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">'error'</span><span class="p">,</span><span class="w"> </span><span class="s1">'strategy not found'</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="s2">"</span><span class="se">\n\n</span><span class="s2">"</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">blocks</span><span class="p">)</span></div>
+
+    
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, Mazen Soliman.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -1,0 +1,361 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>squirrel.core.logging &mdash; squirrel  documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/custom.css?v=adc7883a" />
+
+  
+    <link rel="shortcut icon" href="../../../_static/sqrl.png"/>
+      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="../../../_static/copybutton.js?v=a46eff05"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            squirrel
+              <img src="../../../_static/sqrl.png" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Python API Reference:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../api.html">Python API Reference</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">squirrel</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">squirrel.core.logging</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for squirrel.core.logging</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/python</span>
+<span class="sd">"""</span>
+<span class="sd">Logging Module</span>
+<span class="sd">==============</span>
+
+<span class="sd">Overview</span>
+<span class="sd">--------</span>
+
+<span class="sd">This module configures and provides logging functionality for Squirrel using loguru.</span>
+<span class="sd">It sets up structured logging with console and file handlers, log rotation, and</span>
+<span class="sd">integration with standard logging libraries.</span>
+
+<span class="sd">Features</span>
+<span class="sd">--------</span>
+
+<span class="sd">- Loguru-based logging with color formatting</span>
+<span class="sd">- Console and file output with daily rotation</span>
+<span class="sd">- Log compression and retention policies</span>
+<span class="sd">- Logging interception for stdout/stderr</span>
+<span class="sd">- Integration with FastAPI and Uvicorn</span>
+<span class="sd">- Class-level logger descriptor for convenient access</span>
+<span class="sd">- Structured JSON logging support</span>
+
+<span class="sd">"""</span>
+<span class="c1"># ——————————————————————————————————————————————————————————————</span>
+<span class="c1"># Imports</span>
+
+<span class="c1"># Standard Libraries</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="kn">import</span> <span class="n">datetime</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+
+<span class="c1"># Logging</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">loguru</span><span class="w"> </span><span class="kn">import</span> <span class="n">logger</span>
+
+<span class="c1"># Settings</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">squirrel.core.config</span><span class="w"> </span><span class="kn">import</span> <span class="n">settings</span>
+
+<span class="c1"># Create logs directory</span>
+<span class="n">logs_dir</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="s2">"logs"</span><span class="p">)</span>
+<span class="n">logs_dir</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+<span class="n">logger</span><span class="o">.</span><span class="n">level</span><span class="p">(</span><span class="s2">"DEBUG"</span><span class="p">,</span>  <span class="n">color</span><span class="o">=</span><span class="s2">"&lt;blue&gt;"</span><span class="p">)</span>
+<span class="n">logger</span><span class="o">.</span><span class="n">level</span><span class="p">(</span><span class="s2">"INFO"</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s2">"&lt;blue&gt;"</span><span class="p">)</span>
+<span class="n">logger</span><span class="o">.</span><span class="n">level</span><span class="p">(</span><span class="s2">"SUCCESS"</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s2">"&lt;green&gt;"</span><span class="p">)</span>
+<span class="n">logger</span><span class="o">.</span><span class="n">level</span><span class="p">(</span><span class="s2">"WARNING"</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s2">"&lt;yellow&gt;"</span><span class="p">)</span>
+<span class="n">logger</span><span class="o">.</span><span class="n">level</span><span class="p">(</span><span class="s2">"ERROR"</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s2">"&lt;red&gt;"</span><span class="p">)</span>
+<span class="n">logger</span><span class="o">.</span><span class="n">level</span><span class="p">(</span><span class="s2">"CRITICAL"</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s2">"&lt;red&gt;"</span><span class="p">)</span>
+
+<span class="c1"># Silent PaddleOCR logging</span>
+<span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s2">"ppocr"</span><span class="p">)</span><span class="o">.</span><span class="n">setLevel</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">ERROR</span><span class="p">)</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">loguru</span><span class="w"> </span><span class="kn">import</span> <span class="n">logger</span> <span class="k">as</span> <span class="n">_loguru_logger</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span>
+
+<div class="viewcode-block" id="ClassLogger">
+<a class="viewcode-back" href="../../../generated/squirrel_core_logging.html#squirrel.core.logging.ClassLogger">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">ClassLogger</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Descriptor that returns a loguru logger bound to the owner class name.</span>
+
+<span class="sd">    Provides convenient class-level logging by returning a logger instance</span>
+<span class="sd">    bound to the owner class name. Can be used as a class attribute.</span>
+
+<span class="sd">    Example usage:</span>
+
+<span class="sd">    .. code-block:: python</span>
+
+<span class="sd">        class MyClass:</span>
+<span class="sd">            logger = ClassLogger()</span>
+
+<span class="sd">    :returns: Loguru logger instance bound to the class name</span>
+<span class="sd">    :rtype: loguru.Logger</span>
+<span class="sd">    """</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__get__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">instance</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="n">owner</span><span class="p">:</span> <span class="nb">type</span><span class="p">):</span>
+        <span class="c1"># owner will be the class; bind once per call (cheap)</span>
+        <span class="k">return</span> <span class="n">_loguru_logger</span><span class="o">.</span><span class="n">bind</span><span class="p">(</span><span class="n">class_name</span><span class="o">=</span><span class="n">owner</span><span class="o">.</span><span class="vm">__name__</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Loggable">
+<a class="viewcode-back" href="../../../generated/squirrel_core_logging.html#squirrel.core.logging.Loggable">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">Loggable</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Mixin class that provides logging capabilities.</span>
+
+<span class="sd">    Classes that inherit from Loggable gain access to a class-level logger</span>
+<span class="sd">    descriptor that provides convenient logging functionality.</span>
+<span class="sd">    </span>
+<span class="sd">    Example</span>
+<span class="sd">    ~~~~~~~</span>
+
+<span class="sd">        .. code-block:: python</span>
+
+<span class="sd">            class MyClass(Loggable):</span>
+<span class="sd">                def do_something(self):</span>
+<span class="sd">                    self.logger.info("Doing something")</span>
+<span class="sd">    </span>
+<span class="sd">    """</span>
+    <span class="n">logger</span> <span class="o">=</span> <span class="n">ClassLogger</span><span class="p">()</span>
+    
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="InterceptHandler">
+<a class="viewcode-back" href="../../../generated/squirrel_core_logging.html#squirrel.core.logging.InterceptHandler">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">InterceptHandler</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">Handler</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Custom handler for intercepting and formatting logs.</span>
+
+<span class="sd">    Intercepts standard Python logging output and redirects it to loguru</span>
+<span class="sd">    for consistent formatting and handling. Supports both direct logging</span>
+<span class="sd">    calls and stream output (stdout/stderr).</span>
+<span class="sd">    """</span>
+    <span class="c1"># static shared logger</span>
+    
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Initialize the InterceptHandler.</span>
+
+<span class="sd">        Sets up the handler with INFO level as default for intercepted messages.</span>
+<span class="sd">        """</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">NOTSET</span><span class="p">)</span>
+        
+<div class="viewcode-block" id="InterceptHandler.emit">
+<a class="viewcode-back" href="../../../generated/squirrel_core_logging.html#squirrel.core.logging.InterceptHandler.emit">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">emit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">record</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Emit a log record.</span>
+
+<span class="sd">        Processes a logging record and forwards it to loguru with appropriate</span>
+<span class="sd">        level translation and caller frame detection.</span>
+
+<span class="sd">        :param record: The logging record to emit</span>
+<span class="sd">        :type record: logging.LogRecord</span>
+<span class="sd">        """</span>
+        <span class="c1"># Get corresponding Loguru level if it exists</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">level</span> <span class="o">=</span> <span class="n">logger</span><span class="o">.</span><span class="n">level</span><span class="p">(</span><span class="n">record</span><span class="o">.</span><span class="n">levelname</span><span class="p">)</span><span class="o">.</span><span class="n">name</span>
+        <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+            <span class="n">level</span> <span class="o">=</span> <span class="n">record</span><span class="o">.</span><span class="n">levelno</span>
+
+        <span class="c1"># Find caller from where the logged message originated</span>
+        <span class="n">frame</span><span class="p">,</span> <span class="n">depth</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">currentframe</span><span class="p">(),</span> <span class="mi">2</span>
+        <span class="k">while</span> <span class="n">frame</span> <span class="ow">and</span> <span class="n">frame</span><span class="o">.</span><span class="n">f_code</span><span class="o">.</span><span class="n">co_filename</span> <span class="o">==</span> <span class="n">logging</span><span class="o">.</span><span class="vm">__file__</span><span class="p">:</span>
+            <span class="n">frame</span> <span class="o">=</span> <span class="n">frame</span><span class="o">.</span><span class="n">f_back</span>
+            <span class="n">depth</span> <span class="o">+=</span> <span class="mi">1</span>
+        
+        <span class="n">logger</span><span class="o">.</span><span class="n">opt</span><span class="p">(</span><span class="n">depth</span><span class="o">=</span><span class="n">depth</span><span class="p">,</span> <span class="n">exception</span><span class="o">=</span><span class="n">record</span><span class="o">.</span><span class="n">exc_info</span><span class="p">)</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">level</span><span class="p">,</span> <span class="n">record</span><span class="o">.</span><span class="n">getMessage</span><span class="p">())</span></div>
+
+
+<div class="viewcode-block" id="InterceptHandler.write">
+<a class="viewcode-back" href="../../../generated/squirrel_core_logging.html#squirrel.core.logging.InterceptHandler.write">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">write</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">message</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Write a message to the logging system.</span>
+
+<span class="sd">        Formats raw message strings and logs them as INFO level messages.</span>
+
+<span class="sd">        :param message: The message to write</span>
+<span class="sd">        :type message: str</span>
+<span class="sd">        """</span>
+        <span class="k">if</span> <span class="n">message</span><span class="o">.</span><span class="n">strip</span><span class="p">():</span>
+            <span class="n">record</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="s2">"time"</span><span class="p">:</span> <span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span><span class="o">.</span><span class="n">isoformat</span><span class="p">(),</span>
+                <span class="s2">"level"</span><span class="p">:</span> <span class="s2">"INFO"</span><span class="p">,</span>
+                <span class="s2">"message"</span><span class="p">:</span> <span class="n">message</span><span class="o">.</span><span class="n">strip</span><span class="p">(),</span>
+            <span class="p">}</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="n">record</span><span class="p">[</span><span class="s2">"message"</span><span class="p">])</span></div>
+
+
+<div class="viewcode-block" id="InterceptHandler.isatty">
+<a class="viewcode-back" href="../../../generated/squirrel_core_logging.html#squirrel.core.logging.InterceptHandler.isatty">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">isatty</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""Report a non-interactive stream so console formatters can configure safely."""</span>
+        <span class="k">return</span> <span class="kc">False</span></div>
+
+
+<div class="viewcode-block" id="InterceptHandler.fileno">
+<a class="viewcode-back" href="../../../generated/squirrel_core_logging.html#squirrel.core.logging.InterceptHandler.fileno">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">fileno</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""Provide a best-effort file descriptor for code that probes stream metadata."""</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">sys</span><span class="o">.</span><span class="n">__stdout__</span><span class="o">.</span><span class="n">fileno</span><span class="p">()</span>
+        <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+            <span class="k">return</span> <span class="o">-</span><span class="mi">1</span></div>
+
+    
+<div class="viewcode-block" id="InterceptHandler.flush">
+<a class="viewcode-back" href="../../../generated/squirrel_core_logging.html#squirrel.core.logging.InterceptHandler.flush">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">flush</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Flush any pending log records.</span>
+
+<span class="sd">        This is a no-op for loguru since it handles flushing internally.</span>
+<span class="sd">        """</span>
+        <span class="k">pass</span></div>
+</div>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">setup_logging</span><span class="p">():</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Configure logging with loguru.</span>
+
+<span class="sd">    .. rubric:: Configuration Steps</span>
+
+<span class="sd">    1. **Remove default handlers** - Clear default loguru handlers</span>
+<span class="sd">    2. **Add console handler** - Stream logs to stderr with color formatting</span>
+<span class="sd">    3. **Add file handler** - Write logs to daily-rotated files with JSON structure</span>
+<span class="sd">    4. **Configure rotation** - Create new log files daily at midnight</span>
+<span class="sd">    5. **Set retention** - Keep logs for 30 days before deletion</span>
+<span class="sd">    6. **Setup compression** - Compress rotated logs to save disk space</span>
+<span class="sd">    7. **Intercept streams** - Redirect stdout/stderr to logging system</span>
+<span class="sd">    8. **Replace loggers** - Integrate FastAPI and Uvicorn loggers</span>
+
+<span class="sd">    :returns: Configured loguru logger instance</span>
+<span class="sd">    :rtype: loguru.Logger</span>
+<span class="sd">    """</span>
+    <span class="c1"># Remove default handlers</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">remove</span><span class="p">()</span>
+    
+    <span class="c1"># Add console logger</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">add</span><span class="p">(</span>
+        <span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="p">,</span>
+        <span class="n">level</span><span class="o">=</span><span class="n">settings</span><span class="o">.</span><span class="n">LOG_LEVEL</span><span class="p">,</span>
+        <span class="nb">format</span><span class="o">=</span><span class="s2">"&lt;green&gt;{time:YYYY-MM-DD HH:mm:ss}&lt;/green&gt; | &lt;level&gt;</span><span class="si">{level: &lt;8}</span><span class="s2">&lt;/level&gt; | &lt;cyan&gt;</span><span class="si">{name}</span><span class="s2">&lt;/cyan&gt;:&lt;cyan&gt;</span><span class="si">{function}</span><span class="s2">&lt;/cyan&gt;:&lt;cyan&gt;</span><span class="si">{line}</span><span class="s2">&lt;/cyan&gt; - &lt;level&gt;</span><span class="si">{message}</span><span class="s2">&lt;/level&gt;"</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="c1"># Add file logger</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">add</span><span class="p">(</span>
+        <span class="s2">"logs/app_{time:YYYY-MM-DD}.log"</span><span class="p">,</span>
+        <span class="n">rotation</span><span class="o">=</span><span class="s2">"00:00"</span><span class="p">,</span>  <span class="c1"># New file created each day at midnight</span>
+        <span class="n">retention</span><span class="o">=</span><span class="s2">"30 days"</span><span class="p">,</span>  <span class="c1"># Keep logs for 30 days</span>
+        <span class="n">compression</span><span class="o">=</span><span class="s2">"zip"</span><span class="p">,</span>  <span class="c1"># Compress rotated logs</span>
+        <span class="n">level</span><span class="o">=</span><span class="n">settings</span><span class="o">.</span><span class="n">LOG_LEVEL</span><span class="p">,</span>
+        <span class="nb">format</span><span class="o">=</span><span class="s2">"{time:YYYY-MM-DD HH:mm:ss} | </span><span class="si">{level: &lt;8}</span><span class="s2"> | </span><span class="si">{name}</span><span class="s2">:</span><span class="si">{function}</span><span class="s2">:</span><span class="si">{line}</span><span class="s2"> - </span><span class="si">{message}</span><span class="s2">"</span><span class="p">,</span>
+        <span class="n">serialize</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>  <span class="c1"># JSON format for structured logging</span>
+    <span class="p">)</span>
+
+    <span class="c1"># Intercept stdout/stderr</span>
+    <span class="n">sys</span><span class="o">.</span><span class="n">stdout</span> <span class="o">=</span> <span class="n">InterceptHandler</span><span class="p">()</span>
+    <span class="n">sys</span><span class="o">.</span><span class="n">stderr</span> <span class="o">=</span> <span class="n">InterceptHandler</span><span class="p">()</span>
+    
+    <span class="c1"># Replace other loggers with loguru</span>
+    <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">"uvicorn"</span><span class="p">,</span> <span class="s2">"uvicorn.access"</span><span class="p">,</span> <span class="s2">"fastapi"</span><span class="p">]:</span>
+        <span class="n">logging_logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+        <span class="n">logging_logger</span><span class="o">.</span><span class="n">handlers</span> <span class="o">=</span> <span class="p">[</span><span class="n">InterceptHandler</span><span class="p">()]</span>
+    
+    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Logging configured with level: </span><span class="si">{</span><span class="n">settings</span><span class="o">.</span><span class="n">LOG_LEVEL</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">logger</span>
+
+<span class="c1"># Import this after the function definition to avoid circular imports</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, Mazen Soliman.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

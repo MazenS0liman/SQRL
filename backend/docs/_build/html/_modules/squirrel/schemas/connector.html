@@ -1,0 +1,262 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>squirrel.schemas.connector &mdash; squirrel  documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/custom.css?v=adc7883a" />
+
+  
+    <link rel="shortcut icon" href="../../../_static/sqrl.png"/>
+      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="../../../_static/copybutton.js?v=a46eff05"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            squirrel
+              <img src="../../../_static/sqrl.png" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Python API Reference:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../api.html">Python API Reference</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">squirrel</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">squirrel.schemas.connector</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for squirrel.schemas.connector</h1><div class="highlight"><pre>
+<span></span><span class="sd">"""</span>
+<span class="sd">Data Connector Schemas</span>
+<span class="sd">=======================</span>
+
+<span class="sd">Pydantic models for the ``/connector`` endpoints backing the Data</span>
+<span class="sd">Connectors page (create/update/test/delete a ``DataConnection``, and list</span>
+<span class="sd">the ``ConnectorTypeDef`` catalog the "Add a source" tiles are built from).</span>
+
+<span class="sd">"""</span>
+<span class="c1"># ——————————————————————————————————————————————————————————————</span>
+<span class="c1"># Imports</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
+
+<span class="c1"># Standard Libraries</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="kn">import</span> <span class="n">datetime</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Any</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pydantic</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseModel</span><span class="p">,</span> <span class="n">Field</span>
+
+<span class="c1"># ——————————————————————————————————————————————————————————————</span>
+<span class="c1"># Connector type catalog (read-only, describes the "Add a source" tiles)</span>
+
+<div class="viewcode-block" id="ConnectorField">
+<a class="viewcode-back" href="../../../generated/squirrel_schemas_connector.html#squirrel.schemas.connector.ConnectorField">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">ConnectorField</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+    <span class="n">key</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">label</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="nb">type</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">required</span><span class="p">:</span> <span class="nb">bool</span>
+    <span class="n">placeholder</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span></div>
+
+
+<div class="viewcode-block" id="ConnectorType">
+<a class="viewcode-back" href="../../../generated/squirrel_schemas_connector.html#squirrel.schemas.connector.ConnectorType">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">ConnectorType</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+    <span class="nb">id</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">label</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">description</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">fields</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">ConnectorField</span><span class="p">]</span></div>
+
+
+<div class="viewcode-block" id="TableSelection">
+<a class="viewcode-back" href="../../../generated/squirrel_schemas_connector.html#squirrel.schemas.connector.TableSelection">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">TableSelection</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+    <span class="n">table</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">columns</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span></div>
+
+
+<div class="viewcode-block" id="TablePreview">
+<a class="viewcode-back" href="../../../generated/squirrel_schemas_connector.html#squirrel.schemas.connector.TablePreview">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">TablePreview</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+    <span class="n">table</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">columns</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">list</span><span class="p">)</span>
+    <span class="n">preview</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">list</span><span class="p">)</span>
+    <span class="n">error</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>  <span class="c1"># set if this one table's preview failed</span></div>
+
+
+<span class="c1"># ——————————————————————————————————————————————————————————————</span>
+<span class="c1"># Requests</span>
+
+<div class="viewcode-block" id="ConnectorCreateRequest">
+<a class="viewcode-back" href="../../../generated/squirrel_schemas_connector.html#squirrel.schemas.connector.ConnectorCreateRequest">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">ConnectorCreateRequest</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="o">...</span><span class="p">,</span> <span class="n">min_length</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">max_length</span><span class="o">=</span><span class="mi">200</span><span class="p">)</span>
+    <span class="nb">type</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="o">...</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">"One of the ids returned by GET /connectors/types."</span><span class="p">)</span>
+    <span class="n">config</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span>
+        <span class="n">default_factory</span><span class="o">=</span><span class="nb">dict</span><span class="p">,</span>
+        <span class="n">description</span><span class="o">=</span><span class="s2">"Field values keyed by the connector type's field keys (e.g. host, port, password)."</span><span class="p">,</span>
+    <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="ConnectorUpdateRequest">
+<a class="viewcode-back" href="../../../generated/squirrel_schemas_connector.html#squirrel.schemas.connector.ConnectorUpdateRequest">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">ConnectorUpdateRequest</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+    <span class="n">name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">min_length</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">max_length</span><span class="o">=</span><span class="mi">200</span><span class="p">)</span>
+    <span class="n">config</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span>
+        <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">description</span><span class="o">=</span><span class="p">(</span>
+            <span class="s2">"Partial or full field values to update. A blank value for a "</span>
+            <span class="s2">"secret field (e.g. password) means 'keep the existing value' — "</span>
+            <span class="s2">"it is never overwritten with an empty string."</span>
+        <span class="p">),</span>
+    <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="ConnectorPreviewRequest">
+<a class="viewcode-back" href="../../../generated/squirrel_schemas_connector.html#squirrel.schemas.connector.ConnectorPreviewRequest">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">ConnectorPreviewRequest</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+    <span class="n">query</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="o">...</span><span class="p">,</span> <span class="n">min_length</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">limit</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span> <span class="n">ge</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">le</span><span class="o">=</span><span class="mi">200</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="ConnectorSourcesRequest">
+<a class="viewcode-back" href="../../../generated/squirrel_schemas_connector.html#squirrel.schemas.connector.ConnectorSourcesRequest">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">ConnectorSourcesRequest</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+    <span class="n">connector_id</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">tables</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">TableSelection</span><span class="p">]</span></div>
+
+
+<span class="c1"># ——————————————————————————————————————————————————————————————</span>
+<span class="c1"># Responses</span>
+
+<div class="viewcode-block" id="ConnectorPreviewResponse">
+<a class="viewcode-back" href="../../../generated/squirrel_schemas_connector.html#squirrel.schemas.connector.ConnectorPreviewResponse">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">ConnectorPreviewResponse</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+    <span class="n">columns</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>
+    <span class="n">row_count</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">preview</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span></div>
+
+
+<div class="viewcode-block" id="ConnectorTablesPreviewResponse">
+<a class="viewcode-back" href="../../../generated/squirrel_schemas_connector.html#squirrel.schemas.connector.ConnectorTablesPreviewResponse">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">ConnectorTablesPreviewResponse</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+    <span class="n">tables</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">TablePreview</span><span class="p">]</span></div>
+
+
+<div class="viewcode-block" id="DataConnectionOut">
+<a class="viewcode-back" href="../../../generated/squirrel_schemas_connector.html#squirrel.schemas.connector.DataConnectionOut">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">DataConnectionOut</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    A single connection, safe to return from the API: secret field values</span>
+<span class="sd">    are always redacted (returned as ``""``) regardless of what's stored.</span>
+<span class="sd">    """</span>
+    <span class="n">connector_id</span><span class="p">:</span>   <span class="nb">str</span>
+    <span class="n">name</span><span class="p">:</span>           <span class="nb">str</span>
+    <span class="nb">type</span><span class="p">:</span>           <span class="nb">str</span>
+    <span class="n">status</span><span class="p">:</span>         <span class="nb">str</span>
+    <span class="n">error</span><span class="p">:</span>          <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">last_tested_at</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">datetime</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">config</span><span class="p">:</span>         <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">dict</span><span class="p">)</span>
+    <span class="n">created_at</span><span class="p">:</span>     <span class="n">datetime</span>
+    <span class="n">updated_at</span><span class="p">:</span>     <span class="n">datetime</span></div>
+
+
+<span class="c1"># ——————————————————————————————————————————————————————————————</span>
+<span class="c1"># Exceptions</span>
+
+<div class="viewcode-block" id="ConnectorNotFoundError">
+<a class="viewcode-back" href="../../../generated/squirrel_schemas_connector.html#squirrel.schemas.connector.ConnectorNotFoundError">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">ConnectorNotFoundError</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Raised when a ``connector_id`` doesn't exist."""</span></div>
+
+
+<div class="viewcode-block" id="ConnectorValidationError">
+<a class="viewcode-back" href="../../../generated/squirrel_schemas_connector.html#squirrel.schemas.connector.ConnectorValidationError">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">ConnectorValidationError</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Raised when a create/update request's ``config`` fails validation."""</span></div>
+
+
+<div class="viewcode-block" id="ConnectorInUseError">
+<a class="viewcode-back" href="../../../generated/squirrel_schemas_connector.html#squirrel.schemas.connector.ConnectorInUseError">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">ConnectorInUseError</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Raised when a connector can't be deleted because it's still referenced</span>
+<span class="sd">    by at least one notebook data source or workspace input source."""</span></div>
+
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, Mazen Soliman.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -51,15 +51,15 @@ class PreprocessPromptGenerator(IPromptGenerator):
     """
     Prompt generator for the tabular data preprocessing (clean + transform) agent.
 
-    **Description:**
-        Each prompt type has a dedicated system prompt (role + constraints) and a
-        dedicated user prompt (task-specific context injection).  The two halves are
-        kept separate so callers can pass the system prompt to the provider once at
-        session start and regenerate only the user prompt per call.
+    Description:
 
-    **Methods:**
-        - ``generate_system_prompt(prompt_type)`` — role + rules for this stage.
-        - ``generate_user_prompt(prompt_type, **kwargs)`` — context-injected task.
+    Each prompt type has a dedicated system prompt (role + constraints) and a
+    dedicated user prompt (task-specific context injection). The two halves are
+    kept separate so callers can pass the system prompt to the provider once at
+    session start and regenerate only the user prompt per call.
+
+    The ``generate_system_prompt`` and ``generate_user_prompt`` methods provide
+    the stage-specific rules and context-injected task respectively.
     """
 
     def __init__(self):

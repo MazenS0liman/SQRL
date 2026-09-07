@@ -1,0 +1,603 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>squirrel.modules.preprocessors.cleaning.tabular &mdash; squirrel  documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/custom.css?v=adc7883a" />
+
+  
+    <link rel="shortcut icon" href="../_static/sqrl.png"/>
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="../_static/copybutton.js?v=a46eff05"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="squirrel.modules.preprocessors.transformers.tabular" href="squirrel_modules_preprocessors_transformers_tabular.html" />
+    <link rel="prev" title="squirrel.modules.inspectors.tabular" href="squirrel_modules_inspectors_tabular.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            squirrel
+              <img src="../_static/sqrl.png" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Python API Reference:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="../api.html">Python API Reference</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="../generated_classes.html">Generated API classes</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="squirrel_constants_connector.html">squirrel.constants.connector</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_constants_workspace.html">squirrel.constants.workspace</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_core_config.html">squirrel.core.config</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_core_error_handlers.html">squirrel.core.error_handlers</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_core_logging.html">squirrel.core.logging</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_core_middleware.html">squirrel.core.middleware</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_models_classification.html">squirrel.models.classification</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_models_time_series.html">squirrel.models.time_series</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_modules_agents_abstract_IAgent.html">squirrel.modules.agents.abstract.IAgent</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_modules_agents_builder_TabularDataModelBuilderAgent.html">squirrel.modules.agents.builder.TabularDataModelBuilderAgent</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_modules_agents_exploratory_TabularDataExploratoryAgent.html">squirrel.modules.agents.exploratory.TabularDataExploratoryAgent</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_modules_agents_inspector_TabularDataInsepctorAgent.html">squirrel.modules.agents.inspector.TabularDataInsepctorAgent</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_modules_agents_orchestrator_OrchestratorAgent.html">squirrel.modules.agents.orchestrator.OrchestratorAgent</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_modules_agents_preprocessor_TabularDataProcessorAgent.html">squirrel.modules.agents.preprocessor.TabularDataProcessorAgent</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_modules_inspectors_tabular.html">squirrel.modules.inspectors.tabular</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">squirrel.modules.preprocessors.cleaning.tabular</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#squirrel.modules.preprocessors.cleaning.tabular.DataCleanStrategy"><code class="docutils literal notranslate"><span class="pre">DataCleanStrategy</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#squirrel.modules.preprocessors.cleaning.tabular.DropDuplicatesCleanStrategy"><code class="docutils literal notranslate"><span class="pre">DropDuplicatesCleanStrategy</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#squirrel.modules.preprocessors.cleaning.tabular.DropColumnsCleanStrategy"><code class="docutils literal notranslate"><span class="pre">DropColumnsCleanStrategy</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#squirrel.modules.preprocessors.cleaning.tabular.ImputeMissingValuesCleanStrategy"><code class="docutils literal notranslate"><span class="pre">ImputeMissingValuesCleanStrategy</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#squirrel.modules.preprocessors.cleaning.tabular.CastDtypesCleanStrategy"><code class="docutils literal notranslate"><span class="pre">CastDtypesCleanStrategy</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#squirrel.modules.preprocessors.cleaning.tabular.RenameColumnsCleanStrategy"><code class="docutils literal notranslate"><span class="pre">RenameColumnsCleanStrategy</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#squirrel.modules.preprocessors.cleaning.tabular.ClipOutliersCleanStrategy"><code class="docutils literal notranslate"><span class="pre">ClipOutliersCleanStrategy</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#squirrel.modules.preprocessors.cleaning.tabular.FilterRowsCleanStrategy"><code class="docutils literal notranslate"><span class="pre">FilterRowsCleanStrategy</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#squirrel.modules.preprocessors.cleaning.tabular.ScaleNumericCleanStrategy"><code class="docutils literal notranslate"><span class="pre">ScaleNumericCleanStrategy</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#squirrel.modules.preprocessors.cleaning.tabular.TabularDataCleaner"><code class="docutils literal notranslate"><span class="pre">TabularDataCleaner</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_modules_preprocessors_transformers_tabular.html">squirrel.modules.preprocessors.transformers.tabular</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_modules_prompts_abstract_IPromptGenerator.html">squirrel.modules.prompts.abstract.IPromptGenerator</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_modules_prompts_builder_TabularDataPromptGenerator.html">squirrel.modules.prompts.builder.TabularDataPromptGenerator</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_modules_prompts_exploratory_ExploratoryPromptGenerator.html">squirrel.modules.prompts.exploratory.ExploratoryPromptGenerator</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_modules_prompts_inspect_InspectPromptGenerator.html">squirrel.modules.prompts.inspect.InspectPromptGenerator</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_modules_prompts_orchestrator_OrchestratorPromptGenerator.html">squirrel.modules.prompts.orchestrator.OrchestratorPromptGenerator</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_modules_prompts_preprocess_PreprocessPromptGenerator.html">squirrel.modules.prompts.preprocess.PreprocessPromptGenerator</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_modules_providers_abstract_IProvider.html">squirrel.modules.providers.abstract.IProvider</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_modules_providers_gemini_GeminiProvider.html">squirrel.modules.providers.gemini.GeminiProvider</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_modules_providers_groq_GroqProvider.html">squirrel.modules.providers.groq.GroqProvider</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_modules_providers_openrouter_OpenRouterProvider.html">squirrel.modules.providers.openrouter.OpenRouterProvider</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_schemas_api.html">squirrel.schemas.api</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_schemas_argument_spec.html">squirrel.schemas.argument_spec</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_schemas_auth.html">squirrel.schemas.auth</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_schemas_connector.html">squirrel.schemas.connector</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_schemas_eda.html">squirrel.schemas.eda</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_schemas_error.html">squirrel.schemas.error</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_schemas_file.html">squirrel.schemas.file</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_schemas_notebook.html">squirrel.schemas.notebook</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_schemas_token.html">squirrel.schemas.token</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_schemas_workspace.html">squirrel.schemas.workspace</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_services_auth_AuthService.html">squirrel.services.auth.AuthService</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_services_auth_TokenService.html">squirrel.services.auth.TokenService</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_services_chat_MessagingService.html">squirrel.services.chat.MessagingService</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_services_data_connector_DataConnectorService.html">squirrel.services.data_connector.DataConnectorService</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_services_file_FileService.html">squirrel.services.file.FileService</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_services_notebook_NotebookService.html">squirrel.services.notebook.NotebookService</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_services_orchestrator_OrchestratorService.html">squirrel.services.orchestrator.OrchestratorService</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_services_storage_blob_IBlobStorageService.html">squirrel.services.storage.blob.IBlobStorageService</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_services_storage_blob_MinIOService.html">squirrel.services.storage.blob.MinIOService</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_services_storage_database_IDatabaseService.html">squirrel.services.storage.database.IDatabaseService</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_services_storage_database_PostgresService.html">squirrel.services.storage.database.PostgresService</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_services_workspace_WorkspaceService.html">squirrel.services.workspace.WorkspaceService</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">squirrel</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../api.html">Python API Reference</a></li>
+          <li class="breadcrumb-item"><a href="../generated_classes.html">Generated API classes</a></li>
+      <li class="breadcrumb-item active">squirrel.modules.preprocessors.cleaning.tabular</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/generated/squirrel_modules_preprocessors_cleaning_tabular.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="squirrel-modules-preprocessors-cleaning-tabular">
+<h1>squirrel.modules.preprocessors.cleaning.tabular<a class="headerlink" href="#squirrel-modules-preprocessors-cleaning-tabular" title="Link to this heading"></a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="squirrel.modules.preprocessors.cleaning.tabular.DataCleanStrategy">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">squirrel.modules.preprocessors.cleaning.tabular.</span></span><span class="sig-name descname"><span class="pre">DataCleanStrategy</span></span><a class="reference internal" href="../_modules/squirrel/modules/preprocessors/cleaning/tabular.html#DataCleanStrategy"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.modules.preprocessors.cleaning.tabular.DataCleanStrategy" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">ABC</span></code></p>
+<p>Abstract base class for tabular data cleaning strategies.
+Subclasses declare <code class="docutils literal notranslate"><span class="pre">argument_specs</span></code> to expose their accepted arguments
+to the catalog, prompt generator, and runtime validator.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="squirrel.modules.preprocessors.cleaning.tabular.DataCleanStrategy.clean">
+<em class="property"><span class="pre">abstract</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">clean</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fitted_state</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/modules/preprocessors/cleaning/tabular.html#DataCleanStrategy.clean"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.modules.preprocessors.cleaning.tabular.DataCleanStrategy.clean" title="Link to this definition"></a></dt>
+<dd><p>Apply the cleaning operation to <em>data</em>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataFrame</span></code></span>) – DataFrame to clean.</p></li>
+<li><p><strong>fitted_state</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code>]</span>) – Optional <code class="docutils literal notranslate"><span class="pre">{column:</span> <span class="pre">{...params...}}</span></code> dict of
+previously-fitted parameters. When present for a given column,
+strategies that would otherwise compute parameters from <em>data</em>
+(means, bounds, fill values, …) reuse the supplied values
+instead — this is the “apply at inference time” path. Strategies
+with no data-dependent parameters ignore this argument entirely.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">DataFrame</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code>]</span></p>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>A tuple of (cleaned_dataframe, report_dict).  The report dict
+always contains at least <code class="docutils literal notranslate"><span class="pre">rows_affected</span></code> and <code class="docutils literal notranslate"><span class="pre">columns_affected</span></code>.
+For strategies that support <code class="docutils literal notranslate"><span class="pre">fitted_state</span></code>, the report’s
+<code class="docutils literal notranslate"><span class="pre">per_column</span></code> block is exactly the shape you should pass back in
+as <code class="docutils literal notranslate"><span class="pre">fitted_state</span></code> on a future call to replay this step.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="squirrel.modules.preprocessors.cleaning.tabular.DropDuplicatesCleanStrategy">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">squirrel.modules.preprocessors.cleaning.tabular.</span></span><span class="sig-name descname"><span class="pre">DropDuplicatesCleanStrategy</span></span><a class="reference internal" href="../_modules/squirrel/modules/preprocessors/cleaning/tabular.html#DropDuplicatesCleanStrategy"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.modules.preprocessors.cleaning.tabular.DropDuplicatesCleanStrategy" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#squirrel.modules.preprocessors.cleaning.tabular.DataCleanStrategy" title="squirrel.modules.preprocessors.cleaning.tabular.DataCleanStrategy"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataCleanStrategy</span></code></a></p>
+<p>Removes duplicate rows, optionally scoped to a subset of columns,
+and returns a report of how many rows were dropped and which indices were affected.</p>
+<p>No data-dependent parameters — <code class="docutils literal notranslate"><span class="pre">fitted_state</span></code> is accepted for interface
+consistency but unused; behavior at inference time is identical to training.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="squirrel.modules.preprocessors.cleaning.tabular.DropDuplicatesCleanStrategy.clean">
+<span class="sig-name descname"><span class="pre">clean</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fitted_state</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/modules/preprocessors/cleaning/tabular.html#DropDuplicatesCleanStrategy.clean"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.modules.preprocessors.cleaning.tabular.DropDuplicatesCleanStrategy.clean" title="Link to this definition"></a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataFrame</span></code></span>) – Input DataFrame.</p></li>
+<li><p><strong>fitted_state</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code>]</span>) – Unused — no data-dependent parameters.</p></li>
+<li><p><strong>kwargs</strong> – <ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">subset</span></code> (list[str]): columns to check; default all.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">keep</span></code> (str): <code class="docutils literal notranslate"><span class="pre">'first'</span></code>, <code class="docutils literal notranslate"><span class="pre">'last'</span></code>, or <code class="docutils literal notranslate"><span class="pre">'false'</span></code>; default <code class="docutils literal notranslate"><span class="pre">'first'</span></code>.</p></li>
+</ul>
+</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">DataFrame</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code>]</span></p>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>(cleaned_df, report)</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="squirrel.modules.preprocessors.cleaning.tabular.DropColumnsCleanStrategy">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">squirrel.modules.preprocessors.cleaning.tabular.</span></span><span class="sig-name descname"><span class="pre">DropColumnsCleanStrategy</span></span><a class="reference internal" href="../_modules/squirrel/modules/preprocessors/cleaning/tabular.html#DropColumnsCleanStrategy"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.modules.preprocessors.cleaning.tabular.DropColumnsCleanStrategy" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#squirrel.modules.preprocessors.cleaning.tabular.DataCleanStrategy" title="squirrel.modules.preprocessors.cleaning.tabular.DataCleanStrategy"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataCleanStrategy</span></code></a></p>
+<p>Drops one or more columns from the DataFrame, with optional safety checks
+that prevent dropping columns with low missing ratios or high variance.</p>
+<p>No data-dependent parameters — <code class="docutils literal notranslate"><span class="pre">fitted_state</span></code> is accepted for interface
+consistency but unused.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="squirrel.modules.preprocessors.cleaning.tabular.DropColumnsCleanStrategy.clean">
+<span class="sig-name descname"><span class="pre">clean</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fitted_state</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/modules/preprocessors/cleaning/tabular.html#DropColumnsCleanStrategy.clean"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.modules.preprocessors.cleaning.tabular.DropColumnsCleanStrategy.clean" title="Link to this definition"></a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataFrame</span></code></span>) – Input DataFrame.</p></li>
+<li><p><strong>fitted_state</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code>]</span>) – Unused — no data-dependent parameters.</p></li>
+<li><p><strong>kwargs</strong> – <ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">columns</span></code> (list[str]): columns to drop (required).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">errors</span></code> (str): <code class="docutils literal notranslate"><span class="pre">'raise'</span></code> or <code class="docutils literal notranslate"><span class="pre">'ignore'</span></code>; default <code class="docutils literal notranslate"><span class="pre">'raise'</span></code>.</p></li>
+</ul>
+</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">DataFrame</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code>]</span></p>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>(cleaned_df, report)</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="squirrel.modules.preprocessors.cleaning.tabular.ImputeMissingValuesCleanStrategy">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">squirrel.modules.preprocessors.cleaning.tabular.</span></span><span class="sig-name descname"><span class="pre">ImputeMissingValuesCleanStrategy</span></span><a class="reference internal" href="../_modules/squirrel/modules/preprocessors/cleaning/tabular.html#ImputeMissingValuesCleanStrategy"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.modules.preprocessors.cleaning.tabular.ImputeMissingValuesCleanStrategy" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#squirrel.modules.preprocessors.cleaning.tabular.DataCleanStrategy" title="squirrel.modules.preprocessors.cleaning.tabular.DataCleanStrategy"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataCleanStrategy</span></code></a></p>
+<p>Imputes missing values in one or more columns using a chosen strategy
+(mean, median, mode, constant, or forward/backward fill),
+selected per column or applied uniformly.</p>
+<p><code class="docutils literal notranslate"><span class="pre">fitted_state</span></code> support: when a column has an entry in <code class="docutils literal notranslate"><span class="pre">fitted_state</span></code>
+(shape <code class="docutils literal notranslate"><span class="pre">{&quot;fill_value&quot;:</span> <span class="pre">...,</span> <span class="pre">&quot;method&quot;:</span> <span class="pre">...}</span></code>, as produced by this
+strategy’s own report), that exact fill value is reused instead of being
+recomputed from <em>data</em> — e.g. the training-set mean/median/mode is
+applied to new rows rather than the (statistically meaningless) mean of
+a single new row. <code class="docutils literal notranslate"><span class="pre">ffill</span></code>/<code class="docutils literal notranslate"><span class="pre">bfill</span></code> cannot be replayed this way since
+they depend on row order/neighbours, not a single scalar; they always
+recompute from the data given, same as before, regardless of
+<code class="docutils literal notranslate"><span class="pre">fitted_state</span></code>.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="squirrel.modules.preprocessors.cleaning.tabular.ImputeMissingValuesCleanStrategy.clean">
+<span class="sig-name descname"><span class="pre">clean</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fitted_state</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/modules/preprocessors/cleaning/tabular.html#ImputeMissingValuesCleanStrategy.clean"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.modules.preprocessors.cleaning.tabular.ImputeMissingValuesCleanStrategy.clean" title="Link to this definition"></a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataFrame</span></code></span>) – Input DataFrame.</p></li>
+<li><p><strong>fitted_state</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code>]</span>) – Optional <code class="docutils literal notranslate"><span class="pre">{col:</span> <span class="pre">{&quot;fill_value&quot;:</span> <span class="pre">...,</span> <span class="pre">&quot;method&quot;:</span> <span class="pre">...}}</span></code>
+from a previous training-time call. When present for a column
+(and its method isn’t ffill/bfill), the recorded <code class="docutils literal notranslate"><span class="pre">fill_value</span></code>
+is reused verbatim instead of recomputed from <em>data</em>.</p></li>
+<li><p><strong>kwargs</strong> – <ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">columns</span></code> (list[str]): columns to impute (required).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">method</span></code> (str): default imputation method; default <code class="docutils literal notranslate"><span class="pre">'mean'</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">fill_value</span></code>: used when method is <code class="docutils literal notranslate"><span class="pre">'constant'</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">column_methods</span></code> (dict): per-column overrides.</p></li>
+</ul>
+</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">DataFrame</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code>]</span></p>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>(cleaned_df, report)</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="squirrel.modules.preprocessors.cleaning.tabular.CastDtypesCleanStrategy">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">squirrel.modules.preprocessors.cleaning.tabular.</span></span><span class="sig-name descname"><span class="pre">CastDtypesCleanStrategy</span></span><a class="reference internal" href="../_modules/squirrel/modules/preprocessors/cleaning/tabular.html#CastDtypesCleanStrategy"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.modules.preprocessors.cleaning.tabular.CastDtypesCleanStrategy" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#squirrel.modules.preprocessors.cleaning.tabular.DataCleanStrategy" title="squirrel.modules.preprocessors.cleaning.tabular.DataCleanStrategy"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataCleanStrategy</span></code></a></p>
+<p>Casts one or more columns to specified dtypes, with configurable error
+handling and optional coercion (invalid values become NaN instead of raising).</p>
+<p>No data-dependent parameters — the target dtype is a fixed argument, not
+something fit from the data. <code class="docutils literal notranslate"><span class="pre">fitted_state</span></code> is accepted for interface
+consistency but unused.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="squirrel.modules.preprocessors.cleaning.tabular.CastDtypesCleanStrategy.clean">
+<span class="sig-name descname"><span class="pre">clean</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fitted_state</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/modules/preprocessors/cleaning/tabular.html#CastDtypesCleanStrategy.clean"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.modules.preprocessors.cleaning.tabular.CastDtypesCleanStrategy.clean" title="Link to this definition"></a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataFrame</span></code></span>) – Input DataFrame.</p></li>
+<li><p><strong>fitted_state</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code>]</span>) – Unused — no data-dependent parameters.</p></li>
+<li><p><strong>kwargs</strong> – <ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">column_dtypes</span></code> (dict): col → dtype mapping (required).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">errors</span></code> (str): <code class="docutils literal notranslate"><span class="pre">'raise'</span></code>, <code class="docutils literal notranslate"><span class="pre">'coerce'</span></code>, or <code class="docutils literal notranslate"><span class="pre">'ignore'</span></code>; default <code class="docutils literal notranslate"><span class="pre">'coerce'</span></code>.</p></li>
+</ul>
+</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">DataFrame</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code>]</span></p>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>(cleaned_df, report)</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="squirrel.modules.preprocessors.cleaning.tabular.RenameColumnsCleanStrategy">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">squirrel.modules.preprocessors.cleaning.tabular.</span></span><span class="sig-name descname"><span class="pre">RenameColumnsCleanStrategy</span></span><a class="reference internal" href="../_modules/squirrel/modules/preprocessors/cleaning/tabular.html#RenameColumnsCleanStrategy"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.modules.preprocessors.cleaning.tabular.RenameColumnsCleanStrategy" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#squirrel.modules.preprocessors.cleaning.tabular.DataCleanStrategy" title="squirrel.modules.preprocessors.cleaning.tabular.DataCleanStrategy"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataCleanStrategy</span></code></a></p>
+<p>Renames columns according to a mapping and optionally normalises all names
+to snake_case (lowercase, spaces and hyphens replaced with underscores).</p>
+<p>No data-dependent parameters — <code class="docutils literal notranslate"><span class="pre">fitted_state</span></code> is accepted for interface
+consistency but unused.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="squirrel.modules.preprocessors.cleaning.tabular.RenameColumnsCleanStrategy.clean">
+<span class="sig-name descname"><span class="pre">clean</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fitted_state</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/modules/preprocessors/cleaning/tabular.html#RenameColumnsCleanStrategy.clean"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.modules.preprocessors.cleaning.tabular.RenameColumnsCleanStrategy.clean" title="Link to this definition"></a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataFrame</span></code></span>) – Input DataFrame.</p></li>
+<li><p><strong>fitted_state</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code>]</span>) – Unused — no data-dependent parameters.</p></li>
+<li><p><strong>kwargs</strong> – <ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">rename_map</span></code> (dict): explicit old → new; default <code class="docutils literal notranslate"><span class="pre">{}</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">normalise</span></code> (bool): auto-snake_case; default <code class="docutils literal notranslate"><span class="pre">False</span></code>.</p></li>
+</ul>
+</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">DataFrame</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code>]</span></p>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>(cleaned_df, report)</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="squirrel.modules.preprocessors.cleaning.tabular.ClipOutliersCleanStrategy">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">squirrel.modules.preprocessors.cleaning.tabular.</span></span><span class="sig-name descname"><span class="pre">ClipOutliersCleanStrategy</span></span><a class="reference internal" href="../_modules/squirrel/modules/preprocessors/cleaning/tabular.html#ClipOutliersCleanStrategy"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.modules.preprocessors.cleaning.tabular.ClipOutliersCleanStrategy" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#squirrel.modules.preprocessors.cleaning.tabular.DataCleanStrategy" title="squirrel.modules.preprocessors.cleaning.tabular.DataCleanStrategy"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataCleanStrategy</span></code></a></p>
+<p>Clips extreme values in numeric columns to a specified range, using either
+explicit bounds or IQR-derived fences, replacing values outside the range
+with the boundary value (Winsorisation).</p>
+<p><code class="docutils literal notranslate"><span class="pre">fitted_state</span></code> support: when a column has an entry in <code class="docutils literal notranslate"><span class="pre">fitted_state</span></code>
+(shape <code class="docutils literal notranslate"><span class="pre">{&quot;lower_bound&quot;:</span> <span class="pre">...,</span> <span class="pre">&quot;upper_bound&quot;:</span> <span class="pre">...}</span></code>, as produced by this
+strategy’s own report), those exact bounds are reused instead of being
+recomputed from <em>data</em> — i.e. new rows are clipped against the training
+distribution’s fences, not fences derived from the (possibly tiny,
+possibly single-row) inference batch.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="squirrel.modules.preprocessors.cleaning.tabular.ClipOutliersCleanStrategy.clean">
+<span class="sig-name descname"><span class="pre">clean</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fitted_state</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/modules/preprocessors/cleaning/tabular.html#ClipOutliersCleanStrategy.clean"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.modules.preprocessors.cleaning.tabular.ClipOutliersCleanStrategy.clean" title="Link to this definition"></a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataFrame</span></code></span>) – Input DataFrame.</p></li>
+<li><p><strong>fitted_state</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code>]</span>) – Optional <code class="docutils literal notranslate"><span class="pre">{col:</span> <span class="pre">{&quot;lower_bound&quot;:</span> <span class="pre">...,</span> <span class="pre">&quot;upper_bound&quot;:</span> <span class="pre">...}}</span></code>
+from a previous training-time call. When present for a column,
+those bounds are reused verbatim instead of recomputed from
+<em>data</em>.</p></li>
+<li><p><strong>kwargs</strong> – <ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">columns</span></code> (list[str]): required.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">method</span></code> (str): <code class="docutils literal notranslate"><span class="pre">'iqr'</span></code> or <code class="docutils literal notranslate"><span class="pre">'percentile'</span></code>; default <code class="docutils literal notranslate"><span class="pre">'iqr'</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">lower</span></code>, <code class="docutils literal notranslate"><span class="pre">upper</span></code> (float): explicit bounds; override method.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">lower_percentile</span></code>, <code class="docutils literal notranslate"><span class="pre">upper_percentile</span></code> (float): for percentile method.</p></li>
+</ul>
+</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">DataFrame</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code>]</span></p>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>(cleaned_df, report)</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="squirrel.modules.preprocessors.cleaning.tabular.FilterRowsCleanStrategy">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">squirrel.modules.preprocessors.cleaning.tabular.</span></span><span class="sig-name descname"><span class="pre">FilterRowsCleanStrategy</span></span><a class="reference internal" href="../_modules/squirrel/modules/preprocessors/cleaning/tabular.html#FilterRowsCleanStrategy"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.modules.preprocessors.cleaning.tabular.FilterRowsCleanStrategy" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#squirrel.modules.preprocessors.cleaning.tabular.DataCleanStrategy" title="squirrel.modules.preprocessors.cleaning.tabular.DataCleanStrategy"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataCleanStrategy</span></code></a></p>
+<p>Removes rows that do not satisfy one or more column-level conditions,
+supporting numeric comparisons and categorical membership checks.</p>
+<p>No data-dependent parameters — conditions are fixed arguments.
+<code class="docutils literal notranslate"><span class="pre">fitted_state</span></code> is accepted for interface consistency but unused.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="squirrel.modules.preprocessors.cleaning.tabular.FilterRowsCleanStrategy.clean">
+<span class="sig-name descname"><span class="pre">clean</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fitted_state</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/modules/preprocessors/cleaning/tabular.html#FilterRowsCleanStrategy.clean"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.modules.preprocessors.cleaning.tabular.FilterRowsCleanStrategy.clean" title="Link to this definition"></a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataFrame</span></code></span>) – Input DataFrame.</p></li>
+<li><p><strong>fitted_state</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code>]</span>) – Unused — no data-dependent parameters.</p></li>
+<li><p><strong>kwargs</strong> – <ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">conditions</span></code> (list[dict]): required.</p></li>
+</ul>
+</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">DataFrame</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code>]</span></p>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>(cleaned_df, report)</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="squirrel.modules.preprocessors.cleaning.tabular.ScaleNumericCleanStrategy">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">squirrel.modules.preprocessors.cleaning.tabular.</span></span><span class="sig-name descname"><span class="pre">ScaleNumericCleanStrategy</span></span><a class="reference internal" href="../_modules/squirrel/modules/preprocessors/cleaning/tabular.html#ScaleNumericCleanStrategy"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.modules.preprocessors.cleaning.tabular.ScaleNumericCleanStrategy" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#squirrel.modules.preprocessors.cleaning.tabular.DataCleanStrategy" title="squirrel.modules.preprocessors.cleaning.tabular.DataCleanStrategy"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataCleanStrategy</span></code></a></p>
+<p>Scales numeric columns using standard scaling (Z-score), min-max normalisation,
+or robust scaling (IQR-based), fitting on the provided data in place.</p>
+<p><code class="docutils literal notranslate"><span class="pre">fitted_state</span></code> support: when a column has an entry in <code class="docutils literal notranslate"><span class="pre">fitted_state</span></code>
+(shape depends on <code class="docutils literal notranslate"><span class="pre">method</span></code> — e.g. <code class="docutils literal notranslate"><span class="pre">{&quot;mean&quot;:</span> <span class="pre">...,</span> <span class="pre">&quot;std&quot;:</span> <span class="pre">...}</span></code> for
+standard, <code class="docutils literal notranslate"><span class="pre">{&quot;min&quot;:</span> <span class="pre">...,</span> <span class="pre">&quot;max&quot;:</span> <span class="pre">...}</span></code> for minmax, <code class="docutils literal notranslate"><span class="pre">{&quot;median&quot;:</span> <span class="pre">...,</span>
+<span class="pre">&quot;iqr&quot;:</span> <span class="pre">...}</span></code> for robust — as produced by this strategy’s own report),
+those exact parameters are reused instead of being recomputed from
+<em>data</em>. This is what lets a single new row be scaled consistently with
+the training distribution instead of trivially becoming 0 (its own mean).</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="squirrel.modules.preprocessors.cleaning.tabular.ScaleNumericCleanStrategy.clean">
+<span class="sig-name descname"><span class="pre">clean</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fitted_state</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/modules/preprocessors/cleaning/tabular.html#ScaleNumericCleanStrategy.clean"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.modules.preprocessors.cleaning.tabular.ScaleNumericCleanStrategy.clean" title="Link to this definition"></a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataFrame</span></code></span>) – Input DataFrame.</p></li>
+<li><p><strong>fitted_state</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code>]</span>) – Optional <code class="docutils literal notranslate"><span class="pre">{col:</span> <span class="pre">{...method-specific</span> <span class="pre">params...}}</span></code>
+from a previous training-time call. When present and complete
+for a column’s method, those parameters are reused verbatim
+instead of recomputed from <em>data</em>.</p></li>
+<li><p><strong>kwargs</strong> – <ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">columns</span></code> (list[str]): required.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">method</span></code> (str): <code class="docutils literal notranslate"><span class="pre">'standard'</span></code>, <code class="docutils literal notranslate"><span class="pre">'minmax'</span></code>, or <code class="docutils literal notranslate"><span class="pre">'robust'</span></code>; default <code class="docutils literal notranslate"><span class="pre">'standard'</span></code>.</p></li>
+</ul>
+</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">DataFrame</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code>]</span></p>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>(cleaned_df, report)</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="squirrel.modules.preprocessors.cleaning.tabular.TabularDataCleaner">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">squirrel.modules.preprocessors.cleaning.tabular.</span></span><span class="sig-name descname"><span class="pre">TabularDataCleaner</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">strategy</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/modules/preprocessors/cleaning/tabular.html#TabularDataCleaner"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.modules.preprocessors.cleaning.tabular.TabularDataCleaner" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Applies a sequence of <code class="docutils literal notranslate"><span class="pre">DataCleanStrategy</span></code> instances to a DataFrame,
+accumulating reports from each step. Mirrors the TabularDataInpsector API.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>strategy</strong> (<a class="reference internal" href="#squirrel.modules.preprocessors.cleaning.tabular.DataCleanStrategy" title="squirrel.modules.preprocessors.cleaning.tabular.DataCleanStrategy"><em>DataCleanStrategy</em></a><em> | </em><em>str</em>)</p>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="squirrel.modules.preprocessors.cleaning.tabular.TabularDataCleaner.set_strategy">
+<span class="sig-name descname"><span class="pre">set_strategy</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">strategy</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/modules/preprocessors/cleaning/tabular.html#TabularDataCleaner.set_strategy"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.modules.preprocessors.cleaning.tabular.TabularDataCleaner.set_strategy" title="Link to this definition"></a></dt>
+<dd><p>Replace the current strategy.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></span></p>
+</dd>
+<dt class="field-even">Parameters<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>strategy</strong> (<a class="reference internal" href="#squirrel.modules.preprocessors.cleaning.tabular.DataCleanStrategy" title="squirrel.modules.preprocessors.cleaning.tabular.DataCleanStrategy"><em>DataCleanStrategy</em></a><em> | </em><em>str</em>)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="squirrel.modules.preprocessors.cleaning.tabular.TabularDataCleaner.execute_strategy">
+<span class="sig-name descname"><span class="pre">execute_strategy</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fitted_state</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/modules/preprocessors/cleaning/tabular.html#TabularDataCleaner.execute_strategy"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.modules.preprocessors.cleaning.tabular.TabularDataCleaner.execute_strategy" title="Link to this definition"></a></dt>
+<dd><p>Run the current strategy and return <code class="docutils literal notranslate"><span class="pre">(cleaned_df,</span> <span class="pre">report)</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataFrame</span></code></span>) – DataFrame to clean.</p></li>
+<li><p><strong>fitted_state</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code>]</span>) – Optional previously-fitted per-column parameters
+to replay instead of recomputing from <em>data</em> (inference mode).
+Ignored by strategies with no data-dependent parameters.</p></li>
+<li><p><strong>kwargs</strong> – Forwarded to the strategy’s <code class="docutils literal notranslate"><span class="pre">clean</span></code> method.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">DataFrame</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code>]</span></p>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Tuple of cleaned DataFrame and report dict.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="squirrel.modules.preprocessors.cleaning.tabular.TabularDataCleaner.run_pipeline">
+<span class="sig-name descname"><span class="pre">run_pipeline</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">steps</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fitted_states</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/modules/preprocessors/cleaning/tabular.html#TabularDataCleaner.run_pipeline"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.modules.preprocessors.cleaning.tabular.TabularDataCleaner.run_pipeline" title="Link to this definition"></a></dt>
+<dd><p>Execute a sequence of cleaning steps, threading the DataFrame through each.</p>
+<p>Each step dict must have:
+- <code class="docutils literal notranslate"><span class="pre">cleaning</span></code> (str or DataCleanStrategy): strategy identifier.
+- <code class="docutils literal notranslate"><span class="pre">arguments</span></code> (dict): kwargs forwarded to the strategy.
+- <code class="docutils literal notranslate"><span class="pre">name</span></code> (str, optional): human-readable step label.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataFrame</span></code></span>) – Input DataFrame.</p></li>
+<li><p><strong>steps</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code>]</span>) – List of step dicts.</p></li>
+<li><p><strong>fitted_states</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code>[<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code>]]]</span>) – Optional list, same length as <em>steps</em> (or
+<code class="docutils literal notranslate"><span class="pre">None</span></code>), of per-step <code class="docutils literal notranslate"><span class="pre">fitted_state</span></code> dicts to replay — pass
+each step’s own <code class="docutils literal notranslate"><span class="pre">per_column</span></code> block from a prior training-time
+report to run this pipeline in “apply” mode against new data
+instead of “fit” mode.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">DataFrame</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code>]]</span></p>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>(final_cleaned_df, list_of_reports)</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="squirrel_modules_inspectors_tabular.html" class="btn btn-neutral float-left" title="squirrel.modules.inspectors.tabular" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="squirrel_modules_preprocessors_transformers_tabular.html" class="btn btn-neutral float-right" title="squirrel.modules.preprocessors.transformers.tabular" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, Mazen Soliman.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

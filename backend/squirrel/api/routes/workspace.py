@@ -33,28 +33,11 @@ Pipeline per workspace
    Remove a single input source from a workspace.
 
 5. ``POST /workspace/{workspace_id}/build``
-   Given the ``target_column`` chosen in the dropdown (and, optionally, a
-   free-text ``query`` describing how sources relate and/or what the model
-   should optimize for):
-     a. Loads every input source's data (downloading uploads from MinIO,
-        querying connectors).
-     b. Merges all sources into a single frame. When the sources don't
-        share an identical schema or an obviously-disjoint one, this step
-        is delegated to the preprocessing agent, which uses the LLM to
-        infer a relationship between sources (e.g. a shared join key) —
-        grounded in ``target_column`` and ``query`` — rather than the
-        route guessing or refusing outright. If the agent can't find a
-        defensible relationship, or two sources genuinely collide on a
-        non-target column with no way to reconcile them, the build is
-        refused (409) so the frontend can surface it.
-     c. Runs :class:`TabularDataProcessorAgent` (clean + transform + feature
-        engineer) on the merged frame, persisting that run — including the
-        fitted plan + execution report needed to replay this exact
-        preprocessing at inference time — via :class:`WorkspaceService`.
-     d. Runs :class:`TabularDataModelBuilderAgent` on the processed frame
-        and persists the fitted models + comparison summary.
-     e. Returns both summaries, including per-model accuracy metrics, so
-        the frontend can render a comparison table.
+   Given the ``target_column`` chosen in the dropdown and, optionally, a
+   free-text ``query`` describing how sources relate or what the model should
+   optimize for, the route loads the input sources, merges their data,
+   preprocesses the merged frame, builds and persists fitted models, and
+   returns model summaries with accuracy metrics for the frontend.
 
 6. ``GET /workspace`` / ``GET /library/workspaces/{workspace_id}``
    List workspaces / fetch one workspace, for the Library page.

@@ -8,12 +8,6 @@ Overview
 
 This module configures and registers all API routes for the SQRL FastAPI application.
 
-Routes
-------
-
-:path:`/health`
-    Health check endpoints for application monitoring and status verification.
-
 """
 # Imports
 

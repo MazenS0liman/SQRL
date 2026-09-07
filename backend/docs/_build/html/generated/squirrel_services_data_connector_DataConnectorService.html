@@ -1,0 +1,468 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>squirrel.services.data_connector.DataConnectorService &mdash; squirrel  documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/custom.css?v=adc7883a" />
+
+  
+    <link rel="shortcut icon" href="../_static/sqrl.png"/>
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="../_static/copybutton.js?v=a46eff05"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="squirrel.services.file.FileService" href="squirrel_services_file_FileService.html" />
+    <link rel="prev" title="squirrel.services.chat.MessagingService" href="squirrel_services_chat_MessagingService.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            squirrel
+              <img src="../_static/sqrl.png" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Python API Reference:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="../api.html">Python API Reference</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="../generated_classes.html">Generated API classes</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="squirrel_constants_connector.html">squirrel.constants.connector</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_constants_workspace.html">squirrel.constants.workspace</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_core_config.html">squirrel.core.config</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_core_error_handlers.html">squirrel.core.error_handlers</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_core_logging.html">squirrel.core.logging</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_core_middleware.html">squirrel.core.middleware</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_models_classification.html">squirrel.models.classification</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_models_time_series.html">squirrel.models.time_series</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_modules_agents_abstract_IAgent.html">squirrel.modules.agents.abstract.IAgent</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_modules_agents_builder_TabularDataModelBuilderAgent.html">squirrel.modules.agents.builder.TabularDataModelBuilderAgent</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_modules_agents_exploratory_TabularDataExploratoryAgent.html">squirrel.modules.agents.exploratory.TabularDataExploratoryAgent</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_modules_agents_inspector_TabularDataInsepctorAgent.html">squirrel.modules.agents.inspector.TabularDataInsepctorAgent</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_modules_agents_orchestrator_OrchestratorAgent.html">squirrel.modules.agents.orchestrator.OrchestratorAgent</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_modules_agents_preprocessor_TabularDataProcessorAgent.html">squirrel.modules.agents.preprocessor.TabularDataProcessorAgent</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_modules_inspectors_tabular.html">squirrel.modules.inspectors.tabular</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_modules_preprocessors_cleaning_tabular.html">squirrel.modules.preprocessors.cleaning.tabular</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_modules_preprocessors_transformers_tabular.html">squirrel.modules.preprocessors.transformers.tabular</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_modules_prompts_abstract_IPromptGenerator.html">squirrel.modules.prompts.abstract.IPromptGenerator</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_modules_prompts_builder_TabularDataPromptGenerator.html">squirrel.modules.prompts.builder.TabularDataPromptGenerator</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_modules_prompts_exploratory_ExploratoryPromptGenerator.html">squirrel.modules.prompts.exploratory.ExploratoryPromptGenerator</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_modules_prompts_inspect_InspectPromptGenerator.html">squirrel.modules.prompts.inspect.InspectPromptGenerator</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_modules_prompts_orchestrator_OrchestratorPromptGenerator.html">squirrel.modules.prompts.orchestrator.OrchestratorPromptGenerator</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_modules_prompts_preprocess_PreprocessPromptGenerator.html">squirrel.modules.prompts.preprocess.PreprocessPromptGenerator</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_modules_providers_abstract_IProvider.html">squirrel.modules.providers.abstract.IProvider</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_modules_providers_gemini_GeminiProvider.html">squirrel.modules.providers.gemini.GeminiProvider</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_modules_providers_groq_GroqProvider.html">squirrel.modules.providers.groq.GroqProvider</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_modules_providers_openrouter_OpenRouterProvider.html">squirrel.modules.providers.openrouter.OpenRouterProvider</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_schemas_api.html">squirrel.schemas.api</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_schemas_argument_spec.html">squirrel.schemas.argument_spec</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_schemas_auth.html">squirrel.schemas.auth</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_schemas_connector.html">squirrel.schemas.connector</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_schemas_eda.html">squirrel.schemas.eda</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_schemas_error.html">squirrel.schemas.error</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_schemas_file.html">squirrel.schemas.file</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_schemas_notebook.html">squirrel.schemas.notebook</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_schemas_token.html">squirrel.schemas.token</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_schemas_workspace.html">squirrel.schemas.workspace</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_services_auth_AuthService.html">squirrel.services.auth.AuthService</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_services_auth_TokenService.html">squirrel.services.auth.TokenService</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_services_chat_MessagingService.html">squirrel.services.chat.MessagingService</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">squirrel.services.data_connector.DataConnectorService</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#squirrel.services.data_connector.DataConnectorService.DataConnectorService"><code class="docutils literal notranslate"><span class="pre">DataConnectorService</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_services_file_FileService.html">squirrel.services.file.FileService</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_services_notebook_NotebookService.html">squirrel.services.notebook.NotebookService</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_services_orchestrator_OrchestratorService.html">squirrel.services.orchestrator.OrchestratorService</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_services_storage_blob_IBlobStorageService.html">squirrel.services.storage.blob.IBlobStorageService</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_services_storage_blob_MinIOService.html">squirrel.services.storage.blob.MinIOService</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_services_storage_database_IDatabaseService.html">squirrel.services.storage.database.IDatabaseService</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_services_storage_database_PostgresService.html">squirrel.services.storage.database.PostgresService</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_services_workspace_WorkspaceService.html">squirrel.services.workspace.WorkspaceService</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">squirrel</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../api.html">Python API Reference</a></li>
+          <li class="breadcrumb-item"><a href="../generated_classes.html">Generated API classes</a></li>
+      <li class="breadcrumb-item active">squirrel.services.data_connector.DataConnectorService</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/generated/squirrel_services_data_connector_DataConnectorService.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="squirrel-services-data-connector-dataconnectorservice">
+<h1>squirrel.services.data_connector.DataConnectorService<a class="headerlink" href="#squirrel-services-data-connector-dataconnectorservice" title="Link to this heading"></a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="squirrel.services.data_connector.DataConnectorService.DataConnectorService">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">squirrel.services.data_connector.DataConnectorService.</span></span><span class="sig-name descname"><span class="pre">DataConnectorService</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">db</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/services/data_connector/DataConnectorService.html#DataConnectorService"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.services.data_connector.DataConnectorService.DataConnectorService" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Coordinate CRUD, secret handling, and live testing for data
+connections used by workspaces as an alternative/additional input
+source to file uploads.</p>
+<p><strong>Usage:</strong></p>
+<ol class="arabic simple">
+<li><p>Create / list / fetch / update / delete connections.</p></li>
+<li><p>Validate a connector type’s required fields on create.</p></li>
+<li><p>Encrypt secret fields at rest; never surface them in plaintext.</p></li>
+<li><p>Run a live connectivity check (“Test”) per connector type and
+persist the resulting status/error.</p></li>
+<li><p>Resolve a connection into an in-memory DataFrame for the workspace
+build pipeline (extension point — only a subset of types today).</p></li>
+</ol>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>db</strong> (<a class="reference internal" href="squirrel_services_storage_database_PostgresService.html#squirrel.services.storage.database.PostgresService.PostgresService" title="squirrel.services.storage.database.PostgresService.PostgresService"><em>PostgresService</em></a><em> | </em><em>None</em>)</p>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="squirrel.services.data_connector.DataConnectorService.DataConnectorService.create_connection">
+<span class="sig-name descname"><span class="pre">create_connection</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">connector_type</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">config</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/services/data_connector/DataConnectorService.html#DataConnectorService.create_connection"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.services.data_connector.DataConnectorService.DataConnectorService.create_connection" title="Link to this definition"></a></dt>
+<dd><p>Create a new connection. Secret fields in <em>config</em> are encrypted
+before being persisted.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>ValueError</strong> – if <code class="docutils literal notranslate"><span class="pre">connector_type</span></code> isn’t recognised.</p></li>
+<li><p><a class="reference internal" href="squirrel_schemas_connector.html#squirrel.schemas.connector.ConnectorValidationError" title="squirrel.schemas.connector.ConnectorValidationError"><strong>ConnectorValidationError</strong></a> – if required fields are missing.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code>]</span></p>
+</dd>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>name</strong> (<em>str</em>)</p></li>
+<li><p><strong>connector_type</strong> (<em>str</em>)</p></li>
+<li><p><strong>config</strong> (<em>Dict</em><em>[</em><em>str</em><em>, </em><em>str</em><em>]</em>)</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="squirrel.services.data_connector.DataConnectorService.DataConnectorService.list_connections">
+<span class="sig-name descname"><span class="pre">list_connections</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">limit</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">200</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/services/data_connector/DataConnectorService.html#DataConnectorService.list_connections"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.services.data_connector.DataConnectorService.DataConnectorService.list_connections" title="Link to this definition"></a></dt>
+<dd><p>Return all connections, newest first.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code>]]</span></p>
+</dd>
+<dt class="field-even">Parameters<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>limit</strong> (<em>int</em>)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="squirrel.services.data_connector.DataConnectorService.DataConnectorService.get_connection">
+<span class="sig-name descname"><span class="pre">get_connection</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">connector_id</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/services/data_connector/DataConnectorService.html#DataConnectorService.get_connection"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.services.data_connector.DataConnectorService.DataConnectorService.get_connection" title="Link to this definition"></a></dt>
+<dd><p>Fetch a single connection row, or raise <code class="docutils literal notranslate"><span class="pre">ConnectorNotFoundError</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code>]</span></p>
+</dd>
+<dt class="field-even">Parameters<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>connector_id</strong> (<em>str</em>)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="squirrel.services.data_connector.DataConnectorService.DataConnectorService.update_connection">
+<span class="sig-name descname"><span class="pre">update_connection</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">connector_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">config</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/services/data_connector/DataConnectorService.html#DataConnectorService.update_connection"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.services.data_connector.DataConnectorService.DataConnectorService.update_connection" title="Link to this definition"></a></dt>
+<dd><p>Update a connection’s name and/or config.</p>
+<p>A blank value for a secret field in <em>config</em> means “keep the
+existing value” (matching the frontend form’s behaviour) — it’s
+merged in from the stored config before validation and encryption,
+rather than overwriting the secret with an empty string.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code>]</span></p>
+</dd>
+<dt class="field-even">Parameters<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>connector_id</strong> (<em>str</em>)</p></li>
+<li><p><strong>name</strong> (<em>str</em><em> | </em><em>None</em>)</p></li>
+<li><p><strong>config</strong> (<em>Dict</em><em>[</em><em>str</em><em>, </em><em>str</em><em>] </em><em>| </em><em>None</em>)</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="squirrel.services.data_connector.DataConnectorService.DataConnectorService.delete_connection">
+<span class="sig-name descname"><span class="pre">delete_connection</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">connector_id</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/services/data_connector/DataConnectorService.html#DataConnectorService.delete_connection"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.services.data_connector.DataConnectorService.DataConnectorService.delete_connection" title="Link to this definition"></a></dt>
+<dd><p>Permanently delete a connection.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><a class="reference internal" href="squirrel_schemas_connector.html#squirrel.schemas.connector.ConnectorNotFoundError" title="squirrel.schemas.connector.ConnectorNotFoundError"><strong>ConnectorNotFoundError</strong></a> – if the connector doesn’t exist.</p></li>
+<li><p><a class="reference internal" href="squirrel_schemas_connector.html#squirrel.schemas.connector.ConnectorInUseError" title="squirrel.schemas.connector.ConnectorInUseError"><strong>ConnectorInUseError</strong></a> – if any notebook or workspace still has
+a data/input source bound to this connector — those must be
+detached first (remove the data source from the notebook, or
+remove the source from the workspace) so a delete here can never
+silently orphan a live notebook cell or workspace run.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></span></p>
+</dd>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>connector_id</strong> (<em>str</em>)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="squirrel.services.data_connector.DataConnectorService.DataConnectorService.list_tables">
+<span class="sig-name descname"><span class="pre">list_tables</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">connector_id</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/services/data_connector/DataConnectorService.html#DataConnectorService.list_tables"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.services.data_connector.DataConnectorService.DataConnectorService.list_tables" title="Link to this definition"></a></dt>
+<dd><p>Best-effort list of queryable tables for this connection, to
+populate a table picker. Raises <code class="docutils literal notranslate"><span class="pre">NotImplementedError</span></code> for
+connector types with no lister registered (Snowflake, BigQuery,
+Google Sheets today).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]</span></p>
+</dd>
+<dt class="field-even">Parameters<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>connector_id</strong> (<em>str</em>)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="squirrel.services.data_connector.DataConnectorService.DataConnectorService.build_table_query">
+<span class="sig-name descname"><span class="pre">build_table_query</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">connector_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">table_name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">columns</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/services/data_connector/DataConnectorService.html#DataConnectorService.build_table_query"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.services.data_connector.DataConnectorService.DataConnectorService.build_table_query" title="Link to this definition"></a></dt>
+<dd><p>Turn a table name — plus, optionally, a subset of its columns — into a
+safe SELECT query. Both the table name and every column name are
+validated against what this connector actually reports before being
+quoted and used, same guarantee as before: nothing here can be used to
+smuggle arbitrary SQL in via a name-shaped string.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>columns</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]]</span>) – Column names to select. <code class="docutils literal notranslate"><span class="pre">None</span></code> or empty means “every
+column” (<code class="docutils literal notranslate"><span class="pre">SELECT</span> <span class="pre">*</span></code>), same as today’s behaviour.</p></li>
+<li><p><strong>connector_id</strong> (<em>str</em>)</p></li>
+<li><p><strong>table_name</strong> (<em>str</em>)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="squirrel.services.data_connector.DataConnectorService.DataConnectorService.preview_table">
+<span class="sig-name descname"><span class="pre">preview_table</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">connector_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">table_name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">limit</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">columns</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/services/data_connector/DataConnectorService.html#DataConnectorService.preview_table"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.services.data_connector.DataConnectorService.DataConnectorService.preview_table" title="Link to this definition"></a></dt>
+<dd><p>Preview the first <em>limit</em> rows of a specific table, restricted to
+<em>columns</em> if given.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataFrame</span></code></span></p>
+</dd>
+<dt class="field-even">Parameters<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>connector_id</strong> (<em>str</em>)</p></li>
+<li><p><strong>table_name</strong> (<em>str</em>)</p></li>
+<li><p><strong>limit</strong> (<em>int</em>)</p></li>
+<li><p><strong>columns</strong> (<em>List</em><em>[</em><em>str</em><em>] </em><em>| </em><em>None</em>)</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="squirrel.services.data_connector.DataConnectorService.DataConnectorService.preview_dataframe">
+<span class="sig-name descname"><span class="pre">preview_dataframe</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">connector_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">query</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">limit</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">50</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/services/data_connector/DataConnectorService.html#DataConnectorService.preview_dataframe"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.services.data_connector.DataConnectorService.DataConnectorService.preview_dataframe" title="Link to this definition"></a></dt>
+<dd><p>Internal helper: run <em>query</em> capped to <em>limit</em> rows via an outer
+LIMIT wrapper. Only called with queries this service built itself
+(<a class="reference internal" href="#squirrel.services.data_connector.DataConnectorService.DataConnectorService.build_table_query" title="squirrel.services.data_connector.DataConnectorService.DataConnectorService.build_table_query"><code class="xref py py-meth docutils literal notranslate"><span class="pre">build_table_query()</span></code></a>) — never with caller-supplied SQL.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataFrame</span></code></span></p>
+</dd>
+<dt class="field-even">Parameters<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>connector_id</strong> (<em>str</em>)</p></li>
+<li><p><strong>query</strong> (<em>str</em>)</p></li>
+<li><p><strong>limit</strong> (<em>int</em>)</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="squirrel.services.data_connector.DataConnectorService.DataConnectorService.test_connection">
+<span class="sig-name descname"><span class="pre">test_connection</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">connector_id</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/services/data_connector/DataConnectorService.html#DataConnectorService.test_connection"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.services.data_connector.DataConnectorService.DataConnectorService.test_connection" title="Link to this definition"></a></dt>
+<dd><p>Run a live connectivity check for a connection and persist the
+resulting status. Never raises for a failed <em>test</em> — a connection
+that can’t be reached is a normal outcome (status=’error’), not a
+service failure. Only genuinely unexpected errors bubble up.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code>]</span></p>
+</dd>
+<dt class="field-even">Parameters<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>connector_id</strong> (<em>str</em>)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="squirrel.services.data_connector.DataConnectorService.DataConnectorService.fetch_dataframe">
+<span class="sig-name descname"><span class="pre">fetch_dataframe</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">connector_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">query</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/services/data_connector/DataConnectorService.html#DataConnectorService.fetch_dataframe"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.services.data_connector.DataConnectorService.DataConnectorService.fetch_dataframe" title="Link to this definition"></a></dt>
+<dd><p>Resolve a connection into an in-memory DataFrame.</p>
+<p>This is the method <code class="docutils literal notranslate"><span class="pre">WorkspaceService.fetch_data</span></code> should call once
+a workspace build needs a connector source’s live data. Only
+Postgres/MySQL are wired up (via the given <code class="docutils literal notranslate"><span class="pre">query</span></code>); other types
+raise <code class="docutils literal notranslate"><span class="pre">NotImplementedError</span></code> with a clear message, same as the
+rest of this service’s extension points.</p>
+<p>Postgres reads go through a short-lived SQLAlchemy engine on the
+<code class="docutils literal notranslate"><span class="pre">postgresql+psycopg://</span></code> dialect (psycopg v3) rather than a raw
+DBAPI connection — this matches how <code class="xref py py-meth docutils literal notranslate"><span class="pre">PostgresService.load()</span></code>
+already hands DataFrames to/from Postgres elsewhere in this
+codebase, and keeps <code class="docutils literal notranslate"><span class="pre">pandas.read_sql_query</span></code> on its
+fully-supported path instead of the raw-connection one pandas is
+deprecating.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>query</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]</span>) – SQL query to run — required for both Postgres and
+MySQL since there’s no single default table to select from.</p></li>
+<li><p><strong>connector_id</strong> (<em>str</em>)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataFrame</span></code></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="squirrel.services.data_connector.DataConnectorService.DataConnectorService.to_public_dict">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">to_public_dict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">row</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/services/data_connector/DataConnectorService.html#DataConnectorService.to_public_dict"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.services.data_connector.DataConnectorService.DataConnectorService.to_public_dict" title="Link to this definition"></a></dt>
+<dd><p>Convert a raw DB row into a dict safe to hand to the API layer:
+every secret field is redacted to <code class="docutils literal notranslate"><span class="pre">&quot;&quot;</span></code> regardless of what’s
+stored, and non-secret fields are passed through as-is (they were
+never encrypted).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code>]</span></p>
+</dd>
+<dt class="field-even">Parameters<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>row</strong> (<em>Dict</em><em>[</em><em>str</em><em>, </em><em>Any</em><em>]</em>)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="squirrel.services.data_connector.DataConnectorService.DataConnectorService.get_postgres_service">
+<span class="sig-name descname"><span class="pre">get_postgres_service</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">connector_id</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/services/data_connector/DataConnectorService.html#DataConnectorService.get_postgres_service"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.services.data_connector.DataConnectorService.DataConnectorService.get_postgres_service" title="Link to this definition"></a></dt>
+<dd><p>Resolve a Postgres-backed connection into a connected, query-capable
+<code class="xref py py-class docutils literal notranslate"><span class="pre">PostgresService</span></code> pointed at the connector’s own database.</p>
+<p>Used by callers (e.g. NotebookService) that need to run multiple
+queries against a connector-backed data source, rather than a single
+one-shot DataFrame read like <a class="reference internal" href="#squirrel.services.data_connector.DataConnectorService.DataConnectorService.fetch_dataframe" title="squirrel.services.data_connector.DataConnectorService.DataConnectorService.fetch_dataframe"><code class="xref py py-meth docutils literal notranslate"><span class="pre">fetch_dataframe()</span></code></a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><a class="reference internal" href="squirrel_schemas_connector.html#squirrel.schemas.connector.ConnectorNotFoundError" title="squirrel.schemas.connector.ConnectorNotFoundError"><strong>ConnectorNotFoundError</strong></a> – if <code class="docutils literal notranslate"><span class="pre">connector_id</span></code> doesn’t exist.</p></li>
+<li><p><strong>NotImplementedError</strong> – if this connector isn’t Postgres-backed —
+only Postgres connectors can be resolved into a PostgresService
+today; other types (MySQL, Snowflake, BigQuery, Google Sheets)
+would need their own query-capable service class first.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="squirrel_services_storage_database_PostgresService.html#squirrel.services.storage.database.PostgresService.PostgresService" title="squirrel.services.storage.database.PostgresService.PostgresService"><code class="xref py py-class docutils literal notranslate"><span class="pre">PostgresService</span></code></a></span></p>
+</dd>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>connector_id</strong> (<em>str</em>)</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="squirrel_services_chat_MessagingService.html" class="btn btn-neutral float-left" title="squirrel.services.chat.MessagingService" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="squirrel_services_file_FileService.html" class="btn btn-neutral float-right" title="squirrel.services.file.FileService" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, Mazen Soliman.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

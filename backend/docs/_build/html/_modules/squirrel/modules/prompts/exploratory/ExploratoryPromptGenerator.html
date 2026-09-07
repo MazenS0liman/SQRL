@@ -1,0 +1,725 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>squirrel.modules.prompts.exploratory.ExploratoryPromptGenerator &mdash; squirrel  documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../../../../_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" type="text/css" href="../../../../../_static/css/custom.css?v=adc7883a" />
+
+  
+    <link rel="shortcut icon" href="../../../../../_static/sqrl.png"/>
+      <script src="../../../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../../../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../../../../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script src="../../../../../_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="../../../../../_static/copybutton.js?v=a46eff05"></script>
+    <script src="../../../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../../../index.html" class="icon icon-home">
+            squirrel
+              <img src="../../../../../_static/sqrl.png" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Python API Reference:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../api.html">Python API Reference</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../../index.html">squirrel</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">squirrel.modules.prompts.exploratory.ExploratoryPromptGenerator</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for squirrel.modules.prompts.exploratory.ExploratoryPromptGenerator</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/python</span>
+<span class="sd">"""</span>
+<span class="sd">Exploratory Prompt Generator Module</span>
+<span class="sd">===================================</span>
+
+<span class="sd">Overview</span>
+<span class="sd">--------</span>
+
+<span class="sd">A module consisting of methods for generating a prompt template for explatory agents.</span>
+
+<span class="sd">Revision notes</span>
+<span class="sd">--------------</span>
+<span class="sd">``_user_generate_hypotheses_prompt`` now accepts an optional</span>
+<span class="sd">``previous_questions`` kwarg (a list of question strings already answered</span>
+<span class="sd">for the same source set, e.g. from earlier cells in a notebook). When</span>
+<span class="sd">provided, an "Already analyzed" block is injected into the prompt with an</span>
+<span class="sd">explicit instruction not to repeat or closely paraphrase them, so a second</span>
+<span class="sd">EDA sweep over the same data produces analytically distinct hypotheses</span>
+<span class="sd">instead of duplicating earlier charts.</span>
+<span class="sd">"""</span>
+<span class="c1"># ——————————————————————————————————————————————————————————————</span>
+<span class="c1"># Imports</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">textwrap</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">enum</span><span class="w"> </span><span class="kn">import</span> <span class="n">Enum</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Optional</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing_extensions</span><span class="w"> </span><span class="kn">import</span> <span class="n">override</span>
+
+<span class="c1"># Abstract Class</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">squirrel.modules.prompts.abstract</span><span class="w"> </span><span class="kn">import</span> <span class="n">IPromptGenerator</span>
+
+<span class="c1"># Schemas</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">squirrel.schemas.eda</span><span class="w"> </span><span class="kn">import</span> <span class="n">Hypothesis</span><span class="p">,</span> <span class="n">ChartResult</span>
+
+<span class="c1"># —— Prompt type discriminator ——————————————————————————————————————————</span>
+<div class="viewcode-block" id="ExplorePromptType">
+<a class="viewcode-back" href="../../../../../generated/squirrel_modules_prompts_exploratory_ExploratoryPromptGenerator.html#squirrel.modules.prompts.exploratory.ExploratoryPromptGenerator.ExplorePromptType">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">ExplorePromptType</span><span class="p">(</span><span class="n">Enum</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    </span>
+<span class="sd">    </span>
+<span class="sd">    </span>
+<span class="sd">    """</span>
+    <span class="n">GENERATE_DOMAIN_CONTEXT</span> <span class="o">=</span> <span class="s2">"generate_domain_context"</span>
+    <span class="n">EXTRACT_ENTITIES_AND_METRICS</span> <span class="o">=</span> <span class="s2">"extract_entities_and_metrics"</span>
+    <span class="n">GENERATE_HYPOTHESES</span> <span class="o">=</span> <span class="s2">"generate_hypotheses"</span>
+    <span class="n">GENERATE_SQL</span> <span class="o">=</span> <span class="s2">"generate_sql"</span>
+    <span class="n">GENERATE_OBSERVATION</span> <span class="o">=</span> <span class="s2">"generate_observation"</span>
+    <span class="n">GENERATE_SUMMARY</span> <span class="o">=</span> <span class="s2">"generate_summary"</span>
+    <span class="n">CLASSIFY_QUESTION_INTENT</span> <span class="o">=</span> <span class="s2">"classify_question_intent"</span>
+    <span class="n">GENERATE_VIEW_SQL</span> <span class="o">=</span> <span class="s2">"generate_view_sql"</span></div>
+
+
+<span class="c1"># —— Prompt generator implementation —————————————————————————————————————————</span>
+<div class="viewcode-block" id="ExploratoryPromptGenerator">
+<a class="viewcode-back" href="../../../../../generated/squirrel_modules_prompts_exploratory_ExploratoryPromptGenerator.html#squirrel.modules.prompts.exploratory.ExploratoryPromptGenerator.ExploratoryPromptGenerator">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">ExploratoryPromptGenerator</span><span class="p">(</span><span class="n">IPromptGenerator</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    </span>
+<span class="sd">    </span>
+<span class="sd">    """</span>
+    
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+
+    <span class="c1"># ── System prompts ────────────────────────────────────────────────────────</span>
+    
+<div class="viewcode-block" id="ExploratoryPromptGenerator.generate_system_prompt">
+<a class="viewcode-back" href="../../../../../generated/squirrel_modules_prompts_exploratory_ExploratoryPromptGenerator.html#squirrel.modules.prompts.exploratory.ExploratoryPromptGenerator.ExploratoryPromptGenerator.generate_system_prompt">[docs]</a>
+    <span class="nd">@override</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">generate_system_prompt</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">prompt_type</span><span class="p">:</span> <span class="n">ExplorePromptType</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Generate stage-specific system-level instructions.</span>
+<span class="sd">        </span>
+<span class="sd">        :param prompt_type: type of prompt to generate.</span>
+<span class="sd">        :type prompt_type: ExplorePromptType</span>
+<span class="sd">        </span>
+<span class="sd">        :return: System prompt string.</span>
+<span class="sd">        :rtype: str</span>
+<span class="sd">        """</span>
+        <span class="n">dispatch</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="n">ExplorePromptType</span><span class="o">.</span><span class="n">GENERATE_DOMAIN_CONTEXT</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_system_generate_domain_context_prompt</span><span class="p">,</span>
+            <span class="n">ExplorePromptType</span><span class="o">.</span><span class="n">EXTRACT_ENTITIES_AND_METRICS</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_system_extract_entities_and_metrics_prompt</span><span class="p">,</span>
+            <span class="n">ExplorePromptType</span><span class="o">.</span><span class="n">GENERATE_HYPOTHESES</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_system_generate_hypotheses_prompt</span><span class="p">,</span>
+            <span class="n">ExplorePromptType</span><span class="o">.</span><span class="n">GENERATE_SQL</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_system_generate_sql_prompt</span><span class="p">,</span>
+            <span class="n">ExplorePromptType</span><span class="o">.</span><span class="n">GENERATE_OBSERVATION</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_system_generate_observation_prompt</span><span class="p">,</span>
+            <span class="n">ExplorePromptType</span><span class="o">.</span><span class="n">GENERATE_SUMMARY</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_system_generate_summary_prompt</span><span class="p">,</span>
+            <span class="n">ExplorePromptType</span><span class="o">.</span><span class="n">CLASSIFY_QUESTION_INTENT</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_system_classify_question_intent_prompt</span><span class="p">,</span>
+            <span class="n">ExplorePromptType</span><span class="o">.</span><span class="n">GENERATE_VIEW_SQL</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_system_generate_view_sql_prompt</span><span class="p">,</span>
+        <span class="p">}</span>
+
+        <span class="k">if</span> <span class="n">prompt_type</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">prompt_type</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">dispatch</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"Unsupported prompt type: </span><span class="si">{</span><span class="n">prompt_type</span><span class="si">!r}</span><span class="s2">."</span>
+                <span class="sa">f</span><span class="s2">"Expected one of: </span><span class="si">{</span><span class="p">[</span><span class="n">t</span><span class="o">.</span><span class="n">value</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">t</span><span class="w"> </span><span class="ow">in</span><span class="w"> </span><span class="n">ExplorePromptType</span><span class="p">]</span><span class="si">}</span><span class="s2">"</span>
+            <span class="p">)</span>
+        
+        <span class="n">handler</span> <span class="o">=</span> <span class="n">dispatch</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">prompt_type</span><span class="p">,</span> <span class="k">lambda</span><span class="p">:</span> <span class="s2">"You are a helpful assistant."</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">handler</span><span class="p">()</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_system_generate_domain_context_prompt</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">textwrap</span><span class="o">.</span><span class="n">dedent</span><span class="p">(</span><span class="s2">"""</span>
+<span class="s2">            You are a principal data scientist performing exploratory data analysis.</span>
+
+<span class="s2">            STRICT RULES — follow them exactly:</span>
+<span class="s2">            - Base every inference solely on the column names, types, and statistics provided.</span>
+<span class="s2">            - Do NOT invent table names, column names, or KPI formulas that are not present in the schema.</span>
+<span class="s2">            - If you are uncertain about the domain, use domain_confidence "low" and describe only what the schema directly supports.</span>
+<span class="s2">            - KPI sql_hint must only reference column names present verbatim in the schema.</span>
+<span class="s2">            - exploration_goals must be answerable given the actual columns; do not propose analyses that require columns not in the schema.</span>
+<span class="s2">        """</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_system_extract_entities_and_metrics_prompt</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">textwrap</span><span class="o">.</span><span class="n">dedent</span><span class="p">(</span><span class="s2">"""</span>
+<span class="s2">            You are a senior analytics engineer extracting metrics and dimensions from a database schema.</span>
+
+<span class="s2">            STRICT RULES — follow them exactly:</span>
+<span class="s2">            - Every metric sql_expression must use ONLY column names that appear verbatim in the provided schema.</span>
+<span class="s2">            - Every dimension column must be an exact, verbatim column name from the schema — no paraphrasing, no inventing.</span>
+<span class="s2">            - If no suitable numeric column exists for a metric, omit that metric rather than inventing a formula.</span>
+<span class="s2">            - Do NOT create aliases, derived names, or columns not explicitly present in the schema.</span>
+<span class="s2">        """</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_system_generate_hypotheses_prompt</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">textwrap</span><span class="o">.</span><span class="n">dedent</span><span class="p">(</span><span class="s2">"""</span>
+<span class="s2">            You are a senior data scientist generating analytical hypotheses grounded strictly in a real database schema.</span>
+
+<span class="s2">            STRICT RULES — follow them exactly:</span>
+<span class="s2">            - Every hypothesis question must be answerable using ONLY columns that exist verbatim in the schema.</span>
+<span class="s2">            - Do NOT assume columns exist unless they appear explicitly in the schema.</span>
+<span class="s2">            - Do NOT propose joins, filters, or groupings using column names absent from the schema.</span>
+<span class="s2">            - Each hypothesis must have genuine analytical depth — no simple counts, no plain aggregations, no bar-chart-of-totals.</span>
+<span class="s2">            - If the schema is limited, generate fewer but fully grounded hypotheses rather than padding with unverifiable ones.</span>
+<span class="s2">            - Every hypothesis must be analytically distinct from any hypotheses already analyzed for this data — do not repeat or closely paraphrase a prior question.</span>
+<span class="s2">        """</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_system_generate_sql_prompt</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">textwrap</span><span class="o">.</span><span class="n">dedent</span><span class="p">(</span><span class="s2">"""</span>
+<span class="s2">            You are an expert PostgreSQL analyst generating SQL that will be executed against a live database.</span>
+
+<span class="s2">            STRICT RULES — follow them exactly:</span>
+<span class="s2">            - Use ONLY column names listed verbatim in the AVAILABLE COLUMNS block. Any other identifier is a critical error.</span>
+<span class="s2">            - Use ONLY table names listed verbatim in the schema. Do not invent, abbreviate, or paraphrase table names.</span>
+<span class="s2">            - Every column referenced in FROM, JOIN ON, WHERE, GROUP BY, ORDER BY, and SELECT must be in AVAILABLE COLUMNS.</span>
+<span class="s2">            - Aliases defined with AS are fine to use as output names in x/y — but the underlying source column must still be real.</span>
+<span class="s2">            - When the hypothesis cannot be answered with the available columns, pivot to the closest answerable question and note it in a SQL comment.</span>
+<span class="s2">            - PostgreSQL syntax only: no MySQL, no SQLite, no SQL Server dialects.</span>
+<span class="s2">            - SELECT only — no DDL, DML, EXPLAIN, or CALL statements.</span>
+<span class="s2">        """</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_system_generate_observation_prompt</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">textwrap</span><span class="o">.</span><span class="n">dedent</span><span class="p">(</span><span class="s2">"""</span>
+<span class="s2">            You are a senior business analyst interpreting query results from a live database.</span>
+
+<span class="s2">            STRICT RULES — follow them exactly:</span>
+<span class="s2">            - Every claim must be directly supported by the query result rows provided. Do NOT invent numbers or trends.</span>
+<span class="s2">            - If you state a percentage, rate, or absolute figure, it must be derivable from the data shown.</span>
+<span class="s2">            - Do NOT assert causation — only describe correlation or patterns visible in the data.</span>
+<span class="s2">            - Do NOT reference columns, entities, or metrics that are not present in the query results.</span>
+<span class="s2">            - Keep language precise: "the data shows X" not "this suggests Y might be happening at some point".</span>
+<span class="s2">        """</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_system_generate_summary_prompt</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">textwrap</span><span class="o">.</span><span class="n">dedent</span><span class="p">(</span><span class="s2">"""</span>
+<span class="s2">            You are a chief data officer preparing a concise, evidence-based executive summary.</span>
+
+<span class="s2">            STRICT RULES — follow them exactly:</span>
+<span class="s2">            - Every finding must trace back to a specific observation listed in the input.</span>
+<span class="s2">            - Do NOT introduce new insights, metrics, or claims that are not present in the provided observations.</span>
+<span class="s2">            - Quantify findings when the observations contain numbers — do not say "significant" without citing a figure.</span>
+<span class="s2">            - recommended_next_steps must be concrete and achievable, not generic advice like "collect more data".</span>
+<span class="s2">            - dataset_description must reflect what the schema and observations actually contain.</span>
+<span class="s2">        """</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_system_classify_question_intent_prompt</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">textwrap</span><span class="o">.</span><span class="n">dedent</span><span class="p">(</span><span class="s2">"""</span>
+<span class="s2">            You decide how to present the answer to a data question: as a CHART</span>
+<span class="s2">            or as a DATA TABLE (a saved view).</span>
+
+<span class="s2">            Prefer a chart for trends, comparisons across a dimension,</span>
+<span class="s2">            distributions, correlations, or proportions — anything a visual</span>
+<span class="s2">            pattern helps with.</span>
+
+<span class="s2">            Prefer a table when the question asks to "list", "show me", "find",</span>
+<span class="s2">            "get me the rows/records", filter or look up a specific set of rows,</span>
+<span class="s2">            wants raw/detailed data rather than an aggregate pattern, or</span>
+<span class="s2">            explicitly asks to create/save/build a view, dataset, or extract.</span>
+
+<span class="s2">            Do not guess columns — you don't have the schema here, only the</span>
+<span class="s2">            question's phrasing.</span>
+<span class="s2">        """</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_system_generate_view_sql_prompt</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">textwrap</span><span class="o">.</span><span class="n">dedent</span><span class="p">(</span><span class="s2">"""</span>
+<span class="s2">            You are an expert PostgreSQL analyst who creates a NAMED VIEW that</span>
+<span class="s2">            reshapes, filters, or aggregates existing tables to answer a data</span>
+<span class="s2">            request. You are not charting anything.</span>
+
+<span class="s2">            STRICT RULES — follow them exactly:</span>
+<span class="s2">            - Output exactly one statement: CREATE OR REPLACE VIEW "&lt;view_name&gt;" AS SELECT ...</span>
+<span class="s2">            - Use ONLY column and table names listed verbatim in AVAILABLE COLUMNS.</span>
+<span class="s2">            - The view body is SELECT only — no INSERT, UPDATE, DELETE, DROP,</span>
+<span class="s2">            ALTER, or TRUNCATE anywhere in the statement.</span>
+<span class="s2">            - Never modify or drop an existing table — a view is a saved query,</span>
+<span class="s2">            not a data mutation.</span>
+<span class="s2">            - Do not put LIMIT inside the view definition — the caller previews</span>
+<span class="s2">            it separately.</span>
+<span class="s2">            - PostgreSQL syntax only.</span>
+<span class="s2">        """</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+
+    <span class="c1"># ── User prompts ──────────────────────────────────────────────────────────</span>
+    
+<div class="viewcode-block" id="ExploratoryPromptGenerator.generate_user_prompt">
+<a class="viewcode-back" href="../../../../../generated/squirrel_modules_prompts_exploratory_ExploratoryPromptGenerator.html#squirrel.modules.prompts.exploratory.ExploratoryPromptGenerator.ExploratoryPromptGenerator.generate_user_prompt">[docs]</a>
+    <span class="nd">@override</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">generate_user_prompt</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> 
+        <span class="n">prompt_type</span><span class="p">:</span> <span class="n">ExplorePromptType</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> 
+        <span class="o">**</span><span class="n">kwargs</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Dispatch to the correct user prompt builder based on ``prompt_type``.</span>
+
+<span class="sd">        :param kwargs: Must include ``prompt_type`` (InspectPromptType).</span>
+<span class="sd">            Additional keys depend on the stage — see each builder's docstring.</span>
+<span class="sd">            </span>
+<span class="sd">        :return: User prompt string ready to send to the LLM.</span>
+<span class="sd">        :rtype: str</span>
+<span class="sd">        </span>
+<span class="sd">        :raises ValueError: If ``prompt_type`` is missing or unrecognised.</span>
+<span class="sd">        """</span>
+        <span class="n">dispatch</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="n">ExplorePromptType</span><span class="o">.</span><span class="n">GENERATE_DOMAIN_CONTEXT</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_user_generate_domain_context_prompt</span><span class="p">,</span>
+            <span class="n">ExplorePromptType</span><span class="o">.</span><span class="n">EXTRACT_ENTITIES_AND_METRICS</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_user_extract_entities_and_metrics_prompt</span><span class="p">,</span>
+            <span class="n">ExplorePromptType</span><span class="o">.</span><span class="n">GENERATE_HYPOTHESES</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_user_generate_hypotheses_prompt</span><span class="p">,</span>
+            <span class="n">ExplorePromptType</span><span class="o">.</span><span class="n">GENERATE_SQL</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_user_generate_sql_prompt</span><span class="p">,</span>
+            <span class="n">ExplorePromptType</span><span class="o">.</span><span class="n">GENERATE_OBSERVATION</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_user_generate_observation_prompt</span><span class="p">,</span>
+            <span class="n">ExplorePromptType</span><span class="o">.</span><span class="n">GENERATE_SUMMARY</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_user_generate_summary_prompt</span><span class="p">,</span>
+            <span class="n">ExplorePromptType</span><span class="o">.</span><span class="n">CLASSIFY_QUESTION_INTENT</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_user_classify_question_intent_prompt</span><span class="p">,</span>
+            <span class="n">ExplorePromptType</span><span class="o">.</span><span class="n">GENERATE_VIEW_SQL</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_user_generate_view_sql_prompt</span><span class="p">,</span>
+        <span class="p">}</span>
+        
+        <span class="n">handler</span> <span class="o">=</span> <span class="n">dispatch</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">prompt_type</span><span class="p">)</span>
+        
+        <span class="k">if</span> <span class="n">handler</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"Unsupported prompt: </span><span class="si">{</span><span class="n">prompt_type</span><span class="si">!r}</span><span class="s2">"</span>
+                <span class="sa">f</span><span class="s2">"Expected one of: </span><span class="si">{</span><span class="p">[</span><span class="n">t</span><span class="o">.</span><span class="n">value</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">t</span><span class="w"> </span><span class="ow">in</span><span class="w"> </span><span class="n">ExplorePromptType</span><span class="p">]</span><span class="si">}</span><span class="s2">"</span>
+            <span class="p">)</span>
+        <span class="k">return</span> <span class="n">handler</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_user_generate_domain_context_prompt</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        </span>
+<span class="sd">        </span>
+<span class="sd">        """</span>
+        <span class="n">schema_details</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"schema_details"</span><span class="p">,</span> <span class="s2">""</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">textwrap</span><span class="o">.</span><span class="n">dedent</span><span class="p">(</span><span class="sa">f</span><span class="s2">"""</span>
+<span class="s2">            Analyse the following database schema and statistics, then infer the business context.</span>
+
+<span class="s2">            # Schema &amp; Statistics:</span>
+<span class="s2">            </span><span class="si">{</span><span class="n">schema_details</span><span class="si">}</span>
+
+<span class="s2">            Return a JSON object with exactly these keys:</span>
+
+<span class="s2">            </span><span class="se">{{</span>
+<span class="s2">                "domain": "string — industry/business domain (e.g. e-commerce, SaaS, healthcare)",</span>
+<span class="s2">                "domain_confidence": "high | medium | low",</span>
+<span class="s2">                "main_entities": ["list of core business objects (e.g. Customer, Order, Product)"],</span>
+<span class="s2">                "fact_tables":      ["tables containing transactional/event data"],</span>
+<span class="s2">                "dimension_tables": ["tables containing descriptive/reference data"],</span>
+<span class="s2">                "kpis": [</span>
+<span class="s2">                    </span><span class="se">{{</span>
+<span class="s2">                        "name": "KPI name",</span>
+<span class="s2">                        "description": "what it measures",</span>
+<span class="s2">                        "tables_involved": ["table names"],</span>
+<span class="s2">                        "sql_hint": "rough SQL fragment"</span>
+<span class="s2">                    </span><span class="se">}}</span>
+<span class="s2">                ],</span>
+<span class="s2">                "exploration_goals": ["list of high-value analytical questions for this domain"],</span>
+<span class="s2">                "data_quality_flags": ["any concerns: sparse columns, likely PII, potential duplicates, …"]</span>
+<span class="s2">            </span><span class="se">}}</span><span class="s2">                             </span>
+<span class="s2">        """</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_user_extract_entities_and_metrics_prompt</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        </span>
+<span class="sd">        </span>
+<span class="sd">        </span>
+<span class="sd">        """</span>
+        <span class="n">domain_context</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"domain_context"</span><span class="p">,</span> <span class="s2">""</span><span class="p">)</span>
+        <span class="n">schema_details</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"schema_details"</span><span class="p">,</span> <span class="s2">""</span><span class="p">)</span>
+        
+        <span class="k">return</span> <span class="n">textwrap</span><span class="o">.</span><span class="n">dedent</span><span class="p">(</span><span class="sa">f</span><span class="s2">"""</span>
+<span class="s2">            # Domain Context:</span>
+<span class="s2">            </span><span class="si">{</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">domain_context</span><span class="p">,</span><span class="w"> </span><span class="n">indent</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span><span class="si">}</span>
+<span class="s2">           </span>
+<span class="s2">            # Schema &amp; Statistics</span>
+<span class="s2">            </span><span class="si">{</span><span class="n">schema_details</span><span class="si">}</span>
+<span class="s2">            </span>
+<span class="s2">            # Identify</span>
+<span class="s2">            1. **Measurable metrics** — numeric columns or SQL expressions that can be aggregated.</span>
+<span class="s2">            2. **Grouping dimensions** — categorical/temporal columns useful for slicing metrics.</span>
+<span class="s2">            </span>
+<span class="s2">            ⚠️ IMPORTANT: Only reference columns that appear verbatim in the schema above.</span>
+<span class="s2">            Do NOT invent or paraphrase column names.</span>
+<span class="s2">            </span>
+<span class="s2">            Return JSON:</span>
+<span class="s2">            </span>
+<span class="s2">                </span><span class="se">{{</span>
+<span class="s2">                "metrics": [</span>
+<span class="s2">                    </span><span class="se">{{</span>
+<span class="s2">                    "name": "metric display name",</span>
+<span class="s2">                    "sql_expression": "e.g. SUM(o.total_amount)",</span>
+<span class="s2">                    "tables": ["orders"],</span>
+<span class="s2">                    "description": "what it measures"</span>
+<span class="s2">                    </span><span class="se">}}</span>
+<span class="s2">                ],</span>
+<span class="s2">                "dimensions": [</span>
+<span class="s2">                    </span><span class="se">{{</span>
+<span class="s2">                    "name": "dimension display name",</span>
+<span class="s2">                    "column": "exact_column_name_from_schema",</span>
+<span class="s2">                    "type": "temporal | categorical | geographic | boolean",</span>
+<span class="s2">                    "description": "what it represents"</span>
+<span class="s2">                    </span><span class="se">}}</span>
+<span class="s2">                ]</span>
+<span class="s2">                </span><span class="se">}}</span>
+<span class="s2">        """</span><span class="p">)</span>
+    
+    <span class="k">def</span><span class="w"> </span><span class="nf">_user_generate_hypotheses_prompt</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="n">domain_context</span><span class="p">:</span> <span class="n">Dict</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"domain_context"</span><span class="p">,</span> <span class="p">{})</span>
+        <span class="n">entities_and_metrics</span><span class="p">:</span> <span class="n">Dict</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"entities_and_metrics"</span><span class="p">,</span> <span class="p">{})</span>
+        <span class="n">schema_summary</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"schema_summary"</span><span class="p">,</span> <span class="s2">""</span><span class="p">)</span>
+        <span class="n">analytical_types</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"analytical_types"</span><span class="p">,</span> <span class="s2">""</span><span class="p">)</span>
+        <span class="n">plot_types</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"plot_types"</span><span class="p">,</span> <span class="s2">""</span><span class="p">)</span>
+        <span class="n">max_hypotheses</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"max_hypotheses"</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
+        <span class="n">available_columns</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"available_columns"</span><span class="p">,</span> <span class="s2">""</span><span class="p">)</span>
+        <span class="n">previous_questions</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"previous_questions"</span><span class="p">,</span> <span class="p">[])</span>
+
+        <span class="n">column_block</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="sa">f</span><span class="s2">"</span><span class="se">\n</span><span class="s2">## AVAILABLE COLUMNS (use ONLY these exact names in questions):</span><span class="se">\n</span><span class="si">{</span><span class="n">available_columns</span><span class="si">}</span><span class="se">\n</span><span class="s2">"</span>
+            <span class="k">if</span> <span class="n">available_columns</span> <span class="k">else</span> <span class="s2">""</span>
+        <span class="p">)</span>
+
+        <span class="c1"># De-duplication block — only rendered when there's history to avoid.</span>
+        <span class="c1"># Capped at 50 entries so a notebook with a long cell history doesn't</span>
+        <span class="c1"># blow the prompt budget; the most recent 50 already cover the</span>
+        <span class="c1"># analytically "nearby" space far better than older ones would.</span>
+        <span class="n">previous_block</span> <span class="o">=</span> <span class="s2">""</span>
+        <span class="k">if</span> <span class="n">previous_questions</span><span class="p">:</span>
+            <span class="n">listed</span> <span class="o">=</span> <span class="s2">"</span><span class="se">\n</span><span class="s2">"</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="sa">f</span><span class="s2">"- </span><span class="si">{</span><span class="n">q</span><span class="si">}</span><span class="s2">"</span> <span class="k">for</span> <span class="n">q</span> <span class="ow">in</span> <span class="n">previous_questions</span><span class="p">[:</span><span class="mi">50</span><span class="p">])</span>
+            <span class="n">previous_block</span> <span class="o">=</span> <span class="n">textwrap</span><span class="o">.</span><span class="n">dedent</span><span class="p">(</span><span class="sa">f</span><span class="s2">"""</span>
+<span class="s2">                ## Already analyzed — DO NOT repeat these or close paraphrases:</span>
+<span class="s2">                </span><span class="si">{</span><span class="n">listed</span><span class="si">}</span>
+
+<span class="s2">                Every new hypothesis below must be analytically distinct from the</span>
+<span class="s2">                list above — a different metric, a different grouping dimension,</span>
+<span class="s2">                or a materially different analytical angle. Reusing the same</span>
+<span class="s2">                metric+dimension pairing under reworded phrasing does NOT count</span>
+<span class="s2">                as distinct.</span>
+<span class="s2">            """</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">textwrap</span><span class="o">.</span><span class="n">dedent</span><span class="p">(</span><span class="sa">f</span><span class="s2">"""</span>
+<span class="s2">            ## Domain Context:</span>
+<span class="s2">            </span><span class="si">{</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">domain_context</span><span class="p">,</span><span class="w"> </span><span class="n">indent</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span><span class="si">}</span>
+
+<span class="s2">            ## Entities &amp; Metrics:</span>
+<span class="s2">            </span><span class="si">{</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">entities_and_metrics</span><span class="p">,</span><span class="w"> </span><span class="n">indent</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span><span class="si">}</span>
+
+<span class="s2">            ## Schema:</span>
+<span class="s2">            </span><span class="si">{</span><span class="n">schema_summary</span><span class="si">}</span>
+<span class="s2">            </span><span class="si">{</span><span class="n">column_block</span><span class="si">}</span>
+<span class="s2">            </span><span class="si">{</span><span class="n">previous_block</span><span class="si">}</span>
+<span class="s2">            ## Your task:</span>
+<span class="s2">            Generate exactly </span><span class="si">{</span><span class="n">max_hypotheses</span><span class="si">}</span><span class="s2"> HIGH-VALUE exploratory analyses.</span>
+
+<span class="s2">            ## MANDATORY COLUMN CHECK (do this before writing each hypothesis):</span>
+<span class="s2">            Before writing each hypothesis, verify that every column, measure, or filter</span>
+<span class="s2">            it references appears in the AVAILABLE COLUMNS block above. If a column is</span>
+<span class="s2">            not there, do NOT include it in the hypothesis.</span>
+
+<span class="s2">            ## QUALITY RULES:</span>
+<span class="s2">            - Each hypothesis must require genuine analytical reasoning — segmentation,</span>
+<span class="s2">              cohort comparison, trend decomposition, outlier identification, etc.</span>
+<span class="s2">            - Do NOT produce: simple counts, total-by-category summaries, or single-metric</span>
+<span class="s2">              bar charts (e.g. "total sales by region").</span>
+<span class="s2">            - Each hypothesis must be answerable with a single SQL query using only the</span>
+<span class="s2">              available columns.</span>
+<span class="s2">            - Prefer hypotheses that reveal non-obvious patterns or business risks.</span>
+
+<span class="s2">            ## ANALYTICAL CATEGORIES (each hypothesis must use exactly one):</span>
+<span class="s2">            </span><span class="si">{</span><span class="n">analytical_types</span><span class="si">}</span>
+
+<span class="s2">            ## CHART TYPES (pick the one that best fits the analysis):</span>
+<span class="s2">            </span><span class="si">{</span><span class="n">plot_types</span><span class="si">}</span>
+
+<span class="s2">            Return a JSON array of exactly </span><span class="si">{</span><span class="n">max_hypotheses</span><span class="si">}</span><span class="s2"> objects:</span>
+<span class="s2">            [</span>
+<span class="s2">                </span><span class="se">{{</span>
+<span class="s2">                    "id": "h_01",</span>
+<span class="s2">                    "question": "precise analytical question referencing only real column names",</span>
+<span class="s2">                    "title": "chart title (≤ 8 words)",</span>
+<span class="s2">                    "description": "what the chart shows and why it is analytically interesting",</span>
+<span class="s2">                    "why_it_matters": "specific business implication if the pattern is confirmed",</span>
+<span class="s2">                    "plot_type": "one of: </span><span class="si">{</span><span class="n">plot_types</span><span class="si">}</span><span class="s2">",</span>
+<span class="s2">                    "analytical_type": "one of the categories listed above"</span>
+<span class="s2">                </span><span class="se">}}</span>
+<span class="s2">            ]</span>
+<span class="s2">        """</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+        
+    <span class="k">def</span><span class="w"> </span><span class="nf">_user_generate_sql_prompt</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="n">domain_context</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"domain_context"</span><span class="p">,</span> <span class="s2">""</span><span class="p">)</span>
+        <span class="n">hypothesis</span><span class="p">:</span> <span class="n">Hypothesis</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"hypothesis"</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="n">schema_summary</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"schema_summary"</span><span class="p">,</span> <span class="s2">""</span><span class="p">)</span>
+        <span class="n">entities_and_metrics</span><span class="p">:</span> <span class="n">Dict</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"entities_and_metrics"</span><span class="p">,</span> <span class="p">{})</span>
+        <span class="n">columns_details</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"columns_details"</span><span class="p">,</span> <span class="s2">""</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">textwrap</span><span class="o">.</span><span class="n">dedent</span><span class="p">(</span><span class="sa">f</span><span class="s2">"""</span>
+<span class="s2">            ## Domain Context:</span>
+<span class="s2">            </span><span class="si">{</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">domain_context</span><span class="p">,</span><span class="w"> </span><span class="n">indent</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span><span class="si">}</span>
+
+<span class="s2">            ## Entities &amp; Metrics:</span>
+<span class="s2">            </span><span class="si">{</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">entities_and_metrics</span><span class="p">,</span><span class="w"> </span><span class="n">indent</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span><span class="si">}</span>
+
+<span class="s2">            ## Full Schema:</span>
+<span class="s2">            </span><span class="si">{</span><span class="n">schema_summary</span><span class="si">}</span>
+
+<span class="s2">            ## AVAILABLE COLUMNS — YOU MUST USE ONLY THESE EXACT NAMES:</span>
+<span class="s2">            </span><span class="si">{</span><span class="n">columns_details</span><span class="si">}</span>
+
+<span class="s2">            (Each line is: table_name: col1, col2, col3 ...</span>
+<span class="s2">             Use double-quotes around column names that contain uppercase letters or spaces, e.g. "CustomerID".)</span>
+
+<span class="s2">            ## Analytical Question:</span>
+<span class="s2">            </span><span class="si">{</span><span class="n">hypothesis</span><span class="o">.</span><span class="n">question</span><span class="si">}</span>
+
+<span class="s2">            ## Analytical Type:</span>
+<span class="s2">            </span><span class="si">{</span><span class="n">hypothesis</span><span class="o">.</span><span class="n">analytical_type</span><span class="si">}</span>
+
+<span class="s2">            ## Required Chart Type:</span>
+<span class="s2">            </span><span class="si">{</span><span class="n">hypothesis</span><span class="o">.</span><span class="n">plot_type</span><span class="si">}</span>
+
+<span class="s2">            ## Instructions:</span>
+<span class="s2">            Write a single PostgreSQL SELECT query that answers the analytical question above.</span>
+
+<span class="s2">            Prefer when analytically appropriate:</span>
+<span class="s2">            - CTEs (WITH ...) for multi-step logic</span>
+<span class="s2">            - Window functions: LAG, LEAD, RANK, ROW_NUMBER, NTILE, running totals, moving averages</span>
+<span class="s2">            - Date truncation: DATE_TRUNC for time-series grouping</span>
+<span class="s2">            - Percentile functions: PERCENTILE_CONT, NTILE</span>
+
+<span class="s2">            ## Hard constraints — violating any of these will cause a runtime error:</span>
+<span class="s2">            1. ONLY use column names from AVAILABLE COLUMNS above. Every other identifier is forbidden.</span>
+<span class="s2">            2. ONLY use table names that appear in the schema above.</span>
+<span class="s2">            3. SELECT only — no INSERT, UPDATE, DELETE, DROP, CREATE, ALTER, or EXPLAIN.</span>
+<span class="s2">            4. LIMIT 1000 maximum.</span>
+<span class="s2">            5. The x.column and y.column values in your JSON must exactly match an alias in your SELECT clause.</span>
+<span class="s2">            6. If the question cannot be answered with the available columns, write the closest answerable</span>
+<span class="s2">               question in a SQL comment (-- Pivot: ...) and answer that instead.</span>
+
+<span class="s2">            ## Return JSON only (no markdown fences, no explanation):</span>
+<span class="s2">            </span><span class="se">{{</span>
+<span class="s2">                "sql": "SELECT ... FROM ... LIMIT 1000",</span>
+<span class="s2">                "x": </span><span class="se">{{</span>
+<span class="s2">                    "column": "alias_from_select_clause",</span>
+<span class="s2">                    "label": "Human-Readable X Label",</span>
+<span class="s2">                    "type": "temporal | quantitative | ordinal | nominal"</span>
+<span class="s2">                </span><span class="se">}}</span><span class="s2">,</span>
+<span class="s2">                "y": </span><span class="se">{{</span>
+<span class="s2">                    "column": "alias_from_select_clause",</span>
+<span class="s2">                    "label": "Human-Readable Y Label",</span>
+<span class="s2">                    "type": "temporal | quantitative | ordinal | nominal"</span>
+<span class="s2">                </span><span class="se">}}</span><span class="s2">,</span>
+<span class="s2">                "group_by": "alias_for_color_grouping_or_null"</span>
+<span class="s2">            </span><span class="se">}}</span>
+<span class="s2">        """</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+        
+    <span class="k">def</span><span class="w"> </span><span class="nf">_user_generate_observation_prompt</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="n">hypothesis</span><span class="p">:</span> <span class="n">Hypothesis</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"hypothesis"</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="n">num_of_samples</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"num_of_samples"</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+        <span class="n">sample</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">]</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"sample"</span><span class="p">,</span> <span class="p">[])</span>
+        <span class="n">domain_context</span><span class="p">:</span> <span class="n">Dict</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"domain_context"</span><span class="p">,</span> <span class="p">{})</span>
+        <span class="n">column_names</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"column_names"</span><span class="p">,</span> <span class="p">[])</span>
+
+        <span class="k">if</span> <span class="n">hypothesis</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"Invalid Hypothesis"</span><span class="p">)</span>
+
+        <span class="n">column_context</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="sa">f</span><span class="s2">"</span><span class="se">\n</span><span class="s2">## Columns in the result set (use ONLY these names when referring to data):</span><span class="se">\n</span><span class="s2">"</span>
+            <span class="o">+</span> <span class="s2">", "</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">column_names</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">column_names</span> <span class="k">else</span> <span class="s2">""</span>
+        <span class="p">)</span>
+
+        <span class="n">domain_hint</span> <span class="o">=</span> <span class="s2">""</span>
+        <span class="k">if</span> <span class="n">domain_context</span><span class="p">:</span>
+            <span class="n">domain_hint</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"</span><span class="se">\n</span><span class="s2">## Business domain: </span><span class="si">{</span><span class="n">domain_context</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">'domain'</span><span class="p">,</span><span class="w"> </span><span class="s1">'unknown'</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span>
+                <span class="sa">f</span><span class="s2">"</span><span class="se">\n</span><span class="s2">## Main entities: </span><span class="si">{</span><span class="s1">', '</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">domain_context</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">'main_entities'</span><span class="p">,</span><span class="w"> </span><span class="p">[]))</span><span class="si">}</span><span class="s2">"</span>
+            <span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">textwrap</span><span class="o">.</span><span class="n">dedent</span><span class="p">(</span><span class="sa">f</span><span class="s2">"""</span>
+<span class="s2">            ## Analytical Question:</span>
+<span class="s2">            </span><span class="si">{</span><span class="n">hypothesis</span><span class="o">.</span><span class="n">question</span><span class="si">}</span>
+
+<span class="s2">            ## Why it matters:</span>
+<span class="s2">            </span><span class="si">{</span><span class="n">hypothesis</span><span class="o">.</span><span class="n">why_it_matters</span><span class="si">}</span>
+<span class="s2">            </span><span class="si">{</span><span class="n">domain_hint</span><span class="si">}</span>
+<span class="s2">            </span><span class="si">{</span><span class="n">column_context</span><span class="si">}</span>
+
+<span class="s2">            ## Query result (</span><span class="si">{</span><span class="n">num_of_samples</span><span class="si">}</span><span class="s2"> rows shown):</span>
+<span class="s2">            </span><span class="si">{</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">sample</span><span class="p">,</span><span class="w"> </span><span class="n">default</span><span class="o">=</span><span class="nb">str</span><span class="p">)</span><span class="si">}</span>
+
+<span class="s2">            ## Your task:</span>
+<span class="s2">            Write a concise, grounded analytical observation in plain text (max 3 sentences).</span>
+
+<span class="s2">            Rules:</span>
+<span class="s2">            - Cite at least one specific number, value, or pattern from the data above.</span>
+<span class="s2">            - Only reference column names that appear in the result set columns listed above.</span>
+<span class="s2">            - Do NOT invent percentages, totals, or trends that cannot be computed from the rows shown.</span>
+<span class="s2">            - Do NOT assert causation — describe what the data shows, not why it might be happening.</span>
+<span class="s2">            - State one concrete business implication in the final sentence.</span>
+
+<span class="s2">            Output plain text only — no bullet points, no headers, no markdown.</span>
+<span class="s2">        """</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_user_generate_summary_prompt</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        </span>
+<span class="sd">        </span>
+<span class="sd">        </span>
+<span class="sd">        """</span>
+        <span class="n">chart_results</span><span class="p">:</span> <span class="n">ChartResult</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"chart_results"</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        
+        <span class="n">observations_block</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span>
+            <span class="p">[</span>
+                <span class="p">{</span>
+                    <span class="s2">"title"</span><span class="p">:</span>           <span class="n">r</span><span class="o">.</span><span class="n">hypothesis</span><span class="o">.</span><span class="n">title</span><span class="p">,</span>
+                    <span class="s2">"question"</span><span class="p">:</span>        <span class="n">r</span><span class="o">.</span><span class="n">hypothesis</span><span class="o">.</span><span class="n">question</span><span class="p">,</span>
+                    <span class="s2">"observation"</span><span class="p">:</span>     <span class="n">r</span><span class="o">.</span><span class="n">observation</span><span class="p">,</span>
+                    <span class="s2">"analytical_type"</span><span class="p">:</span> <span class="n">r</span><span class="o">.</span><span class="n">hypothesis</span><span class="o">.</span><span class="n">analytical_type</span><span class="p">,</span>
+                <span class="p">}</span>
+                <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">chart_results</span>
+            <span class="p">],</span>
+            <span class="n">indent</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
+        <span class="p">)</span>
+        
+        <span class="k">return</span> <span class="n">textwrap</span><span class="o">.</span><span class="n">dedent</span><span class="p">(</span><span class="sa">f</span><span class="s2">"""</span>
+<span class="s2">           </span>
+<span class="s2">           The following analytical observations were produced by an automated EDA pipeline:</span>
+
+<span class="s2">           </span><span class="si">{</span><span class="n">observations_block</span><span class="si">}</span>
+<span class="s2">           </span>
+<span class="s2">           Synthesise these into an executive summary. Return JSON:</span>
+
+<span class="s2">            </span><span class="se">{{</span>
+<span class="s2">            "dataset_description": "2-3 sentences describing what this dataset contains and its analytical richness",</span>
+<span class="s2">            "key_findings": [</span>
+<span class="s2">                </span><span class="se">{{</span>
+<span class="s2">                    "finding": "specific, quantified insight",</span>
+<span class="s2">                    "source_analyses": ["hypothesis id(s) that support this finding"],</span>
+<span class="s2">                    "business_impact": "high | medium | low"</span>
+<span class="s2">                </span><span class="se">}}</span>
+<span class="s2">            ],</span>
+<span class="s2">            "recommended_next_steps": [</span>
+<span class="s2">                "concrete, prioritised action (e.g. deep-dive, data collection, experiment)"</span>
+<span class="s2">            ]</span>
+<span class="s2">            </span><span class="se">}}</span>
+<span class="s2">        """</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_user_classify_question_intent_prompt</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="n">question</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"question"</span><span class="p">,</span> <span class="s2">""</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">textwrap</span><span class="o">.</span><span class="n">dedent</span><span class="p">(</span><span class="sa">f</span><span class="s2">"""</span>
+<span class="s2">            Question: </span><span class="si">{</span><span class="n">question</span><span class="si">}</span>
+
+<span class="s2">            Return JSON only:</span>
+<span class="s2">            </span><span class="se">{{</span>
+<span class="s2">                "needs_chart": true | false,</span>
+<span class="s2">                "chart_type": "line | bar | scatter | boxplot | heatmap, or null if needs_chart is false",</span>
+<span class="s2">                "reasoning": "one short sentence"</span>
+<span class="s2">            </span><span class="se">}}</span>
+<span class="s2">        """</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_user_generate_view_sql_prompt</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="n">question</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"question"</span><span class="p">,</span> <span class="s2">""</span><span class="p">)</span>
+        <span class="n">view_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"view_name"</span><span class="p">,</span> <span class="s2">""</span><span class="p">)</span>
+        <span class="n">schema_summary</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"schema_summary"</span><span class="p">,</span> <span class="s2">""</span><span class="p">)</span>
+        <span class="n">columns_details</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"columns_details"</span><span class="p">,</span> <span class="s2">""</span><span class="p">)</span>
+        <span class="n">previous_error</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"previous_error"</span><span class="p">)</span>
+
+        <span class="n">error_block</span> <span class="o">=</span> <span class="s2">""</span>
+        <span class="k">if</span> <span class="n">previous_error</span><span class="p">:</span>
+            <span class="n">error_block</span> <span class="o">=</span> <span class="n">textwrap</span><span class="o">.</span><span class="n">dedent</span><span class="p">(</span><span class="sa">f</span><span class="s2">"""</span>
+<span class="s2">                ⚠️ YOUR PREVIOUS ATTEMPT FAILED — FIX IT:</span>
+<span class="s2">                </span><span class="si">{</span><span class="n">previous_error</span><span class="si">}</span>
+<span class="s2">                Use only real column names from AVAILABLE COLUMNS below.</span>
+<span class="s2">            """</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">textwrap</span><span class="o">.</span><span class="n">dedent</span><span class="p">(</span><span class="sa">f</span><span class="s2">"""</span>
+<span class="s2">            ## Schema:</span>
+<span class="s2">            </span><span class="si">{</span><span class="n">schema_summary</span><span class="si">}</span>
+
+<span class="s2">            ## AVAILABLE COLUMNS — YOU MUST USE ONLY THESE EXACT NAMES:</span>
+<span class="s2">            </span><span class="si">{</span><span class="n">columns_details</span><span class="si">}</span>
+<span class="s2">            </span><span class="si">{</span><span class="n">error_block</span><span class="si">}</span>
+<span class="s2">            ## Request:</span>
+<span class="s2">            </span><span class="si">{</span><span class="n">question</span><span class="si">}</span>
+
+<span class="s2">            Return ONLY the SQL statement — no markdown fences, no explanation:</span>
+<span class="s2">            CREATE OR REPLACE VIEW "</span><span class="si">{</span><span class="n">view_name</span><span class="si">}</span><span class="s2">" AS SELECT ...</span>
+<span class="s2">        """</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, Mazen Soliman.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

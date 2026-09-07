@@ -1,0 +1,386 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>squirrel.services.file.FileService &mdash; squirrel  documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../../../_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" type="text/css" href="../../../../_static/css/custom.css?v=adc7883a" />
+
+  
+    <link rel="shortcut icon" href="../../../../_static/sqrl.png"/>
+      <script src="../../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../../../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script src="../../../../_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="../../../../_static/copybutton.js?v=a46eff05"></script>
+    <script src="../../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../../index.html" class="icon icon-home">
+            squirrel
+              <img src="../../../../_static/sqrl.png" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Python API Reference:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../api.html">Python API Reference</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../index.html">squirrel</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">squirrel.services.file.FileService</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for squirrel.services.file.FileService</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/python</span>
+<span class="sd">"""</span>
+<span class="sd">File Service</span>
+<span class="sd">============</span>
+
+<span class="sd">Shared service for recording and managing uploads in the ``file``</span>
+<span class="sd">table so they show up on the Files page regardless of which flow (standalone</span>
+<span class="sd">file upload, workspace input source, notebook data source) produced them.</span>
+
+<span class="sd">All ``file`` reads/writes should go through this class rather than</span>
+<span class="sd">routes issuing raw SQL directly — that keeps ownership checks, the table</span>
+<span class="sd">schema, and the propagation-to-notebook-sources logic in one place instead</span>
+<span class="sd">of duplicated (and potentially drifting) across callers.</span>
+
+<span class="sd">Reused by squirrel.api.routes.files, WorkspaceService, and NotebookService,</span>
+<span class="sd">all of which already own their own PostgresService/MinIOService instances.</span>
+<span class="sd">Blob storage (MinIO) itself is intentionally NOT handled here — this class</span>
+<span class="sd">owns metadata only, callers own the actual object storage calls.</span>
+<span class="sd">"""</span>
+<span class="c1"># ——————————————————————————————————————————————————————————————</span>
+<span class="c1"># Imports</span>
+
+<span class="c1"># Standard Libraries</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Optional</span>
+
+<span class="c1"># Services</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">squirrel.services.storage.database.PostgresService</span><span class="w"> </span><span class="kn">import</span> <span class="n">PostgresService</span>
+
+<span class="c1"># Schema</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">squirrel.schemas.file</span><span class="w"> </span><span class="kn">import</span> <span class="n">File</span><span class="p">,</span> <span class="n">FileRecordNotFound</span><span class="p">,</span> <span class="n">FileInUseError</span>
+
+<span class="c1"># Logging</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">loguru</span><span class="w"> </span><span class="kn">import</span> <span class="n">logger</span>
+
+<span class="c1"># ——————————————————————————————————————————————————————————————</span>
+<span class="c1"># File Service class</span>
+
+<div class="viewcode-block" id="FileService">
+<a class="viewcode-back" href="../../../../generated/squirrel_services_file_FileService.html#squirrel.services.file.FileService.FileService">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">FileService</span><span class="p">:</span>
+
+    <span class="n">TABLE</span> <span class="o">=</span> <span class="s2">"file"</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Initialize the FileService instance.</span>
+<span class="sd">        """</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">db_service</span> <span class="o">=</span> <span class="n">PostgresService</span><span class="p">()</span>
+
+        <span class="c1"># Create the file table if it doesn't exist</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ensure_table</span><span class="p">()</span>
+
+<div class="viewcode-block" id="FileService.ensure_table">
+<a class="viewcode-back" href="../../../../generated/squirrel_services_file_FileService.html#squirrel.services.file.FileService.FileService.ensure_table">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">ensure_table</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Ensure the ``file`` table exists (with a unique constraint on</span>
+<span class="sd">        file_url, required by the ON CONFLICT clause in record_upload),</span>
+<span class="sd">        and that it has the columns every read path in this service and in</span>
+<span class="sd">        squirrel.api.routes.files relies on.</span>
+<span class="sd">        """</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">db_service</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"""</span>
+<span class="s2">                CREATE TABLE IF NOT EXISTS </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">TABLE</span><span class="si">}</span><span class="s2"> (</span>
+<span class="s2">                    id SERIAL PRIMARY KEY,</span>
+<span class="s2">                    file_name TEXT NOT NULL,</span>
+<span class="s2">                    file_url TEXT NOT NULL UNIQUE,</span>
+<span class="s2">                    file_type TEXT,</span>
+<span class="s2">                    size BIGINT,</span>
+<span class="s2">                    uploaded_at TIMESTAMPTZ,</span>
+<span class="s2">                    workspace_ids TEXT[] NOT NULL DEFAULT '</span><span class="se">{{}}</span><span class="s2">',</span>
+<span class="s2">                    notebook_ids TEXT[] NOT NULL DEFAULT '</span><span class="se">{{}}</span><span class="s2">',</span>
+<span class="s2">                    owner_user_id TEXT,</span>
+<span class="s2">                    created_at TIMESTAMPTZ DEFAULT NOW(),</span>
+<span class="s2">                    updated_at TIMESTAMPTZ DEFAULT NOW()</span>
+<span class="s2">                )</span>
+<span class="s2">                """</span><span class="p">,</span>
+                <span class="n">params</span><span class="o">=</span><span class="p">{},</span>
+                <span class="n">fetch</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="c1"># Backfill columns for tables created before these existed.</span>
+            <span class="k">for</span> <span class="n">column</span><span class="p">,</span> <span class="n">coltype</span> <span class="ow">in</span> <span class="p">(</span>
+                <span class="p">(</span><span class="s2">"workspace_ids"</span><span class="p">,</span> <span class="s2">"TEXT[] NOT NULL DEFAULT '</span><span class="si">{}</span><span class="s2">'"</span><span class="p">),</span>
+                <span class="p">(</span><span class="s2">"notebook_ids"</span><span class="p">,</span> <span class="s2">"TEXT[] NOT NULL DEFAULT '</span><span class="si">{}</span><span class="s2">'"</span><span class="p">),</span>
+                <span class="p">(</span><span class="s2">"owner_user_id"</span><span class="p">,</span> <span class="s2">"TEXT"</span><span class="p">),</span>
+            <span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">db_service</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">"ALTER TABLE </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">TABLE</span><span class="si">}</span><span class="s2"> ADD COLUMN IF NOT EXISTS </span><span class="si">{</span><span class="n">column</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">coltype</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
+                    <span class="n">params</span><span class="o">=</span><span class="p">{},</span>
+                    <span class="n">fetch</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                <span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">exception</span><span class="p">(</span><span class="s2">"Failed to create/verify </span><span class="si">{}</span><span class="s2"> table."</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">TABLE</span><span class="p">)</span>
+        <span class="k">finally</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">db_service</span><span class="o">.</span><span class="n">disconnect</span><span class="p">()</span></div>
+
+
+    <span class="c1"># ——————————————————————————————————————————————————————————</span>
+    <span class="c1"># Writes</span>
+
+<div class="viewcode-block" id="FileService.record_upload">
+<a class="viewcode-back" href="../../../../generated/squirrel_services_file_FileService.html#squirrel.services.file.FileService.FileService.record_upload">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">record_upload</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">file</span><span class="p">:</span> <span class="n">File</span><span class="p">,</span>
+        <span class="n">owner_user_id</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
+        <span class="n">workspace_id</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">notebook_id</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Persist a record of an uploaded file. On conflict (same file_url),</span>
+<span class="sd">        only overwrite workspace_id/notebook_id/source_id when a new value</span>
+<span class="sd">        was actually provided, so re-uploading doesn't blow away existing</span>
+<span class="sd">        associations.</span>
+<span class="sd">        """</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">db_service</span><span class="o">.</span><span class="n">insert</span><span class="p">({</span>
+                <span class="s2">"sql"</span><span class="p">:</span> <span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">"INSERT INTO </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">TABLE</span><span class="si">}</span><span class="s2"> "</span>
+                    <span class="s2">"(file_name, file_url, file_type, size, uploaded_at, "</span>
+                    <span class="s2">" workspace_ids, notebook_ids, owner_user_id) "</span>
+                    <span class="s2">"VALUES (</span><span class="si">%(file_name)s</span><span class="s2">, </span><span class="si">%(file_url)s</span><span class="s2">, </span><span class="si">%(file_type)s</span><span class="s2">, </span><span class="si">%(size)s</span><span class="s2">, "</span>
+                    <span class="s2">"</span><span class="si">%(uploaded_at)s</span><span class="s2">, </span><span class="si">%(workspace_ids)s</span><span class="s2">, </span><span class="si">%(notebook_ids)s</span><span class="s2">, </span><span class="si">%(owner_user_id)s</span><span class="s2">) "</span>
+                    <span class="s2">"ON CONFLICT (file_url) DO UPDATE SET "</span>
+                    <span class="sa">f</span><span class="s2">"workspace_ids = ARRAY(SELECT DISTINCT unnest("</span>
+                    <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">TABLE</span><span class="si">}</span><span class="s2">.workspace_ids || EXCLUDED.workspace_ids)), "</span>
+                    <span class="sa">f</span><span class="s2">"notebook_ids = ARRAY(SELECT DISTINCT unnest("</span>
+                    <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">TABLE</span><span class="si">}</span><span class="s2">.notebook_ids || EXCLUDED.notebook_ids)), "</span>
+                    <span class="s2">"updated_at = NOW()"</span>
+                <span class="p">),</span>
+                <span class="s2">"params"</span><span class="p">:</span> <span class="p">{</span>
+                    <span class="s2">"file_name"</span><span class="p">:</span> <span class="n">file</span><span class="o">.</span><span class="n">fileName</span><span class="p">,</span>
+                    <span class="s2">"file_url"</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">file</span><span class="o">.</span><span class="n">fileUrl</span><span class="p">),</span>
+                    <span class="s2">"file_type"</span><span class="p">:</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">file</span><span class="p">,</span> <span class="s2">"fileType"</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span>
+                    <span class="s2">"size"</span><span class="p">:</span> <span class="n">file</span><span class="o">.</span><span class="n">size</span><span class="p">,</span>
+                    <span class="s2">"uploaded_at"</span><span class="p">:</span> <span class="n">file</span><span class="o">.</span><span class="n">uploadedAt</span><span class="p">,</span>
+                    <span class="s2">"workspace_ids"</span><span class="p">:</span> <span class="p">[</span><span class="n">workspace_id</span><span class="p">]</span> <span class="k">if</span> <span class="n">workspace_id</span> <span class="k">else</span> <span class="p">[],</span>
+                    <span class="s2">"notebook_ids"</span><span class="p">:</span> <span class="p">[</span><span class="n">notebook_id</span><span class="p">]</span> <span class="k">if</span> <span class="n">notebook_id</span> <span class="k">else</span> <span class="p">[],</span>
+                    <span class="s2">"owner_user_id"</span><span class="p">:</span> <span class="n">owner_user_id</span><span class="p">,</span>
+                <span class="p">},</span>
+            <span class="p">})</span>
+        <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">exception</span><span class="p">(</span><span class="s2">"Failed to record upload metadata for </span><span class="si">{}</span><span class="s2">"</span><span class="p">,</span> <span class="n">file</span><span class="o">.</span><span class="n">fileName</span><span class="p">)</span>
+        <span class="k">finally</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">db_service</span><span class="o">.</span><span class="n">disconnect</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="FileService.rename_file">
+<a class="viewcode-back" href="../../../../generated/squirrel_services_file_FileService.html#squirrel.services.file.FileService.FileService.rename_file">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">rename_file</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">file_url</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">owner_user_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">new_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">File</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Rename a file record by ``file_url``, propagating the new name into</span>
+<span class="sd">        any notebook data source whose ``source_file_url`` matches so the</span>
+<span class="sd">        two tables stay in sync. Ownership is verified first.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            FileRecordNotFound: if no row is owned by ``owner_user_id``.</span>
+<span class="sd">        """</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_owned_by</span><span class="p">(</span><span class="n">file_url</span><span class="p">,</span> <span class="n">owner_user_id</span><span class="p">):</span>
+                <span class="k">raise</span> <span class="n">FileRecordNotFound</span><span class="p">(</span><span class="n">file_url</span><span class="p">)</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">db_service</span><span class="o">.</span><span class="n">query</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"UPDATE </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">TABLE</span><span class="si">}</span><span class="s2"> SET file_name = %(file_name)s, updated_at = NOW() "</span>
+                <span class="s2">"WHERE file_url = </span><span class="si">%(file_url)s</span><span class="s2"> AND owner_user_id = </span><span class="si">%(owner_user_id)s</span><span class="s2">"</span><span class="p">,</span>
+                <span class="n">params</span><span class="o">=</span><span class="p">{</span><span class="s2">"file_name"</span><span class="p">:</span> <span class="n">new_name</span><span class="p">,</span> <span class="s2">"file_url"</span><span class="p">:</span> <span class="n">file_url</span><span class="p">,</span> <span class="s2">"owner_user_id"</span><span class="p">:</span> <span class="n">owner_user_id</span><span class="p">},</span>
+            <span class="p">)</span>
+
+            <span class="c1"># Propagate rename into any notebook data source bound to this file URL</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">db_service</span><span class="o">.</span><span class="n">query</span><span class="p">(</span>
+                <span class="s2">"UPDATE sqrl_notebook_data_sources SET label = </span><span class="si">%(label)s</span><span class="s2"> WHERE source_file_url = </span><span class="si">%(file_url)s</span><span class="s2">"</span><span class="p">,</span>
+                <span class="n">params</span><span class="o">=</span><span class="p">{</span><span class="s2">"label"</span><span class="p">:</span> <span class="n">new_name</span><span class="p">,</span> <span class="s2">"file_url"</span><span class="p">:</span> <span class="n">file_url</span><span class="p">},</span>
+            <span class="p">)</span>
+
+            <span class="n">row</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_row</span><span class="p">(</span><span class="n">file_url</span><span class="p">,</span> <span class="n">owner_user_id</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">row</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">FileRecordNotFound</span><span class="p">(</span><span class="n">file_url</span><span class="p">)</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">from_dict</span><span class="p">(</span><span class="n">row</span><span class="p">)</span>
+        <span class="k">finally</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">db_service</span><span class="o">.</span><span class="n">disconnect</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="FileService.delete_file">
+<a class="viewcode-back" href="../../../../generated/squirrel_services_file_FileService.html#squirrel.services.file.FileService.FileService.delete_file">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">delete_file</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">file_url</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">owner_user_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Delete a file's DB record, but only if it's owned by the caller and</span>
+<span class="sd">        not attached to any workspace or notebook.</span>
+<span class="sd">        """</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">row</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_row</span><span class="p">(</span><span class="n">file_url</span><span class="p">,</span> <span class="n">owner_user_id</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">row</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">FileRecordNotFound</span><span class="p">(</span><span class="n">file_url</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">row</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"workspace_ids"</span><span class="p">)</span> <span class="ow">or</span> <span class="n">row</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"notebook_ids"</span><span class="p">):</span>
+                <span class="k">raise</span> <span class="n">FileInUseError</span><span class="p">(</span><span class="n">file_url</span><span class="p">)</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">db_service</span><span class="o">.</span><span class="n">query</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"DELETE FROM </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">TABLE</span><span class="si">}</span><span class="s2"> WHERE file_url = %(file_url)s AND owner_user_id = %(owner_user_id)s"</span><span class="p">,</span>
+                <span class="n">params</span><span class="o">=</span><span class="p">{</span><span class="s2">"file_url"</span><span class="p">:</span> <span class="n">file_url</span><span class="p">,</span> <span class="s2">"owner_user_id"</span><span class="p">:</span> <span class="n">owner_user_id</span><span class="p">},</span>
+            <span class="p">)</span>
+        <span class="k">finally</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">db_service</span><span class="o">.</span><span class="n">disconnect</span><span class="p">()</span></div>
+
+
+    <span class="c1"># ——————————————————————————————————————————————————————————</span>
+    <span class="c1"># Reads</span>
+
+<div class="viewcode-block" id="FileService.is_owned_by">
+<a class="viewcode-back" href="../../../../generated/squirrel_services_file_FileService.html#squirrel.services.file.FileService.FileService.is_owned_by">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">is_owned_by</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">file_url</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">owner_user_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Return True if ``file_url`` has a row owned by ``owner_user_id``."""</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_row</span><span class="p">(</span><span class="n">file_url</span><span class="p">,</span> <span class="n">owner_user_id</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span></div>
+
+
+<div class="viewcode-block" id="FileService.list_files">
+<a class="viewcode-back" href="../../../../generated/squirrel_services_file_FileService.html#squirrel.services.file.FileService.FileService.list_files">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">list_files</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> 
+        <span class="n">owner_user_id</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">File</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">"""Return every file record owned by ``owner_user_id``."""</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">db_service</span><span class="o">.</span><span class="n">retrieve</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">TABLE</span><span class="p">,</span> <span class="n">filters</span><span class="o">=</span><span class="p">{</span><span class="s2">"owner_user_id"</span><span class="p">:</span> <span class="n">owner_user_id</span><span class="p">})</span>
+        <span class="k">finally</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">db_service</span><span class="o">.</span><span class="n">disconnect</span><span class="p">()</span>
+
+        <span class="n">rows</span> <span class="o">=</span> <span class="p">(</span><span class="n">result</span> <span class="ow">or</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"rows"</span><span class="p">,</span> <span class="p">[])</span>
+        <span class="k">return</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">from_dict</span><span class="p">(</span><span class="n">row</span><span class="p">)</span> <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">rows</span><span class="p">]</span></div>
+
+
+<div class="viewcode-block" id="FileService.get_owned_file">
+<a class="viewcode-back" href="../../../../generated/squirrel_services_file_FileService.html#squirrel.services.file.FileService.FileService.get_owned_file">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_owned_file</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> 
+        <span class="n">file_url</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> 
+        <span class="n">owner_user_id</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">File</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">"""Return the record for ``file_url`` if owned by ``owner_user_id``, else None."""</span>
+        <span class="n">row</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_row</span><span class="p">(</span><span class="n">file_url</span><span class="p">,</span> <span class="n">owner_user_id</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">from_dict</span><span class="p">(</span><span class="n">row</span><span class="p">)</span> <span class="k">if</span> <span class="n">row</span> <span class="k">else</span> <span class="kc">None</span></div>
+
+
+    <span class="c1"># ——————————————————————————————————————————————————————————</span>
+    <span class="c1"># Internal helpers</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_row</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> 
+        <span class="n">file_url</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> 
+        <span class="n">owner_user_id</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">db_service</span><span class="o">.</span><span class="n">retrieve</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">TABLE</span><span class="p">,</span>
+                <span class="n">filters</span><span class="o">=</span><span class="p">{</span>
+                    <span class="s2">"file_url"</span><span class="p">:</span> <span class="n">file_url</span><span class="p">,</span> 
+                    <span class="s2">"owner_user_id"</span><span class="p">:</span> <span class="n">owner_user_id</span>
+                <span class="p">},</span>
+            <span class="p">)</span>
+        <span class="k">finally</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">db_service</span><span class="o">.</span><span class="n">disconnect</span><span class="p">()</span>
+        <span class="n">rows</span> <span class="o">=</span> <span class="p">(</span><span class="n">result</span> <span class="ow">or</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"rows"</span><span class="p">,</span> <span class="p">[])</span>
+        <span class="k">return</span> <span class="n">rows</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">if</span> <span class="n">rows</span> <span class="k">else</span> <span class="kc">None</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">from_dict</span><span class="p">(</span><span class="n">row</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">File</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">File</span><span class="p">(</span>
+            <span class="n">fileUrl</span><span class="o">=</span><span class="n">row</span><span class="p">[</span><span class="s2">"file_url"</span><span class="p">],</span>
+            <span class="n">fileName</span><span class="o">=</span><span class="n">row</span><span class="p">[</span><span class="s2">"file_name"</span><span class="p">],</span>
+            <span class="n">fileType</span><span class="o">=</span><span class="n">row</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"file_type"</span><span class="p">),</span>
+            <span class="n">size</span><span class="o">=</span><span class="n">row</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"size"</span><span class="p">),</span>
+            <span class="n">uploadedAt</span><span class="o">=</span><span class="n">row</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"uploaded_at"</span><span class="p">),</span>
+            <span class="n">workspaceIds</span><span class="o">=</span><span class="n">row</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"workspace_ids"</span><span class="p">),</span>
+            <span class="n">notebookIds</span><span class="o">=</span><span class="n">row</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"notebook_ids"</span><span class="p">),</span>
+            <span class="n">ownerUserId</span><span class="o">=</span><span class="n">row</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"owner_user_id"</span><span class="p">)</span>
+        <span class="p">)</span></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, Mazen Soliman.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

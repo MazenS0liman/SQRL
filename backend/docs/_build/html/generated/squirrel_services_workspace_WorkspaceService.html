@@ -1,0 +1,935 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>squirrel.services.workspace.WorkspaceService &mdash; squirrel  documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/custom.css?v=adc7883a" />
+
+  
+    <link rel="shortcut icon" href="../_static/sqrl.png"/>
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="../_static/copybutton.js?v=a46eff05"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="prev" title="squirrel.services.storage.database.PostgresService" href="squirrel_services_storage_database_PostgresService.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            squirrel
+              <img src="../_static/sqrl.png" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Python API Reference:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="../api.html">Python API Reference</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="../generated_classes.html">Generated API classes</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="squirrel_constants_connector.html">squirrel.constants.connector</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_constants_workspace.html">squirrel.constants.workspace</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_core_config.html">squirrel.core.config</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_core_error_handlers.html">squirrel.core.error_handlers</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_core_logging.html">squirrel.core.logging</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_core_middleware.html">squirrel.core.middleware</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_models_classification.html">squirrel.models.classification</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_models_time_series.html">squirrel.models.time_series</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_modules_agents_abstract_IAgent.html">squirrel.modules.agents.abstract.IAgent</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_modules_agents_builder_TabularDataModelBuilderAgent.html">squirrel.modules.agents.builder.TabularDataModelBuilderAgent</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_modules_agents_exploratory_TabularDataExploratoryAgent.html">squirrel.modules.agents.exploratory.TabularDataExploratoryAgent</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_modules_agents_inspector_TabularDataInsepctorAgent.html">squirrel.modules.agents.inspector.TabularDataInsepctorAgent</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_modules_agents_orchestrator_OrchestratorAgent.html">squirrel.modules.agents.orchestrator.OrchestratorAgent</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_modules_agents_preprocessor_TabularDataProcessorAgent.html">squirrel.modules.agents.preprocessor.TabularDataProcessorAgent</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_modules_inspectors_tabular.html">squirrel.modules.inspectors.tabular</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_modules_preprocessors_cleaning_tabular.html">squirrel.modules.preprocessors.cleaning.tabular</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_modules_preprocessors_transformers_tabular.html">squirrel.modules.preprocessors.transformers.tabular</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_modules_prompts_abstract_IPromptGenerator.html">squirrel.modules.prompts.abstract.IPromptGenerator</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_modules_prompts_builder_TabularDataPromptGenerator.html">squirrel.modules.prompts.builder.TabularDataPromptGenerator</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_modules_prompts_exploratory_ExploratoryPromptGenerator.html">squirrel.modules.prompts.exploratory.ExploratoryPromptGenerator</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_modules_prompts_inspect_InspectPromptGenerator.html">squirrel.modules.prompts.inspect.InspectPromptGenerator</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_modules_prompts_orchestrator_OrchestratorPromptGenerator.html">squirrel.modules.prompts.orchestrator.OrchestratorPromptGenerator</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_modules_prompts_preprocess_PreprocessPromptGenerator.html">squirrel.modules.prompts.preprocess.PreprocessPromptGenerator</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_modules_providers_abstract_IProvider.html">squirrel.modules.providers.abstract.IProvider</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_modules_providers_gemini_GeminiProvider.html">squirrel.modules.providers.gemini.GeminiProvider</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_modules_providers_groq_GroqProvider.html">squirrel.modules.providers.groq.GroqProvider</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_modules_providers_openrouter_OpenRouterProvider.html">squirrel.modules.providers.openrouter.OpenRouterProvider</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_schemas_api.html">squirrel.schemas.api</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_schemas_argument_spec.html">squirrel.schemas.argument_spec</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_schemas_auth.html">squirrel.schemas.auth</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_schemas_connector.html">squirrel.schemas.connector</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_schemas_eda.html">squirrel.schemas.eda</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_schemas_error.html">squirrel.schemas.error</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_schemas_file.html">squirrel.schemas.file</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_schemas_notebook.html">squirrel.schemas.notebook</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_schemas_token.html">squirrel.schemas.token</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_schemas_workspace.html">squirrel.schemas.workspace</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_services_auth_AuthService.html">squirrel.services.auth.AuthService</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_services_auth_TokenService.html">squirrel.services.auth.TokenService</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_services_chat_MessagingService.html">squirrel.services.chat.MessagingService</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_services_data_connector_DataConnectorService.html">squirrel.services.data_connector.DataConnectorService</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_services_file_FileService.html">squirrel.services.file.FileService</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_services_notebook_NotebookService.html">squirrel.services.notebook.NotebookService</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_services_orchestrator_OrchestratorService.html">squirrel.services.orchestrator.OrchestratorService</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_services_storage_blob_IBlobStorageService.html">squirrel.services.storage.blob.IBlobStorageService</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_services_storage_blob_MinIOService.html">squirrel.services.storage.blob.MinIOService</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_services_storage_database_IDatabaseService.html">squirrel.services.storage.database.IDatabaseService</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_services_storage_database_PostgresService.html">squirrel.services.storage.database.PostgresService</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">squirrel.services.workspace.WorkspaceService</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#squirrel.services.workspace.WorkspaceService.WorkspaceService"><code class="docutils literal notranslate"><span class="pre">WorkspaceService</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">squirrel</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../api.html">Python API Reference</a></li>
+          <li class="breadcrumb-item"><a href="../generated_classes.html">Generated API classes</a></li>
+      <li class="breadcrumb-item active">squirrel.services.workspace.WorkspaceService</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/generated/squirrel_services_workspace_WorkspaceService.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="squirrel-services-workspace-workspaceservice">
+<h1>squirrel.services.workspace.WorkspaceService<a class="headerlink" href="#squirrel-services-workspace-workspaceservice" title="Link to this heading"></a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="squirrel.services.workspace.WorkspaceService.WorkspaceService">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">squirrel.services.workspace.WorkspaceService.</span></span><span class="sig-name descname"><span class="pre">WorkspaceService</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">db</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">minio</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">connector</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/services/workspace/WorkspaceService.html#WorkspaceService"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.services.workspace.WorkspaceService.WorkspaceService" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Coordinate workspace bookkeeping and artifact persistence for the
+preprocessing and model-building pipelines.</p>
+<p><strong>Responsibilities:</strong></p>
+<ol class="arabic simple">
+<li><p>Create / list / fetch / rename / delete workspaces and track their
+lifecycle status and data type.</p></li>
+<li><p>Manage input sources per workspace: uploaded files of any supported
+type (stored in MinIO), or references to an existing data connector.</p></li>
+<li><p>Upload processed DataFrames and fitted models to MinIO.</p></li>
+<li><p>Insert a workspace-run row in PostgreSQL recording the S3 URLs,
+agent summary, and LLM metadata for each pipeline run.</p></li>
+<li><p>Expose retrieval helpers so downstream routes can fetch workspace
+and run history.</p></li>
+<li><p>Persist the fitted preprocessing pipeline (plan + execution report,
+including every strategy’s data-dependent fitted parameters) as its
+own MinIO artifact, and replay it — together with a saved model —
+against new data via <a class="reference internal" href="#squirrel.services.workspace.WorkspaceService.WorkspaceService.predict" title="squirrel.services.workspace.WorkspaceService.WorkspaceService.predict"><code class="xref py py-meth docutils literal notranslate"><span class="pre">predict()</span></code></a>.</p></li>
+</ol>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>db</strong> (<em>Optional</em><em>[</em><a class="reference internal" href="squirrel_services_storage_database_PostgresService.html#squirrel.services.storage.database.PostgresService.PostgresService" title="squirrel.services.storage.database.PostgresService.PostgresService"><em>PostgresService</em></a><em>]</em>) – An open <code class="xref py py-class docutils literal notranslate"><span class="pre">PostgresService</span></code> instance.</p></li>
+<li><p><strong>minio</strong> (<em>Optional</em><em>[</em><a class="reference internal" href="squirrel_services_storage_blob_MinIOService.html#squirrel.services.storage.blob.MinIOService.MinIOService" title="squirrel.services.storage.blob.MinIOService.MinIOService"><em>MinIOService</em></a><em>]</em>) – An open <code class="xref py py-class docutils literal notranslate"><span class="pre">MinIOService</span></code> instance.</p></li>
+<li><p><strong>connector</strong> (<em>Optional</em><em>[</em><a class="reference internal" href="squirrel_services_data_connector_DataConnectorService.html#squirrel.services.data_connector.DataConnectorService.DataConnectorService" title="squirrel.services.data_connector.DataConnectorService.DataConnectorService"><em>DataConnectorService</em></a><em>]</em>) – An open <code class="xref py py-class docutils literal notranslate"><span class="pre">DataConnectorService</span></code> instance.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="squirrel.services.workspace.WorkspaceService.WorkspaceService.create_workspace">
+<span class="sig-name descname"><span class="pre">create_workspace</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data_type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'structured'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">owner_user_id</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/services/workspace/WorkspaceService.html#WorkspaceService.create_workspace"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.services.workspace.WorkspaceService.WorkspaceService.create_workspace" title="Link to this definition"></a></dt>
+<dd><p>Create a new, empty workspace.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>name</strong> (<em>str</em>) – User-supplied display name (e.g. “Churn model v1”).</p></li>
+<li><p><strong>data_type</strong> (<em>str</em>) – One of <code class="xref py py-class docutils literal notranslate"><span class="pre">DataType</span></code>. Defaults to
+<code class="docutils literal notranslate"><span class="pre">&quot;structured&quot;</span></code> (tabular CSV pipeline).</p></li>
+<li><p><strong>owner_user_id</strong> (<em>Optional</em><em>[</em><em>str</em><em>]</em>) – The user id that will own this workspace.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The newly created workspace row, keyed by <code class="docutils literal notranslate"><span class="pre">workspace_id</span></code>.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>dict</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>ValueError</strong> – if <em>data_type</em> isn’t one of <code class="xref py py-class docutils literal notranslate"><span class="pre">DataType</span></code>.</p></li>
+<li><p><strong>RuntimeError</strong> – if the insert doesn’t come back with a
+<code class="docutils literal notranslate"><span class="pre">workspace_id</span></code>.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="squirrel.services.workspace.WorkspaceService.WorkspaceService.get_workspace">
+<span class="sig-name descname"><span class="pre">get_workspace</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">workspace_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">owner_user_id</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/services/workspace/WorkspaceService.html#WorkspaceService.get_workspace"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.services.workspace.WorkspaceService.WorkspaceService.get_workspace" title="Link to this definition"></a></dt>
+<dd><p>Fetch a single workspace row by <code class="docutils literal notranslate"><span class="pre">workspace_id</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>workspace_id</strong> (<em>str</em>) – Workspace to fetch.</p></li>
+<li><p><strong>owner_user_id</strong> (<em>Optional</em><em>[</em><em>str</em><em>]</em>) – If provided, only return the workspace if it
+belongs to this user.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The matching workspace row.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Dict[str, Any]</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="squirrel_schemas_error.html#squirrel.schemas.error.WorkspaceNotFoundError" title="squirrel.schemas.error.WorkspaceNotFoundError"><strong>WorkspaceNotFoundError</strong></a> – if no matching workspace exists.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="squirrel.services.workspace.WorkspaceService.WorkspaceService.list_workspaces">
+<span class="sig-name descname"><span class="pre">list_workspaces</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">limit</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">200</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">owner_user_id</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/services/workspace/WorkspaceService.html#WorkspaceService.list_workspaces"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.services.workspace.WorkspaceService.WorkspaceService.list_workspaces" title="Link to this definition"></a></dt>
+<dd><p>Return all workspaces, newest first.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>limit</strong> (<em>int</em>) – Maximum number of rows to return.</p></li>
+<li><p><strong>owner_user_id</strong> (<em>Optional</em><em>[</em><em>str</em><em>]</em>) – If provided, only list workspaces owned by
+this user.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Workspace rows, most recently created first.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>List[Dict[str, Any]]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="squirrel.services.workspace.WorkspaceService.WorkspaceService.update_workspace">
+<span class="sig-name descname"><span class="pre">update_workspace</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">workspace_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fields</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">owner_user_id</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/services/workspace/WorkspaceService.html#WorkspaceService.update_workspace"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.services.workspace.WorkspaceService.WorkspaceService.update_workspace" title="Link to this definition"></a></dt>
+<dd><p>Patch arbitrary columns on a workspace row and bump <code class="docutils literal notranslate"><span class="pre">updated_at</span></code>.</p>
+<p>JSONB columns (currently just <code class="docutils literal notranslate"><span class="pre">input_sources</span></code>) are automatically
+serialized and cast with <code class="docutils literal notranslate"><span class="pre">::jsonb</span></code> in the generated <code class="docutils literal notranslate"><span class="pre">SET</span></code>
+clause; every other field is passed through as-is.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>workspace_id</strong> (<em>str</em>) – Workspace to update.</p></li>
+<li><p><strong>fields</strong> (<em>Dict</em><em>[</em><em>str</em><em>, </em><em>Any</em><em>]</em>) – Column-name -&gt; new-value pairs to set. A no-op when
+empty.</p></li>
+<li><p><strong>owner_user_id</strong> (<em>Optional</em><em>[</em><em>str</em><em>]</em>) – If provided, only update the workspace if it
+belongs to this user. Otherwise, update any workspace with the
+given <code class="docutils literal notranslate"><span class="pre">workspace_id</span></code>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="squirrel.services.workspace.WorkspaceService.WorkspaceService.set_status">
+<span class="sig-name descname"><span class="pre">set_status</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">workspace_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">status</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target_column</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">error</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">owner_user_id</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/services/workspace/WorkspaceService.html#WorkspaceService.set_status"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.services.workspace.WorkspaceService.WorkspaceService.set_status" title="Link to this definition"></a></dt>
+<dd><p>Update workspace status (and, optionally, the chosen target column
+and/or a recorded error message).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>workspace_id</strong> (<em>str</em>) – Workspace to update.</p></li>
+<li><p><strong>status</strong> (<em>str</em>) – New lifecycle status, e.g. one of <code class="xref py py-class docutils literal notranslate"><span class="pre">WorkspaceStatus</span></code>.</p></li>
+<li><p><strong>target_column</strong> (<em>Optional</em><em>[</em><em>str</em><em>]</em>) – If provided, also record this as the
+workspace’s chosen modelling target.</p></li>
+<li><p><strong>error</strong> (<em>Optional</em><em>[</em><em>str</em><em>]</em>) – If provided, also record this as the workspace’s
+error message (e.g. on pipeline failure).</p></li>
+<li><p><strong>owner_user_id</strong> (<em>Optional</em><em>[</em><em>str</em><em>]</em>) – If provided, only update the workspace if it
+belongs to this user.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="squirrel.services.workspace.WorkspaceService.WorkspaceService.rename_workspace">
+<span class="sig-name descname"><span class="pre">rename_workspace</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">workspace_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">owner_user_id</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/services/workspace/WorkspaceService.html#WorkspaceService.rename_workspace"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.services.workspace.WorkspaceService.WorkspaceService.rename_workspace" title="Link to this definition"></a></dt>
+<dd><p>Rename a workspace and return the updated row.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>workspace_id</strong> (<em>str</em>) – Workspace to rename.</p></li>
+<li><p><strong>name</strong> (<em>str</em>) – New display name. Leading/trailing whitespace is
+stripped.</p></li>
+<li><p><strong>owner_user_id</strong> (<em>Optional</em><em>[</em><em>str</em><em>]</em>) – If provided, only rename the workspace if it
+belongs to this user.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The updated workspace row.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Dict[str, Any]</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>ValueError</strong> – if <em>name</em> is empty after stripping.</p></li>
+<li><p><a class="reference internal" href="squirrel_schemas_error.html#squirrel.schemas.error.WorkspaceNotFoundError" title="squirrel.schemas.error.WorkspaceNotFoundError"><strong>WorkspaceNotFoundError</strong></a> – if the workspace doesn’t exist.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="squirrel.services.workspace.WorkspaceService.WorkspaceService.delete_workspace">
+<span class="sig-name descname"><span class="pre">delete_workspace</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">workspace_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">purge_artifacts</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">owner_user_id</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/services/workspace/WorkspaceService.html#WorkspaceService.delete_workspace"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.services.workspace.WorkspaceService.WorkspaceService.delete_workspace" title="Link to this definition"></a></dt>
+<dd><p>Permanently delete a workspace: its run history, then the workspace
+row itself.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>workspace_id</strong> (<em>str</em>) – Workspace to delete.</p></li>
+<li><p><strong>purge_artifacts</strong> (<em>bool</em>) – If <code class="docutils literal notranslate"><span class="pre">True</span></code>, best-effort delete every
+uploaded/output MinIO object referenced by the workspace’s runs
+and input sources. Failures to purge an individual object are
+logged, not raised — a stray blob shouldn’t block the delete.</p></li>
+<li><p><strong>owner_user_id</strong> (<em>Optional</em><em>[</em><em>str</em><em>]</em>) – If provided, only delete the workspace if it belongs
+to this user. Otherwise, delete any workspace with the given <code class="docutils literal notranslate"><span class="pre">workspace_id</span></code>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="squirrel_schemas_error.html#squirrel.schemas.error.WorkspaceNotFoundError" title="squirrel.schemas.error.WorkspaceNotFoundError"><strong>WorkspaceNotFoundError</strong></a> – if the workspace doesn’t exist.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="squirrel.services.workspace.WorkspaceService.WorkspaceService.add_file_source">
+<span class="sig-name descname"><span class="pre">add_file_source</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">workspace_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">file_path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">file_name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">file_type</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">columns</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">row_count</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">owner_user_id</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/services/workspace/WorkspaceService.html#WorkspaceService.add_file_source"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.services.workspace.WorkspaceService.WorkspaceService.add_file_source" title="Link to this definition"></a></dt>
+<dd><p>Upload a local file to MinIO and attach it to a workspace as a
+new <code class="docutils literal notranslate"><span class="pre">&quot;upload&quot;</span></code> input source. Also records the upload on the
+Files page (via <code class="xref py py-class docutils literal notranslate"><span class="pre">FileService</span></code>) tagged with this workspace
+so it can deep-link back.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>workspace_id</strong> (<em>str</em>) – Workspace to attach the source to.</p></li>
+<li><p><strong>file_path</strong> (<em>str</em>) – Local filesystem path of the file to upload.</p></li>
+<li><p><strong>file_name</strong> (<em>str</em>) – Display name for the source (typically the
+original filename).</p></li>
+<li><p><strong>file_type</strong> (<em>str</em>) – File type/extension, e.g. <code class="docutils literal notranslate"><span class="pre">&quot;csv&quot;</span></code>.</p></li>
+<li><p><strong>columns</strong> (<em>Optional</em><em>[</em><em>List</em><em>[</em><em>str</em><em>]</em><em>]</em>) – Known column list, for tabular files. Stored as
+both <code class="docutils literal notranslate"><span class="pre">columns</span></code> and <code class="docutils literal notranslate"><span class="pre">all_columns</span></code> on the source.</p></li>
+<li><p><strong>row_count</strong> (<em>Optional</em><em>[</em><em>int</em><em>]</em>) – Known row count, for tabular files.</p></li>
+<li><p><strong>owner_user_id</strong> (<em>Optional</em><em>[</em><em>str</em><em>]</em>) – If provided, only attach the source if the
+workspace belongs to this user.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The newly created source dict.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Dict[str, Any]</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><a class="reference internal" href="squirrel_schemas_error.html#squirrel.schemas.error.WorkspaceNotFoundError" title="squirrel.schemas.error.WorkspaceNotFoundError"><strong>WorkspaceNotFoundError</strong></a> – if the workspace doesn’t exist.</p></li>
+<li><p><strong>RuntimeError</strong> – if the upload to MinIO fails.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="squirrel.services.workspace.WorkspaceService.WorkspaceService.preview_upload_source">
+<span class="sig-name descname"><span class="pre">preview_upload_source</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">workspace_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">source_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">limit</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">owner_user_id</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/services/workspace/WorkspaceService.html#WorkspaceService.preview_upload_source"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.services.workspace.WorkspaceService.WorkspaceService.preview_upload_source" title="Link to this definition"></a></dt>
+<dd><p>Re-download and re-parse an already-uploaded CSV source, returning
+its full column list and a small preview. Lets the column editor
+re-open a source (e.g. after a page reload) without the frontend
+needing to keep the original upload-time parse result around.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>workspace_id</strong> (<em>str</em>) – Workspace the source belongs to.</p></li>
+<li><p><strong>source_id</strong> (<em>str</em>) – Source to preview.</p></li>
+<li><p><strong>limit</strong> (<em>int</em>) – Maximum number of preview rows to return.</p></li>
+<li><p><strong>owner_user_id</strong> (<em>Optional</em><em>[</em><em>str</em><em>]</em>) – If provided, only preview the source if the
+workspace belongs to this user.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">{&quot;table&quot;,</span> <span class="pre">&quot;columns&quot;,</span> <span class="pre">&quot;preview&quot;}</span></code>.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Dict[str, Any]</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><a class="reference internal" href="squirrel_schemas_error.html#squirrel.schemas.error.SourceNotFoundError" title="squirrel.schemas.error.SourceNotFoundError"><strong>SourceNotFoundError</strong></a> – if <em>source_id</em> isn’t attached to the
+workspace.</p></li>
+<li><p><strong>ValueError</strong> – if the source isn’t an uploaded file.</p></li>
+<li><p><strong>NotImplementedError</strong> – if the source’s <code class="docutils literal notranslate"><span class="pre">file_type</span></code> isn’t
+<code class="docutils literal notranslate"><span class="pre">&quot;csv&quot;</span></code>.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="squirrel.services.workspace.WorkspaceService.WorkspaceService.update_source_columns">
+<span class="sig-name descname"><span class="pre">update_source_columns</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">workspace_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">source_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">columns</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">owner_user_id</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/services/workspace/WorkspaceService.html#WorkspaceService.update_source_columns"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.services.workspace.WorkspaceService.WorkspaceService.update_source_columns" title="Link to this definition"></a></dt>
+<dd><p>Narrow which columns of an already-attached source feed into
+preprocessing, without removing and re-attaching it.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>workspace_id</strong> (<em>str</em>) – Workspace the source belongs to.</p></li>
+<li><p><strong>source_id</strong> (<em>str</em>) – Source to update.</p></li>
+<li><p><strong>columns</strong> (<em>Optional</em><em>[</em><em>List</em><em>[</em><em>str</em><em>]</em><em>]</em>) – subset of the source’s full column list to keep.
+<code class="docutils literal notranslate"><span class="pre">None</span></code> (or the full list) resets to “use every column”.</p></li>
+<li><p><strong>owner_user_id</strong> (<em>Optional</em><em>[</em><em>str</em><em>]</em>) – If provided, only update the source if the
+workspace belongs to this user.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The updated source dict.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Dict[str, Any]</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><a class="reference internal" href="squirrel_schemas_error.html#squirrel.schemas.error.SourceNotFoundError" title="squirrel.schemas.error.SourceNotFoundError"><strong>SourceNotFoundError</strong></a> – if <em>source_id</em> isn’t attached to the
+workspace.</p></li>
+<li><p><strong>ValueError</strong> – if the source has no known full column list,
+or <em>columns</em> references an unknown column.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="squirrel.services.workspace.WorkspaceService.WorkspaceService.add_connector_source">
+<span class="sig-name descname"><span class="pre">add_connector_source</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">workspace_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">connector_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">table_name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">columns</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">owner_user_id</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/services/workspace/WorkspaceService.html#WorkspaceService.add_connector_source"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.services.workspace.WorkspaceService.WorkspaceService.add_connector_source" title="Link to this definition"></a></dt>
+<dd><p>Attach a single table (optionally restricted to a subset of its
+columns) from a connector as a workspace input source.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>workspace_id</strong> (<em>str</em>) – Workspace to attach the source to.</p></li>
+<li><p><strong>connector_id</strong> (<em>str</em>) – Connector the table belongs to.</p></li>
+<li><p><strong>table_name</strong> (<em>str</em>) – Name of the table to attach.</p></li>
+<li><p><strong>name</strong> (<em>Optional</em><em>[</em><em>str</em><em>]</em>) – Display name for the source. Defaults to <em>table_name</em>.</p></li>
+<li><p><strong>columns</strong> (<em>Optional</em><em>[</em><em>List</em><em>[</em><em>str</em><em>]</em><em>]</em>) – Column names to keep. <code class="docutils literal notranslate"><span class="pre">None</span></code> means “all columns”,
+same as before.</p></li>
+<li><p><strong>owner_user_id</strong> (<em>Optional</em><em>[</em><em>str</em><em>]</em>) – If provided, only attach the source if the
+workspace belongs to this user.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The newly created source dict.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Dict[str, Any]</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>ValueError</strong> – if the resolved display name is empty.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="squirrel.services.workspace.WorkspaceService.WorkspaceService.add_connector_sources">
+<span class="sig-name descname"><span class="pre">add_connector_sources</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">workspace_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">connector_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tables</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">owner_user_id</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/services/workspace/WorkspaceService.html#WorkspaceService.add_connector_sources"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.services.workspace.WorkspaceService.WorkspaceService.add_connector_sources" title="Link to this definition"></a></dt>
+<dd><p>Attach multiple tables from the same connector in one call.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>workspace_id</strong> (<em>str</em>) – Workspace to attach the sources to.</p></li>
+<li><p><strong>connector_id</strong> (<em>str</em>) – Connector to attach the sources from.</p></li>
+<li><p><strong>tables</strong> (<em>List</em><em>[</em><em>Dict</em><em>[</em><em>str</em><em>, </em><em>Any</em><em>]</em><em>]</em>) – list of <code class="docutils literal notranslate"><span class="pre">{&quot;table&quot;:</span> <span class="pre">str,</span> <span class="pre">&quot;columns&quot;:</span> <span class="pre">Optional[List[str]]}</span></code>.
+<code class="docutils literal notranslate"><span class="pre">columns</span></code> omitted or <code class="docutils literal notranslate"><span class="pre">None</span></code> means “all columns” for that table.</p></li>
+<li><p><strong>owner_user_id</strong> (<em>Optional</em><em>[</em><em>str</em><em>]</em>) – If provided, only attach the sources if the workspace belongs
+to this user. Otherwise, attach to any workspace with the given
+<code class="docutils literal notranslate"><span class="pre">workspace_id</span></code>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>ValueError</strong> – if the list is empty, references an unknown table,
+or a table is already attached from this connector.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code>]]</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="squirrel.services.workspace.WorkspaceService.WorkspaceService.remove_source">
+<span class="sig-name descname"><span class="pre">remove_source</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">workspace_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">source_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">owner_user_id</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/services/workspace/WorkspaceService.html#WorkspaceService.remove_source"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.services.workspace.WorkspaceService.WorkspaceService.remove_source" title="Link to this definition"></a></dt>
+<dd><p>Remove a single input source (upload or connector) from a workspace.</p>
+<p>If the source is an uploaded file, its MinIO blob is best-effort
+deleted too (failure to delete the blob is logged, not raised). If
+no sources remain afterwards, the workspace’s status is reset to
+<code class="docutils literal notranslate"><span class="pre">WorkspaceStatus.CREATED</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>workspace_id</strong> (<em>str</em>) – Workspace the source belongs to.</p></li>
+<li><p><strong>source_id</strong> (<em>str</em>) – Source to remove.</p></li>
+<li><p><strong>owner_user_id</strong> (<em>Optional</em><em>[</em><em>str</em><em>]</em>) – If provided, only remove the source if the
+workspace belongs to this user.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="squirrel_schemas_error.html#squirrel.schemas.error.SourceNotFoundError" title="squirrel.schemas.error.SourceNotFoundError"><strong>SourceNotFoundError</strong></a> – if <em>source_id</em> isn’t attached to the
+workspace.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="squirrel.services.workspace.WorkspaceService.WorkspaceService.load_csv">
+<span class="sig-name descname"><span class="pre">load_csv</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">file_url</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/services/workspace/WorkspaceService.html#WorkspaceService.load_csv"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.services.workspace.WorkspaceService.WorkspaceService.load_csv" title="Link to this definition"></a></dt>
+<dd><p>Download a single uploaded CSV source from MinIO and load it into a
+DataFrame. Used internally by <a class="reference internal" href="#squirrel.services.workspace.WorkspaceService.WorkspaceService.preview_upload_source" title="squirrel.services.workspace.WorkspaceService.WorkspaceService.preview_upload_source"><code class="xref py py-meth docutils literal notranslate"><span class="pre">preview_upload_source()</span></code></a> (and
+previously mirrored, less correctly, by inline logic in
+<a class="reference internal" href="#squirrel.services.workspace.WorkspaceService.WorkspaceService.load_source_dataframes" title="squirrel.services.workspace.WorkspaceService.WorkspaceService.load_source_dataframes"><code class="xref py py-meth docutils literal notranslate"><span class="pre">load_source_dataframes()</span></code></a>).</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Reads directly from <code class="docutils literal notranslate"><span class="pre">retrieve_file</span></code>’s in-memory <code class="docutils literal notranslate"><span class="pre">fileByte</span></code>
+rather than treating <code class="docutils literal notranslate"><span class="pre">fileUrl</span></code> as a local filesystem path.
+<code class="docutils literal notranslate"><span class="pre">retrieve_file</span></code> returns the <em>original</em> <code class="docutils literal notranslate"><span class="pre">s3://...</span></code> URL in
+<code class="docutils literal notranslate"><span class="pre">fileUrl</span></code> (its local temp download is already deleted before it
+returns) — passing that straight to <code class="docutils literal notranslate"><span class="pre">pd.read_csv</span></code> previously hit
+fsspec’s own (uncredentialed, non-MinIO-aware) S3 handling and
+surfaced as <code class="docutils literal notranslate"><span class="pre">FileNotFoundError:</span> <span class="pre">The</span> <span class="pre">specified</span> <span class="pre">bucket</span> <span class="pre">does</span> <span class="pre">not</span>
+<span class="pre">exist</span></code>, since it was never actually reading the file this method
+had just downloaded.</p>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>file_url</strong> (<em>str</em>) – <code class="docutils literal notranslate"><span class="pre">s3://...</span></code> URL of the CSV to load.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The parsed CSV as a DataFrame.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>pd.DataFrame</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>RuntimeError</strong> – if the file can’t be retrieved from MinIO.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="squirrel.services.workspace.WorkspaceService.WorkspaceService.fetch_data">
+<span class="sig-name descname"><span class="pre">fetch_data</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">source</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/services/workspace/WorkspaceService.html#WorkspaceService.fetch_data"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.services.workspace.WorkspaceService.WorkspaceService.fetch_data" title="Link to this definition"></a></dt>
+<dd><p>Pull a DataFrame from a connected data source, scoped to the <code class="docutils literal notranslate"><span class="pre">query</span></code>
+captured on the source at attach time (see <a class="reference internal" href="#squirrel.services.workspace.WorkspaceService.WorkspaceService.add_connector_source" title="squirrel.services.workspace.WorkspaceService.WorkspaceService.add_connector_source"><code class="xref py py-meth docutils literal notranslate"><span class="pre">add_connector_source()</span></code></a>)
+— never the connector’s full underlying table/dataset. Delegates to
+<code class="xref py py-meth docutils literal notranslate"><span class="pre">DataConnectorService.fetch_dataframe()</span></code>, which still raises
+<code class="docutils literal notranslate"><span class="pre">NotImplementedError</span></code> for connector types with no reader wired up
+(Snowflake, BigQuery, Google Sheets today).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>source</strong> (<em>Dict</em><em>[</em><em>str</em><em>, </em><em>Any</em><em>]</em>) – A <code class="docutils literal notranslate"><span class="pre">kind</span> <span class="pre">==</span> <span class="pre">&quot;connector&quot;</span></code> input-source dict.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The queried data as a DataFrame.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>pd.DataFrame</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>RuntimeError</strong> – if the source has no recorded <code class="docutils literal notranslate"><span class="pre">query</span></code>.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="squirrel.services.workspace.WorkspaceService.WorkspaceService.load_source_dataframes">
+<span class="sig-name descname"><span class="pre">load_source_dataframes</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sources</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/services/workspace/WorkspaceService.html#WorkspaceService.load_source_dataframes"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.services.workspace.WorkspaceService.WorkspaceService.load_source_dataframes" title="Link to this definition"></a></dt>
+<dd><p>Resolve every input source on a workspace into an in-memory
+DataFrame, keyed by <code class="docutils literal notranslate"><span class="pre">source_id</span></code>.</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">kind</span> <span class="pre">==</span> <span class="pre">&quot;upload&quot;</span></code>: dispatched by <code class="docutils literal notranslate"><span class="pre">file_type</span></code> to the matching
+loader in <code class="xref py py-meth docutils literal notranslate"><span class="pre">_upload_loaders()</span></code> (only <code class="docutils literal notranslate"><span class="pre">&quot;csv&quot;</span></code> today).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">kind</span> <span class="pre">==</span> <span class="pre">&quot;connector&quot;</span></code>: delegated to <a class="reference internal" href="#squirrel.services.workspace.WorkspaceService.WorkspaceService.fetch_data" title="squirrel.services.workspace.WorkspaceService.WorkspaceService.fetch_data"><code class="xref py py-meth docutils literal notranslate"><span class="pre">fetch_data()</span></code></a>. This is
+the extension point for wiring up the Data Connectors page’s live
+sources (Postgres, BigQuery, warehouses, etc.) — today it raises
+<code class="docutils literal notranslate"><span class="pre">NotImplementedError</span></code> with a clear message so the route can
+surface a 501 rather than a silent failure.</p></li>
+</ul>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>sources</strong> (<em>List</em><em>[</em><em>Dict</em><em>[</em><em>str</em><em>, </em><em>Any</em><em>]</em><em>]</em>) – Input-source dicts, as stored on a workspace’s
+<code class="docutils literal notranslate"><span class="pre">input_sources</span></code>.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>DataFrames keyed by <code class="docutils literal notranslate"><span class="pre">source_id</span></code>.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Dict[str, pd.DataFrame]</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>RuntimeError</strong> – if any upload source can’t be downloaded.</p></li>
+<li><p><strong>NotImplementedError</strong> – if a connector source, or an upload
+source whose <code class="docutils literal notranslate"><span class="pre">file_type</span></code> has no registered loader (e.g. a
+future “zip”/”txt” source), has no data-fetching implementation.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="squirrel.services.workspace.WorkspaceService.WorkspaceService.save_run">
+<span class="sig-name descname"><span class="pre">save_run</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">workspace_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">agent_type</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">input_file_urls</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">summary</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prompt_tokens</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">completion_tokens</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">total_tokens</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">response_time_ms</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">owner_user_id</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">plan</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">execution_report</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/services/workspace/WorkspaceService.html#WorkspaceService.save_run"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.services.workspace.WorkspaceService.WorkspaceService.save_run" title="Link to this definition"></a></dt>
+<dd><p>Persist one pipeline run’s output artifacts + summary.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>workspace_id</strong> (<em>str</em>) – Workspace the run belongs to.</p></li>
+<li><p><strong>agent_type</strong> (<em>str</em>) – <code class="docutils literal notranslate"><span class="pre">&quot;preprocessing&quot;</span></code> or <code class="docutils literal notranslate"><span class="pre">&quot;model_building&quot;</span></code>.</p></li>
+<li><p><strong>input_file_urls</strong> (<em>List</em><em>[</em><em>str</em><em>]</em>) – S3 URLs of every input file consumed.</p></li>
+<li><p><strong>data</strong> (<em>Any</em>) – For <code class="docutils literal notranslate"><span class="pre">&quot;preprocessing&quot;</span></code>, the processed DataFrame. For
+<code class="docutils literal notranslate"><span class="pre">&quot;model_building&quot;</span></code>, a dict of <code class="docutils literal notranslate"><span class="pre">{model_key:</span> <span class="pre">fitted_estimator}</span></code>.
+Anything else is left unpersisted (no output artifacts uploaded).</p></li>
+<li><p><strong>summary</strong> (<em>Dict</em>) – Agent’s structured JSON summary of the run.</p></li>
+<li><p><strong>prompt_tokens</strong> (<em>int</em>) – LLM prompt token count for the run.</p></li>
+<li><p><strong>completion_tokens</strong> (<em>int</em>) – LLM completion token count for the run.</p></li>
+<li><p><strong>total_tokens</strong> (<em>int</em>) – LLM total token count for the run.</p></li>
+<li><p><strong>response_time_ms</strong> (<em>int</em>) – Wall-clock time the run took, in ms.</p></li>
+<li><p><strong>owner_user_id</strong> (<em>Optional</em><em>[</em><em>str</em><em>]</em>) – Owning user id, recorded on the run and any
+uploaded artifacts.</p></li>
+<li><p><strong>plan</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code>]</span>) – For <code class="docutils literal notranslate"><span class="pre">agent_type</span> <span class="pre">==</span> <span class="pre">&quot;preprocessing&quot;</span></code> only — the
+JSON plan string/dict returned by
+<code class="docutils literal notranslate"><span class="pre">TabularDataProcessorAgent.plan()</span></code> (or the third element
+of <code class="docutils literal notranslate"><span class="pre">run()</span></code>/<code class="docutils literal notranslate"><span class="pre">run_multi()</span></code>’s return tuple). Combined with
+<em>execution_report</em> and persisted as a “fitted pipeline”
+artifact so <a class="reference internal" href="#squirrel.services.workspace.WorkspaceService.WorkspaceService.predict" title="squirrel.services.workspace.WorkspaceService.WorkspaceService.predict"><code class="xref py py-meth docutils literal notranslate"><span class="pre">predict()</span></code></a> can later replay this exact
+preprocessing against new data. Ignored for other
+<code class="docutils literal notranslate"><span class="pre">agent_type</span></code> values.</p></li>
+<li><p><strong>execution_report</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code>]</span>) – For <code class="docutils literal notranslate"><span class="pre">agent_type</span> <span class="pre">==</span> <span class="pre">&quot;preprocessing&quot;</span></code>
+only — the JSON execution report string/dict returned by
+<code class="docutils literal notranslate"><span class="pre">TabularDataProcessorAgent.execute()</span></code> (or the fourth
+element of <code class="docutils literal notranslate"><span class="pre">run()</span></code>/<code class="docutils literal notranslate"><span class="pre">run_multi()</span></code>’s return tuple). This
+is what actually carries the fitted parameters (means,
+bounds, encoding maps, fitted power-transform λ, one-hot
+dummy-column sets, …) that <a class="reference internal" href="#squirrel.services.workspace.WorkspaceService.WorkspaceService.predict" title="squirrel.services.workspace.WorkspaceService.WorkspaceService.predict"><code class="xref py py-meth docutils literal notranslate"><span class="pre">predict()</span></code></a> needs. When
+omitted, no pipeline artifact is saved and this workspace’s
+data won’t be predictable on until a run supplies one.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">{&quot;record_id&quot;,</span> <span class="pre">&quot;output_file_urls&quot;}</span></code>.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Dict</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="squirrel.services.workspace.WorkspaceService.WorkspaceService.get_record">
+<span class="sig-name descname"><span class="pre">get_record</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">record_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">owner_user_id</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/services/workspace/WorkspaceService.html#WorkspaceService.get_record"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.services.workspace.WorkspaceService.WorkspaceService.get_record" title="Link to this definition"></a></dt>
+<dd><p>Fetch a single workspace-run row by primary key.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>record_id</strong> (<em>int</em>) – The run’s <code class="docutils literal notranslate"><span class="pre">id</span></code>.</p></li>
+<li><p><strong>owner_user_id</strong> (<em>Optional</em><em>[</em><em>str</em><em>]</em>) – If provided, only return the run if it
+belongs to this user.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The matching run row, or <code class="docutils literal notranslate"><span class="pre">None</span></code> if not found.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Optional[dict]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="squirrel.services.workspace.WorkspaceService.WorkspaceService.get_records_by_workspace_id">
+<span class="sig-name descname"><span class="pre">get_records_by_workspace_id</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">workspace_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">agent_type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">limit</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">100</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">owner_user_id</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/services/workspace/WorkspaceService.html#WorkspaceService.get_records_by_workspace_id"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.services.workspace.WorkspaceService.WorkspaceService.get_records_by_workspace_id" title="Link to this definition"></a></dt>
+<dd><p>Return workspace-run rows for a workspace, newest first.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>workspace_id</strong> (<em>str</em>) – Workspace to fetch runs for.</p></li>
+<li><p><strong>agent_type</strong> (<em>Optional</em><em>[</em><em>str</em><em>]</em>) – If provided, only return runs of this type
+(<code class="docutils literal notranslate"><span class="pre">&quot;preprocessing&quot;</span></code> or <code class="docutils literal notranslate"><span class="pre">&quot;model_building&quot;</span></code>).</p></li>
+<li><p><strong>limit</strong> (<em>int</em>) – Maximum number of rows to return.</p></li>
+<li><p><strong>owner_user_id</strong> (<em>Optional</em><em>[</em><em>str</em><em>]</em>) – If provided, only return runs belonging to
+this user.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Run rows, most recently created first.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>List[dict]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="squirrel.services.workspace.WorkspaceService.WorkspaceService.download_output_file">
+<span class="sig-name descname"><span class="pre">download_output_file</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">s3_url</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/services/workspace/WorkspaceService.html#WorkspaceService.download_output_file"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.services.workspace.WorkspaceService.WorkspaceService.download_output_file" title="Link to this definition"></a></dt>
+<dd><p>Download an output artifact from MinIO and return its raw bytes.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>s3_url</strong> (<em>str</em>) – <code class="docutils literal notranslate"><span class="pre">s3://...</span></code> URL of the artifact to download.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The artifact’s raw bytes, or <code class="docutils literal notranslate"><span class="pre">None</span></code> if it couldn’t be
+retrieved or read.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Optional[bytes]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="squirrel.services.workspace.WorkspaceService.WorkspaceService.save_pipeline_artifact">
+<span class="sig-name descname"><span class="pre">save_pipeline_artifact</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">workspace_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">plan</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">execution_report</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">owner_user_id</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/services/workspace/WorkspaceService.html#WorkspaceService.save_pipeline_artifact"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.services.workspace.WorkspaceService.WorkspaceService.save_pipeline_artifact" title="Link to this definition"></a></dt>
+<dd><p>Persist the preprocessing plan + execution report as one JSON
+artifact in MinIO.</p>
+<p>The execution report’s per-step <code class="docutils literal notranslate"><span class="pre">per_column</span></code> blocks are exactly
+the fitted state (means, bounds, encoding maps, fitted
+power-transform λ, one-hot dummy-column sets, group aggregation
+stats, …) that <a class="reference internal" href="#squirrel.services.workspace.WorkspaceService.WorkspaceService.predict" title="squirrel.services.workspace.WorkspaceService.WorkspaceService.predict"><code class="xref py py-meth docutils literal notranslate"><span class="pre">predict()</span></code></a> needs to replay this pipeline on
+new rows instead of re-fitting from them.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>workspace_id</strong> (<em>str</em>) – Workspace the pipeline belongs to.</p></li>
+<li><p><strong>plan</strong> (<em>Union</em><em>[</em><em>str</em><em>, </em><em>Dict</em><em>]</em>) – JSON plan string or dict.</p></li>
+<li><p><strong>execution_report</strong> (<em>Union</em><em>[</em><em>str</em><em>, </em><em>Dict</em><em>]</em>) – JSON execution report string or dict.</p></li>
+<li><p><strong>owner_user_id</strong> (<em>Optional</em><em>[</em><em>str</em><em>]</em>) – If provided, only save the artifact if the workspace belongs
+to this user. Otherwise, save for any workspace with the given
+workspace_id.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The artifact’s <code class="docutils literal notranslate"><span class="pre">s3://</span></code> URL, or <code class="docutils literal notranslate"><span class="pre">None</span></code> on failure.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Optional[str]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="squirrel.services.workspace.WorkspaceService.WorkspaceService.load_pipeline_artifact">
+<span class="sig-name descname"><span class="pre">load_pipeline_artifact</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">file_url</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/services/workspace/WorkspaceService.html#WorkspaceService.load_pipeline_artifact"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.services.workspace.WorkspaceService.WorkspaceService.load_pipeline_artifact" title="Link to this definition"></a></dt>
+<dd><p>Download and parse a pipeline artifact written by
+<a class="reference internal" href="#squirrel.services.workspace.WorkspaceService.WorkspaceService.save_pipeline_artifact" title="squirrel.services.workspace.WorkspaceService.WorkspaceService.save_pipeline_artifact"><code class="xref py py-meth docutils literal notranslate"><span class="pre">save_pipeline_artifact()</span></code></a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>file_url</strong> (<em>str</em>) – <code class="docutils literal notranslate"><span class="pre">s3://...</span></code> URL of the pipeline artifact.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">{&quot;plan&quot;:</span> <span class="pre">{...},</span> <span class="pre">&quot;execution_report&quot;:</span> <span class="pre">{...}}</span></code>.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Dict[str, Any]</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>RuntimeError</strong> – if the artifact can’t be downloaded.</p></li>
+<li><p><strong>ValueError</strong> – if the artifact isn’t valid JSON.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="squirrel.services.workspace.WorkspaceService.WorkspaceService.get_latest_pipeline_artifact_url">
+<span class="sig-name descname"><span class="pre">get_latest_pipeline_artifact_url</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">workspace_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">owner_user_id</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/services/workspace/WorkspaceService.html#WorkspaceService.get_latest_pipeline_artifact_url"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.services.workspace.WorkspaceService.WorkspaceService.get_latest_pipeline_artifact_url" title="Link to this definition"></a></dt>
+<dd><p>Return the <code class="docutils literal notranslate"><span class="pre">pipeline_artifact_url</span></code> recorded in the <code class="docutils literal notranslate"><span class="pre">agent_summary</span></code>
+of the most recent <code class="docutils literal notranslate"><span class="pre">preprocessing</span></code> run for this workspace, or
+<code class="docutils literal notranslate"><span class="pre">None</span></code> if the workspace has never been preprocessed with pipeline
+persistence enabled (e.g. runs saved before this feature existed).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>workspace_id</strong> (<em>str</em>) – Workspace to look up.</p></li>
+<li><p><strong>owner_user_id</strong> (<em>Optional</em><em>[</em><em>str</em><em>]</em>) – If provided, only look up runs belonging to
+this user.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The pipeline artifact’s <code class="docutils literal notranslate"><span class="pre">s3://</span></code> URL, or <code class="docutils literal notranslate"><span class="pre">None</span></code>.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Optional[str]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="squirrel.services.workspace.WorkspaceService.WorkspaceService.get_latest_model_url">
+<span class="sig-name descname"><span class="pre">get_latest_model_url</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">workspace_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">model_key</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">owner_user_id</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/services/workspace/WorkspaceService.html#WorkspaceService.get_latest_model_url"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.services.workspace.WorkspaceService.WorkspaceService.get_latest_model_url" title="Link to this definition"></a></dt>
+<dd><p>Resolve a fitted model’s MinIO URL from the most recent
+<code class="docutils literal notranslate"><span class="pre">model_building</span></code> run on this workspace.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>workspace_id</strong> (<em>str</em>) – Workspace to resolve a model for.</p></li>
+<li><p><strong>model_key</strong> (<em>Optional</em><em>[</em><em>str</em><em>]</em>) – Which fitted model to use. <code class="docutils literal notranslate"><span class="pre">None</span></code> falls back to
+that run’s recorded <code class="docutils literal notranslate"><span class="pre">best_model</span></code>, then to the first output URL
+if neither is available.</p></li>
+<li><p><strong>owner_user_id</strong> (<em>Optional</em><em>[</em><em>str</em><em>]</em>) – If provided, only resolve runs belonging to
+this user.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The resolved model artifact’s <code class="docutils literal notranslate"><span class="pre">s3://</span></code> URL.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>RuntimeError</strong> – if there’s no completed model-building run, or
+<em>model_key</em> doesn’t match any of its fitted models.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="squirrel.services.workspace.WorkspaceService.WorkspaceService.predict">
+<span class="sig-name descname"><span class="pre">predict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">workspace_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">new_data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">model_key</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">owner_user_id</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/services/workspace/WorkspaceService.html#WorkspaceService.predict"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.services.workspace.WorkspaceService.WorkspaceService.predict" title="Link to this definition"></a></dt>
+<dd><p>Inference-time counterpart to <code class="docutils literal notranslate"><span class="pre">/build</span></code>.</p>
+<p>Two distinct prediction paths, depending on the resolved model:</p>
+<blockquote>
+<div><ul class="simple">
+<li><dl class="simple">
+<dt><strong>Sequential models</strong> (<code class="docutils literal notranslate"><span class="pre">bilstm</span></code>, <code class="docutils literal notranslate"><span class="pre">lstm_attention</span></code>): these are</dt><dd><p>fit purely on the target column’s own historical values (see
+<code class="docutils literal notranslate"><span class="pre">TabularDataModelBuilderAgent._fit_time_series_model</span></code>). The
+target history is reconstructed from the workspace’s original input
+sources and forecast forward by <code class="docutils literal notranslate"><span class="pre">len(new_data)</span></code> steps.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt><strong>Everything else</strong>: replays the saved preprocessing pipeline on</dt><dd><p><em>new_data</em> via <code class="docutils literal notranslate"><span class="pre">TabularDataProcessorAgent.apply_fitted_pipeline</span></code>
+using training-time fitted parameters, then predicts on the
+transformed result.</p>
+</dd>
+</dl>
+</li>
+</ul>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>workspace_id</strong> (<em>str</em>) – Workspace to predict against.</p></li>
+<li><p><strong>new_data</strong> (<em>pd.DataFrame</em>) – For non-sequential models: raw new rows, shaped like
+the original input source(s) <em>before</em> preprocessing. For
+sequential models: only its row count is used, as the number of
+future steps to forecast.</p></li>
+<li><p><strong>model_key</strong> (<em>Optional</em><em>[</em><em>str</em><em>]</em>) – Which fitted model to use. <code class="docutils literal notranslate"><span class="pre">None</span></code> uses the
+workspace’s recorded <code class="docutils literal notranslate"><span class="pre">best_model</span></code>.</p></li>
+<li><p><strong>owner_user_id</strong> (<em>Optional</em><em>[</em><em>str</em><em>]</em>) – If provided, only predict against a workspace
+belonging to this user.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">{&quot;model_key&quot;,</span> <span class="pre">&quot;predictions&quot;,</span> <span class="pre">[&quot;probabilities&quot;,</span> <span class="pre">&quot;classes&quot;]}</span></code>.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Dict[str, Any]</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>RuntimeError</strong> – no saved pipeline, no fitted model, no target
+history to seed a sequential model, or <em>model_key</em> can’t be resolved.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="squirrel_services_storage_database_PostgresService.html" class="btn btn-neutral float-left" title="squirrel.services.storage.database.PostgresService" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, Mazen Soliman.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

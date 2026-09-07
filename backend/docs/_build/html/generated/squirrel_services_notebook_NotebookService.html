@@ -1,0 +1,409 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>squirrel.services.notebook.NotebookService &mdash; squirrel  documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/custom.css?v=adc7883a" />
+
+  
+    <link rel="shortcut icon" href="../_static/sqrl.png"/>
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="../_static/copybutton.js?v=a46eff05"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="squirrel.services.orchestrator.OrchestratorService" href="squirrel_services_orchestrator_OrchestratorService.html" />
+    <link rel="prev" title="squirrel.services.file.FileService" href="squirrel_services_file_FileService.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            squirrel
+              <img src="../_static/sqrl.png" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Python API Reference:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="../api.html">Python API Reference</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="../generated_classes.html">Generated API classes</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="squirrel_constants_connector.html">squirrel.constants.connector</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_constants_workspace.html">squirrel.constants.workspace</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_core_config.html">squirrel.core.config</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_core_error_handlers.html">squirrel.core.error_handlers</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_core_logging.html">squirrel.core.logging</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_core_middleware.html">squirrel.core.middleware</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_models_classification.html">squirrel.models.classification</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_models_time_series.html">squirrel.models.time_series</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_modules_agents_abstract_IAgent.html">squirrel.modules.agents.abstract.IAgent</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_modules_agents_builder_TabularDataModelBuilderAgent.html">squirrel.modules.agents.builder.TabularDataModelBuilderAgent</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_modules_agents_exploratory_TabularDataExploratoryAgent.html">squirrel.modules.agents.exploratory.TabularDataExploratoryAgent</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_modules_agents_inspector_TabularDataInsepctorAgent.html">squirrel.modules.agents.inspector.TabularDataInsepctorAgent</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_modules_agents_orchestrator_OrchestratorAgent.html">squirrel.modules.agents.orchestrator.OrchestratorAgent</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_modules_agents_preprocessor_TabularDataProcessorAgent.html">squirrel.modules.agents.preprocessor.TabularDataProcessorAgent</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_modules_inspectors_tabular.html">squirrel.modules.inspectors.tabular</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_modules_preprocessors_cleaning_tabular.html">squirrel.modules.preprocessors.cleaning.tabular</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_modules_preprocessors_transformers_tabular.html">squirrel.modules.preprocessors.transformers.tabular</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_modules_prompts_abstract_IPromptGenerator.html">squirrel.modules.prompts.abstract.IPromptGenerator</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_modules_prompts_builder_TabularDataPromptGenerator.html">squirrel.modules.prompts.builder.TabularDataPromptGenerator</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_modules_prompts_exploratory_ExploratoryPromptGenerator.html">squirrel.modules.prompts.exploratory.ExploratoryPromptGenerator</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_modules_prompts_inspect_InspectPromptGenerator.html">squirrel.modules.prompts.inspect.InspectPromptGenerator</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_modules_prompts_orchestrator_OrchestratorPromptGenerator.html">squirrel.modules.prompts.orchestrator.OrchestratorPromptGenerator</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_modules_prompts_preprocess_PreprocessPromptGenerator.html">squirrel.modules.prompts.preprocess.PreprocessPromptGenerator</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_modules_providers_abstract_IProvider.html">squirrel.modules.providers.abstract.IProvider</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_modules_providers_gemini_GeminiProvider.html">squirrel.modules.providers.gemini.GeminiProvider</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_modules_providers_groq_GroqProvider.html">squirrel.modules.providers.groq.GroqProvider</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_modules_providers_openrouter_OpenRouterProvider.html">squirrel.modules.providers.openrouter.OpenRouterProvider</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_schemas_api.html">squirrel.schemas.api</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_schemas_argument_spec.html">squirrel.schemas.argument_spec</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_schemas_auth.html">squirrel.schemas.auth</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_schemas_connector.html">squirrel.schemas.connector</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_schemas_eda.html">squirrel.schemas.eda</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_schemas_error.html">squirrel.schemas.error</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_schemas_file.html">squirrel.schemas.file</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_schemas_notebook.html">squirrel.schemas.notebook</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_schemas_token.html">squirrel.schemas.token</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_schemas_workspace.html">squirrel.schemas.workspace</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_services_auth_AuthService.html">squirrel.services.auth.AuthService</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_services_auth_TokenService.html">squirrel.services.auth.TokenService</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_services_chat_MessagingService.html">squirrel.services.chat.MessagingService</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_services_data_connector_DataConnectorService.html">squirrel.services.data_connector.DataConnectorService</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_services_file_FileService.html">squirrel.services.file.FileService</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">squirrel.services.notebook.NotebookService</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#squirrel.services.notebook.NotebookService.NotebookService"><code class="docutils literal notranslate"><span class="pre">NotebookService</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_services_orchestrator_OrchestratorService.html">squirrel.services.orchestrator.OrchestratorService</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_services_storage_blob_IBlobStorageService.html">squirrel.services.storage.blob.IBlobStorageService</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_services_storage_blob_MinIOService.html">squirrel.services.storage.blob.MinIOService</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_services_storage_database_IDatabaseService.html">squirrel.services.storage.database.IDatabaseService</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_services_storage_database_PostgresService.html">squirrel.services.storage.database.PostgresService</a></li>
+<li class="toctree-l3"><a class="reference internal" href="squirrel_services_workspace_WorkspaceService.html">squirrel.services.workspace.WorkspaceService</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">squirrel</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../api.html">Python API Reference</a></li>
+          <li class="breadcrumb-item"><a href="../generated_classes.html">Generated API classes</a></li>
+      <li class="breadcrumb-item active">squirrel.services.notebook.NotebookService</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/generated/squirrel_services_notebook_NotebookService.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="squirrel-services-notebook-notebookservice">
+<h1>squirrel.services.notebook.NotebookService<a class="headerlink" href="#squirrel-services-notebook-notebookservice" title="Link to this heading"></a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="squirrel.services.notebook.NotebookService.NotebookService">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">squirrel.services.notebook.NotebookService.</span></span><span class="sig-name descname"><span class="pre">NotebookService</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">connection_string</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">minio</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/services/notebook/NotebookService.html#NotebookService"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.services.notebook.NotebookService.NotebookService" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>connection_string</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]</span>) – Main app DB connection string. Defaults to
+<code class="docutils literal notranslate"><span class="pre">$DATABASE_URL</span></code>.</p></li>
+<li><p><strong>minio</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<a class="reference internal" href="squirrel_services_storage_blob_MinIOService.html#squirrel.services.storage.blob.MinIOService.MinIOService" title="squirrel.services.storage.blob.MinIOService.MinIOService"><code class="xref py py-class docutils literal notranslate"><span class="pre">MinIOService</span></code></a>]</span>) – Optional pre-constructed <code class="xref py py-class docutils literal notranslate"><span class="pre">MinIOService</span></code>.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="squirrel.services.notebook.NotebookService.NotebookService.add_existing_file_data_source">
+<span class="sig-name descname"><span class="pre">add_existing_file_data_source</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">notebook_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">file_url</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">file_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">owner_user_id</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/services/notebook/NotebookService.html#NotebookService.add_existing_file_data_source"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.services.notebook.NotebookService.NotebookService.add_existing_file_data_source" title="Link to this definition"></a></dt>
+<dd><p>Bind a notebook to a CSV that was already uploaded via the Files
+page, instead of asking the user to upload a fresh copy.</p>
+<p>Ownership is verified against <code class="docutils literal notranslate"><span class="pre">uploaded_files.owner_user_id</span></code>
+<em>before</em> anything is downloaded from MinIO, so a user can’t bind
+another user’s file just by knowing/guessing its URL — mirrors the
+same check the <code class="docutils literal notranslate"><span class="pre">/files/retrieve</span></code> endpoint does.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="squirrel_schemas_notebook.html#squirrel.schemas.notebook.Notebook" title="squirrel.schemas.notebook.Notebook"><code class="xref py py-class docutils literal notranslate"><span class="pre">Notebook</span></code></a></span></p>
+</dd>
+<dt class="field-even">Parameters<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>notebook_id</strong> (<em>str</em>)</p></li>
+<li><p><strong>file_url</strong> (<em>str</em>)</p></li>
+<li><p><strong>file_name</strong> (<em>str</em><em> | </em><em>None</em>)</p></li>
+<li><p><strong>owner_user_id</strong> (<em>str</em><em> | </em><em>None</em>)</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="squirrel.services.notebook.NotebookService.NotebookService.add_connector_data_source">
+<span class="sig-name descname"><span class="pre">add_connector_data_source</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">notebook_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">connector_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">table_name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">owner_user_id</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/services/notebook/NotebookService.html#NotebookService.add_connector_data_source"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.services.notebook.NotebookService.NotebookService.add_connector_data_source" title="Link to this definition"></a></dt>
+<dd><p>Bind a notebook to an additional table living on an existing connector.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="squirrel_schemas_notebook.html#squirrel.schemas.notebook.Notebook" title="squirrel.schemas.notebook.Notebook"><code class="xref py py-class docutils literal notranslate"><span class="pre">Notebook</span></code></a></span></p>
+</dd>
+<dt class="field-even">Parameters<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>notebook_id</strong> (<em>str</em>)</p></li>
+<li><p><strong>connector_id</strong> (<em>str</em>)</p></li>
+<li><p><strong>table_name</strong> (<em>str</em>)</p></li>
+<li><p><strong>owner_user_id</strong> (<em>str</em><em> | </em><em>None</em>)</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="squirrel.services.notebook.NotebookService.NotebookService.rename_data_source">
+<span class="sig-name descname"><span class="pre">rename_data_source</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">notebook_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">source_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">label</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">owner_user_id</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/services/notebook/NotebookService.html#NotebookService.rename_data_source"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.services.notebook.NotebookService.NotebookService.rename_data_source" title="Link to this definition"></a></dt>
+<dd><p>Rename a data source’s display label within this notebook.</p>
+<p>For upload-backed sources this also updates <code class="docutils literal notranslate"><span class="pre">uploaded_files.file_name</span></code>
+for the matching <code class="docutils literal notranslate"><span class="pre">source_file_url</span></code>, so the Files page and this
+notebook never disagree about what the same underlying file is called.
+Connector-backed sources only rename the in-notebook label — there’s
+no corresponding Files-page row to sync.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="squirrel_schemas_notebook.html#squirrel.schemas.notebook.Notebook" title="squirrel.schemas.notebook.Notebook"><code class="xref py py-class docutils literal notranslate"><span class="pre">Notebook</span></code></a></span></p>
+</dd>
+<dt class="field-even">Parameters<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>notebook_id</strong> (<em>str</em>)</p></li>
+<li><p><strong>source_id</strong> (<em>str</em>)</p></li>
+<li><p><strong>label</strong> (<em>str</em>)</p></li>
+<li><p><strong>owner_user_id</strong> (<em>str</em><em> | </em><em>None</em>)</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="squirrel.services.notebook.NotebookService.NotebookService.save_dashboard_layout">
+<span class="sig-name descname"><span class="pre">save_dashboard_layout</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">notebook_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cell_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">layout</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">owner_user_id</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/services/notebook/NotebookService.html#NotebookService.save_dashboard_layout"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.services.notebook.NotebookService.NotebookService.save_dashboard_layout" title="Link to this definition"></a></dt>
+<dd><p>Persist user customizations for a dashboard cell.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="squirrel_schemas_notebook.html#squirrel.schemas.notebook.NotebookCell" title="squirrel.schemas.notebook.NotebookCell"><code class="xref py py-class docutils literal notranslate"><span class="pre">NotebookCell</span></code></a></span></p>
+</dd>
+<dt class="field-even">Parameters<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>notebook_id</strong> (<em>str</em>)</p></li>
+<li><p><strong>cell_id</strong> (<em>str</em>)</p></li>
+<li><p><strong>layout</strong> (<a class="reference internal" href="squirrel_schemas_notebook.html#squirrel.schemas.notebook.DashboardLayout" title="squirrel.schemas.notebook.DashboardLayout"><em>DashboardLayout</em></a>)</p></li>
+<li><p><strong>owner_user_id</strong> (<em>str</em><em> | </em><em>None</em>)</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="squirrel.services.notebook.NotebookService.NotebookService.list_dashboard_versions">
+<span class="sig-name descname"><span class="pre">list_dashboard_versions</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">notebook_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cell_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">owner_user_id</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/services/notebook/NotebookService.html#NotebookService.list_dashboard_versions"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.services.notebook.NotebookService.NotebookService.list_dashboard_versions" title="Link to this definition"></a></dt>
+<dd><p>Return all archived dashboard snapshots for a cell, newest first.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<a class="reference internal" href="squirrel_schemas_notebook.html#squirrel.schemas.notebook.DashboardVersion" title="squirrel.schemas.notebook.DashboardVersion"><code class="xref py py-class docutils literal notranslate"><span class="pre">DashboardVersion</span></code></a>]</span></p>
+</dd>
+<dt class="field-even">Parameters<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>notebook_id</strong> (<em>str</em>)</p></li>
+<li><p><strong>cell_id</strong> (<em>str</em>)</p></li>
+<li><p><strong>owner_user_id</strong> (<em>str</em><em> | </em><em>None</em>)</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="squirrel.services.notebook.NotebookService.NotebookService.update_cell">
+<span class="sig-name descname"><span class="pre">update_cell</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">notebook_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cell_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">query</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">datasource_ids</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">owner_user_id</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/services/notebook/NotebookService.html#NotebookService.update_cell"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.services.notebook.NotebookService.NotebookService.update_cell" title="Link to this definition"></a></dt>
+<dd><p>Re-run an existing cell in place — same id/position, fresh output.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="squirrel_schemas_notebook.html#squirrel.schemas.notebook.NotebookCell" title="squirrel.schemas.notebook.NotebookCell"><code class="xref py py-class docutils literal notranslate"><span class="pre">NotebookCell</span></code></a></span></p>
+</dd>
+<dt class="field-even">Parameters<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>notebook_id</strong> (<em>str</em>)</p></li>
+<li><p><strong>cell_id</strong> (<em>str</em>)</p></li>
+<li><p><strong>query</strong> (<em>str</em><em> | </em><em>None</em>)</p></li>
+<li><p><strong>datasource_ids</strong> (<em>List</em><em>[</em><em>str</em><em>] </em><em>| </em><em>None</em>)</p></li>
+<li><p><strong>owner_user_id</strong> (<em>str</em><em> | </em><em>None</em>)</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="squirrel.services.notebook.NotebookService.NotebookService.preview_data_source">
+<span class="sig-name descname"><span class="pre">preview_data_source</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">notebook_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data_source_id</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">limit</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">50</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">owner_user_id</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/services/notebook/NotebookService.html#NotebookService.preview_data_source"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.services.notebook.NotebookService.NotebookService.preview_data_source" title="Link to this definition"></a></dt>
+<dd><p>Read-only preview of one of the notebook’s bound tables. Defaults to
+the first attached source if none is specified.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="squirrel_schemas_notebook.html#squirrel.schemas.notebook.DataSourcePreview" title="squirrel.schemas.notebook.DataSourcePreview"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataSourcePreview</span></code></a></span></p>
+</dd>
+<dt class="field-even">Parameters<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>notebook_id</strong> (<em>str</em>)</p></li>
+<li><p><strong>data_source_id</strong> (<em>str</em><em> | </em><em>None</em>)</p></li>
+<li><p><strong>limit</strong> (<em>int</em>)</p></li>
+<li><p><strong>owner_user_id</strong> (<em>str</em><em> | </em><em>None</em>)</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="squirrel.services.notebook.NotebookService.NotebookService.reorder_cells">
+<span class="sig-name descname"><span class="pre">reorder_cells</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">notebook_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ordered_cell_ids</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">owner_user_id</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/services/notebook/NotebookService.html#NotebookService.reorder_cells"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.services.notebook.NotebookService.NotebookService.reorder_cells" title="Link to this definition"></a></dt>
+<dd><p>Update the order_index of cells based on the provided list.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<a class="reference internal" href="squirrel_schemas_notebook.html#squirrel.schemas.notebook.NotebookCell" title="squirrel.schemas.notebook.NotebookCell"><code class="xref py py-class docutils literal notranslate"><span class="pre">NotebookCell</span></code></a>]</span></p>
+</dd>
+<dt class="field-even">Parameters<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>notebook_id</strong> (<em>str</em>)</p></li>
+<li><p><strong>ordered_cell_ids</strong> (<em>List</em><em>[</em><em>str</em><em>]</em>)</p></li>
+<li><p><strong>owner_user_id</strong> (<em>str</em><em> | </em><em>None</em>)</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="squirrel.services.notebook.NotebookService.NotebookService.duplicate_notebook">
+<span class="sig-name descname"><span class="pre">duplicate_notebook</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">notebook_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">owner_user_id</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/services/notebook/NotebookService.html#NotebookService.duplicate_notebook"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.services.notebook.NotebookService.NotebookService.duplicate_notebook" title="Link to this definition"></a></dt>
+<dd><p>Clone a notebook: its metadata, every attached data source (as new
+bindings — the underlying uploaded table / connector table is <em>shared</em>,
+not copied), and every cell (with <cite>data_source_ids</cite> remapped onto the
+new bindings so <cite>&#64;mention</cite> resolution still works post-copy).</p>
+<p>Deliberately does NOT copy <cite>schema_cache</cite>: the cache keys are derived
+from sorted source ids, and those ids change on duplication, so a
+copied cache would just be dead weight. The new notebook lazily
+rebuilds it on its first cell run, same as any notebook would.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="squirrel_schemas_notebook.html#squirrel.schemas.notebook.Notebook" title="squirrel.schemas.notebook.Notebook"><code class="xref py py-class docutils literal notranslate"><span class="pre">Notebook</span></code></a></span></p>
+</dd>
+<dt class="field-even">Parameters<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>notebook_id</strong> (<em>str</em>)</p></li>
+<li><p><strong>owner_user_id</strong> (<em>str</em><em> | </em><em>None</em>)</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="squirrel.services.notebook.NotebookService.NotebookService.export_notebook_ipynb">
+<span class="sig-name descname"><span class="pre">export_notebook_ipynb</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">notebook_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">owner_user_id</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/services/notebook/NotebookService.html#NotebookService.export_notebook_ipynb"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.services.notebook.NotebookService.NotebookService.export_notebook_ipynb" title="Link to this definition"></a></dt>
+<dd><p>Render this notebook as a Jupyter Notebook (nbformat v4) file, encoded
+as UTF-8 JSON bytes ready to stream back over HTTP.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">bytes</span></code></span></p>
+</dd>
+<dt class="field-even">Parameters<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>notebook_id</strong> (<em>str</em>)</p></li>
+<li><p><strong>owner_user_id</strong> (<em>str</em><em> | </em><em>None</em>)</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="simple">
+<dt>Each <code class="xref py py-class docutils literal notranslate"><span class="pre">NotebookCell</span></code> becomes:</dt><dd><ul class="simple">
+<li><p>one markdown cell — its type (EDA/Question), the query asked (if
+any), and its reply/error text.</p></li>
+<li><p>for every chart it produced: a markdown cell (title +
+observation) followed by a code cell that rebuilds the chart’s
+underlying data as a <code class="docutils literal notranslate"><span class="pre">pandas.DataFrame</span></code> and re-plots it with
+matplotlib. The chart’s original SQL is included as a comment
+for reference, not executed — this notebook has no live DB
+connection, only the data already captured at analysis time.</p></li>
+</ul>
+</dd>
+</dl>
+<p>Cells whose chart <code class="docutils literal notranslate"><span class="pre">error</span></code> is set are skipped (nothing useful to
+replay), matching how the UI already filters them out via
+<code class="docutils literal notranslate"><span class="pre">CellCard</span></code>’s <code class="docutils literal notranslate"><span class="pre">validCharts</span></code>.</p>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="squirrel_services_file_FileService.html" class="btn btn-neutral float-left" title="squirrel.services.file.FileService" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="squirrel_services_orchestrator_OrchestratorService.html" class="btn btn-neutral float-right" title="squirrel.services.orchestrator.OrchestratorService" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, Mazen Soliman.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
