@@ -1,21 +1,66 @@
-# Squirrel
+# SQRL
 
-Squirrel is a full-stack data workspace for uploading or connecting tabular data, preprocessing it, training and comparing machine-learning models, and exposing trained models through an API.
+<div align="center">
+  <img src="./imgs/logo.png" alt="SQRL Logo" width="200"/>
 
-The production-style Docker setup runs the React frontend and FastAPI backend in one application container. PostgreSQL stores application data and MinIO stores uploaded files, processed datasets, fitted pipelines, and model artifacts.
+  ![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB?logo=python&logoColor=white)
+  ![FastAPI](https://img.shields.io/badge/FastAPI-009688?logo=fastapi&logoColor=white)
+  ![Vite](https://img.shields.io/badge/Vite-646CFF?logo=vite&logoColor=white)
+</div>
+
+Squirrel is a full-stack application for analyzing, preparing, building machine learning models, and serving predictions.
 
 ## Features
 
-- Workspace-based data science workflow
-- CSV uploads and PostgreSQL data connectors
-- Multi-source data merging
-- LLM-assisted inspection and preprocessing
-- Reusable fitted preprocessing pipelines
-- Model training, comparison, and artifact downloads
-- Prediction on uploaded CSV rows
-- External prediction endpoint for trained workspace models
-- User authentication and encrypted provider-token storage
-- PostgreSQL and MinIO persistence
+SQRL brings the complete machine-learning workflow into one workspace:
+
+### 1. Workspace Page
+
+Create and manage isolated workspaces for each project. Upload CSV files or
+connect PostgreSQL sources, inspect datasets, choose a target column, and start
+the modeling workflow from one place.
+
+![Workspace page](./imgs/workspaces_page.png)
+
+### 2. Notebook Page
+
+Explore data through an interactive notebook experience. Review dataset
+summaries, generated analysis, and recommendations while keeping the work
+associated with its workspace.
+
+![Workspace page](./imgs/notebook_page.png)
+
+### 3. Data Connection Page
+
+Configure reusable data connections for external sources. SQRL supports
+PostgreSQL connectors alongside uploaded files, allowing data to be prepared
+and reused without repeatedly importing the same source.
+
+![Data Connection page](./imgs/data_connection.png)
+
+### 4. Model Training and Comparison
+
+Train multiple machine-learning models, compare their evaluation metrics, and
+select the recommended model for a workspace. Fitted preprocessing pipelines
+and model artifacts are retained for later predictions.
+
+![Model training page](./imgs/workspace_model_training.png)
+
+### 5. Predictions and External API
+
+Submit new CSV rows to generate predictions with a completed workspace model.
+The external prediction endpoint lets other applications use trained models 
+through authenticated API requests.
+
+![Model prediction page](./imgs/workspace_model_prediction.png)
+
+### 6. Authentication and Storage
+
+Protect workspaces with user authentication while PostgreSQL stores application
+metadata and MinIO stores uploaded files, processed datasets, pipelines, and
+model artifacts.
+
+![Authentication page](./imgs/user_authentication_page.png)
 
 ## Architecture
 
@@ -122,8 +167,6 @@ Common variables:
 | `GEMINI_API_KEY_V1` | Gemini provider credential |
 | `GROQ_API_KEY_V1` | Groq provider credential |
 | `OPENROUTER_API_KEY_V1` | OpenRouter provider credential |
-| `HUGGINGFACE_API_KEY_V1` | Hugging Face provider credential |
-| `SQUIRREL_CONNECTOR_SECRET_KEY` | Fernet key for connector secrets |
 
 For the single-container deployment, the frontend uses the relative API base `/api`. This allows the browser to call the backend through the same origin and avoids hard-coded container or host addresses.
 
@@ -241,53 +284,3 @@ npm run lint
 |  `- package.json
 `- .env.example
 ```
-
-## Troubleshooting
-
-### Requests go to `/undefined/...`
-
-The frontend API base is compiled at build time. Rebuild the image from the repository root:
-
-```powershell
-docker compose up --build -d
-```
-
-The production value should be `/api`. A hard refresh may be required after replacing an old browser bundle.
-
-### Images do not appear
-
-Public frontend images live in `frontend/public/imgs` and must be referenced as `/imgs/<name>`, not as `./public/imgs/<name>` or `./frontend/public/imgs/<name>`.
-
-### Compose cannot find `backend`
-
-Run Compose from the repository root. The canonical build configuration is:
-
-```yaml
-build:
-	context: .
-	dockerfile: Dockerfile
-```
-
-### API returns database or object-storage errors
-
-Check service health and logs:
-
-```powershell
-docker compose ps
-docker compose logs postgres
-docker compose logs minio
-docker compose logs sqrl
-```
-
-### Port already in use
-
-Change the host-side port in `docker-compose.yml`, for example `"8080:8000"`, then open `http://localhost:8080`. Keep the container-side port at `8000` unless the Dockerfile command and health checks are changed together.
-
-## Security Notes
-
-- Never commit `.env`, provider keys, passwords, or connector credentials.
-- Change the example PostgreSQL, MinIO, and pgAdmin passwords before deployment.
-- Use a strong `SQUIRREL_CONNECTOR_SECRET_KEY` in non-development environments.
-- Restrict CORS origins before exposing the service publicly.
-- Put the application behind HTTPS and a reverse proxy for production use.
-- Do not expose MinIO or pgAdmin publicly unless required.
