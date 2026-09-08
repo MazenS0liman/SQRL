@@ -5,7 +5,8 @@
 
   ![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB?logo=python&logoColor=white)
   ![FastAPI](https://img.shields.io/badge/FastAPI-009688?logo=fastapi&logoColor=white)
-  ![Vite](https://img.shields.io/badge/Vite-646CFF?logo=vite&logoColor=white)
+  ![Vite](https://img.shields.io/badge/Docker-646CFF?logo=docker&logoColor=white)
+  ![Docker]()
 </div>
 
 Squirrel is a full-stack application for analyzing, preparing, building machine learning models, and serving predictions.
@@ -124,7 +125,7 @@ Useful service URLs:
 | --- | --- |
 | Squirrel | http://localhost:8000 |
 | API docs | http://localhost:8000/docs |
-| PostgreSQL | localhost:5433 |
+| PostgreSQL | http://localhost:5433 |
 | MinIO API | http://localhost:9000 |
 | MinIO console | http://localhost:9001 |
 | pgAdmin | http://localhost:5050 |
