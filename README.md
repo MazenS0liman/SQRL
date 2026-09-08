@@ -5,7 +5,7 @@
 
   ![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB?logo=python&logoColor=white)
   ![FastAPI](https://img.shields.io/badge/FastAPI-009688?logo=fastapi&logoColor=white)
-  ![Vite](https://img.shields.io/badge/Docker-646CFF?logo=docker&logoColor=white)
+  ![Vite](https://img.shields.io/badge/Vite-646CFF?logo=vite&logoColor=white)
   ![Docker](https://img.shields.io/badge/Docker-646CFF?logo=docker&logoColor=white)
 </div>
 
