@@ -141,7 +141,7 @@ class IAgent(ABC, Loggable):
         )
 
     """
-    DEFAULT_PROVIDERS = [Provider.GEMINI, Provider.OPENAI, Provider.GROQ, Provider.OPENROUTER]
+    DEFAULT_PROVIDERS = [Provider.GEMINI, Provider.GROQ, Provider.OPENROUTER]
 
     def __init__(
         self,
@@ -214,6 +214,7 @@ class IAgent(ABC, Loggable):
         self._total_output_tokens_used: int = 0
         self._total_tokens_used: int = 0
         self._total_request_count: int = 0
+        self._provider_cache: Dict[tuple, IProvider] = {}
 
     @property
     def api_env_var(self) -> str:
@@ -350,6 +351,7 @@ class IAgent(ABC, Loggable):
         :return: None
         """
         self._config = value
+        self._provider_cache.clear()
 
     @model.setter
     def model(
@@ -557,6 +559,30 @@ class IAgent(ABC, Loggable):
             source.get("api_env_var"), provider, model_name, self.config,
             api_key=source.get("api_key"),
         )
+
+    def _get_cached_provider(
+        self,
+        provider: Provider,
+        source: Dict[str, Optional[str]],
+        model_name: str
+    ) -> IProvider:
+        """
+        Return the provider instance for a provider/model/credential combination.
+
+        Provider instances own cumulative usage counters, so rebuilding one for every
+        request would discard the usage accumulated by earlier requests.
+        """
+        cache_key = (
+            provider,
+            model_name,
+            source.get("api_env_var"),
+            source.get("api_key"),
+        )
+        if cache_key not in self._provider_cache:
+            self._provider_cache[cache_key] = self._build_provider(
+                provider, source, model_name
+            )
+        return self._provider_cache[cache_key]
 
     def _instantiate_model(
         self,
@@ -913,25 +939,40 @@ class IAgent(ABC, Loggable):
         sources = self._get_key_sources(provider, user_id=user_id)
 
         for source in sources:
+            self._api_env_var = source.get("api_env_var")
+            self.model_name = model_name
+            self.provider = provider
+            self.model = self._get_cached_provider(provider, source, model_name)
+
             for attempt in range(1, retry_attempt + 1):
                 try:
-                    self._api_env_var = source.get("api_env_var")
-                    self.model_name = model_name
-                    self.provider = provider
-                    self.model = self._build_provider(provider, source, model_name)
                     if not hasattr(self.model, fn_name):
                         raise ValueError(f"Function {fn_name} not found in model {self.model}")
 
                     # Execute request
                     fn = getattr(self.model, fn_name)
+                    usage_before: Dict[str, int] = self.model.get_total_usage()
                     output = fn(model_input)
 
-                    # Update total tokens used
-                    usage: Dict[str, Any] = self.model.get_total_usage()
-                    self.total_input_tokens_used += usage.get("input_tokens", 0)
-                    self.total_output_tokens_used += usage.get("output_tokens", 0)
-                    self.total_tokens_used += usage.get("total_tokens", 0)
-                    self.total_request_count += usage.get("request_count", 0)
+                    # Add only usage produced by this call. The provider instance is
+                    # cached and therefore reports cumulative usage.
+                    usage_after: Dict[str, int] = self.model.get_total_usage()
+                    self.total_input_tokens_used += (
+                        usage_after.get("input_tokens", 0)
+                        - usage_before.get("input_tokens", 0)
+                    )
+                    self.total_output_tokens_used += (
+                        usage_after.get("output_tokens", 0)
+                        - usage_before.get("output_tokens", 0)
+                    )
+                    self.total_tokens_used += (
+                        usage_after.get("total_tokens", 0)
+                        - usage_before.get("total_tokens", 0)
+                    )
+                    self.total_request_count += (
+                        usage_after.get("request_count", 0)
+                        - usage_before.get("request_count", 0)
+                    )
 
                     # Check if the model returned an API error (like 429)
                     if isinstance(output, dict) and "error" in output:
