@@ -10,6 +10,8 @@ This module provides :class:`PostgresService`, an implementation of
 # Standard Libraries
 import re
 import os
+import io
+import csv
 import time
 from typing import Any, Optional, Dict
 from typing_extensions import override
@@ -83,10 +85,11 @@ class PostgresService(IDatabaseService):
         autoconnect: bool = True,
     ) -> None:
         super().__init__()
+        from squirrel.core.config import settings
+
         self.connection_string: str = (
             connection_string
-            or os.getenv("DATABASE_URL")
-            or os.getenv("POSTGRES_DSN")
+            or settings.database_url
             or ""
         )
         if not self.connection_string:
@@ -113,7 +116,8 @@ class PostgresService(IDatabaseService):
         )
 
     def _ensure_connection(self) -> Any:
-        """Return an open connection, reconnecting if necessary.
+        """
+        Return an open connection, reconnecting if necessary.
 
         Ensures a live connection is available and returns it.
 
@@ -215,7 +219,8 @@ class PostgresService(IDatabaseService):
 
     @staticmethod
     def _safe_rollback(connection: Any) -> None:
-        """Attempt a rollback without masking the original exception.
+        """
+        Attempt a rollback without masking the original exception.
 
         :param connection: Connection object to rollback.
         :type connection: Any
@@ -227,22 +232,54 @@ class PostgresService(IDatabaseService):
         except Exception:
             logger.exception("Rollback failed")
 
+    @staticmethod
+    def _copy(
+        table,
+        conn,
+        keys,
+        data_iter
+    ):
+        """
+        Custom COPY function for efficient bulk inserts.
+        
+        :param table: Target table name.
+        :param conn: Active database connection.
+        :param keys: List of column names.
+        :param data_iter: Iterable of data rows to insert.
+        
+        :return: None
+        """
+        dbapi_conn = conn.connection  # raw psycopg connection
+        buf = io.StringIO()
+        csv.writer(buf).writerows(data_iter)
+        payload = buf.getvalue()
+        
+        cols = ', '.join(f'"{key}"' for key in keys)
+        name = f'"{table.schema}"."{table.name}"' if table.schema else f'"{table.name}"'
+        with dbapi_conn.cursor() as cur:
+            with cur.copy(f"COPY {name} ({cols}) FROM STDIN WITH (FORMAT csv)") as copy:
+                copy.write(payload)
+
     # ------------------------------------------------------------------
     # Statement builders
 
     @staticmethod
-    def _build_insert_statement(table: str, values: dict) -> Any:
-        """Build a parameterised INSERT statement for *table*.
+    def _build_insert_statement(
+        table: str, 
+        values: dict
+    ) -> Any:
+        """
+        Build a parameterised INSERT statement for *table*.
 
         :param table: Target table name.
         :type table: str
         :param values: Mapping of column names to values.
         :type values: dict
+        
         :return: A :class:`psycopg.sql.Composable` INSERT statement.
         :rtype: Any
         :raises ValueError: If *values* is empty.
         """
-
         columns = list(values.keys())
         if not columns:
             raise ValueError("Insert data must contain at least one column value.")
@@ -258,7 +295,11 @@ class PostgresService(IDatabaseService):
         )
 
     @staticmethod
-    def _build_update_statement(table: str, values: dict, where_clause: str) -> Any:
+    def _build_update_statement(
+        table: str, 
+        values: dict, 
+        where_clause: str
+    ) -> Any:
         """
         Build a parameterised UPDATE statement for *table*.
 
@@ -268,6 +309,7 @@ class PostgresService(IDatabaseService):
         :type values: dict
         :param where_clause: WHERE clause (with or without the "WHERE" keyword).
         :type where_clause: str
+        
         :return: A :class:`psycopg.sql.Composable` UPDATE statement.
         :rtype: Any
         :raises ValueError: If *values* is empty.
@@ -387,8 +429,8 @@ class PostgresService(IDatabaseService):
                 engine,
                 if_exists=if_exists,
                 index=False,
-                chunksize=5000,
-                method="multi"
+                chunksize=10_000,
+                method=self._copy # Use the custom COPY method for efficiency
             )
 
             return {
@@ -464,8 +506,12 @@ class PostgresService(IDatabaseService):
         )
 
     @staticmethod
-    def _statement_returns_rows(query: str) -> bool:
-        """Best-effort check for whether *query* yields a result set."""
+    def _statement_returns_rows(
+        query: str
+    ) -> bool:
+        """
+        Best-effort check for whether *query* yields a result set.
+        """
         stripped = query.strip().lstrip("(")
         first_word = stripped.split(None, 1)[0].upper() if stripped else ""
 
@@ -560,8 +606,8 @@ class PostgresService(IDatabaseService):
 
     @override
     def update(
-        self, 
-        query: str, 
+        self,
+        query: str,
         data: dict
     ) -> bool:
         """
@@ -572,6 +618,7 @@ class PostgresService(IDatabaseService):
         :param data: Either ``{"sql": "...", "params": {...}}`` or a
             structured mapping containing ``table`` and ``values``.
         :type data: dict
+
         :return: ``True`` on success, ``False`` otherwise.
         :rtype: bool
         """
