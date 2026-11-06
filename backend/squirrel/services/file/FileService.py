@@ -68,6 +68,7 @@ class FileService:
                     workspace_ids TEXT[] NOT NULL DEFAULT '{{}}',
                     notebook_ids TEXT[] NOT NULL DEFAULT '{{}}',
                     owner_user_id TEXT,
+                    user_uploaded BOOLEAN NOT NULL DEFAULT TRUE,
                     created_at TIMESTAMPTZ DEFAULT NOW(),
                     updated_at TIMESTAMPTZ DEFAULT NOW()
                 )
@@ -80,6 +81,7 @@ class FileService:
                 ("workspace_ids", "TEXT[] NOT NULL DEFAULT '{}'"),
                 ("notebook_ids", "TEXT[] NOT NULL DEFAULT '{}'"),
                 ("owner_user_id", "TEXT"),
+                ("user_uploaded", "BOOLEAN NOT NULL DEFAULT TRUE"),
             ):
                 self.db_service.execute(
                     f"ALTER TABLE {self.TABLE} ADD COLUMN IF NOT EXISTS {column} {coltype}",
@@ -100,6 +102,7 @@ class FileService:
         owner_user_id: Optional[str],
         workspace_id: Optional[str] = None,
         notebook_id: Optional[str] = None,
+        user_uploaded: bool = True,
     ) -> None:
         """
         Persist a record of an uploaded file. On conflict (same file_url),
@@ -112,14 +115,16 @@ class FileService:
                 "sql": (
                     f"INSERT INTO {self.TABLE} "
                     "(file_name, file_url, file_type, size, uploaded_at, "
-                    " workspace_ids, notebook_ids, owner_user_id) "
+                    " workspace_ids, notebook_ids, owner_user_id, user_uploaded) "
                     "VALUES (%(file_name)s, %(file_url)s, %(file_type)s, %(size)s, "
-                    "%(uploaded_at)s, %(workspace_ids)s, %(notebook_ids)s, %(owner_user_id)s) "
+                    "%(uploaded_at)s, %(workspace_ids)s, %(notebook_ids)s, "
+                    "%(owner_user_id)s, %(user_uploaded)s) "
                     "ON CONFLICT (file_url) DO UPDATE SET "
                     f"workspace_ids = ARRAY(SELECT DISTINCT unnest("
                     f"{self.TABLE}.workspace_ids || EXCLUDED.workspace_ids)), "
                     f"notebook_ids = ARRAY(SELECT DISTINCT unnest("
                     f"{self.TABLE}.notebook_ids || EXCLUDED.notebook_ids)), "
+                    f"user_uploaded = {self.TABLE}.user_uploaded OR EXCLUDED.user_uploaded, "
                     "updated_at = NOW()"
                 ),
                 "params": {
@@ -131,6 +136,7 @@ class FileService:
                     "workspace_ids": [workspace_id] if workspace_id else [],
                     "notebook_ids": [notebook_id] if notebook_id else [],
                     "owner_user_id": owner_user_id,
+                    "user_uploaded": user_uploaded,
                 },
             })
         except Exception:
@@ -202,9 +208,30 @@ class FileService:
         self, 
         owner_user_id: str
     ) -> list[File]:
-        """Return every file record owned by ``owner_user_id``."""
+        """Return user-uploaded files owned by ``owner_user_id``.
+
+        URL exclusions also hide artifacts recorded before ``user_uploaded``
+        was introduced.
+        """
         try:
-            result = self.db_service.retrieve(self.TABLE, filters={"owner_user_id": owner_user_id})
+            result = self.db_service.query(
+                f"""
+                SELECT *
+                FROM {self.TABLE}
+                WHERE owner_user_id = %(owner_user_id)s
+                  AND COALESCE(user_uploaded, TRUE)
+                  AND file_url NOT LIKE %(preprocessed_pattern)s
+                  AND file_url NOT LIKE %(models_pattern)s
+                  AND file_url NOT LIKE %(pipelines_pattern)s
+                """,
+                params={
+                    "owner_user_id": owner_user_id,
+                    "preprocessed_pattern": "%/preprocessed/%",
+                    "models_pattern": "%/models/%",
+                    "pipelines_pattern": "%/pipelines/%",
+                },
+                fetch=True,
+            )
         finally:
             self.db_service.disconnect()
 
