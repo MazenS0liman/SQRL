@@ -120,7 +120,6 @@ from squirrel.schemas.workspace import (
     DataSource,
     WorkspaceCreateRequest,
     WorkspaceUpdateRequest,
-    ConnectorSourceRequest,
     UploadResponse,
     BuildRequest,
     BuildResponse,
@@ -455,40 +454,6 @@ async def upload_files(
     )
 
 
-async def add_connector_source(
-    workspace_id: str,
-    request: ConnectorSourceRequest = Body(...),
-    current_user: AuthUserRead = Depends(get_current_user),
-) -> List[DataSource]:
-    """
-    Attach a data connector as an input source, scoped to exactly the data
-    described by ``request.query`` (built from a table picked via
-    GET /connectors/{connector_id}/tables, or typed freehand and checked
-    via POST /connectors/{connector_id}/preview) — never the connector's
-    full dataset.
-    """
-    workspace_svc = _workspace_service()
-    try:
-        await run_in_threadpool(workspace_svc.get_workspace, workspace_id, current_user.id)
-    except WorkspaceNotFoundError:
-        raise _not_found(workspace_id)
-
-    try:
-        await run_in_threadpool(
-            workspace_svc.add_connector_source,
-            workspace_id, request.connector_id, request.name, request.query, None, current_user.id,
-        )
-    except ConnectorNotFoundError:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Connector '{request.connector_id}' not found.",
-        )
-    except ValueError as exc:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))
-
-    refreshed = await run_in_threadpool(workspace_svc.get_workspace, workspace_id, current_user.id)
-    return [DataSource(**s) for s in (refreshed.get("input_sources") or [])]
-
 @router.delete(
     "/{workspace_id}/sources/{source_id}",
     summary="Remove an input source from a workspace",
@@ -580,7 +545,9 @@ async def build_structured_models(
     # Step 1 — Load every source back into memory
     # ------------------------------------------------------------------ #
     try:
-        dataframes = await run_in_threadpool(workspace_svc.load_source_dataframes, sources)
+        dataframes = await run_in_threadpool(
+            workspace_svc.load_source_dataframes, sources, current_user.id
+        )
     except NotImplementedError as exc:
         raise HTTPException(status_code=status.HTTP_501_NOT_IMPLEMENTED, detail=str(exc))
     except Exception as exc:

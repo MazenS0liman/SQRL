@@ -54,6 +54,30 @@ logging.getLogger("ppocr").setLevel(logging.ERROR)
 from loguru import logger as _loguru_logger
 from typing import Any
 
+_STAGE_COLORS = {
+    "INSPECT": "cyan",
+    "PREPROCESS": "magenta",
+    "MODEL": "green",
+    "WORKSPACE": "blue",
+    "STORAGE": "yellow",
+}
+
+
+def log_stage(stage: str, message: str, *args: Any, level: str = "INFO") -> None:
+    """Write a console-colored pipeline-stage message.
+
+    The markup is interpreted by Loguru's console sink and stripped from file
+    sinks, keeping persisted logs machine-readable.
+    """
+    normalized_stage = stage.upper()
+    color = _STAGE_COLORS.get(normalized_stage, "white")
+    logger.opt(colors=True).log(
+        level,
+        f"<{color}>[{normalized_stage}]</{color}> {message}",
+        *args,
+    )
+
+
 class ClassLogger:
     """
     Descriptor that returns a loguru logger bound to the owner class name.

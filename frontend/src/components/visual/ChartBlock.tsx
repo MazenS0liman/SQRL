@@ -1,4 +1,5 @@
-import { useState, useEffect, useMemo, useRef, ReactNode } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
+import type { ReactNode } from "react";
 import { ResponsiveBar } from "@nivo/bar";
 import { ResponsiveLine } from "@nivo/line";
 import { ResponsiveScatterPlot } from "@nivo/scatterplot";
@@ -20,7 +21,7 @@ import { ResponsiveSwarmPlot } from "@nivo/swarmplot";
 import { ResponsiveTreeMap } from "@nivo/treemap";
 import { ResponsiveVoronoi } from "@nivo/voronoi";
 import { ResponsiveWaffle } from "@nivo/waffle";
-import { Maximize2, X, ChevronDown, ChevronUp, BarChart2, TrendingUp, ScatterChartIcon as ScatterIcon, Grid, AlertCircle, Info, Download, Table2, PieChart, Radar, MapPin, Loader, Moon, Sun, Heart, Monitor, Layout, Zap, Menu, Circle, Trash2, FileText } from "lucide-react";
+import { Maximize2, X, ChevronDown, ChevronUp, BarChart2, TrendingUp, ScatterChartIcon as ScatterIcon, Grid, AlertCircle, Info, Download, Table2, PieChart, Radar, MapPin } from "lucide-react";
 import type { ChartDef } from "@/types";
 
 // ── Theme tokens — reads from CSS vars so dark/light mode is automatic ────────
@@ -439,8 +440,8 @@ function LinePlot({ chart, height, forceArea = false }: { chart: ChartDef; heigh
           <div className="rounded-lg border border-border bg-card px-3 py-2 text-xs text-foreground shadow-xl space-y-1">
             {slice.points.map((p) => (
               <div key={p.id} className="flex items-center gap-2">
-                <span className="h-2.5 w-2.5 rounded-full shrink-0" style={{ background: p.serieColor }} />
-                <span className="text-muted-foreground">{trimLabel(p.serieId, 24)}:</span>
+                <span className="h-2.5 w-2.5 rounded-full shrink-0" style={{ background: p.seriesColor }} />
+                <span className="text-muted-foreground">{trimLabel(p.seriesId, 24)}:</span>
                 <span className="font-semibold">{formatCompactNumber(p.data.y)}</span>
               </div>
             ))}
@@ -478,7 +479,7 @@ function ScatterPlot({ chart, height }: { chart: ChartDef; height: number }) {
       return [{ id: y.label, data: toPoints(chart.data) }];
     }
     const groups = [...new Set(chart.data.map((d) => String(d[group_by])))];
-    return groups.map((g, i) => ({
+    return groups.map((g) => ({
       id: g,
       data: toPoints(chart.data.filter((d) => String(d[group_by]) === g)),
     }));
@@ -970,12 +971,10 @@ function PiePlot({ chart, height }: { chart: ChartDef; height: number }) {
         arcLinkLabelsTextColor={{ from: "color", modifiers: [["darker", 2]] }}
         arcLinkLabelsThickness={2}
         arcLinkLabelsOffset={12}
-        arcLinksTriangleSpacing={0}
         valueFormat={(v) => formatCompactNumber(v)}
         legends={[
           {
-            dataFrom: "value",
-            anchor: "bottom-center",
+            anchor: "bottom",
             direction: "row",
             justify: false,
             translateX: 0,
@@ -1051,7 +1050,7 @@ function RadarPlot({ chart, height }: { chart: ChartDef; height: number }) {
         dotBorderWidth={2}
         legends={[
           {
-            anchor: "bottom-center",
+            anchor: "bottom",
             direction: "row",
             translateX: 0,
             translateY: 40,
@@ -1126,7 +1125,6 @@ function BulletPlot({ chart, height }: { chart: ChartDef; height: number }) {
         rangeColors={[t.border, t.surface, t.border]}
         measureColors={PALETTE[0]}
         markerColors={["#f87171"]}
-        axisFormat={(v: unknown) => formatCompactNumber(v)}
         animate
       />
     </div>
@@ -1175,7 +1173,7 @@ function CalendarPlot({ chart, height }: { chart: ChartDef; height: number }) {
         }
         dayBorderWidth={1}
         dayBorderColor={t.surface}
-        tooltip={({ day, value, color }) => (
+        tooltip={({ day, value }) => (
           <div className="rounded-lg border border-border bg-card px-3 py-2 text-xs text-foreground shadow-xl">
             <span className="font-semibold">{day}</span>
             <span className="mx-2 text-muted-foreground">·</span>
@@ -1738,7 +1736,7 @@ function VoronoiPlot({ chart, height }: { chart: ChartDef; height: number }) {
       sampled = true;
     }
     return {
-      data: rows.map((d) => ({ x: Number(d[x.column]) || 0, y: Number(d[y.column]) || 0 })),
+      data: rows.map((d, idx) => ({ id: idx, x: Number(d[x.column]) || 0, y: Number(d[y.column]) || 0 })),
       wasSampled: sampled,
     };
   }, [chart.data, x.column, y.column]);

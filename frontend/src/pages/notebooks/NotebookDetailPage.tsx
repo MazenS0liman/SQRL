@@ -15,8 +15,6 @@ import {
   Trash2,
   Check,
   X,
-  EyeOff,
-  Eye,
   Search,
   Plus,
   ChevronDown,
@@ -36,6 +34,9 @@ import type {
   ConnectorSummary,
   DashboardLayout,
   DashboardVersion,
+  AxisSpec,
+  AxisDef,
+  ChartDef,
 } from "@/types";
 
 import { Chat } from "@/components/chat/Chat";
@@ -610,11 +611,15 @@ async function downloadNotebookFile(path: string, filename: string) {
   URL.revokeObjectURL(url);
 }
 
-function toChartDef(chart: NotebookChart) {
+function toAxisDef(axis: AxisSpec): AxisDef {
+  return { column: axis.column ?? "", label: axis.label ?? "", type: axis.type ?? "" };
+}
+
+function toChartDef(chart: NotebookChart): ChartDef {
   return {
     id: chart.id, title: chart.title, description: "",
     plot_type: chart.plot_type, analytical_type: "",
-    x: chart.x, y: chart.y, group_by: null,
+    x: toAxisDef(chart.x), y: toAxisDef(chart.y), group_by: null,
     observation: chart.observation || "", data: chart.data || [],
     total_row_count: chart.total_row_count ?? null,
     truncated: chart.truncated ?? false,
@@ -845,7 +850,6 @@ function CellCard({
   const [actionError, setActionError] = useState<string | null>(null);
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
-  const [showAnalysis, setShowAnalysis] = useState(true);
 
   const isQuestion = cell.type === "question";
   const isDashboard = cell.type === "dashboard";
@@ -914,13 +918,6 @@ function CellCard({
 
           {/* Action buttons — visible on hover */}
           <div className="flex items-center gap-0.5 opacity-0 transition-opacity group-hover:opacity-100">
-            {!isEditing && cell.reply && (
-              <button onClick={() => setShowAnalysis((v) => !v)}
-                title={showAnalysis ? "Hide analysis" : "Show analysis"} aria-label="Toggle analysis"
-                className="rounded-md p-1.5 text-muted-foreground hover:bg-secondary hover:text-foreground">
-                {showAnalysis ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
-              </button>
-            )}
             {(isQuestion || hasMultipleSources) && !isEditing && (
               <button onClick={() => { setDraftQuery(cell.query); setDraftSourceIds(new Set(cell.data_source_ids.length > 0 ? cell.data_source_ids : dataSources.map((d) => d.id))); setActionError(null); setIsEditing(true); }}
                 disabled={isBusy} title="Edit" aria-label="Edit"
@@ -1027,11 +1024,6 @@ function CellCard({
                 </div>
               ) : (
                 <div>
-                  {/* {cell.reply && showAnalysis && (
-                    <div className="mb-3 whitespace-pre-line rounded-xl border border-border bg-secondary/20 px-4 py-3 text-sm leading-relaxed text-foreground">
-                      {cell.reply}
-                    </div>
-                  )} */}
                   {body && <AnalyticsCard body={body} layout={isDashboard ? "dashboard" : "tabs"} />}
                 </div>
               )
@@ -1557,7 +1549,7 @@ function NotebookWorkspace({
             dataSources={notebook.data_sources.map((s) => ({
               id: s.id, label: s.label ?? s.table_name, kind: s.kind, table_name: s.table_name,
             }))}
-            onRunEda={() => (hasDataSource ? runCell("eda") : setNoSourceWarning(true))}
+            onGeneratePrepScript={openPrepScript}
             onGenerateDashboard={openDashboard}
           />
         </div>
@@ -1633,12 +1625,7 @@ function NotebookHeader({
       </div>
 
       <div className="flex shrink-0 items-center gap-2">
-        {notebook.data_sources.length > 0 && (
-          <button onClick={onViewData}
-            className="flex items-center gap-1.5 rounded-lg border border-border px-2.5 py-1.5 text-xs font-medium text-foreground hover:bg-secondary">
-            <Eye className="h-3.5 w-3.5" />View data
-          </button>
-        )}
+        
         <div className="flex items-center gap-1.5 rounded-full border border-border bg-secondary px-2.5 py-1">
           <span className={`h-1.5 w-1.5 rounded-full ${meta.dotClass}`} />
           <span className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{meta.label}</span>

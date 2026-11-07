@@ -62,6 +62,7 @@ const LEFT_PANEL_WIDTH_KEY = "workspace-detail:left-panel-width";
 const LEFT_PANEL_MIN = 300;
 const LEFT_PANEL_MAX = 640;
 const LEFT_PANEL_DEFAULT = 360;
+const PREDICTION_DISPLAY_LIMIT = 100;
 
 export function SummaryKeyValueList({
   data,
@@ -75,7 +76,7 @@ export function SummaryKeyValueList({
       {entries.map(([key, value]) => (
         <div key={key} className="flex items-baseline justify-between gap-3 border-b border-border/60 pb-1.5">
           <dt className="text-xs text-muted-foreground">{formatSummaryLabel(key)}</dt>
-          <dd className="truncate font-mono text-xs text-foreground" title={formatSummaryValue(value)}>
+          <dd className="min-w-0 break-words text-right font-mono text-xs text-foreground" title={formatSummaryValue(value)}>
             {formatSummaryValue(value)}
           </dd>
         </div>
@@ -129,7 +130,7 @@ export function StepLabel({ n, children }: { n: string; children: React.ReactNod
   return (
     <h3 className="mb-3 flex items-baseline gap-2">
       <span className="font-mono text-xs font-medium text-primary">{n}</span>
-      <span className="text-[13px] font-semibold uppercase tracking-wide text-foreground">
+      <span className="min-w-0 break-words text-[13px] font-semibold uppercase tracking-wide text-foreground">
         {children}
       </span>
     </h3>
@@ -836,7 +837,7 @@ export default function WorkspaceDetailPage(): JSX.Element {
 
 
   const externalPredictEndpoint = workspace
-    ? `${API_BASE}/workspace/${workspace.workspace_id}/api/predict`
+    ? `${API_BASE}/workspace/${workspace.workspace_id}/predict`
     : "";
   const externalPredictExample = JSON.stringify(
     {
@@ -977,6 +978,12 @@ export default function WorkspaceDetailPage(): JSX.Element {
   const dataTypeLabel = DATA_TYPE_OPTIONS.find((o) => o.value === workspace.data_type)?.label ?? workspace.data_type;
   const canPredict = workspace.status === "completed" && isStructured;
   const canRunPrediction = canPredict && predictRows.length > 0 && !predicting && !predictParseError;
+  const displayedPredictions = predictResult
+    ? predictResult.predictions.slice(0, PREDICTION_DISPLAY_LIMIT)
+    : [];
+  const omittedPredictionCount = predictResult
+    ? predictResult.predictions.length - displayedPredictions.length
+    : 0;
 
   return (
     // Normal-flow container (no fixed/absolute on the root), so this page
@@ -1430,7 +1437,7 @@ export default function WorkspaceDetailPage(): JSX.Element {
       </div>
 
       {/* ————————————————————— RIGHT PANEL: system output only ————————————————————— */}
-      <main className="relative min-h-0 flex-1 overflow-y-auto">
+      <main className="relative min-h-0 min-w-0 flex-1 overflow-y-auto">
         {/* Sticky (NOT fixed) results header — same reasoning as the left
             panel's header: scoped to this main's own scroll container. */}
         <div className="sticky top-0 z-10 border-b border-border/70 bg-background/95 px-8 py-4 backdrop-blur">
@@ -1444,7 +1451,7 @@ export default function WorkspaceDetailPage(): JSX.Element {
           </div>
         </div>
 
-        <div className="mx-auto max-w-3xl space-y-6 px-8 py-8">
+        <div className="mx-auto max-w-3xl space-y-6 px-4 py-8 sm:px-8">
           {preprocessingSummary && Object.keys(preprocessingSummary).length > 0 && (
             <section className="rounded-xl border border-border bg-card p-4 shadow-sm">
               <StepLabel n="02">Preprocessed data</StepLabel>
@@ -1457,8 +1464,8 @@ export default function WorkspaceDetailPage(): JSX.Element {
           {workspace.status === "completed" && isStructured && (
             <section className="rounded-xl border border-border bg-card p-4 shadow-sm">
               <div className="flex items-start justify-between gap-3">
-                <div>
-                  <StepLabel n="02">How the model data was prepared</StepLabel>
+                <div className="min-w-0 flex-1">
+                  <StepLabel n="03">How the model data was prepared</StepLabel>
                   <p className="mt-2 text-sm text-muted-foreground">
                     The model was trained on the output of the same preprocessing pipeline shown below. Cleaning,
                     missing-value handling, encoding, scaling, and feature creation were fitted on the training data
@@ -1560,7 +1567,7 @@ export default function WorkspaceDetailPage(): JSX.Element {
 
           {modelComparison.length > 0 || modelSummary ? (
             <section className="rounded-xl border border-border bg-card p-4 shadow-sm">
-              <StepLabel n="03">Available models</StepLabel>
+              <StepLabel n="04">Available models</StepLabel>
 
               {modelSummary?.overall_assessment && (
                 <p className="mb-3 mt-3 text-sm text-muted-foreground">{modelSummary.overall_assessment}</p>
@@ -1687,7 +1694,7 @@ export default function WorkspaceDetailPage(): JSX.Element {
             <details className="rounded-xl border border-primary/25 bg-primary/5 p-4 shadow-sm">
               <summary className="flex cursor-pointer list-none items-start justify-between gap-3">
                 <div>
-                  <StepLabel n="04">Use this model in another app</StepLabel>
+                  <StepLabel n="05">Use this model in another app</StepLabel>
                   <p className="mt-2 text-sm text-muted-foreground">
                     Send raw feature rows to the prediction endpoint.
                   </p>
@@ -1711,8 +1718,7 @@ export default function WorkspaceDetailPage(): JSX.Element {
 
               <p className="mt-3 text-xs text-muted-foreground">
                 Include <span className="font-mono text-foreground">Authorization: Bearer &lt;token&gt;</span> and
-                send feature names matching the training data. The optional <span className="font-mono text-foreground">model_key</span>
-                can be any model listed above.
+                send feature names matching the training data.
               </p>
             </details>
           )}
@@ -1722,7 +1728,7 @@ export default function WorkspaceDetailPage(): JSX.Element {
           {(predicting || predictResult) && (
             <section className="rounded-xl border border-border bg-card p-4 shadow-sm">
               <div className="flex items-center justify-between gap-3">
-                <StepLabel n="04">Predictions</StepLabel>
+                <StepLabel n="06">Predictions</StepLabel>
                 {predictResult && (
                   <button
                     onClick={handleDownloadPredictions}
@@ -1744,6 +1750,9 @@ export default function WorkspaceDetailPage(): JSX.Element {
                     Predicted <span className="font-mono text-foreground">{workspace.target_column}</span> using{" "}
                     <span className="font-mono text-foreground">{predictResult.model_key}</span> for{" "}
                     {predictResult.predictions.length} row(s).
+                    {omittedPredictionCount > 0 && (
+                      <> Showing the first {displayedPredictions.length}; download the CSV to view all results.</>
+                    )}
                   </p>
                   <div className="max-h-96 overflow-auto rounded-lg border border-border">
                     <table className="min-w-full text-left text-sm">
@@ -1759,7 +1768,7 @@ export default function WorkspaceDetailPage(): JSX.Element {
                         </tr>
                       </thead>
                       <tbody>
-                        {predictResult.predictions.map((p, i) => (
+                        {displayedPredictions.map((p, i) => (
                           <tr key={i} className="border-t border-border">
                             <td className="px-3 py-2 font-mono text-muted-foreground">{i + 1}</td>
                             <td className="px-3 py-2 font-medium text-foreground">{String(p)}</td>

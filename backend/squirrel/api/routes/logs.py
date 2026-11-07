@@ -13,10 +13,16 @@ import re
 from pathlib import Path
 from typing import Any, Dict, Optional
 
-from fastapi import APIRouter, Query, Request, status
+from fastapi import APIRouter, Depends, Query, Request, status
 
+from squirrel.api.routes.auth import get_current_user
 from squirrel.core.request_context import get_request_id_from_request
-from squirrel.schemas.auth import LogEntry, RecentLogsResponse, RequestLogContext
+from squirrel.schemas.auth import (
+    AuthUserRead,
+    LogEntry,
+    RecentLogsResponse,
+    RequestLogContext,
+)
 
 
 router = APIRouter()
@@ -63,7 +69,10 @@ def _parse_log_line(line: str) -> Optional[LogEntry]:
     status_code=status.HTTP_200_OK,
     response_model=RequestLogContext,
 )
-async def get_request_log_context(request: Request) -> RequestLogContext:
+async def get_request_log_context(
+    request: Request,
+    current_user: AuthUserRead = Depends(get_current_user),
+) -> RequestLogContext:
     return RequestLogContext(
         request_id=get_request_id_from_request(request),
         method=request.method,
@@ -80,6 +89,7 @@ async def get_request_log_context(request: Request) -> RequestLogContext:
 )
 async def get_recent_logs(
     limit: int = Query(default=50, ge=1, le=200),
+    current_user: AuthUserRead = Depends(get_current_user),
 ) -> RecentLogsResponse:
     log_file = _latest_log_file()
     if log_file is None:

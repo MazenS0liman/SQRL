@@ -1,10 +1,10 @@
-import { useEffect, useRef, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Plus, FolderPlus, Database, Cpu, ArrowUpRight, AlertCircle } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import type { Notebook, ConnectorSummary } from '@/types';
 import { useTheme } from '@/contexts/ThemeContext';
-import { apiFetch, connectorsApi, timeAgo, getNotebookStatus, getConnectorStatus } from './shared';
+import { apiFetch, connectorsApi, timeAgo, getConnectorStatus } from './shared';
 import { statusMeta } from '@/pages/notebooks/shared';
 import LineWaves from '@/components/background/LineWaves';
 import { FolderCard } from '@/components/common/FolderCard';

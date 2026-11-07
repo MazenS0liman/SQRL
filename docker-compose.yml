@@ -7,10 +7,12 @@ services:
     ports:
       - "8000:8000"
     volumes:
-      - ./backend/docs:/docs
-      - ./backend/logs:/logs
-      - ./backend/squirrel:/squirrel
-      - ./backend/static:/static
+      # WORKDIR is /app, so relative paths used by the app (logs/, static/)
+      # resolve under /app — not at the filesystem root.
+      - ./backend/docs:/app/docs
+      - ./backend/logs:/app/logs
+      - ./backend/squirrel:/app/squirrel
+      - ./backend/static:/app/static
     env_file:
       - .env
     restart: unless-stopped
@@ -19,6 +21,16 @@ services:
         condition: service_healthy
       minio:
         condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8000/api/health')\"",
+        ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
 
   postgres:
     image: postgres:17

@@ -27,6 +27,7 @@ Configuration Classes
 import os
 import sys
 import platform
+from typing import List, Optional
 from pydantic_settings import BaseSettings
 
 from dotenv import load_dotenv
@@ -119,6 +120,46 @@ class Settings(BaseSettings):
     MIN_PROCESS_COUNT: int = 2
     #: int: Minimum number of workers - Default is 4
     MIN_WORKER_COUNT: int = 4
+
+    # Database settings
+    #: str: PostgreSQL connection string used by every service.
+    DATABASE_URL: str = ""
+    #: str: Legacy alias for DATABASE_URL, kept for backwards compatibility.
+    POSTGRES_DSN: str = ""
+
+    # MinIO / S3-compatible blob storage settings
+    MINIO_ENDPOINT: str = "http://localhost:9000"
+    MINIO_ACCESS_KEY: str = "admin"
+    MINIO_SECRET_KEY: str = "strongpassword123"
+    MINIO_BUCKET: str = "squirrel"
+
+    # Secret-encryption keys
+    #: Optional[str]: Fernet key used to encrypt stored provider tokens.
+    TOKEN_ENCRYPTION_KEY: Optional[str] = None
+    #: Optional[str]: Fernet key used to encrypt connector secrets at rest.
+    SQUIRREL_CONNECTOR_SECRET_KEY: Optional[str] = None
+
+    # Bootstrap admin account. Disabled by default: create the first user
+    # through /api/auth/register instead of shipping a known admin/admin login.
+    #: bool: Create a default admin account on startup when it does not exist.
+    CREATE_DEFAULT_ADMIN: bool = False
+    DEFAULT_ADMIN_USERNAME: str = "admin"
+    DEFAULT_ADMIN_EMAIL: str = "admin@squirrel.local"
+    DEFAULT_ADMIN_PASSWORD: Optional[str] = None
+
+    # CORS. Comma-separated list; never "*" together with credentials.
+    #: str: Allowed browser origins, comma separated.
+    CORS_ORIGINS: str = "http://localhost:5173,http://localhost:8000,http://localhost:3000"
+
+    @property
+    def database_url(self) -> str:
+        """Resolve the effective database URL (DATABASE_URL wins)."""
+        return self.DATABASE_URL or self.POSTGRES_DSN
+
+    @property
+    def cors_origins(self) -> List[str]:
+        """Return CORS origins as a list, trimming blanks."""
+        return [origin.strip() for origin in self.CORS_ORIGINS.split(",") if origin.strip()]
 
 # ——————————————————————————————————————————————————————————————
 # Colors class

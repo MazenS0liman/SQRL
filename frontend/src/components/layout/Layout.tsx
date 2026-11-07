@@ -1,5 +1,5 @@
 // @/components/layout/Layout.tsx
-import React, { useState } from 'react';
+import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Sidebar } from '@/components/common/Sidebar';
 import { TopNavBar } from './TopNavBar';
@@ -11,7 +11,6 @@ interface LayoutProps {
 export const Layout: React.FC<LayoutProps> = ({ children }) => {
   const navigate = useNavigate();
   const location = useLocation();
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const hideTopNav1 = /^\/notebooks\/[^/]+$/.test(location.pathname);
   const hideTopNav2 = /^\/workspace\/[^/]+$/.test(location.pathname);
 

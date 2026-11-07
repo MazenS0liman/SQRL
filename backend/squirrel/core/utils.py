@@ -4,12 +4,14 @@
 from __future__ import annotations
 
 # Standard Libraries
-import os
 import httpx
 import boto3
 import tempfile
 from typing import List
 from pathlib import Path
+
+# Config
+from squirrel.core.config import settings
 
 # Logging
 from loguru import logger
@@ -26,9 +28,9 @@ async def download_files(
             if file_url.startswith("s3://"):
                 s3 = boto3.client(
                     "s3",
-                    endpoint_url=f"{os.environ['MINIO_ENDPOINT']}",
-                    aws_access_key_id=os.environ["MINIO_ACCESS_KEY"],
-                    aws_secret_access_key=os.environ["MINIO_SECRET_KEY"],
+                    endpoint_url=settings.MINIO_ENDPOINT,
+                    aws_access_key_id=settings.MINIO_ACCESS_KEY,
+                    aws_secret_access_key=settings.MINIO_SECRET_KEY,
                     region_name="us-east-1",
                 )
                 bucket, key = file_url[5:].split("/", 1)

@@ -41,6 +41,9 @@ from minio.error import S3Error
 # Abstract
 from squirrel.services.storage.blob.IBlobStorageService import IBlobStorageService
 
+# Config
+from squirrel.core.config import settings
+
 # Model
 from squirrel.schemas.file import File, FileType
 
@@ -53,10 +56,10 @@ class MinIOConfig(Enum):
     """
     Enum for MinIO API endpoints.
     """
-    ENDPOINT = os.getenv("MINIO_ENDPOINT", "http://localhost:9000")
-    ACCESS_KEY = os.getenv("MINIO_ACCESS_KEY", "admin")
-    SECRET_KEY = os.getenv("MINIO_SECRET_KEY", "strongpassword123")
-    BUCKET = os.getenv("MINIO_BUCKET", "squirrel")
+    ENDPOINT = settings.MINIO_ENDPOINT
+    ACCESS_KEY = settings.MINIO_ACCESS_KEY
+    SECRET_KEY = settings.MINIO_SECRET_KEY
+    BUCKET = settings.MINIO_BUCKET
 
 # ——————————————————————————————————————————————————————————————
 # MinIO Service Class

@@ -123,6 +123,7 @@ from squirrel.schemas.error import WorkspaceNotFoundError, SourceNotFoundError
 
 # Logging
 from loguru import logger
+from squirrel.core.logging import log_stage
 
 # ——————————————————————————————————————————————————————————————
 # WorkspaceService
@@ -339,8 +340,83 @@ class WorkspaceService:
         if not result or not isinstance(result, list) or not result[0].get("workspace_id"):
             raise RuntimeError("Failed to create workspace row.")
 
-        logger.info("Created workspace '{}' (workspace_id={}, data_type={})", name, workspace_id, data_type)
+        log_stage(
+            "WORKSPACE",
+            "Created workspace '{}' (workspace_id={}, data_type={})",
+            name,
+            workspace_id,
+            data_type,
+        )
         return result[0]
+
+    def ensure_workspace(
+        self,
+        workspace_id: Optional[str],
+        name: Optional[str] = None,
+        owner_user_id: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """
+        Return the workspace with *workspace_id*, creating it when missing.
+
+        Chat requests may reference a client-generated id (``projectId``)
+        that has never been persisted. Pipeline runs store a foreign key to
+        ``workspaces``, so such an id must be materialised before the first
+        run is saved. When *workspace_id* is empty a fresh workspace is
+        created.
+
+        :param workspace_id: Desired workspace id, or ``None``/empty to
+            generate a new one.
+        :param name: Display name to use when creating the workspace.
+        :param owner_user_id: Owner to record and scope the lookup to.
+        :return: The existing or newly created workspace row.
+        :raises WorkspaceNotFoundError: if the id exists but belongs to a
+            different user.
+        """
+        if not workspace_id:
+            return self.create_workspace(
+                name=name or "Chat workspace",
+                owner_user_id=owner_user_id,
+            )
+
+        try:
+            existing = self.get_workspace(workspace_id)
+        except WorkspaceNotFoundError:
+            existing = None
+
+        if existing is not None:
+            existing_owner = existing.get("owner_user_id")
+            if owner_user_id and existing_owner and existing_owner != owner_user_id:
+                raise WorkspaceNotFoundError(
+                    f"No workspace with workspace_id={workspace_id}"
+                )
+            return existing
+
+        now = datetime.now(timezone.utc)
+        self._db.insert(
+            {
+                "sql": f"""
+                    INSERT INTO {self._WORKSPACES_TABLE} (
+                        workspace_id, owner_user_id, name, status, data_type,
+                        input_sources, created_at, updated_at
+                    ) VALUES (
+                        %(workspace_id)s, %(owner_user_id)s, %(name)s,
+                        %(status)s, %(data_type)s, %(input_sources)s::jsonb,
+                        %(now)s, %(now)s
+                    )
+                    ON CONFLICT (workspace_id) DO NOTHING
+                """,
+                "params": {
+                    "workspace_id": workspace_id,
+                    "owner_user_id": owner_user_id,
+                    "name": name or "Chat workspace",
+                    "status": WorkspaceStatus.CREATED,
+                    "data_type": DataType.STRUCTURED,
+                    "input_sources": json.dumps([]),
+                    "now": now,
+                },
+            }
+        )
+        return self.get_workspace(workspace_id, owner_user_id=owner_user_id)
 
     def get_workspace(
         self,
@@ -648,7 +724,8 @@ class WorkspaceService:
             self._file_service.record_upload(
                 result,
                 owner_user_id=owner_user_id,
-                workspace_id=workspace_id
+                workspace_id=workspace_id,
+                user_uploaded=False
             )
 
             source: Dict[str, Any] = {
@@ -809,8 +886,12 @@ class WorkspaceService:
         :rtype: Dict[str, Any]
         :raises ValueError: if the resolved display name is empty.
         """
-        self._connector.get_connection(connector_id)  # fail fast if missing
-        query = self._connector.build_table_query(connector_id, table_name, columns)  # validates table + columns
+        self._connector.get_connection(
+            connector_id, owner_user_id=owner_user_id
+        )  # fail fast if missing
+        query = self._connector.build_table_query(
+            connector_id, table_name, columns, owner_user_id=owner_user_id
+        )  # validates table + columns
 
         display_name = (name or table_name).strip()
         if not display_name:
@@ -822,7 +903,9 @@ class WorkspaceService:
         resolved_columns: Optional[List[str]] = columns
         if resolved_columns is None:
             try:
-                preview_df = self._connector.preview_table(connector_id, table_name, limit=5)
+                preview_df = self._connector.preview_table(
+                    connector_id, table_name, limit=5, owner_user_id=owner_user_id
+                )
                 resolved_columns = list(preview_df.columns)
             except Exception:
                 logger.warning(
@@ -880,7 +963,9 @@ class WorkspaceService:
             raise ValueError("Select at least one table to attach.")
 
         table_names = [t["table"] for t in tables]
-        known_tables = set(self._connector.list_tables(connector_id))
+        known_tables = set(
+            self._connector.list_tables(connector_id, owner_user_id=owner_user_id)
+        )
         unknown = [t for t in table_names if t not in known_tables]
         if unknown:
             raise ValueError(f"Unknown table(s) for this connector: {unknown}")
@@ -992,7 +1077,8 @@ class WorkspaceService:
 
     def fetch_data(
         self, 
-        source: Dict[str, Any]
+        source: Dict[str, Any],
+        owner_user_id: Optional[str] = None,
     ) -> pd.DataFrame:
         """
         Pull a DataFrame from a connected data source, scoped to the ``query``
@@ -1015,7 +1101,9 @@ class WorkspaceService:
                 "recorded — remove and re-attach it via add_connector_source."
             )
 
-        return self._connector.fetch_dataframe(source["connector_id"], query)
+        return self._connector.fetch_dataframe(
+            source["connector_id"], query, owner_user_id=owner_user_id
+        )
 
     def _upload_loaders(self) -> Dict[str, Any]:
         """
@@ -1032,7 +1120,8 @@ class WorkspaceService:
 
     def load_source_dataframes(
         self,
-        sources: List[Dict[str, Any]]
+        sources: List[Dict[str, Any]],
+        owner_user_id: Optional[str] = None,
     ) -> Dict[str, pd.DataFrame]:
         """
         Resolve every input source on a workspace into an in-memory
@@ -1063,7 +1152,9 @@ class WorkspaceService:
         for source in sources:
             source_id = source["source_id"]
             if source.get("kind") == SourceKind.CONNECTOR:
-                frames[source_id] = self.fetch_data(source)
+                frames[source_id] = self.fetch_data(
+                    source, owner_user_id=owner_user_id
+                )
                 continue
 
             file_type = source.get("file_type", "csv")
@@ -1468,6 +1559,7 @@ class WorkspaceService:
                 result,
                 owner_user_id=owner_user_id,
                 workspace_id=workspace_id,
+                user_uploaded=False,
             )
             return str(result.fileUrl)
         except Exception:
@@ -1517,6 +1609,7 @@ class WorkspaceService:
                 result,
                 owner_user_id=owner_user_id,
                 workspace_id=workspace_id,
+                user_uploaded=False,
             )
             return str(result.fileUrl)
         except Exception:
@@ -1604,6 +1697,7 @@ class WorkspaceService:
                 result,
                 owner_user_id=owner_user_id,
                 workspace_id=workspace_id,
+                user_uploaded=False,
             )
             return str(result.fileUrl)
         except Exception:
@@ -1748,6 +1842,7 @@ class WorkspaceService:
         workspace: Dict[str, Any],
         target_column: str,
         min_length: int,
+        owner_user_id: Optional[str] = None,
     ) -> "list[float]":
         """
         Reconstruct the target column's raw historical values from this
@@ -1779,7 +1874,7 @@ class WorkspaceService:
                 "reconstruct prediction history from."
             )
 
-        dataframes = self.load_source_dataframes(sources)
+        dataframes = self.load_source_dataframes(sources, owner_user_id=owner_user_id)
         merged = TabularDataProcessorAgent.merge_sources(dataframes, target_column=target_column)
 
         if target_column not in merged.columns:
@@ -1850,7 +1945,9 @@ class WorkspaceService:
                     "can't seed a sequential model's prediction history."
                 )
             required_length = estimator.window_size + estimator.difference_order
-            history = self._load_target_history(workspace, target_column, required_length)
+            history = self._load_target_history(
+                workspace, target_column, required_length, owner_user_id=owner_user_id
+            )
 
             n_steps = len(new_data) if len(new_data) > 0 else 1
             predictions = estimator.predict(X=history, n_steps=n_steps)

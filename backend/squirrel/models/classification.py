@@ -1,4 +1,5 @@
-"""Sklearn-compatible tabular model classes.
+"""
+Sklearn-compatible tabular model classes.
 
 The classes in this module intentionally inherit from their sklearn
 counterparts. This keeps them compatible with ``clone``, ``cross_validate``

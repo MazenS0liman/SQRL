@@ -161,7 +161,7 @@ class GroqProvider(IProvider):
                 max_tokens=self.config.get("max_tokens", 2048),
             )
         except Exception as err:
-            logger.warning("Error occurred while generating Groq response: %s", err)
+            logger.warning("Error occurred while generating Groq response: {}", err)
             raise
 
         self._update_token_usage(getattr(response, "usage", None))
@@ -207,7 +207,7 @@ class GroqProvider(IProvider):
                 max_tokens=self.config.get("max_tokens", 2048),
             )
         except Exception as err:
-            logger.warning("Error occurred while generating structured Groq response: %s", err)
+            logger.warning("Error occurred while generating structured Groq response: {}", err)
             raise
 
         # instructor responses don't carry standard usage; update if available
@@ -242,6 +242,7 @@ class GroqProvider(IProvider):
         system_prompt = input.get("system_prompt", "")
         user_prompt   = input.get("user_prompt", "")
         schema        = input.get("schema", {})
+        max_tokens    = input.get("max_tokens", self.config.get("max_tokens", 4096))
 
         # Embed the schema in the system prompt so Groq honours the structure.
         # Groq's JSON mode guarantees valid JSON but not schema conformance,
@@ -264,11 +265,11 @@ class GroqProvider(IProvider):
                 model=self.model_name,
                 messages=messages,
                 temperature=self.config.get("temperature", 0.0),  # low temp for deterministic JSON
-                max_tokens=self.config.get("max_tokens", 4096),
+                max_tokens=max_tokens,
                 response_format={"type": "json_object"},  # Groq JSON mode
             )
         except Exception as err:
-            logger.warning("Error occurred while generating Groq JSON response: %s", err)
+            logger.warning("Error occurred while generating Groq JSON response: {}", err)
             raise
 
         raw_text = response.choices[0].message.content or ""

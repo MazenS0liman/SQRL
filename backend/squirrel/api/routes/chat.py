@@ -36,7 +36,20 @@ Endpoints
 from typing import Optional
 
 # FastAPI
-from fastapi import APIRouter, Body, HTTPException, WebSocket, WebSocketDisconnect, status
+from fastapi import (
+    APIRouter,
+    Body,
+    Depends,
+    HTTPException,
+    WebSocket,
+    WebSocketDisconnect,
+    status,
+)
+
+# Auth
+from squirrel.api.routes.auth import get_current_user
+from squirrel.schemas.auth import AuthUserRead
+from squirrel.services.auth.AuthService import auth_service
 
 # Models
 from squirrel.schemas.api import AgentRequest, AgentResponse
@@ -77,7 +90,8 @@ async def chat(
             "The chat request payload containing the user's message and "
             "optional parameters. fileUrls must already be s3:// URLs."
         ),
-    )
+    ),
+    current_user: AuthUserRead = Depends(get_current_user),
 ) -> AgentResponse:
     """
     Chat Endpoint
@@ -107,7 +121,9 @@ async def chat(
     # Step 1 — Orchestrate the chat request
     # ------------------------------------------------------------------ #
     try:
-        response: AgentResponse = await orchestrator.handle_request(request)
+        response: AgentResponse = await orchestrator.handle_request(
+            request, owner_user_id=current_user.id
+        )
     except Exception:
         logger.exception(
             "Orchestrator failed for conversation={}", request.conversationId
@@ -155,6 +171,14 @@ async def chat_websocket(websocket: WebSocket) -> None:
     :param websocket: The websocket connection managed by FastAPI.
     :type websocket: WebSocket
     """
+    # Authenticate before accepting: the token is passed as a query parameter
+    # because browsers cannot set custom headers on a WebSocket handshake.
+    token = websocket.query_params.get("token")
+    user = auth_service.get_user_by_token(token) if token else None
+    if user is None:
+        await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
+        return
+
     await websocket.accept()
     orchestrator = OrchestratorService()
     persistence  = MessagingService()
@@ -174,7 +198,7 @@ async def chat_websocket(websocket: WebSocket) -> None:
 
             try:
                 response: AgentResponse = await orchestrator.handle_request(
-                    request, websocket=websocket
+                    request, websocket=websocket, owner_user_id=user.id
                 )
             except Exception:
                 logger.exception(

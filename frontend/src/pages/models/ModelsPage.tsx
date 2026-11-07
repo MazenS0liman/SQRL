@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import type { ModelFile, ModelMetric, ModelSummary, Workspace } from "@/types";
 import { downloadOutputFile, formatPercent, statusMeta } from "@/pages/workspace/shared";

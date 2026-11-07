@@ -8,7 +8,15 @@ import { componentTagger } from "lovable-tagger";
 export default defineConfig(({ mode }) => ({
   server: {
     host: "::",
-    port: 8000,
+    // The backend serves on 8000; use a distinct dev port and proxy /api to
+    // it so cookies/Authorization headers work same-origin in development.
+    port: 5173,
+    proxy: {
+      "/api": {
+        target: "http://localhost:8000",
+        changeOrigin: true,
+      },
+    },
   },
   plugins: [
     react(),

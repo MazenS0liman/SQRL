@@ -119,19 +119,6 @@ class WorkspaceUpdateRequest(BaseModel):
     data_type: Optional[str] = None
 
 
-class ConnectorSourceRequest(BaseModel):
-    connector_id: str
-    name: str
-    query: str = Field(
-        ...,
-        min_length=1,
-        description=(
-            "SQL query selecting exactly the data this source should provide "
-            "— built from a table picked via GET /connectors/{connector_id}/tables, "
-            "or typed freehand and checked via POST /connectors/{connector_id}/preview."
-        ),
-    )
-
 # ——————————————————————————————————————————————————————————————
 # Upload endpoint
 

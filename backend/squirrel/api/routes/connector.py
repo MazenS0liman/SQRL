@@ -41,8 +41,12 @@ from typing import List
 import pandas as pd
 
 # Third-Party Libraries
-from fastapi import APIRouter, Body, HTTPException, status
+from fastapi import APIRouter, Body, Depends, HTTPException, status
 from fastapi.concurrency import run_in_threadpool
+
+# Auth
+from squirrel.api.routes.auth import get_current_user
+from squirrel.schemas.auth import AuthUserRead
 
 # Services
 from squirrel.services.data_connector.DataConnectorService import (
@@ -130,8 +134,12 @@ async def list_connector_types() -> List[ConnectorType]:
     summary="List all data connections",
     response_model=List[DataConnectionOut],
 )
-async def list_connections() -> List[DataConnectionOut]:
-    rows = await run_in_threadpool(_connector_service().list_connections)
+async def list_connections(
+    current_user: AuthUserRead = Depends(get_current_user),
+) -> List[DataConnectionOut]:
+    rows = await run_in_threadpool(
+        _connector_service().list_connections, owner_user_id=current_user.id
+    )
     return [_to_out(row) for row in rows]
 
 
@@ -141,11 +149,18 @@ async def list_connections() -> List[DataConnectionOut]:
     status_code=status.HTTP_201_CREATED,
     response_model=DataConnectionOut,
 )
-async def create_connection(request: ConnectorCreateRequest = Body(...)) -> DataConnectionOut:
+async def create_connection(
+    request: ConnectorCreateRequest = Body(...),
+    current_user: AuthUserRead = Depends(get_current_user),
+) -> DataConnectionOut:
     connector_svc = _connector_service()
     try:
         row = await run_in_threadpool(
-            connector_svc.create_connection, request.name, request.type, request.config
+            connector_svc.create_connection,
+            request.name,
+            request.type,
+            request.config,
+            current_user.id,
         )
     except ValueError as exc:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))
@@ -168,11 +183,16 @@ async def create_connection(request: ConnectorCreateRequest = Body(...)) -> Data
 async def update_connection(
     connector_id: str,
     request: ConnectorUpdateRequest = Body(...),
+    current_user: AuthUserRead = Depends(get_current_user),
 ) -> DataConnectionOut:
     connector_svc = _connector_service()
     try:
         row = await run_in_threadpool(
-            connector_svc.update_connection, connector_id, request.name, request.config
+            connector_svc.update_connection,
+            connector_id,
+            request.name,
+            request.config,
+            current_user.id,
         )
     except ConnectorNotFoundError:
         raise _not_found(connector_id)
@@ -186,10 +206,15 @@ async def update_connection(
     summary="Delete a data connection",
     status_code=status.HTTP_204_NO_CONTENT,
 )
-async def delete_connection(connector_id: str) -> None:
+async def delete_connection(
+    connector_id: str,
+    current_user: AuthUserRead = Depends(get_current_user),
+) -> None:
     connector_svc = _connector_service()
     try:
-        await run_in_threadpool(connector_svc.delete_connection, connector_id)
+        await run_in_threadpool(
+            connector_svc.delete_connection, connector_id, current_user.id
+        )
     except ConnectorNotFoundError:
         raise _not_found(connector_id)
     except ConnectorInUseError as exc:
@@ -211,7 +236,10 @@ async def delete_connection(connector_id: str) -> None:
     summary="Run a live connectivity check for a connection",
     response_model=DataConnectionOut,
 )
-async def test_connection(connector_id: str) -> DataConnectionOut:
+async def test_connection(
+    connector_id: str,
+    current_user: AuthUserRead = Depends(get_current_user),
+) -> DataConnectionOut:
     """
     Attempts to actually connect using the stored (decrypted) config and
     persists the resulting status ('connected' or 'error') — a failed test
@@ -221,7 +249,9 @@ async def test_connection(connector_id: str) -> DataConnectionOut:
     """
     connector_svc = _connector_service()
     try:
-        row = await run_in_threadpool(connector_svc.test_connection, connector_id)
+        row = await run_in_threadpool(
+            connector_svc.test_connection, connector_id, current_user.id
+        )
     except ConnectorNotFoundError:
         raise _not_found(connector_id)
     return _to_out(row)
@@ -232,10 +262,15 @@ async def test_connection(connector_id: str) -> DataConnectionOut:
     summary="List queryable tables for a connector",
     response_model=List[str],
 )
-async def list_connector_tables(connector_id: str) -> List[str]:
+async def list_connector_tables(
+    connector_id: str,
+    current_user: AuthUserRead = Depends(get_current_user),
+) -> List[str]:
     connector_svc = DataConnectorService()
     try:
-        return await run_in_threadpool(connector_svc.list_tables, connector_id)
+        return await run_in_threadpool(
+            connector_svc.list_tables, connector_id, current_user.id
+        )
     except ConnectorNotFoundError:
         raise HTTPException(status.HTTP_404_NOT_FOUND, f"Connector '{connector_id}' not found.")
     except NotImplementedError as exc:
@@ -250,6 +285,7 @@ async def list_connector_tables(connector_id: str) -> List[str]:
 async def preview_connector_tables(
     connector_id: str,
     limit: int = 5,
+    current_user: AuthUserRead = Depends(get_current_user),
 ) -> ConnectorTablesPreviewResponse:
     """
     Runs a capped preview against every table this connector reports, so
@@ -259,7 +295,9 @@ async def preview_connector_tables(
     """
     connector_svc = DataConnectorService()
     try:
-        table_names = await run_in_threadpool(connector_svc.list_tables, connector_id)
+        table_names = await run_in_threadpool(
+            connector_svc.list_tables, connector_id, current_user.id
+        )
     except ConnectorNotFoundError:
         raise HTTPException(status.HTTP_404_NOT_FOUND, f"Connector '{connector_id}' not found.")
     except NotImplementedError as exc:
@@ -268,7 +306,14 @@ async def preview_connector_tables(
     results: List[TablePreview] = []
     for table_name in table_names:
         try:
-            df = await run_in_threadpool(connector_svc.preview_table, connector_id, table_name, limit)
+            df = await run_in_threadpool(
+                connector_svc.preview_table,
+                connector_id,
+                table_name,
+                limit,
+                None,
+                current_user.id,
+            )
             preview_df = df.astype(object).where(pd.notnull(df), None)
             preview = [
                 {k: (v.item() if hasattr(v, "item") else v) for k, v in row.items()}

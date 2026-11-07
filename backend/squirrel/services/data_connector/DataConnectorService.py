@@ -58,6 +58,9 @@ from typing import Any, Callable, Dict, List, Optional
 # Third-Party Libraries
 import pandas as pd
 
+# Config
+from squirrel.core.config import settings
+
 # Services
 from squirrel.services.storage.database.PostgresService import PostgresService
 
@@ -115,7 +118,7 @@ except ImportError:
 def _get_cipher() -> Optional["Fernet"]:
     if not _HAS_FERNET:
         return None
-    key = os.environ.get("SQUIRREL_CONNECTOR_SECRET_KEY")
+    key = settings.SQUIRREL_CONNECTOR_SECRET_KEY
     if not key:
         logger.warning(
             "SQUIRREL_CONNECTOR_SECRET_KEY is not set — connector secrets will "
@@ -266,6 +269,7 @@ class DataConnectorService:
                 f"""
                 CREATE TABLE IF NOT EXISTS {self._TABLE} (
                     connector_id     TEXT            PRIMARY KEY,
+                    owner_user_id    TEXT,
                     name             TEXT            NOT NULL,
                     type             TEXT            NOT NULL,
                     status           TEXT            NOT NULL DEFAULT 'untested',
@@ -276,6 +280,13 @@ class DataConnectorService:
                     updated_at       TIMESTAMPTZ     NOT NULL DEFAULT NOW()
                 );
                 """,
+                params={},
+                fetch=False,
+            )
+            # Backfill the owner column for databases created before scoping
+            # was added.
+            self._db.execute(
+                f"ALTER TABLE {self._TABLE} ADD COLUMN IF NOT EXISTS owner_user_id TEXT",
                 params={},
                 fetch=False,
             )
@@ -325,6 +336,7 @@ class DataConnectorService:
         name: str,
         connector_type: str,
         config: Dict[str, str],
+        owner_user_id: Optional[str] = None,
     ) -> Dict[str, Any]:
         """
         Create a new connection. Secret fields in *config* are encrypted
@@ -346,15 +358,16 @@ class DataConnectorService:
             {
                 "sql": f"""
                     INSERT INTO {self._TABLE} (
-                        connector_id, name, type, status, config, created_at, updated_at
+                        connector_id, owner_user_id, name, type, status, config, created_at, updated_at
                     ) VALUES (
-                        %(connector_id)s, %(name)s, %(type)s, %(status)s, %(config)s::jsonb, %(now)s, %(now)s
+                        %(connector_id)s, %(owner_user_id)s, %(name)s, %(type)s, %(status)s, %(config)s::jsonb, %(now)s, %(now)s
                     )
-                    RETURNING connector_id, name, type, status, config, error,
+                    RETURNING connector_id, owner_user_id, name, type, status, config, error,
                               last_tested_at, created_at, updated_at
                 """,
                 "params": {
                     "connector_id": connector_id,
+                    "owner_user_id": owner_user_id,
                     "name": name,
                     "type": connector_type,
                     "status": ConnectionStatus.UNTESTED,
@@ -372,29 +385,38 @@ class DataConnectorService:
 
     def list_connections(
         self,
-        limit: int = 200
+        limit: int = 200,
+        owner_user_id: Optional[str] = None,
     ) -> List[Dict[str, Any]]:
         """
         Return all connections, newest first.
+
+        :param owner_user_id: When provided, only return connections owned by
+            this user.
         """
-        result = self._db.retrieve(self._TABLE, filters={})
+        filters: Dict[str, Any] = {}
+        if owner_user_id:
+            filters["owner_user_id"] = owner_user_id
+        result = self._db.retrieve(self._TABLE, filters=filters)
         rows = result.get("rows", []) if result else []
         rows.sort(key=lambda r: r.get("created_at", ""), reverse=True)
         return rows[:limit]
 
     def get_connection(
         self,
-        connector_id: str
+        connector_id: str,
+        owner_user_id: Optional[str] = None,
     ) -> Dict[str, Any]:
         """
         Fetch a single connection row, or raise ``ConnectorNotFoundError``.
+
+        :param owner_user_id: When provided, a connection owned by another
+            user is reported as not found rather than leaked.
         """
-        result = self._db.retrieve(
-            self._TABLE,
-            filters={
-                "connector_id": connector_id
-                }
-            )
+        filters: Dict[str, Any] = {"connector_id": connector_id}
+        if owner_user_id:
+            filters["owner_user_id"] = owner_user_id
+        result = self._db.retrieve(self._TABLE, filters=filters)
         rows = result.get("rows", []) if result else []
         if not rows:
             raise ConnectorNotFoundError(f"No connection with connector_id={connector_id}")
@@ -404,7 +426,8 @@ class DataConnectorService:
         self,
         connector_id: str,
         name: Optional[str] = None,
-        config: Optional[Dict[str, str]] = None
+        config: Optional[Dict[str, str]] = None,
+        owner_user_id: Optional[str] = None,
     ) -> Dict[str, Any]:
         """
         Update a connection's name and/or config.
@@ -414,7 +437,7 @@ class DataConnectorService:
         merged in from the stored config before validation and encryption,
         rather than overwriting the secret with an empty string.
         """
-        row = self.get_connection(connector_id)
+        row = self.get_connection(connector_id, owner_user_id=owner_user_id)
         fields: Dict[str, Any] = {}
 
         if name is not None:
@@ -459,7 +482,7 @@ class DataConnectorService:
             return row
 
         self._update_connection_row(connector_id, fields)
-        return self.get_connection(connector_id)
+        return self.get_connection(connector_id, owner_user_id=owner_user_id)
 
     def _get_connector_usage(self, connector_id: str) -> Dict[str, List[str]]:
         """
@@ -522,7 +545,8 @@ class DataConnectorService:
 
     def delete_connection(
         self,
-        connector_id: str
+        connector_id: str,
+        owner_user_id: Optional[str] = None,
     ) -> None:
         """
         Permanently delete a connection.
@@ -534,7 +558,7 @@ class DataConnectorService:
             remove the source from the workspace) so a delete here can never
             silently orphan a live notebook cell or workspace run.
         """
-        self.get_connection(connector_id)
+        self.get_connection(connector_id, owner_user_id=owner_user_id)
 
         usage = self._get_connector_usage(connector_id)
         if usage["notebooks"] or usage["workspaces"]:
@@ -589,7 +613,8 @@ class DataConnectorService:
 
     def list_tables(
         self, 
-        connector_id: str
+        connector_id: str,
+        owner_user_id: Optional[str] = None,
     ) -> List[str]:
         """
         Best-effort list of queryable tables for this connection, to
@@ -597,7 +622,7 @@ class DataConnectorService:
         connector types with no lister registered (Snowflake, BigQuery,
         Google Sheets today).
         """
-        row = self.get_connection(connector_id)
+        row = self.get_connection(connector_id, owner_user_id=owner_user_id)
         connector_type = row["type"]
         lister = self._TABLE_LIST_DISPATCH.get(connector_type)
         if lister is None:
@@ -614,6 +639,7 @@ class DataConnectorService:
         connector_id: str,
         table_name: str,
         columns: Optional[List[str]] = None,
+        owner_user_id: Optional[str] = None,
     ) -> str:
         """
         Turn a table name — plus, optionally, a subset of its columns — into a
@@ -625,10 +651,10 @@ class DataConnectorService:
         :param columns: Column names to select. ``None`` or empty means "every
             column" (``SELECT *``), same as today's behaviour.
         """
-        row = self.get_connection(connector_id)
+        row = self.get_connection(connector_id, owner_user_id=owner_user_id)
         connector_type = row["type"]
 
-        known_tables = set(self.list_tables(connector_id))
+        known_tables = set(self.list_tables(connector_id, owner_user_id=owner_user_id))
         if table_name not in known_tables:
             raise ValueError(
                 f"'{table_name}' is not a known table for connector '{connector_id}'."
@@ -644,7 +670,9 @@ class DataConnectorService:
         if not columns:
             return f"SELECT * FROM {quoter(table_name)}"
 
-        known_columns = set(self._known_columns(connector_id, table_name))
+        known_columns = set(
+            self._known_columns(connector_id, table_name, owner_user_id=owner_user_id)
+        )
         unknown_columns = [c for c in columns if c not in known_columns]
         if unknown_columns:
             raise ValueError(
@@ -658,7 +686,8 @@ class DataConnectorService:
     def _known_columns(
         self, 
         connector_id: str, 
-        table_name: str
+        table_name: str,
+        owner_user_id: Optional[str] = None,
     ) -> List[str]:
         """
         Cheap way to learn a table's column names for validating a column
@@ -666,8 +695,12 @@ class DataConnectorService:
         preview machinery rather than adding a per-dialect information_schema
         query.
         """
-        full_query = self.build_table_query(connector_id, table_name)  # columns=None -> SELECT *
-        df = self.preview_dataframe(connector_id, full_query, limit=1)
+        full_query = self.build_table_query(
+            connector_id, table_name, owner_user_id=owner_user_id
+        )  # columns=None -> SELECT *
+        df = self.preview_dataframe(
+            connector_id, full_query, limit=1, owner_user_id=owner_user_id
+        )
         return list(df.columns)
 
     def preview_table(
@@ -676,19 +709,25 @@ class DataConnectorService:
         table_name: str,
         limit: int = 5,
         columns: Optional[List[str]] = None,
+        owner_user_id: Optional[str] = None,
     ) -> pd.DataFrame:
         """
         Preview the first *limit* rows of a specific table, restricted to
         *columns* if given.
         """
-        query = self.build_table_query(connector_id, table_name, columns)
-        return self.preview_dataframe(connector_id, query, limit)
+        query = self.build_table_query(
+            connector_id, table_name, columns, owner_user_id=owner_user_id
+        )
+        return self.preview_dataframe(
+            connector_id, query, limit, owner_user_id=owner_user_id
+        )
 
     def preview_dataframe(
         self,
         connector_id: str,
         query: str,
         limit: int = 50,
+        owner_user_id: Optional[str] = None,
     ) -> pd.DataFrame:
         """
         Internal helper: run *query* capped to *limit* rows via an outer
@@ -696,19 +735,21 @@ class DataConnectorService:
         (:meth:`build_table_query`) — never with caller-supplied SQL.
         """
         wrapped = f"SELECT * FROM ({query}) AS _squirrel_preview LIMIT {int(limit)}"
-        return self.fetch_dataframe(connector_id, wrapped)
+        return self.fetch_dataframe(connector_id, wrapped, owner_user_id=owner_user_id)
 
     # ------------------------------------------------------------------
     # Testing
 
-    def test_connection(self, connector_id: str) -> Dict[str, Any]:
+    def test_connection(
+        self, connector_id: str, owner_user_id: Optional[str] = None
+    ) -> Dict[str, Any]:
         """
         Run a live connectivity check for a connection and persist the
         resulting status. Never raises for a failed *test* — a connection
         that can't be reached is a normal outcome (status='error'), not a
         service failure. Only genuinely unexpected errors bubble up.
         """
-        row = self.get_connection(connector_id)
+        row = self.get_connection(connector_id, owner_user_id=owner_user_id)
         connector_type = row["type"]
         tester = self._TEST_DISPATCH.get(connector_type)
 
@@ -721,7 +762,7 @@ class DataConnectorService:
                 "last_tested_at": now,
             }
             self._update_connection_row(connector_id, fields)
-            return self.get_connection(connector_id)
+            return self.get_connection(connector_id, owner_user_id=owner_user_id)
 
         try:
             decrypted_config = self._decrypt_config(row.get("config") or {})
@@ -735,7 +776,7 @@ class DataConnectorService:
             fields = {"status": ConnectionStatus.CONNECTED, "error": None, "last_tested_at": now}
 
         self._update_connection_row(connector_id, fields)
-        return self.get_connection(connector_id)
+        return self.get_connection(connector_id, owner_user_id=owner_user_id)
 
     # ------------------------------------------------------------------
     # Data retrieval — extension point for WorkspaceService.fetch_data
@@ -744,6 +785,7 @@ class DataConnectorService:
         self,
         connector_id: str,
         query: Optional[str] = None,
+        owner_user_id: Optional[str] = None,
     ) -> pd.DataFrame:
         """
         Resolve a connection into an in-memory DataFrame.
@@ -765,7 +807,7 @@ class DataConnectorService:
         :param query: SQL query to run — required for both Postgres and
             MySQL since there's no single default table to select from.
         """
-        row = self.get_connection(connector_id)
+        row = self.get_connection(connector_id, owner_user_id=owner_user_id)
         connector_type = row["type"]
         config = self._decrypt_config(row.get("config") or {})
 
@@ -877,7 +919,9 @@ class DataConnectorService:
 
         return {**row, "config": public_config}
 
-    def get_postgres_service(self, connector_id: str) -> PostgresService:
+    def get_postgres_service(
+        self, connector_id: str, owner_user_id: Optional[str] = None
+    ) -> PostgresService:
         """
         Resolve a Postgres-backed connection into a connected, query-capable
         :class:`PostgresService` pointed at the connector's own database.
@@ -892,7 +936,7 @@ class DataConnectorService:
             today; other types (MySQL, Snowflake, BigQuery, Google Sheets)
             would need their own query-capable service class first.
         """
-        row = self.get_connection(connector_id)
+        row = self.get_connection(connector_id, owner_user_id=owner_user_id)
         connector_type = row["type"]
 
         if connector_type != ConnectorType.POSTGRES:

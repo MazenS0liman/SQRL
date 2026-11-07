@@ -31,6 +31,7 @@ from squirrel.modules.inspectors.tabular import (
 
 # Logging
 from loguru import logger
+from squirrel.core.logging import log_stage
 
 # ——————————————————————————————————————————————————————————————
 # Catalog builder function
@@ -118,6 +119,13 @@ class TabularDataInspectorAgent(IAgent):
         :return: JSON summary report.
         :rtype: str
         """
+        log_stage(
+            "INSPECT",
+            "Inspection started: rows={}, columns={}, objective={!r}",
+            len(data),
+            len(data.columns),
+            objective,
+        )
         plan = self.plan(data, objective=objective)
         execution = self.execute(data, plan)
         return self.summarize(execution)
@@ -147,6 +155,7 @@ class TabularDataInspectorAgent(IAgent):
         :return: JSON plan string.
         :rtype: str
         """
+        log_stage("INSPECT", "Generating inspection plan for {} rows", len(data))
         dataset_profile = self._dataset_profile(data)
         dataset_profile["available_inspections"] = self._available_inspections()
 
@@ -216,7 +225,7 @@ class TabularDataInspectorAgent(IAgent):
                 plan_obj["steps"][idx]["status"] = "invalid"
                 plan_obj["steps"][idx]["error"] = reason
 
-            logger.info("Plan step %s needs regeneration: %s", idx, reason)
+            log_stage("INSPECT", "Plan step {} needs regeneration: {}", idx, reason)
 
             regenerated = False
             for attempt in range(max_regen_attempts):                
@@ -287,7 +296,7 @@ class TabularDataInspectorAgent(IAgent):
                         if getattr(spec, "required", False) and spec.name not in arguments
                     ]
                     if not missing_required:
-                        logger.info("Successfully regenerated step %s", idx)
+                        log_stage("INSPECT", "Successfully regenerated step {}", idx)
                         regenerated = True
                         break
 
@@ -314,6 +323,7 @@ class TabularDataInspectorAgent(IAgent):
         :return: JSON execution report string.
         :rtype: str
         """
+        log_stage("INSPECT", "Executing inspection plan")
         plan_obj = self._parse_plan(plan)
         if "error" in plan_obj:
             return json.dumps(
@@ -346,6 +356,7 @@ class TabularDataInspectorAgent(IAgent):
         :return: JSON summary string.
         :rtype: str
         """
+        log_stage("INSPECT", "Summarizing inspection results")
         if isinstance(execution_report, str):
             try:
                 report_obj = json.loads(execution_report)
