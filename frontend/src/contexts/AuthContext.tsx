@@ -6,8 +6,8 @@ const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 const USER_STORAGE_KEY = 'sqrl-user-profile';
 const API_BASE = (import.meta.env.VITE_BACKEND_API_BASE_URL || "/api").replace(/\/$/, '');
 
-function buildAvatarSeed(username: string, name: string): string {
-  return `${username.trim().charAt(0) || 'S'}${name.trim().charAt(0) || 'Q'}`.toUpperCase();
+function buildAvatarSeed(name: string): string {
+  return `${name.trim().split(' ')[0].charAt(0) || 'S'}${name.trim().split(' ')[1].charAt(0) || 'Q'}`.toUpperCase();
 }
 
 function normalizeUser(input: Partial<UserProfile> | null): UserProfile | null {
@@ -20,7 +20,7 @@ function normalizeUser(input: Partial<UserProfile> | null): UserProfile | null {
     role: input.role ?? 'Workspace member',
     joinedAt: input.joinedAt ?? new Date().toISOString(),
     lastLoginAt: input.lastLoginAt ?? new Date().toISOString(),
-    avatarSeed: input.avatarSeed ?? buildAvatarSeed(input.username, input.name),
+    avatarSeed: input.avatarSeed ?? buildAvatarSeed(input.name),
   };
 }
 
@@ -34,7 +34,7 @@ function mapAuthUser(user: AuthUserResponse): UserProfile {
     role: user.username === 'admin' ? 'Administrator' : 'Workspace member',
     joinedAt: user.created_at,
     lastLoginAt: new Date().toISOString(),
-    avatarSeed: buildAvatarSeed(user.username, displayName),
+    avatarSeed: buildAvatarSeed(displayName),
   };
 }
 

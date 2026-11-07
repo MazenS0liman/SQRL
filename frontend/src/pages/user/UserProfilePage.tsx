@@ -4,8 +4,6 @@ import {
   CalendarDays,
   Mail,
   ShieldCheck,
-  LogOut,
-  UserCircle2,
   Clock3,
   BadgeInfo,
   User,
@@ -43,9 +41,6 @@ const PROVIDERS = [
   { value: 'gemini', label: 'Gemini' },
   { value: 'groq', label: 'Groq' },
   { value: 'openrouter', label: 'OpenRouter' },
-  { value: 'huggingface', label: 'HuggingFace' },
-  { value: 'github', label: 'GitHub' },
-  { value: 'custom', label: 'Custom' },
 ];
 
 export default function UserProfilePage(): JSX.Element {
@@ -56,11 +51,6 @@ export default function UserProfilePage(): JSX.Element {
   if (!user) {
     return <Navigate to="/login" replace />;
   }
-
-  const handleLogout = () => {
-    logout();
-    navigate('/login', { replace: true });
-  };
 
   return (
     <div className="min-h-full overflow-y-auto bg-background text-foreground">
@@ -92,17 +82,8 @@ export default function UserProfilePage(): JSX.Element {
               <InfoRow icon={Mail} label="Email" value={user.email} />
               <InfoRow icon={CalendarDays} label="Joined" value={formatDate(user.joinedAt)} />
               <InfoRow icon={Clock3} label="Last login" value={formatDateTime(user.lastLoginAt)} />
-              <InfoRow icon={UserCircle2} label="User ID" value={user.id} />
             </div>
 
-            <div className="mt-6 flex flex-wrap gap-3">
-              <button onClick={handleLogout} className="rounded-md bg-destructive px-4 py-2 text-sm font-medium text-destructive-foreground transition-opacity hover:opacity-90">
-                <span className="inline-flex items-center gap-2">
-                  <LogOut className="h-4 w-4" />
-                  Log out
-                </span>
-              </button>
-            </div>
           </section>
         </div>
 
