@@ -26,7 +26,9 @@ RUN apt-get update && \
 COPY backend/requirements.txt .
 
 # Install Python dependencies
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt && \
+    find /usr/local -name "__pycache__" -type d -prune -exec rm -rf {} + && \
+    find /usr/local -name "*.pyc" -delete
 
 # Copy backend application
 COPY backend/ .
