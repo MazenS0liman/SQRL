@@ -186,10 +186,6 @@ function textSizeClass(size: DashboardTextBlockDef["size"]): string {
   return TEXT_SIZE_OPTIONS.find((o) => o.value === size)?.className ?? "text-sm";
 }
 
-function isTextBlockId(id: string): boolean {
-  return id.startsWith("text-");
-}
-
 type SidebarView = { tab: "list" } | { tab: "add" } | { tab: "add-text" } | { tab: "edit"; id: string } | { tab: "edit-text"; id: string };
 
 /** Full dashboard customization payload persisted to the backend. */
@@ -216,7 +212,7 @@ function layoutFromPayload(layout?: DashboardLayout | null): {
   return {
     order: layout.order ?? [],
     overrides: (layout.overrides ?? {}) as Record<string, ChartOverride>,
-    customCharts: (layout.custom_charts ?? []) as ChartDef[],
+    customCharts: (layout.custom_charts ?? []) as unknown as ChartDef[],
     // `text_blocks` requires a matching field on the backend DashboardLayout
     // schema to survive reloads — see save_dashboard_layout / the archived
     // version snapshot, both of which just round-trip layout.model_dump().
@@ -1930,6 +1926,24 @@ export function DashboardModal({
     setTextBlocks((prev) => prev.map((b) => (b.id === id ? { ...b, content: trimmed } : b)));
     setInlineEditingId((prev) => (prev === id ? null : prev));
   };
+  // Enter in an inline-edited text block keeps the typed content on the
+  // current block and drops a fresh, focused sibling right after it.
+  const splitTextBlock = (id: string, content: string) => {
+    const block: DashboardTextBlockDef = {
+      id: makeId("text"), size: "body", content: "", width: "full", card: false,
+    };
+    setTextBlocks((prev) => [
+      ...prev.map((b) => (b.id === id ? { ...b, content } : b)),
+      block,
+    ]);
+    setOrder((prev) => {
+      const next = [...prev];
+      const idx = next.indexOf(id);
+      next.splice(idx === -1 ? next.length : idx + 1, 0, block.id);
+      return next;
+    });
+    setInlineEditingId(block.id);
+  };
 
   const openSidebar = (view: SidebarView = { tab: "list" }) => {
     setSidebarView(view);
@@ -2214,6 +2228,7 @@ export function DashboardModal({
                               onCardToggle={() => toggleTextCard(id)}
                               onStartInlineEdit={() => setInlineEditingId(id)}
                               onCommitInlineEdit={(content) => commitInlineEdit(id, content)}
+                              onSplit={(content) => splitTextBlock(id, content)}
                             />
                           </div>
                         );

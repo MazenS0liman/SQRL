@@ -26,6 +26,7 @@ from typing import Optional
 
 from cryptography.fernet import Fernet, InvalidToken
 
+from squirrel.core.config import settings
 from squirrel.schemas.token import TokenRead
 from squirrel.services.storage.database.PostgresService import PostgresService
 
@@ -56,7 +57,7 @@ class TokenService:
 
     def _get_fernet(self) -> Fernet:
         if self._fernet is None:
-            key = os.environ.get("TOKEN_ENCRYPTION_KEY")
+            key = settings.TOKEN_ENCRYPTION_KEY
             if not key:
                 raise RuntimeError(
                     "TOKEN_ENCRYPTION_KEY is not set. Generate one with "

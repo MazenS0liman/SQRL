@@ -11,17 +11,29 @@ export function cn(...inputs: ClassValue[]) {
 
 export const API_BASE = import.meta.env.VITE_BACKEND_API_BASE_URL || "/api";
 
+export class ApiError extends Error {
+  status: number;
+  conflicting_columns?: string[];
+
+  constructor(message: string, status = 0, conflictingColumns?: string[]) {
+    super(message);
+    this.name = "ApiError";
+    this.status = status;
+    this.conflicting_columns = conflictingColumns;
+  }
+}
+
 async function handleErrorResponse(res: Response): Promise<never> {
   const body = await res.json().catch(() => ({}));
   const detail = body?.detail;
   if (detail && typeof detail === "object") {
-    const err = new Error(detail.message || "Request failed.") as Error & {
-      conflicting_columns?: string[];
-    };
-    err.conflicting_columns = detail.conflicting_columns;
-    throw err;
+    throw new ApiError(
+      detail.message || "Request failed.",
+      res.status,
+      detail.conflicting_columns,
+    );
   }
-  throw new Error(typeof detail === "string" ? detail : "Request failed.");
+  throw new ApiError(typeof detail === "string" ? detail : "Request failed.", res.status);
 }
 
 export async function apiFetch<T>(

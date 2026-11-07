@@ -54,6 +54,9 @@ from typing import Any, Dict, List, Optional
 # FastAPI
 from fastapi import WebSocket
 
+# Config
+from squirrel.core.config import settings
+
 # Utils
 from squirrel.core.utils import download_files, cleanup
 
@@ -115,12 +118,15 @@ class OrchestratorService:
         self,
         request:   AgentRequest,
         websocket: Optional[WebSocket] = None,
+        owner_user_id: Optional[str] = None,
     ) -> AgentResponse:
         """
         Process a chat request and return the final :class:`AgentResponse`.
 
         :param request:   Incoming agent request.
         :param websocket: Optional open websocket for streaming observations.
+        :param owner_user_id: Authenticated user that owns any persisted
+            workspaces/runs created by this request.
         :return:          Assembled agent response.
         """
         started_at = time.perf_counter()
@@ -144,9 +150,13 @@ class OrchestratorService:
         # ── 2. Dispatch to the matching pipeline ──────────────────────────────
         try:
             if route_key == "build":
-                output = await self._build_models(request, decision, websocket)
+                output = await self._build_models(
+                    request, decision, websocket, owner_user_id=owner_user_id
+                )
             elif route_key == "explore":
-                output = await self._explore_data(request, websocket)
+                output = await self._explore_data(
+                    request, websocket, owner_user_id=owner_user_id
+                )
             else:  # "chat" — also the default fallback for an unrecognised route
                 output = await self._chat_response(request, decision)
 
@@ -276,6 +286,7 @@ class OrchestratorService:
         request:   AgentRequest,
         decision:  Dict[str, Any],
         websocket: Optional[WebSocket] = None,
+        owner_user_id: Optional[str] = None,
     ) -> Dict[str, Any]:
         """
         Full ML pipeline: inspection → merge → preprocessing → model training.
@@ -301,7 +312,6 @@ class OrchestratorService:
         workspace = WorkspaceService(minio=minio)
         start_ms  = int(time.time() * 1000)
 
-        project_id      = request.projectId or ""
         conversation_id = request.conversationId or ""
         file_urls       = request.fileUrls or []
         body            = request.body or {}
@@ -360,6 +370,16 @@ class OrchestratorService:
                 }
 
             # ── 3. Inspect every source + infer how they relate ───────────────
+            # Pipeline runs carry a foreign key to ``workspaces``, so make
+            # sure the client-supplied project id exists (or create one)
+            # before the first save_run call.
+            workspace_row = workspace.ensure_workspace(
+                request.projectId,
+                name=(request.query or "Chat workspace")[:120],
+                owner_user_id=owner_user_id,
+            )
+            workspace_id = workspace_row["workspace_id"]
+
             inspection_agent = TabularDataInspectorAgent()
             inspection: Dict = json.loads(
                 inspection_agent.inspect_multi(
@@ -373,8 +393,7 @@ class OrchestratorService:
             total_tokens      = prompt_tokens + completion_tokens
 
             workspace.save_run(
-                project_id=project_id,
-                conversation_id=conversation_id,
+                workspace_id=workspace_id,
                 agent_type="inspection",
                 input_file_urls=file_urls,
                 data=None,
@@ -383,6 +402,7 @@ class OrchestratorService:
                 completion_tokens=completion_tokens,
                 total_tokens=total_tokens,
                 response_time_ms=int(time.time() * 1000) - start_ms,
+                owner_user_id=owner_user_id,
             )
             logger.info(
                 "Inspection done  conversation={}  n_sources={}",
@@ -394,7 +414,12 @@ class OrchestratorService:
             relationship = inspection.get("relationship") or {}
 
             try:
-                processed_df, preprocess_summary = preprocess_agent.run_multi(
+                (
+                    processed_df,
+                    preprocess_summary,
+                    preprocess_plan,
+                    preprocess_execution,
+                ) = preprocess_agent.run_multi(
                     dataframes=dataframes,
                     target_column=target_column,
                     eda_summary=inspection,
@@ -422,8 +447,7 @@ class OrchestratorService:
             total_tokens      = prompt_tokens + completion_tokens
 
             preprocess_persistence = workspace.save_run(
-                project_id=project_id,
-                conversation_id=conversation_id,
+                workspace_id=workspace_id,
                 agent_type="preprocessing",
                 input_file_urls=file_urls,
                 data=processed_df,
@@ -432,6 +456,9 @@ class OrchestratorService:
                 completion_tokens=completion_tokens,
                 total_tokens=total_tokens,
                 response_time_ms=int(time.time() * 1000) - start_ms,
+                owner_user_id=owner_user_id,
+                plan=preprocess_plan,
+                execution_report=preprocess_execution,
             )
             processed_urls = preprocess_persistence.get("output_file_urls", [])
             logger.info(
@@ -455,8 +482,7 @@ class OrchestratorService:
             total_tokens      = prompt_tokens + completion_tokens
 
             model_persistence = workspace.save_run(
-                project_id=project_id,
-                conversation_id=conversation_id,
+                workspace_id=workspace_id,
                 agent_type="model_building",
                 input_file_urls=processed_urls,
                 data=fitted_models,
@@ -465,6 +491,7 @@ class OrchestratorService:
                 completion_tokens=completion_tokens,
                 total_tokens=total_tokens,
                 response_time_ms=int(time.time() * 1000) - start_ms,
+                owner_user_id=owner_user_id,
             )
             model_urls = model_persistence.get("output_file_urls", [])
             logger.info(
@@ -536,6 +563,7 @@ class OrchestratorService:
         self,
         request:   AgentRequest,
         websocket: Optional[WebSocket] = None,
+        owner_user_id: Optional[str] = None,
     ) -> Dict[str, Any]:
         """
         Load every attached CSV into its own Postgres table and run
@@ -559,7 +587,6 @@ class OrchestratorService:
         workspace = WorkspaceService(minio=minio)
         start_ms  = int(time.time() * 1000)
 
-        project_id      = request.projectId or ""
         conversation_id = request.conversationId or ""
         file_urls       = request.fileUrls or []
         body            = request.body or {}
@@ -582,7 +609,7 @@ class OrchestratorService:
                 }
 
             # ── 3. Load each file into its own Postgres table ─────────────────
-            connection_string = os.environ["DATABASE_URL"]
+            connection_string = settings.database_url
             postgres_service  = PostgresService(connection_string=connection_string)
 
             # Accept either a list ("table_names") or, for backward
@@ -652,13 +679,19 @@ class OrchestratorService:
                     output = {}
 
             # ── 5. Persist workspace row ──────────────────────────────────────
+            workspace_row = workspace.ensure_workspace(
+                request.projectId,
+                name=(request.query or "Chat workspace")[:120],
+                owner_user_id=owner_user_id,
+            )
+            workspace_id = workspace_row["workspace_id"]
+
             prompt_tokens     = _tokens(agent, "last_input_tokens")
             completion_tokens = _tokens(agent, "last_output_tokens")
             total_tokens      = prompt_tokens + completion_tokens
 
             persistence = workspace.save_run(
-                project_id=project_id,
-                conversation_id=conversation_id,
+                workspace_id=workspace_id,
                 agent_type="explore",
                 input_file_urls=file_urls,
                 data=None,
@@ -667,6 +700,7 @@ class OrchestratorService:
                 completion_tokens=completion_tokens,
                 total_tokens=total_tokens,
                 response_time_ms=int(time.time() * 1000) - start_ms,
+                owner_user_id=owner_user_id,
             )
             logger.info(
                 "Explore done  conversation={}  record={}  tables={}",

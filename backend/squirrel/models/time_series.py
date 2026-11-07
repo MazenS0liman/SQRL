@@ -80,8 +80,8 @@ class BiLSTMPredictor(TimeSeriesPredictor):
     
     .. code-block:: python
     
-        from kraken.models.time_series import BiLSTMPredictor
-        
+        from squirrel.models.time_series import BiLSTMPredictor
+
         predictor = BiLSTMPredictor(
             window_size=24,
             data_path="./notebooks/data/AAPL.csv",
@@ -146,7 +146,7 @@ class BiLSTMPredictor(TimeSeriesPredictor):
         Prepare the data for training the BiLSTM model by creating input sequences and corresponding target values.
         This method takes the original time series data and its first difference, 
         and constructs input sequences of a specified window size along with their corresponding target values.
-        
+
         **Description:**
         
             The `prepare_data` method iterates through the first difference of the time series data, starting from the index defined by the window size.
@@ -166,7 +166,7 @@ class BiLSTMPredictor(TimeSeriesPredictor):
         """
         X_diff, y_diff = [], []
         base_values, target_values = [], []
-    
+
         for idx in range(self.window_size, len(data_diff)):
             X_diff.append(data_diff[idx - self.window_size:idx].reshape(self.window_size, 1))
             y_diff.append(data_diff[idx])
@@ -360,7 +360,7 @@ class BiLSTMPredictor(TimeSeriesPredictor):
         data, data_diff_scaled = self.load_data(self.data_path, self.target_column)
         
         # Prepare data
-        X_diff, y_diff, base_values, target_values = self.prepare_data(data, data_diff_scaled, self.window_size)
+        X_diff, y_diff, base_values, target_values = self.prepare_data(data, data_diff_scaled)
         
         # Split data
         (X_train_diff, y_train_diff, base_train, target_train), (X_test_diff, y_test_diff, base_test, target_test) = self.split_data(X_diff, y_diff, base_values, target_values)

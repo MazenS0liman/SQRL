@@ -34,9 +34,10 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 from loguru import logger
+from squirrel.core.logging import log_stage
 
 # scikit-learn
-from sklearn.model_selection import cross_validate, StratifiedKFold, KFold
+from sklearn.model_selection import cross_validate, StratifiedKFold, KFold, train_test_split
 from sklearn.metrics import (
     accuracy_score,
     f1_score,
@@ -45,7 +46,6 @@ from sklearn.metrics import (
     mean_absolute_error,
     r2_score,
 )
-
 # Abstract Base Class
 from squirrel.modules.agents.abstract import IAgent
 from squirrel.modules.providers import Provider
@@ -130,56 +130,56 @@ def _build_model_registry() -> dict[str, dict]:
             "task": "classification",
             "description": "Bagged decision-tree ensemble; robust to noisy features.",
             "required_params": [],
-            "optional_params": {"n_estimators": 200, "max_depth": None, "class_weight": None, "random_state": 42},
+            "optional_params": {"n_estimators": 50, "max_depth": None, "class_weight": None, "random_state": 42, "n_jobs": -1},
         },
         "random_forest_regressor": {
             "cls": RandomForestRegressorModel,
             "task": "regression",
             "description": "Bagged decision-tree ensemble for regression.",
             "required_params": [],
-            "optional_params": {"n_estimators": 200, "max_depth": None, "random_state": 42},
+            "optional_params": {"n_estimators": 50, "max_depth": None, "random_state": 42, "n_jobs": -1},
         },
         "gradient_boosting_classifier": {
             "cls": GradientBoostingClassifierModel,
             "task": "classification",
             "description": "Stage-wise boosted trees; excellent accuracy on medium-sized tabular data.",
             "required_params": [],
-            "optional_params": {"n_estimators": 200, "learning_rate": 0.1, "max_depth": 4, "random_state": 42},
+            "optional_params": {"n_estimators": 50, "learning_rate": 0.1, "max_depth": 4, "random_state": 42},
         },
         "gradient_boosting_regressor": {
             "cls": GradientBoostingRegressorModel,
             "task": "regression",
             "description": "Stage-wise boosted trees for regression.",
             "required_params": [],
-            "optional_params": {"n_estimators": 200, "learning_rate": 0.1, "max_depth": 4, "random_state": 42},
+            "optional_params": {"n_estimators": 50, "learning_rate": 0.1, "max_depth": 4, "random_state": 42},
         },
         "extra_trees_classifier": {
             "cls": ExtraTreesClassifierModel,
             "task": "classification",
             "description": "Extremely randomised trees; faster than RF with comparable accuracy.",
             "required_params": [],
-            "optional_params": {"n_estimators": 200, "random_state": 42},
+            "optional_params": {"n_estimators": 50, "random_state": 42},
         },
         "extra_trees_regressor": {
             "cls": ExtraTreesRegressorModel,
             "task": "regression",
             "description": "Extremely randomised trees for regression.",
             "required_params": [],
-            "optional_params": {"n_estimators": 200, "random_state": 42},
+            "optional_params": {"n_estimators": 50, "random_state": 42},
         },
         "adaboost_classifier": {
             "cls": AdaBoostClassifierModel,
             "task": "classification",
             "description": "Adaptive boosting of weak classifiers; effective on clean, balanced data.",
             "required_params": [],
-            "optional_params": {"n_estimators": 100, "learning_rate": 1.0, "random_state": 42},
+            "optional_params": {"n_estimators": 50, "learning_rate": 1.0, "random_state": 42},
         },
         "adaboost_regressor": {
             "cls": AdaBoostRegressorModel,
             "task": "regression",
             "description": "Adaptive boosting for regression.",
             "required_params": [],
-            "optional_params": {"n_estimators": 100, "learning_rate": 1.0, "random_state": 42},
+            "optional_params": {"n_estimators": 50, "learning_rate": 1.0, "random_state": 42},
         },
         # ── Single-tree ───────────────────────────────────────────────────────
         "decision_tree_classifier": {
@@ -239,7 +239,7 @@ def _build_model_registry() -> dict[str, dict]:
                 "n_estimators": 300, "learning_rate": 0.05, "max_depth": 6,
                 "subsample": 0.8, "colsample_bytree": 0.8,
                 "use_label_encoder": False, "eval_metric": "logloss",
-                "random_state": 42
+                "random_state": 42, "tree_method": "hist"
             },
         }
         registry["xgb_regressor"] = {
@@ -250,6 +250,7 @@ def _build_model_registry() -> dict[str, dict]:
             "optional_params": {
                 "n_estimators": 300, "learning_rate": 0.05, "max_depth": 6,
                 "subsample": 0.8, "colsample_bytree": 0.8, "random_state": 42,
+                "n_jobs": -1, "tree_method": "hist",
             },
         }
 
@@ -261,7 +262,7 @@ def _build_model_registry() -> dict[str, dict]:
             "required_params": [],
             "optional_params": {
                 "n_estimators": 300, "learning_rate": 0.05, "num_leaves": 63,
-                "random_state": 42, "verbose": -1,
+                "random_state": 42, "verbose": -1, "n_jobs": -1,
             },
         }
         registry["lgbm_regressor"] = {
@@ -271,7 +272,7 @@ def _build_model_registry() -> dict[str, dict]:
             "required_params": [],
             "optional_params": {
                 "n_estimators": 300, "learning_rate": 0.05, "num_leaves": 63,
-                "random_state": 42, "verbose": -1,
+                "random_state": 42, "verbose": -1, "n_jobs": -1,
             },
         }
 
@@ -384,6 +385,8 @@ class TabularDataModelBuilderAgent(IAgent):
     """
 
     _MAX_REGEN_ATTEMPTS: int = 2
+    _MODEL_SELECTION_ROWS: int = 100_000
+    _SLOW_MODEL_ROWS: int = 50_000
 
     def __init__(
         self,
@@ -410,7 +413,8 @@ class TabularDataModelBuilderAgent(IAgent):
         max_refinements: int = 1,
     ) -> tuple[dict[str, Any], dict]:
         started_at = time.perf_counter()
-        logger.info(
+        log_stage(
+            "MODEL",
             "Model build started: target={}, rows={}, columns={}, objective={!r}",
             self.target_column,
             len(data),
@@ -433,7 +437,7 @@ class TabularDataModelBuilderAgent(IAgent):
         while attempt < max_refinements and self._needs_refinement(best[1]):
             attempt += 1
             feedback = self._refinement_feedback(best[1])
-            logger.info("Model-building refinement attempt {}: {}", attempt, feedback)
+            log_stage("MODEL", "Refinement attempt {}: {}", attempt, feedback)
 
             plan = self.plan(
                 data, preprocessing_summary=preprocessing_summary or {},
@@ -474,6 +478,12 @@ class TabularDataModelBuilderAgent(IAgent):
         :param objective: Optional caller-supplied modelling goal.
         :return: JSON plan string.
         """
+        log_stage(
+            "MODEL",
+            "Generating model plan for {} rows and {} columns",
+            len(data),
+            len(data.columns),
+        )
         dataset_profile = self._dataset_profile(data)
 
         # Infer task type up front from the target column dtype so the model
@@ -499,6 +509,15 @@ class TabularDataModelBuilderAgent(IAgent):
             )
         if not is_sequential:
             model_catalog = [m for m in model_catalog if not m.get("sequential", False)]
+        if len(data) > self._SLOW_MODEL_ROWS:
+            model_catalog = [
+                model for model in model_catalog
+                if not (
+                    model["model_key"] in {"svc", "svr"}
+                    or model["model_key"].startswith("knn")
+                    or model["model_key"].startswith("gradient_boosting_")
+                )
+            ]
 
         logger.info(
             "Model plan context: task={}, sequential={}, candidates={}",
@@ -571,9 +590,11 @@ class TabularDataModelBuilderAgent(IAgent):
 
         For each planned model step the agent:
           - Instantiates the model with the specified hyperparameters.
-          - Fits it on the full dataset (minus the target column).
+          - Fits it on the bounded selection sample (minus the target column).
           - Runs any attached actions (cv_evaluate, feature_importance,
             holdout_evaluate).
+        After comparison, the winning non-sequential model is refit on the
+        complete dataset.
 
         Unknown model keys and runtime exceptions are captured in the report
         without aborting the pipeline.
@@ -621,6 +642,7 @@ class TabularDataModelBuilderAgent(IAgent):
 
         fitted_models: dict[str, Any] = {}
         executed_steps: list[dict[str, Any]] = []
+        X_selection, y_selection = self._selection_data(X, y, task_type)
 
         logger.info(
             "Executing model plan: task={}, sequential={}, steps={}, features={}, samples={}",
@@ -631,10 +653,17 @@ class TabularDataModelBuilderAgent(IAgent):
             X.shape[0],
         )
 
-        for step in plan_obj.get("steps", []):
+        for index, step in enumerate(plan_obj.get("steps", []), start=1):
             step_started_at = time.perf_counter()
+            log_stage(
+                "MODEL",
+                "Starting model {}/{}: {}",
+                index,
+                len(plan_obj.get("steps", [])),
+                step.get("model_key", step.get("name")),
+            )
             step_result, fitted_model = self._run_step(
-                step, X, y, task_type, is_sequential=is_sequential
+                step, X_selection, y_selection, task_type, is_sequential=is_sequential
             )
             executed_steps.append(step_result)
             if fitted_model is not None:
@@ -648,6 +677,22 @@ class TabularDataModelBuilderAgent(IAgent):
                 step_result.get("error"),
             )
 
+        winner_key = self._best_step_key(executed_steps, task_type)
+        if winner_key:
+            winner_step = next(
+                step for step in plan_obj["steps"]
+                if step.get("model_key") == winner_key
+            )
+            final_model = self._fit_full_model(winner_step, X, y)
+            if final_model is not None:
+                fitted_models = {winner_key: final_model}
+                log_stage(
+                    "MODEL",
+                    "Refit winning model on full dataset: {} ({} samples)",
+                    winner_key,
+                    len(X),
+                )
+
         report = {
             "task":          "model_building",
             "status":        "completed" if all(s.get("status") != "failed" for s in executed_steps) else "completed_with_errors",
@@ -655,6 +700,7 @@ class TabularDataModelBuilderAgent(IAgent):
             "target_column": self.target_column,
             "n_features":    int(X.shape[1]),
             "n_samples":     int(X.shape[0]),
+            "n_selection_samples": int(X_selection.shape[0]),
             "dropped_non_numeric_columns": non_numeric_cols,
             "is_sequential": is_sequential,
             "dataset_profile": self._dataset_profile(data),
@@ -662,6 +708,120 @@ class TabularDataModelBuilderAgent(IAgent):
         }
 
         return fitted_models, json.dumps(report, indent=2, default=str)
+
+    def _selection_data(
+        self,
+        X: pd.DataFrame,
+        y: pd.Series,
+        task_type: str,
+    ) -> tuple[pd.DataFrame, pd.Series]:
+        """Return a deterministic, representative dataset for model selection."""
+        if len(X) <= self._MODEL_SELECTION_ROWS:
+            return X, y
+
+        stratify = y if task_type == "classification" else None
+        try:
+            X_sample, _, y_sample, _ = train_test_split(
+                X,
+                y,
+                train_size=self._MODEL_SELECTION_ROWS,
+                random_state=42,
+                stratify=stratify,
+            )
+        except ValueError:
+            logger.warning(
+                "Could not stratify model-selection sample; using deterministic random sample."
+            )
+            sample_indices = X.sample(
+                n=self._MODEL_SELECTION_ROWS,
+                random_state=42,
+            ).index
+            X_sample = X.loc[sample_indices]
+            y_sample = y.loc[sample_indices]
+        logger.info(
+            "Using {} of {} rows for model selection.",
+            len(X_sample),
+            len(X),
+        )
+        return X_sample, y_sample
+
+    @staticmethod
+    def _best_step_key(
+        executed_steps: list[dict[str, Any]],
+        task_type: str,
+    ) -> str | None:
+        """Choose the best completed candidate from its validation metrics."""
+        candidates: list[tuple[float, str]] = []
+        for step in executed_steps:
+            if step.get("status") != "completed":
+                continue
+            metrics: dict[str, dict] = {}
+            for action in step.get("actions", []):
+                if action.get("status") != "completed":
+                    continue
+                metrics.update(action.get("metrics") or {})
+            metric_entries = []
+            for metric_name, metric in metrics.items():
+                if isinstance(metric, dict):
+                    if metric.get("mean") is not None:
+                        metric_entries.append(
+                            {**metric, "metric_name": metric_name}
+                        )
+                elif isinstance(metric, (int, float)):
+                    metric_entries.append(
+                        {"mean": float(metric), "metric_name": metric_name}
+                    )
+            if task_type == "classification":
+                score = next(
+                    (
+                        metric.get("mean")
+                        for metric in metric_entries
+                        if metric.get("mean") is not None
+                        and metric.get("metric_name") in {"roc_auc", "accuracy"}
+                    ),
+                    None,
+                )
+                if score is None:
+                    for action in step.get("actions", []):
+                        score = (action.get("metrics") or {}).get("accuracy")
+                        if score is not None:
+                            break
+            else:
+                score = next(
+                    (
+                        metric.get("mean")
+                        for metric in metric_entries
+                        if metric.get("mean") is not None
+                        and metric.get("metric_name") == "r2"
+                    ),
+                    None,
+                )
+            if score is not None:
+                candidates.append((float(score), step.get("model_key", "")))
+        return max(candidates, default=(0.0, None))[1]
+
+    def _fit_full_model(
+        self,
+        step: dict[str, Any],
+        X: pd.DataFrame,
+        y: pd.Series,
+    ) -> Any:
+        """Instantiate and fit the selected model on the complete dataset."""
+        model_key = step.get("model_key", "")
+        meta = _MODEL_REGISTRY.get(model_key)
+        if not meta or meta.get("sequential"):
+            return None
+        try:
+            hyperparams = {
+                **meta["optional_params"],
+                **(step.get("hyperparameters") or step.get("params") or {}),
+            }
+            estimator = meta["cls"](**hyperparams)
+            estimator.fit(X, y)
+            return estimator
+        except Exception as exc:
+            logger.exception("Failed to refit winning model {}: {}", model_key, exc)
+            return None
 
     def summarize(
         self,
@@ -922,10 +1082,8 @@ class TabularDataModelBuilderAgent(IAgent):
         action_results: list[dict] = []
         if not meta.get("sequential"):
             action_keys = {action.get("action_key") for action in actions}
-            if "cv_evaluate" not in action_keys:
+            if not action_keys.intersection({"cv_evaluate", "holdout_evaluate"}):
                 actions = [*actions, {"action_key": "cv_evaluate", "params": {}}]
-            if "holdout_evaluate" not in action_keys:
-                actions = [*actions, {"action_key": "holdout_evaluate", "params": {}}]
         for action_spec in actions:
             action_key = action_spec.get("action_key", "")
             action_params: dict = action_spec.get("params") or {}
@@ -998,7 +1156,7 @@ class TabularDataModelBuilderAgent(IAgent):
         Run stratified (classification) or plain (regression) k-fold CV and
         return mean ± std for each scoring metric.
         """
-        requested_folds = int(params.get("cv", 5))
+        requested_folds = int(params.get("cv", 3))
         if task_type == "classification":
             smallest_class = int(y.value_counts().min())
             cv_folds = min(requested_folds, smallest_class)
@@ -1039,6 +1197,7 @@ class TabularDataModelBuilderAgent(IAgent):
                 if key.startswith("test_"):
                     metric_name = key[len("test_"):]
                     metrics[metric_name] = {
+                        "metric_name": metric_name,
                         "mean": float(np.mean(values)),
                         "std":  float(np.std(values)),
                         "values": [float(v) for v in values],
@@ -1202,6 +1361,22 @@ class TabularDataModelBuilderAgent(IAgent):
             return plan_obj
 
         steps = plan_obj.setdefault("steps", [])
+        if n_rows > self._SLOW_MODEL_ROWS:
+            slow_keys = {"svc", "svr", "knn_classifier", "knn_regressor",
+                         "gradient_boosting_classifier", "gradient_boosting_regressor"}
+            removed = [
+                step.get("model_key")
+                for step in steps
+                if step.get("model_key") in slow_keys
+            ]
+            if removed:
+                plan_obj["steps"] = steps = [
+                    step for step in steps if step.get("model_key") not in slow_keys
+                ]
+                logger.info(
+                    "Removed slow models for large dataset: {}",
+                    removed,
+                )
         selected = {
             step.get("model_key")
             for step in steps
@@ -1235,6 +1410,12 @@ class TabularDataModelBuilderAgent(IAgent):
         for model_key in candidates:
             meta = _MODEL_REGISTRY.get(model_key)
             if not meta or model_key in selected:
+                continue
+            if n_rows > self._SLOW_MODEL_ROWS and (
+                model_key in {"svc", "svr"}
+                or model_key.startswith("knn")
+                or model_key.startswith("gradient_boosting_")
+            ):
                 continue
             if meta["task"] != inferred_task:
                 continue
@@ -1306,6 +1487,10 @@ class TabularDataModelBuilderAgent(IAgent):
 
     @staticmethod
     def _dataset_profile(data: pd.DataFrame) -> dict[str, Any]:
+        sample = data.head(5).where(pd.notna(data.head(5)), None)
+        sample_rows = json.loads(json.dumps(
+            sample.to_dict(orient="records"), default=str
+        ))
         return {
             "rows":           int(data.shape[0]),
             "columns":        int(data.shape[1]),
@@ -1316,6 +1501,7 @@ class TabularDataModelBuilderAgent(IAgent):
                 for col, n in data.isna().sum().items()
                 if n > 0
             },
+            "sample_rows": sample_rows,
         }
 
     # ── Parsing helpers ───────────────────────────────────────────────────────

@@ -1,63 +1,16 @@
 import type { Notebook, ConnectorSummary } from '@/types';
-import { authHeaders, notifyAuthExpired } from '@/lib/auth';
+import { apiFetch } from '@/lib/utils';
 
 // ——————————————————————————————————————————————————————————————
-// API client
+// API client (single shared implementation in @/lib/utils)
 
-export const API_BASE = import.meta.env.VITE_BACKEND_API_BASE_URL || "/api";
-
-export class ApiError extends Error {}
-
-export async function apiFetch<T>(path: string, options: RequestInit = {}): Promise<T> {
-  const res = await fetch(`${API_BASE}${path}`, {
-    ...options,
-    headers: {
-      ...(options.body && !(options.body instanceof FormData)
-        ? { "Content-Type": "application/json" }
-        : {}),
-      ...(options.headers || {}),
-      ...authHeaders(),
-    },
-  });
-
-  if (res.status === 401) notifyAuthExpired();
-
-  if (!res.ok) {
-    let detail = res.statusText;
-    try {
-      const body = await res.json();
-      detail = body.detail || detail;
-    } catch {
-      /* response wasn't JSON */
-    }
-    throw new ApiError(detail);
-  }
-
-  if (res.status === 204) return undefined as T;
-  return (await res.json()) as T;
-}
+export { API_BASE, ApiError, apiFetch } from '@/lib/utils';
 
 // ——————————————————————————————————————————————————————————————
 // Connector API
 
-const CONNECTORS_API_BASE = `${API_BASE}/connector`;
-
-async function connectorsFetch<T>(path: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(`${CONNECTORS_API_BASE}${path}`, {
-    headers: { "Content-Type": "application/json" },
-    ...init,
-  });
-  if (res.status === 401) notifyAuthExpired();
-  if (!res.ok) {
-    const body = await res.json().catch(() => ({}));
-    throw new Error(body.detail || `Request failed (${res.status})`);
-  }
-  if (res.status === 204) return undefined as T;
-  return res.json();
-}
-
 export const connectorsApi = {
-  list: () => connectorsFetch<ConnectorSummary[]>(""),
+  list: () => apiFetch<ConnectorSummary[]>("/connector"),
 };
 
 // ——————————————————————————————————————————————————————————————

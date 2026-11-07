@@ -123,6 +123,7 @@ from squirrel.schemas.error import WorkspaceNotFoundError, SourceNotFoundError
 
 # Logging
 from loguru import logger
+from squirrel.core.logging import log_stage
 
 # ——————————————————————————————————————————————————————————————
 # WorkspaceService
@@ -339,7 +340,13 @@ class WorkspaceService:
         if not result or not isinstance(result, list) or not result[0].get("workspace_id"):
             raise RuntimeError("Failed to create workspace row.")
 
-        logger.info("Created workspace '{}' (workspace_id={}, data_type={})", name, workspace_id, data_type)
+        log_stage(
+            "WORKSPACE",
+            "Created workspace '{}' (workspace_id={}, data_type={})",
+            name,
+            workspace_id,
+            data_type,
+        )
         return result[0]
 
     def ensure_workspace(
@@ -717,7 +724,8 @@ class WorkspaceService:
             self._file_service.record_upload(
                 result,
                 owner_user_id=owner_user_id,
-                workspace_id=workspace_id
+                workspace_id=workspace_id,
+                user_uploaded=False
             )
 
             source: Dict[str, Any] = {

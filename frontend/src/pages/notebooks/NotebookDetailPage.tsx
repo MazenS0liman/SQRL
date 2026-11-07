@@ -15,8 +15,6 @@ import {
   Trash2,
   Check,
   X,
-  EyeOff,
-  Eye,
   Search,
   Plus,
   ChevronDown,
@@ -852,7 +850,7 @@ function CellCard({
   const [actionError, setActionError] = useState<string | null>(null);
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
-  
+
   const isQuestion = cell.type === "question";
   const isDashboard = cell.type === "dashboard";
 
@@ -1627,12 +1625,7 @@ function NotebookHeader({
       </div>
 
       <div className="flex shrink-0 items-center gap-2">
-        {notebook.data_sources.length > 0 && (
-          <button onClick={onViewData}
-            className="flex items-center gap-1.5 rounded-lg border border-border px-2.5 py-1.5 text-xs font-medium text-foreground hover:bg-secondary">
-            <Eye className="h-3.5 w-3.5" />View data
-          </button>
-        )}
+        
         <div className="flex items-center gap-1.5 rounded-full border border-border bg-secondary px-2.5 py-1">
           <span className={`h-1.5 w-1.5 rounded-full ${meta.dotClass}`} />
           <span className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{meta.label}</span>

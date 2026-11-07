@@ -3,6 +3,8 @@
 // data source needs. Adding a new source type is just adding an entry
 // here; the form and cards are fully generic over this list.
 
+import { ApiError, apiFetch } from "@/lib/utils";
+
 export type ConnectorTypeId =
   | "postgres";
 
@@ -66,10 +68,6 @@ export interface DataConnection {
   updated_at: string;
 }
 
-import { authHeaders, notifyAuthExpired } from "@/lib/auth";
-
-const CONNECTORS_API_BASE = `${import.meta.env.VITE_BACKEND_API_BASE_URL || "/api"}/connector`;
-
 /**
  * Thrown by `connectorsFetch` for any non-OK response, carrying the HTTP
  * status alongside the backend's `detail` message so callers can branch on
@@ -86,17 +84,14 @@ export class ConnectorApiError extends Error {
 }
 
 async function connectorsFetch<T>(path: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(`${CONNECTORS_API_BASE}${path}`, {
-    headers: authHeaders({ "Content-Type": "application/json" }),
-    ...init,
-  });
-  if (res.status === 401) notifyAuthExpired();
-  if (!res.ok) {
-    const body = await res.json().catch(() => ({}));
-    throw new ConnectorApiError(body.detail || `Request failed (${res.status})`, res.status);
+  try {
+    return await apiFetch<T>(`/connector${path}`, init);
+  } catch (err) {
+    if (err instanceof ApiError) {
+      throw new ConnectorApiError(err.message, err.status);
+    }
+    throw err;
   }
-  if (res.status === 204) return undefined as T;
-  return res.json();
 }
 
 export const connectorsApi = {

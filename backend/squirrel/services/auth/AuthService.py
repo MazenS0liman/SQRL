@@ -19,6 +19,7 @@ import secrets
 from threading import Lock
 from typing import Optional
 
+from squirrel.core.config import settings
 from squirrel.schemas.auth import AuthUserRead
 from squirrel.services.storage.database.PostgresService import PostgresService
 
@@ -91,14 +92,23 @@ class AuthService:
         self._ensure_default_admin(db)
 
     def _ensure_default_admin(self, db: PostgresService) -> None:
+        # Opt-in only. Shipping a known admin/admin account is a security
+        # hazard; deployments should register their first user explicitly.
+        if not settings.CREATE_DEFAULT_ADMIN:
+            return
+        if not settings.DEFAULT_ADMIN_PASSWORD:
+            raise RuntimeError(
+                "CREATE_DEFAULT_ADMIN is enabled but DEFAULT_ADMIN_PASSWORD is not set."
+            )
+
         existing = db.query(
             f"""
             SELECT id
             FROM {self._USERS_TABLE}
-            WHERE lower(username) = 'admin'
+            WHERE lower(username) = %(username)s
             LIMIT 1
             """,
-            params={},
+            params={"username": self._normalize_identifier(settings.DEFAULT_ADMIN_USERNAME)},
         )
         if (existing or {}).get("rows"):
             return
@@ -126,10 +136,10 @@ class AuthService:
                     )
                 """,
                 "params": {
-                    "id": "admin",
-                    "username": "admin",
-                    "email": "admin@squirrel.local",
-                    "password_hash": self._hash_password("admin"),
+                    "id": secrets.token_urlsafe(16),
+                    "username": settings.DEFAULT_ADMIN_USERNAME,
+                    "email": settings.DEFAULT_ADMIN_EMAIL,
+                    "password_hash": self._hash_password(settings.DEFAULT_ADMIN_PASSWORD),
                     "full_name": "Admin User",
                     "created_at": now,
                     "updated_at": now,

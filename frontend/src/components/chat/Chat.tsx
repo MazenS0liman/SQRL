@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useMemo } from "react";
-import { ArrowUp, Square, Sparkles, Nut, Squirrel, LayoutDashboard, FileCodeIcon } from "lucide-react";
+import { ArrowUp, Square, Sparkles, Nut, LayoutDashboard, FileCodeIcon } from "lucide-react";
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import type { ChatMessage, NotebookDataSource, UploadedFile } from "@/types";

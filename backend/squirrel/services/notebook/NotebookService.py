@@ -102,7 +102,9 @@ class NotebookService:
         connection_string: Optional[str] = None,
         minio: Optional[MinIOService] = None,
     ) -> None:
-        self.connection_string = connection_string or os.environ["DATABASE_URL"]
+        from squirrel.core.config import settings
+
+        self.connection_string = connection_string or settings.database_url
         self.postgres = PostgresService(connection_string=self.connection_string)
         self.minio = minio or MinIOService()
         self.file_service = FileService()
@@ -664,16 +666,24 @@ class NotebookService:
         self.get_notebook(notebook_id, owner_user_id=owner_user_id)
 
         connector_svc = DataConnectorService()
-        connector_svc.list_tables(connector_id)  # raises ConnectorNotFoundError if missing
+        connector_svc.list_tables(
+            connector_id, owner_user_id=owner_user_id
+        )  # raises ConnectorNotFoundError if missing
 
-        connector_row = connector_svc.get_connection(connector_id)
+        connector_row = connector_svc.get_connection(
+            connector_id, owner_user_id=owner_user_id
+        )
         connector_name = connector_row.get("name") or connector_id
         connector_type = connector_row.get("type")
 
-        source_postgres = self._connector_postgres_service(connector_svc, connector_id)
+        source_postgres = self._connector_postgres_service(
+            connector_svc, connector_id, owner_user_id=owner_user_id
+        )
         table_schema = source_postgres._generate_schema_metadata(table_name=table_name)
 
-        preview_df = connector_svc.preview_table(connector_id, table_name, limit=1)
+        preview_df = connector_svc.preview_table(
+            connector_id, table_name, limit=1, owner_user_id=owner_user_id
+        )
 
         row_count = None
         count_result = source_postgres.query(f'SELECT COUNT(*) AS cnt FROM "{table_name}"')
@@ -889,7 +899,9 @@ class NotebookService:
             raw = row.get("raw_schema")
             schema_metadata[row["table_name"]] = json.loads(raw) if isinstance(raw, str) else raw
 
-        postgres_service = self._resolve_postgres_service_for_sources(sources)
+        postgres_service = self._resolve_postgres_service_for_sources(
+            sources, owner_user_id=owner_user_id
+        )
         agent = TabularDataExploratoryAgent(postgres_service=postgres_service, user_id=owner_user_id)
 
         schema_details = agent.generate_schema_details(schema_metadata)
@@ -1120,7 +1132,9 @@ class NotebookService:
         # cache, so a mistyped column gets fixed before SQL generation ever
         # has to guess a cast for it — not just once, the first time this
         # source set was ever cached. See _repair_column_types docstring.
-        postgres_service = self._resolve_postgres_service_for_sources(sources)
+        postgres_service = self._resolve_postgres_service_for_sources(
+            sources, owner_user_id=owner_user_id
+        )
         agent = TabularDataExploratoryAgent(postgres_service=postgres_service, user_id=owner_user_id)
         self._repair_column_types(agent, sources)
 
@@ -1337,6 +1351,7 @@ class NotebookService:
     def _resolve_postgres_service_for_sources(
         self,
         sources: List[NotebookDataSource],
+        owner_user_id: Optional[str] = None,
     ) -> PostgresService:
         """
         Resolve a single query-capable PostgresService for a set of sources.
@@ -1367,12 +1382,15 @@ class NotebookService:
             )
 
         connector_svc = DataConnectorService()
-        return self._connector_postgres_service(connector_svc, next(iter(connector_ids)))
+        return self._connector_postgres_service(
+            connector_svc, next(iter(connector_ids)), owner_user_id=owner_user_id
+        )
 
     @staticmethod
     def _connector_postgres_service(
         connector_svc: DataConnectorService, 
-        connector_id: str
+        connector_id: str,
+        owner_user_id: Optional[str] = None,
     ) -> PostgresService:
         """
         Resolve a query-capable :class:`PostgresService` for a connector.
@@ -1381,7 +1399,9 @@ class NotebookService:
         :class:`DataConnectorService` if it doesn't already exist.
         """
         if hasattr(connector_svc, "get_postgres_service"):
-            return connector_svc.get_postgres_service(connector_id)
+            return connector_svc.get_postgres_service(
+                connector_id, owner_user_id=owner_user_id
+            )
         raise NotImplementedError(
             "DataConnectorService.get_postgres_service(connector_id) is required to "
             "run notebook cells against a connector-backed data source."
@@ -1727,7 +1747,9 @@ class NotebookService:
         )
         resolved_ids = [s.id for s in sources]
 
-        postgres_service = self._resolve_postgres_service_for_sources(sources)
+        postgres_service = self._resolve_postgres_service_for_sources(
+            sources, owner_user_id=owner_user_id
+        )
         agent = TabularDataExploratoryAgent(postgres_service=postgres_service, user_id=owner_user_id)
         self._repair_column_types(agent, sources)
 
@@ -1861,7 +1883,9 @@ class NotebookService:
         )
         source = sources[0]
 
-        postgres_service = self._resolve_postgres_service_for_sources([source])
+        postgres_service = self._resolve_postgres_service_for_sources(
+            [source], owner_user_id=owner_user_id
+        )
         table_name = source.table_name
 
         result = postgres_service.query(

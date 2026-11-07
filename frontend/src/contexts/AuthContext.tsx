@@ -107,7 +107,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }): JSX.E
         writeUser(nextUser);
       })
       .catch(() => {
+        // The cached profile is stale if /auth/me can't confirm it. Clear it
+        // so ProtectedRoute doesn't render an authenticated shell.
         setStoredAuthToken(null);
+        setUser(null);
         writeUser(null);
       });
   }, []);

@@ -564,13 +564,3 @@ function formatUpdatedDate(value: string): string {
   if (Number.isNaN(d.getTime())) return value;
   return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 }
-
-type Props = {
-  notebook: Notebook;
-  onOpen: () => void;
-  onRename: () => void;
-  onDuplicate: () => void;
-  onDelete: () => void;
-  isDuplicating: boolean;
-  isDeleting: boolean;
-};

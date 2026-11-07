@@ -4,7 +4,6 @@ import AnalyticsCard from "@/components/visual/AnalyticsCard";
 
 export const Message = ({
     message,
-    onUpdateData,
 }: {
     message: ChatMessage;
     onUpdateData: (data: unknown) => void;

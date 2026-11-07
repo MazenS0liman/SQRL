@@ -142,6 +142,8 @@ class IAgent(ABC, Loggable):
 
     """
     DEFAULT_PROVIDERS = [Provider.GEMINI, Provider.GROQ, Provider.OPENROUTER]
+    MAX_PROMPT_CHARS = 24000
+    MAX_SYSTEM_PROMPT_CHARS = 8000
 
     def __init__(
         self,
@@ -998,6 +1000,8 @@ class IAgent(ABC, Loggable):
                         raise e
                 except Exception as e:
                     self.logger.info(f"[Attempt {attempt}/{retry_attempt}] Error calling model {model_name} from provider {provider}: {e}")
+                    if self._is_non_retryable_provider_error(e):
+                        raise
                     if attempt < retry_attempt:
                         delay = base_delay * (2 ** (attempt - 1))
                         self.logger.info(f"Retrying in {delay:.1f} seconds...")
@@ -1006,6 +1010,16 @@ class IAgent(ABC, Loggable):
                     else:
                         raise e
         return None
+
+    @staticmethod
+    def _is_non_retryable_provider_error(error: Exception) -> bool:
+        """Return whether retrying the same request would produce the same error."""
+        status_code = getattr(error, "status_code", None)
+        if status_code == 413:
+            return True
+
+        message = str(error).lower()
+        return "request too large" in message or "rate_limit_exceeded" in message and "413" in message
 
     def get_response(
         self,
@@ -1077,6 +1091,34 @@ class IAgent(ABC, Loggable):
             # Output: Generated text from the model
 
         """
+        model_input = dict(model_input)
+        system_prompt = model_input.get("system_prompt")
+        if isinstance(system_prompt, str) and len(system_prompt) > self.MAX_SYSTEM_PROMPT_CHARS:
+            model_input["system_prompt"] = system_prompt[:self.MAX_SYSTEM_PROMPT_CHARS] + (
+                "\n\n[System prompt truncated to stay within the provider context budget.]"
+            )
+            self.logger.warning(
+                "Truncated system_prompt from {} to {} characters before provider call.",
+                len(system_prompt),
+                self.MAX_SYSTEM_PROMPT_CHARS,
+            )
+
+        system_length = len(model_input.get("system_prompt") or "")
+        user_budget = max(4000, self.MAX_PROMPT_CHARS - system_length)
+        user_prompt = model_input.get("user_prompt")
+        if isinstance(user_prompt, str) and len(user_prompt) > user_budget:
+            model_input["user_prompt"] = user_prompt[:user_budget] + (
+                "\n\n[User prompt truncated to stay within the provider context budget.]"
+            )
+            self.logger.warning(
+                "Truncated user_prompt from {} to {} characters before provider call.",
+                len(user_prompt),
+                user_budget,
+            )
+
+        if fn_name == "generate_json":
+            model_input.setdefault("max_tokens", 2048)
+
         # If strict is True and no provider or model preferences are given, use the current model.
         if preference_model_names is None:
             preference_model_names = []

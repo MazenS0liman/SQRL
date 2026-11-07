@@ -121,6 +121,7 @@ from squirrel.modules.prompts.preprocess.PreprocessPromptGenerator import (
 
 # Logging
 from loguru import logger
+from squirrel.core.logging import log_stage
 
 
 # ——————————————————————————————————————————————————————————————
@@ -358,7 +359,7 @@ class TabularDataProcessorAgent(IAgent):
             strategy = merge_recommendation.get("strategy")
             rationale = merge_recommendation.get("rationale", "")
             if strategy == "union":
-                logger.info("Merging via Inspector recommendation: union. %s", rationale)
+                log_stage("PREPROCESS", "Merging via Inspector recommendation: union. {}", rationale)
                 return pd.concat(list(dataframes.values()), axis=0, ignore_index=True)
             if strategy == "join":
                 try:
@@ -489,6 +490,7 @@ class TabularDataProcessorAgent(IAgent):
                 "system_prompt": system_prompt,
                 "user_prompt": user_prompt,
                 "schema": self._merge_plan_schema(),
+                "max_tokens": 2048,
             },
             strict=False,
             provider_order=[Provider.GROQ, Provider.GEMINI],
@@ -571,7 +573,8 @@ class TabularDataProcessorAgent(IAgent):
                 suffixes=("", f"_{source_id}"),
             )
 
-        logger.info(
+        log_stage(
+            "PREPROCESS",
             "Merged %d sources via LLM-inferred join on %s (how=%s): %s",
             len(dataframes), join_keys, join_type, plan.get("rationale", ""),
         )
@@ -620,6 +623,13 @@ class TabularDataProcessorAgent(IAgent):
             able to replay this exact preprocessing against new data later
             via :meth:`apply_fitted_pipeline`.
         """
+        log_stage(
+            "PREPROCESS",
+            "Preprocessing started: rows={}, columns={}, target={!r}",
+            len(data),
+            len(data.columns),
+            target_column,
+        )
         plan = self.plan(data, eda_summary=eda_summary or {}, objective=objective, target_column=target_column)
         processed_df, execution = self.execute(data, plan, target_column=target_column)
         summary_dict = self._parse_summary(self.summarize(data, processed_df, execution))
@@ -629,7 +639,7 @@ class TabularDataProcessorAgent(IAgent):
         while attempt < max_refinements and self._needs_refinement(best_summary):
             attempt += 1
             feedback = self._refinement_feedback(best_summary)
-            logger.info("Preprocessing refinement attempt %s: %s", attempt, feedback)
+            log_stage("PREPROCESS", "Refinement attempt {}: {}", attempt, feedback)
 
             plan = self.plan(
                 data, eda_summary=eda_summary or {},
@@ -674,6 +684,12 @@ class TabularDataProcessorAgent(IAgent):
             columns (e.g. a feature highly correlated with the target itself).
         :return: JSON plan string.
         """
+        log_stage(
+            "PREPROCESS",
+            "Generating preprocessing plan for {} rows and {} columns",
+            len(data),
+            len(data.columns),
+        )
         dataset_profile = self._dataset_profile(data)
 
         system_prompt = self.prompt_generator.generate_system_prompt(
@@ -697,6 +713,7 @@ class TabularDataProcessorAgent(IAgent):
                 "system_prompt": system_prompt,
                 "user_prompt": user_prompt,
                 "schema": self._plan_schema(),
+                "max_tokens": 2048,
             },
             strict=False,
             provider_order=[Provider.GEMINI, Provider.GROQ],
@@ -761,6 +778,7 @@ class TabularDataProcessorAgent(IAgent):
             plan says.
         :return: ``(processed_df, json_execution_report_string)``
         """
+        log_stage("PREPROCESS", "Executing preprocessing plan")
         plan_obj = self._parse_plan(plan)
         if "error" in plan_obj:
             return data, json.dumps(
@@ -895,6 +913,7 @@ class TabularDataProcessorAgent(IAgent):
         :param execution_report: JSON execution report from ``execute()``.
         :return: JSON summary string.
         """
+        log_stage("PREPROCESS", "Summarizing preprocessing results")
         if isinstance(execution_report, str):
             try:
                 report_obj = json.loads(execution_report)
@@ -933,6 +952,7 @@ class TabularDataProcessorAgent(IAgent):
                 "system_prompt": system_prompt,
                 "user_prompt": user_prompt,
                 "schema": self._summary_schema(),
+                "max_tokens": 2048,
             },
             strict=False,
             provider_order=[Provider.GROQ, Provider.GEMINI],
@@ -1142,6 +1162,7 @@ class TabularDataProcessorAgent(IAgent):
                 "system_prompt": system_prompt,
                 "user_prompt": user_prompt,
                 "schema": self._step_schema(),
+                "max_tokens": 2048,
             },
             strict=False,
             provider_order=[Provider.GROQ, Provider.GEMINI],
@@ -1421,6 +1442,10 @@ class TabularDataProcessorAgent(IAgent):
         """
         Lightweight dataset descriptor sent to the planner and summarizer.
         """
+        sample = data.head(5).where(pd.notna(data.head(5)), None)
+        sample_rows = json.loads(json.dumps(
+            sample.to_dict(orient="records"), default=str
+        ))
         return {
             "rows":           int(data.shape[0]),
             "columns":        int(data.shape[1]),
@@ -1431,6 +1456,7 @@ class TabularDataProcessorAgent(IAgent):
                 for col, n in data.isna().sum().items()
                 if n > 0
             },
+            "sample_rows": sample_rows,
         }
 
     # ── Serialization helpers ─────────────────────────────────────────────────

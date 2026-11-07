@@ -62,6 +62,7 @@ const LEFT_PANEL_WIDTH_KEY = "workspace-detail:left-panel-width";
 const LEFT_PANEL_MIN = 300;
 const LEFT_PANEL_MAX = 640;
 const LEFT_PANEL_DEFAULT = 360;
+const PREDICTION_DISPLAY_LIMIT = 100;
 
 export function SummaryKeyValueList({
   data,
@@ -977,6 +978,12 @@ export default function WorkspaceDetailPage(): JSX.Element {
   const dataTypeLabel = DATA_TYPE_OPTIONS.find((o) => o.value === workspace.data_type)?.label ?? workspace.data_type;
   const canPredict = workspace.status === "completed" && isStructured;
   const canRunPrediction = canPredict && predictRows.length > 0 && !predicting && !predictParseError;
+  const displayedPredictions = predictResult
+    ? predictResult.predictions.slice(0, PREDICTION_DISPLAY_LIMIT)
+    : [];
+  const omittedPredictionCount = predictResult
+    ? predictResult.predictions.length - displayedPredictions.length
+    : 0;
 
   return (
     // Normal-flow container (no fixed/absolute on the root), so this page
@@ -1744,6 +1751,9 @@ export default function WorkspaceDetailPage(): JSX.Element {
                     Predicted <span className="font-mono text-foreground">{workspace.target_column}</span> using{" "}
                     <span className="font-mono text-foreground">{predictResult.model_key}</span> for{" "}
                     {predictResult.predictions.length} row(s).
+                    {omittedPredictionCount > 0 && (
+                      <> Showing the first {displayedPredictions.length}; download the CSV to view all results.</>
+                    )}
                   </p>
                   <div className="max-h-96 overflow-auto rounded-lg border border-border">
                     <table className="min-w-full text-left text-sm">
@@ -1759,7 +1769,7 @@ export default function WorkspaceDetailPage(): JSX.Element {
                         </tr>
                       </thead>
                       <tbody>
-                        {predictResult.predictions.map((p, i) => (
+                        {displayedPredictions.map((p, i) => (
                           <tr key={i} className="border-t border-border">
                             <td className="px-3 py-2 font-mono text-muted-foreground">{i + 1}</td>
                             <td className="px-3 py-2 font-medium text-foreground">{String(p)}</td>
