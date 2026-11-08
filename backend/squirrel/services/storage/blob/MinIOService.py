@@ -60,6 +60,7 @@ class MinIOConfig(Enum):
     ACCESS_KEY = settings.MINIO_ACCESS_KEY
     SECRET_KEY = settings.MINIO_SECRET_KEY
     BUCKET = settings.MINIO_BUCKET
+    REGION = settings.MINIO_REGION
 
 # ——————————————————————————————————————————————————————————————
 # MinIO Service Class
@@ -102,6 +103,7 @@ class MinIOService(IBlobStorageService):
                 maxsize=10,
                 retries=False,          # don't silently retry 503s
             ),
+            region=MinIOConfig.REGION.value,
         )
         
         # Create bucket if it doesn't exist
