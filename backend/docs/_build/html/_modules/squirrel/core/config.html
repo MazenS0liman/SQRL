@@ -5,17 +5,17 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>squirrel.core.config &mdash; squirrel  documentation</title>
+  <title>squirrel.core.config &mdash; SQRL Documentation</title>
       <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="../../../_static/copybutton.css?v=76b2166b" />
-      <link rel="stylesheet" type="text/css" href="../../../_static/css/custom.css?v=adc7883a" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/custom.css?v=35931533" />
 
   
     <link rel="shortcut icon" href="../../../_static/sqrl.png"/>
       <script src="../../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../../../_static/documentation_options.js?v=01f34227"></script>
       <script src="../../../_static/doctools.js?v=9bcbadda"></script>
       <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
       <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -33,8 +33,8 @@
 
           
           
-          <a href="../../../index.html" class="icon icon-home">
-            squirrel
+          <a href="../../../index.html">
+            
               <img src="../../../_static/sqrl.png" class="logo" alt="Logo"/>
           </a>
 <div role="search">
@@ -45,9 +45,29 @@
   </form>
 </div>
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
-              <p class="caption" role="heading"><span class="caption-text">Python API Reference:</span></p>
+              <p class="caption" role="heading"><span class="caption-text">Learn and build</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="../../../api.html">Python API Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../getting-started.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../workflow.html">Product workflow</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../architecture.html">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../deployment.html">Deployment and operations</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../api.html">Backend API Reference</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../generated/api_reference.html">HTTP API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../generated/schemas_reference.html">Data Schemas</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../generated/services_reference.html">Services</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../generated/agents_reference.html">Agents</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../generated/prompts_reference.html">Prompt Components</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../generated/providers_reference.html">Model Providers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../generated/inspectors_reference.html">Data Inspectors</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../generated/preprocessors_reference.html">Preprocessors</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../generated/core_reference.html">Core Infrastructure</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../generated/models_reference.html">Machine Learning Models</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../generated/constants_reference.html">Constants</a></li>
+</ul>
+</li>
 </ul>
 
         </div>
@@ -104,6 +124,7 @@
 <span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">platform</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">List</span><span class="p">,</span> <span class="n">Optional</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">pydantic_settings</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseSettings</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">dotenv</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_dotenv</span>
@@ -160,7 +181,7 @@
 <span class="c1"># ——————————————————————————————————————————————————————————————</span>
 <span class="c1"># Settings class</span>
 <div class="viewcode-block" id="Settings">
-<a class="viewcode-back" href="../../../generated/squirrel_core_config.html#squirrel.core.config.Settings">[docs]</a>
+<a class="viewcode-back" href="../../../generated/core_reference.html#squirrel.core.config.Settings">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">Settings</span><span class="p">(</span><span class="n">BaseSettings</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">"""</span>
 <span class="sd">    Application settings and configuration.</span>
@@ -197,13 +218,55 @@
     <span class="c1">#: int: Minimum number of processes - Default is 2</span>
     <span class="n">MIN_PROCESS_COUNT</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">2</span>
     <span class="c1">#: int: Minimum number of workers - Default is 4</span>
-    <span class="n">MIN_WORKER_COUNT</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">4</span></div>
+    <span class="n">MIN_WORKER_COUNT</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">4</span>
+
+    <span class="c1"># Database settings</span>
+    <span class="c1">#: str: PostgreSQL connection string used by every service.</span>
+    <span class="n">DATABASE_URL</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">""</span>
+    <span class="c1">#: str: Legacy alias for DATABASE_URL, kept for backwards compatibility.</span>
+    <span class="n">POSTGRES_DSN</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">""</span>
+
+    <span class="c1"># MinIO / S3-compatible blob storage settings</span>
+    <span class="n">MINIO_ENDPOINT</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">"MINIO_ENDPOINT"</span><span class="p">,</span> <span class="s2">"http://localhost:9000"</span><span class="p">)</span>
+    <span class="n">MINIO_ACCESS_KEY</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">"MINIO_ACCESS_KEY"</span><span class="p">,</span> <span class="s2">"minioadmin"</span><span class="p">)</span>
+    <span class="n">MINIO_SECRET_KEY</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">"MINIO_SECRET_KEY"</span><span class="p">,</span> <span class="s2">"strongpassword123"</span><span class="p">)</span>
+    <span class="n">MINIO_BUCKET</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">"MINIO_BUCKET"</span><span class="p">,</span> <span class="s2">"squirrel"</span><span class="p">)</span>
+    <span class="n">MINIO_REGION</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">"MINIO_REGION"</span><span class="p">)</span>
+    <span class="n">MINIO_SECURE</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">"MINIO_SECURE"</span><span class="p">,</span> <span class="s2">"False"</span><span class="p">)</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">"true"</span><span class="p">,</span> <span class="s2">"1"</span><span class="p">,</span> <span class="s2">"yes"</span><span class="p">)</span>
+
+    <span class="c1"># Secret-encryption keys</span>
+    <span class="c1">#: Optional[str]: Fernet key used to encrypt stored provider tokens.</span>
+    <span class="n">TOKEN_ENCRYPTION_KEY</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="c1">#: Optional[str]: Fernet key used to encrypt connector secrets at rest.</span>
+    <span class="n">SQUIRREL_CONNECTOR_SECRET_KEY</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="c1"># Bootstrap admin account. Disabled by default: create the first user</span>
+    <span class="c1"># through /api/auth/register instead of shipping a known admin/admin login.</span>
+    <span class="c1">#: bool: Create a default admin account on startup when it does not exist.</span>
+    <span class="n">CREATE_DEFAULT_ADMIN</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="n">DEFAULT_ADMIN_USERNAME</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"admin"</span>
+    <span class="n">DEFAULT_ADMIN_EMAIL</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"admin@squirrel.local"</span>
+    <span class="n">DEFAULT_ADMIN_PASSWORD</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="c1"># CORS. Comma-separated list; never "*" together with credentials.</span>
+    <span class="c1">#: str: Allowed browser origins, comma separated.</span>
+    <span class="n">CORS_ORIGINS</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"http://localhost:5173,http://localhost:8000,http://localhost:3000"</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">database_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Resolve the effective database URL (DATABASE_URL wins)."""</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">DATABASE_URL</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">POSTGRES_DSN</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">cors_origins</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">"""Return CORS origins as a list, trimming blanks."""</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">origin</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="k">for</span> <span class="n">origin</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">CORS_ORIGINS</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">","</span><span class="p">)</span> <span class="k">if</span> <span class="n">origin</span><span class="o">.</span><span class="n">strip</span><span class="p">()]</span></div>
 
 
 <span class="c1"># ——————————————————————————————————————————————————————————————</span>
 <span class="c1"># Colors class</span>
 <div class="viewcode-block" id="Colors">
-<a class="viewcode-back" href="../../../generated/squirrel_core_config.html#squirrel.core.config.Colors">[docs]</a>
+<a class="viewcode-back" href="../../../generated/core_reference.html#squirrel.core.config.Colors">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">Colors</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""</span>
 <span class="sd">    ANSI color codes for terminal output formatting.</span>
@@ -256,7 +319,6 @@
     
 <span class="c1"># ——————————————————————————————————————————————————————————————</span>
 <span class="n">settings</span> <span class="o">=</span> <span class="n">Settings</span><span class="p">()</span>
-
 </pre></div>
 
            </div>
@@ -272,7 +334,9 @@
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   
+  
+  <span class="version">Squirrel version 0.1.0</span>
+
 
 </footer>
         </div>

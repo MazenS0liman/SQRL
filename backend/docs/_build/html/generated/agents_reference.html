@@ -1,0 +1,1678 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Agents &mdash; SQRL Documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/custom.css?v=35931533" />
+
+  
+    <link rel="shortcut icon" href="../_static/sqrl.png"/>
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=01f34227"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="../_static/copybutton.js?v=a46eff05"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Prompt Components" href="prompts_reference.html" />
+    <link rel="prev" title="Services" href="services_reference.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html">
+            
+              <img src="../_static/sqrl.png" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Learn and build</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../getting-started.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../workflow.html">Product workflow</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../architecture.html">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../deployment.html">Deployment and operations</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Reference</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="../api.html">Backend API Reference</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="api_reference.html">HTTP API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="schemas_reference.html">Data Schemas</a></li>
+<li class="toctree-l2"><a class="reference internal" href="services_reference.html">Services</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Agents</a></li>
+<li class="toctree-l2"><a class="reference internal" href="prompts_reference.html">Prompt Components</a></li>
+<li class="toctree-l2"><a class="reference internal" href="providers_reference.html">Model Providers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="inspectors_reference.html">Data Inspectors</a></li>
+<li class="toctree-l2"><a class="reference internal" href="preprocessors_reference.html">Preprocessors</a></li>
+<li class="toctree-l2"><a class="reference internal" href="core_reference.html">Core Infrastructure</a></li>
+<li class="toctree-l2"><a class="reference internal" href="models_reference.html">Machine Learning Models</a></li>
+<li class="toctree-l2"><a class="reference internal" href="constants_reference.html">Constants</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">squirrel</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../api.html">Backend API Reference</a></li>
+      <li class="breadcrumb-item active">Agents</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/generated/agents_reference.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="agents">
+<h1>Agents<a class="headerlink" href="#agents" title="Link to this heading"></a></h1>
+<p>Reference documentation for SQRL agents.</p>
+<section id="abstract">
+<h2>Abstract<a class="headerlink" href="#abstract" title="Link to this heading"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="squirrel.modules.agents.abstract.IAgent.IAgent">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">IAgent</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">api_env_var</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'GEMINI_API_KEY_V1'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">provider</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">Provider.GEMINI</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">model_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'models/gemini-2.5-pro'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prompt_generator</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">config</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">socket</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">user_id</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/modules/agents/abstract/IAgent.html#IAgent"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.modules.agents.abstract.IAgent.IAgent" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">ABC</span></code>, <a class="reference internal" href="core_reference.html#squirrel.core.logging.Loggable" title="squirrel.core.logging.Loggable"><code class="xref py py-class docutils literal notranslate"><span class="pre">Loggable</span></code></a></p>
+<section id="abstract-agent-class">
+<h3>Abstract Agent Class<a class="headerlink" href="#abstract-agent-class" title="Link to this heading"></a></h3>
+<p><strong>Description:</strong></p>
+<blockquote>
+<div><p>This class provides a unified interface for communicating with various LLM providers
+(OpenAI, Google Gemini, Groq, OpenRouter) through a consistent API. It handles provider
+selection, request management, error handling, and response processing for AI-powered
+operations.</p>
+<p>When a <code class="docutils literal notranslate"><span class="pre">user_id</span></code> is set on the agent (either at construction time or per-call via
+<a class="reference internal" href="#squirrel.modules.agents.abstract.IAgent.IAgent.get_response" title="squirrel.modules.agents.abstract.IAgent.IAgent.get_response"><code class="xref py py-meth docutils literal notranslate"><span class="pre">get_response()</span></code></a>), the agent will first try to use that user’s own stored provider
+token (via <code class="xref py py-class docutils literal notranslate"><span class="pre">TokenService</span></code>) before falling back to the shared, environment-variable
+based API keys. This lets a single agent instance make calls on behalf of many different
+users, each billed/rate-limited against their own credentials.</p>
+</div></blockquote>
+<p><strong>Attributes:</strong></p>
+<blockquote>
+<div><ul class="simple">
+<li><dl class="simple">
+<dt><code class="xref py py-data docutils literal notranslate"><span class="pre">DEFAULT_PROVIDERS</span></code></dt><dd><p>Default list of providers in fallback order [GEMINI, OPENAI, GROQ, OPENROUTER]</p>
+</dd>
+</dl>
+</li>
+</ul>
+</div></blockquote>
+<p><strong>Key Features:</strong></p>
+<blockquote>
+<div><ul class="simple">
+<li><p>Support for multiple LLM providers (OpenAI, Gemini, Groq, OpenRouter)</p></li>
+<li><p>Automatic provider fallback when primary provider fails</p></li>
+<li><p>Retry logic with exponential backoff for resilience</p></li>
+<li><p>Global request counting for usage monitoring and quotas</p></li>
+<li><p>Integration with prompt generation strategies</p></li>
+<li><p>Flexible model selection and configuration</p></li>
+<li><p>SSL error handling and recovery</p></li>
+<li><p>Per-user credential resolution via TokenService</p></li>
+</ul>
+</div></blockquote>
+<p><strong>Core Methods</strong></p>
+<blockquote>
+<div><ul class="simple">
+<li><dl class="simple">
+<dt><a class="reference internal" href="#squirrel.modules.agents.abstract.IAgent.IAgent.get_response" title="squirrel.modules.agents.abstract.IAgent.IAgent.get_response"><code class="xref py py-meth docutils literal notranslate"><span class="pre">get_response()</span></code></a></dt><dd><p>Get a response from the LLM with customizable providers and models</p>
+</dd>
+</dl>
+</li>
+</ul>
+</div></blockquote>
+<p><strong>Supported Providers</strong></p>
+<blockquote>
+<div><ul class="simple">
+<li><p><strong>OpenAI</strong>: GPT-5, GPT-4.1, GPT-4o</p></li>
+<li><p><strong>Google Gemini</strong>: Gemini 2.5 Flash, Gemini 2.5 Pro</p></li>
+</ul>
+</div></blockquote>
+<p><strong>Example</strong></p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">squirrel.modules.agents.abstract.IAgent</span><span class="w"> </span><span class="kn">import</span> <span class="n">IAgent</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">squirrel.modules.providers.abstract.IProvider</span><span class="w"> </span><span class="kn">import</span> <span class="n">Provider</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">squirrel.modules.prompts.abstract.IPromptGenerator</span><span class="w"> </span><span class="kn">import</span> <span class="n">IPromptGenerator</span>
+
+<span class="k">class</span><span class="w"> </span><span class="nc">CustomPromptGenerator</span><span class="p">(</span><span class="n">IPromptGenerator</span><span class="p">):</span>
+    <span class="nd">@override</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">generate_system_prompt</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">input_data</span><span class="p">:</span> <span class="n">Dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">return</span> <span class="s2">"Custom system prompt based on input data"</span>
+
+    <span class="nd">@override</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">generate_user_prompt</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">input_data</span><span class="p">:</span> <span class="n">Dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">return</span> <span class="s2">"Custom user prompt based on input data"</span>
+
+<span class="k">class</span><span class="w"> </span><span class="nc">CustomAgent</span><span class="p">(</span><span class="n">IAgent</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">api_env_var</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">provider</span><span class="p">:</span> <span class="n">Provider</span><span class="p">,</span>
+        <span class="n">model_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">prompt_generator</span><span class="p">:</span> <span class="n">IPromptGenerator</span><span class="p">,</span>
+        <span class="n">config</span><span class="p">:</span> <span class="n">Dict</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">user_id</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="n">api_env_var</span><span class="o">=</span><span class="s2">"GEMINI_API_KEY_V1"</span><span class="p">,</span>
+            <span class="n">provider</span><span class="o">=</span><span class="n">provider</span><span class="p">,</span>
+            <span class="n">model_name</span><span class="o">=</span><span class="n">model_name</span><span class="p">,</span>
+            <span class="n">prompt_generator</span><span class="o">=</span><span class="n">prompt_generator</span><span class="p">,</span>
+            <span class="n">config</span><span class="o">=</span><span class="n">config</span> <span class="k">if</span> <span class="n">config</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="p">{</span><span class="s2">"temperature"</span><span class="p">:</span> <span class="mf">0.7</span><span class="p">,</span> <span class="s2">"max_tokens"</span><span class="p">:</span> <span class="mi">1000</span><span class="p">},</span>
+            <span class="n">user_id</span><span class="o">=</span><span class="n">user_id</span><span class="p">,</span>
+        <span class="p">)</span>
+
+<span class="n">agent</span> <span class="o">=</span> <span class="n">CustomAgent</span><span class="p">(</span>
+    <span class="n">api_env_var</span><span class="o">=</span><span class="s2">"GEMINI_API_KEY_V1"</span><span class="p">,</span>
+    <span class="n">provider</span><span class="o">=</span><span class="n">Provider</span><span class="o">.</span><span class="n">GEMINI</span><span class="p">,</span>
+    <span class="n">model_name</span><span class="o">=</span><span class="s2">"models/gemini-2.5-pro"</span><span class="p">,</span>
+    <span class="n">prompt_generator</span><span class="o">=</span><span class="n">CustomPromptGenerator</span><span class="p">(),</span>
+    <span class="n">config</span><span class="o">=</span><span class="p">{</span><span class="s2">"temperature"</span><span class="p">:</span> <span class="mf">0.7</span><span class="p">,</span> <span class="s2">"max_tokens"</span><span class="p">:</span> <span class="mi">1000</span><span class="p">},</span>
+    <span class="n">user_id</span><span class="o">=</span><span class="s2">"user_123"</span><span class="p">,</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<dl class="py property">
+<dt class="sig sig-object py" id="squirrel.modules.agents.abstract.IAgent.IAgent.api_env_var">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">api_env_var</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="headerlink" href="#squirrel.modules.agents.abstract.IAgent.IAgent.api_env_var" title="Link to this definition"></a></dt>
+<dd><p>Environment variable name for the API key.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="squirrel.modules.agents.abstract.IAgent.IAgent.provider">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">provider</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="providers_reference.html#squirrel.modules.providers.abstract.IProvider.Provider" title="squirrel.modules.providers.abstract.IProvider.Provider"><span class="pre">Provider</span></a></em><a class="headerlink" href="#squirrel.modules.agents.abstract.IAgent.IAgent.provider" title="Link to this definition"></a></dt>
+<dd><p>Provider name.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="squirrel.modules.agents.abstract.IAgent.IAgent.model_name">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">model_name</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="headerlink" href="#squirrel.modules.agents.abstract.IAgent.IAgent.model_name" title="Link to this definition"></a></dt>
+<dd><p>Model name.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="squirrel.modules.agents.abstract.IAgent.IAgent.prompt_generator">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">prompt_generator</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="prompts_reference.html#squirrel.modules.prompts.abstract.IPromptGenerator.IPromptGenerator" title="squirrel.modules.prompts.abstract.IPromptGenerator.IPromptGenerator"><span class="pre">IPromptGenerator</span></a></em><a class="headerlink" href="#squirrel.modules.agents.abstract.IAgent.IAgent.prompt_generator" title="Link to this definition"></a></dt>
+<dd><p>Prompt generator instance.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="squirrel.modules.agents.abstract.IAgent.IAgent.config">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">config</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Dict</span></em><a class="headerlink" href="#squirrel.modules.agents.abstract.IAgent.IAgent.config" title="Link to this definition"></a></dt>
+<dd><p>Configuration dictionary.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="squirrel.modules.agents.abstract.IAgent.IAgent.model">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">model</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="providers_reference.html#squirrel.modules.providers.abstract.IProvider.IProvider" title="squirrel.modules.providers.abstract.IProvider.IProvider"><span class="pre">IProvider</span></a></em><a class="headerlink" href="#squirrel.modules.agents.abstract.IAgent.IAgent.model" title="Link to this definition"></a></dt>
+<dd><p>Provider instance.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="squirrel.modules.agents.abstract.IAgent.IAgent.socket">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">socket</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">WebSocket</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#squirrel.modules.agents.abstract.IAgent.IAgent.socket" title="Link to this definition"></a></dt>
+<dd><p>WebSocket instance.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="squirrel.modules.agents.abstract.IAgent.IAgent.user_id">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">user_id</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#squirrel.modules.agents.abstract.IAgent.IAgent.user_id" title="Link to this definition"></a></dt>
+<dd><p>The user this agent makes provider calls on behalf of, if any.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="squirrel.modules.agents.abstract.IAgent.IAgent.total_request_count">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">total_request_count</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><a class="headerlink" href="#squirrel.modules.agents.abstract.IAgent.IAgent.total_request_count" title="Link to this definition"></a></dt>
+<dd><p>Total number of requests made across all providers.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="squirrel.modules.agents.abstract.IAgent.IAgent.total_input_tokens_used">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">total_input_tokens_used</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><a class="headerlink" href="#squirrel.modules.agents.abstract.IAgent.IAgent.total_input_tokens_used" title="Link to this definition"></a></dt>
+<dd><p>Total number of input tokens used across all providers.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="squirrel.modules.agents.abstract.IAgent.IAgent.total_output_tokens_used">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">total_output_tokens_used</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><a class="headerlink" href="#squirrel.modules.agents.abstract.IAgent.IAgent.total_output_tokens_used" title="Link to this definition"></a></dt>
+<dd><p>Total number of output tokens used across all providers.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="squirrel.modules.agents.abstract.IAgent.IAgent.total_tokens_used">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">total_tokens_used</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><a class="headerlink" href="#squirrel.modules.agents.abstract.IAgent.IAgent.total_tokens_used" title="Link to this definition"></a></dt>
+<dd><p>Total number of tokens used across all providers.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="squirrel.modules.agents.abstract.IAgent.IAgent.get_response">
+<span class="sig-name descname"><span class="pre">get_response</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fn_name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">model_input</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">retry_attempt</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">3</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">strict</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">provider_order</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">preference_model_names</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">user_id</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/modules/agents/abstract/IAgent.html#IAgent.get_response"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.modules.agents.abstract.IAgent.IAgent.get_response" title="Link to this definition"></a></dt>
+<dd><p>Execute a function on the model with retries and provider/model selection.</p>
+<p><strong>Description:</strong></p>
+<blockquote>
+<div><p>This method attempts to call a specified function (<cite>fn_name</cite>) on the model
+using the provided input (<cite>model_input</cite>). It supports strict mode, where only
+the current model is used, or a more flexible mode that tries multiple
+providers and models based on preferences.</p>
+<p>Credential resolution always prefers a per-request user’s own stored provider
+token over the shared, environment-variable based keys. Pass <cite>user_id</cite> to scope
+a single call to a specific user without changing the agent’s default
+<cite>self.user_id</cite>; if omitted, <cite>self.user_id</cite> is used instead (if set).</p>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>fn_name</strong> (<em>str</em>) – The name of the function to call on the model</p></li>
+<li><p><strong>model_input</strong> (<em>dict</em>) – The input to pass to the model</p></li>
+<li><p><strong>retry_attempt</strong> (<em>int</em>) – The number of retry attempts (default: 3)</p></li>
+<li><p><strong>strict</strong> (<em>bool</em>) – Whether to strictly use the current model or try others (default: True)</p></li>
+<li><p><strong>provider_order</strong> (<em>list</em><em>[</em><a class="reference internal" href="providers_reference.html#squirrel.modules.providers.abstract.IProvider.Provider" title="squirrel.modules.providers.abstract.IProvider.Provider"><em>Provider</em></a><em>]</em>) – The order of providers to try</p></li>
+<li><p><strong>preference_model_names</strong> (<em>list</em><em>[</em><em>str</em><em>]</em>) – Preferred model names to try first</p></li>
+<li><p><strong>user_id</strong> (<em>str</em><em>, </em><em>optional</em>) – The user to make this call on behalf of. Overrides self.user_id
+for this call only. Falls back to self.user_id if omitted.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The response from the model function</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Any</p>
+</dd>
+</dl>
+<p><strong>Example:</strong></p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">squirrel.modules.agents.abstract.IAgent</span><span class="w"> </span><span class="kn">import</span> <span class="n">IAgent</span>
+
+<span class="c1"># Assume `agent` is an instance of a class derived from IAgent</span>
+<span class="n">response</span> <span class="o">=</span> <span class="n">agent</span><span class="o">.</span><span class="n">get_response</span><span class="p">(</span>
+    <span class="n">fn_name</span><span class="o">=</span><span class="s2">"generate_text"</span><span class="p">,</span>
+    <span class="n">model_input</span><span class="o">=</span><span class="p">{</span><span class="s2">"prompt"</span><span class="p">:</span> <span class="s2">"Hello, world!"</span><span class="p">},</span>
+    <span class="n">retry_attempt</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span>
+    <span class="n">strict</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+    <span class="n">provider_order</span><span class="o">=</span><span class="p">[</span><span class="n">Provider</span><span class="o">.</span><span class="n">GEMINI</span><span class="p">],</span>
+    <span class="n">preference_model_names</span><span class="o">=</span><span class="p">[</span><span class="s2">"gemini-2.5-pro"</span><span class="p">],</span>
+    <span class="n">user_id</span><span class="o">=</span><span class="s2">"user_123"</span>
+<span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">response</span><span class="p">)</span>
+<span class="c1"># Output: Generated text from the model</span>
+</pre></div>
+</div>
+</dd></dl>
+
+</section>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>api_env_var</strong> (<em>str</em><em> | </em><em>None</em>)</p></li>
+<li><p><strong>provider</strong> (<a class="reference internal" href="providers_reference.html#squirrel.modules.providers.abstract.IProvider.Provider" title="squirrel.modules.providers.abstract.IProvider.Provider"><em>Provider</em></a><em> | </em><em>None</em>)</p></li>
+<li><p><strong>model_name</strong> (<em>str</em><em> | </em><em>None</em>)</p></li>
+<li><p><strong>prompt_generator</strong> (<a class="reference internal" href="prompts_reference.html#squirrel.modules.prompts.abstract.IPromptGenerator.IPromptGenerator" title="squirrel.modules.prompts.abstract.IPromptGenerator.IPromptGenerator"><em>IPromptGenerator</em></a>)</p></li>
+<li><p><strong>config</strong> (<em>Dict</em>)</p></li>
+<li><p><strong>socket</strong> (<em>WebSocket</em><em> | </em><em>None</em>)</p></li>
+<li><p><strong>user_id</strong> (<em>str</em><em> | </em><em>None</em>)</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+<section id="builder">
+<h2>Builder<a class="headerlink" href="#builder" title="Link to this heading"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="squirrel.modules.agents.builder.TabularDataModelBuilderAgent.TabularDataModelBuilderAgent">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">TabularDataModelBuilderAgent</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">target_column</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prompt_generator=&lt;squirrel.modules.prompts.builder.TabularDataPromptGenerator.ModelBuilderPromptGenerator</span> <span class="pre">object&gt;</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/modules/agents/builder/TabularDataModelBuilderAgent.html#TabularDataModelBuilderAgent"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.modules.agents.builder.TabularDataModelBuilderAgent.TabularDataModelBuilderAgent" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#squirrel.modules.agents.abstract.IAgent.IAgent" title="squirrel.modules.agents.abstract.IAgent.IAgent"><code class="xref py py-class docutils literal notranslate"><span class="pre">IAgent</span></code></a></p>
+<p>Agent for building, evaluating, and comparing ML models on tabular data.</p>
+<p><strong>Description:</strong></p>
+<blockquote>
+<div><p>Accepts the processed <code class="docutils literal notranslate"><span class="pre">pd.DataFrame</span></code> and the structured summary dict
+from <code class="docutils literal notranslate"><span class="pre">TabularDataProcessorAgent</span></code> and orchestrates the full modelling
+lifecycle:</p>
+<ol class="arabic simple">
+<li><dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">plan</span></code>     — the LLM selects models and actions grounded in the</dt><dd><p>dataset profile and preprocessing summary.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">execute</span></code>  — each planned model is instantiated, optionally fitted,</dt><dd><p>cross-validated, and feature importances extracted.</p>
+</dd>
+</dl>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">summarize</span></code>— the LLM interprets results and recommends the best model.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">run</span></code>      — chains all three stages for convenience.</p></li>
+</ol>
+</div></blockquote>
+<p><strong>Example usage:</strong></p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">agent</span> <span class="o">=</span> <span class="n">TabularDataModelBuilderAgent</span><span class="p">(</span><span class="n">target_column</span><span class="o">=</span><span class="s2">"label"</span><span class="p">)</span>
+
+<span class="n">processed_df</span><span class="p">,</span> <span class="n">summary</span> <span class="o">=</span> <span class="n">processor_agent</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">raw_df</span><span class="p">)</span>
+
+<span class="n">fitted_models</span><span class="p">,</span> <span class="n">report</span> <span class="o">=</span> <span class="n">agent</span><span class="o">.</span><span class="n">run</span><span class="p">(</span>
+    <span class="n">data</span><span class="o">=</span><span class="n">processed_df</span><span class="p">,</span>
+    <span class="n">preprocessing_summary</span><span class="o">=</span><span class="n">summary</span><span class="p">,</span>
+    <span class="n">objective</span><span class="o">=</span><span class="s2">"binary classification — maximise ROC-AUC"</span><span class="p">,</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>target_column</strong> (<em>str</em>)</p></li>
+<li><p><strong>prompt_generator</strong> (<em>Any</em>)</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="squirrel.modules.agents.builder.TabularDataModelBuilderAgent.TabularDataModelBuilderAgent.plan">
+<span class="sig-name descname"><span class="pre">plan</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">preprocessing_summary</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">objective</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/modules/agents/builder/TabularDataModelBuilderAgent.html#TabularDataModelBuilderAgent.plan"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.modules.agents.builder.TabularDataModelBuilderAgent.TabularDataModelBuilderAgent.plan" title="Link to this definition"></a></dt>
+<dd><p>Ask the LLM to produce an ordered model-building plan.</p>
+<p>The planner receives the dataset profile, preprocessing summary, and
+both catalogs (models + actions).  Invalid steps are flagged and
+regenerated up to <code class="docutils literal notranslate"><span class="pre">_MAX_REGEN_ATTEMPTS</span></code> times.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataFrame</span></code></span>) – Processed DataFrame.</p></li>
+<li><p><strong>preprocessing_summary</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code>]</span>) – Structured summary from the preprocessing agent.</p></li>
+<li><p><strong>objective</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></span>) – Optional caller-supplied modelling goal.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></span></p>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>JSON plan string.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="squirrel.modules.agents.builder.TabularDataModelBuilderAgent.TabularDataModelBuilderAgent.execute">
+<span class="sig-name descname"><span class="pre">execute</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">plan</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/modules/agents/builder/TabularDataModelBuilderAgent.html#TabularDataModelBuilderAgent.execute"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.modules.agents.builder.TabularDataModelBuilderAgent.TabularDataModelBuilderAgent.execute" title="Link to this definition"></a></dt>
+<dd><p>Execute the model-building plan.</p>
+<dl class="simple">
+<dt>For each planned model step the agent:</dt><dd><ul class="simple">
+<li><p>Instantiates the model with the specified hyperparameters.</p></li>
+<li><p>Fits it on the bounded selection sample (minus the target column).</p></li>
+<li><p>Runs any attached actions (cv_evaluate, feature_importance,
+holdout_evaluate).</p></li>
+</ul>
+</dd>
+</dl>
+<p>After comparison, the winning non-sequential model is refit on the
+complete dataset.</p>
+<p>Unknown model keys and runtime exceptions are captured in the report
+without aborting the pipeline.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataFrame</span></code></span>) – Processed DataFrame.</p></li>
+<li><p><strong>plan</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code> | <code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></span>) – JSON plan string or dict from <code class="docutils literal notranslate"><span class="pre">plan()</span></code>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code>], <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]</span></p>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">(fitted_models_dict,</span> <span class="pre">json_execution_report_string)</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="squirrel.modules.agents.builder.TabularDataModelBuilderAgent.TabularDataModelBuilderAgent.summarize">
+<span class="sig-name descname"><span class="pre">summarize</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">execution_report</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/modules/agents/builder/TabularDataModelBuilderAgent.html#TabularDataModelBuilderAgent.summarize"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.modules.agents.builder.TabularDataModelBuilderAgent.TabularDataModelBuilderAgent.summarize" title="Link to this definition"></a></dt>
+<dd><p>Ask the LLM to interpret the execution report and produce a structured
+model-comparison summary with a recommended model.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>execution_report</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code> | <code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></span>) – JSON execution report from <code class="docutils literal notranslate"><span class="pre">execute()</span></code>.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></span></p>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>JSON summary string.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="exploratory">
+<h2>Exploratory<a class="headerlink" href="#exploratory" title="Link to this heading"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="squirrel.modules.agents.exploratory.TabularDataExploratoryAgent.TabularDataExploratoryAgent">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">TabularDataExploratoryAgent</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">postgres_service</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prompt_generator=&lt;squirrel.modules.prompts.exploratory.ExploratoryPromptGenerator.ExploratoryPromptGenerator</span> <span class="pre">object&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_hypotheses=6</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_sql_retries=2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">row_sample_for_observation=100</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">user_id=None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/modules/agents/exploratory/TabularDataExploratoryAgent.html#TabularDataExploratoryAgent"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.modules.agents.exploratory.TabularDataExploratoryAgent.TabularDataExploratoryAgent" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#squirrel.modules.agents.abstract.IAgent.IAgent" title="squirrel.modules.agents.abstract.IAgent.IAgent"><code class="xref py py-class docutils literal notranslate"><span class="pre">IAgent</span></code></a></p>
+<section id="hypothesis-driven-exploratory-data-analysis-agent">
+<h3>Hypothesis-Driven Exploratory Data Analysis Agent<a class="headerlink" href="#hypothesis-driven-exploratory-data-analysis-agent" title="Link to this heading"></a></h3>
+<p><strong>Description:</strong></p>
+<blockquote>
+<div><p>Orchestrates a full EDA pipeline over a relational database schema.
+<code class="docutils literal notranslate"><span class="pre">schema_metadata</span></code> may describe one table or several — when several
+are given, the agent deterministically detects candidate join keys
+between them (see <a class="reference internal" href="#squirrel.modules.agents.exploratory.TabularDataExploratoryAgent.TabularDataExploratoryAgent.generate_table_relationships" title="squirrel.modules.agents.exploratory.TabularDataExploratoryAgent.TabularDataExploratoryAgent.generate_table_relationships"><code class="xref py py-meth docutils literal notranslate"><span class="pre">generate_table_relationships()</span></code></a>) and grounds
+every LLM stage in that information so hypotheses/SQL can span
+multiple sources. The schema is also reconciled against the live
+database (see <a class="reference internal" href="#squirrel.modules.agents.exploratory.TabularDataExploratoryAgent.TabularDataExploratoryAgent.reconcile_schema_with_database" title="squirrel.modules.agents.exploratory.TabularDataExploratoryAgent.TabularDataExploratoryAgent.reconcile_schema_with_database"><code class="xref py py-meth docutils literal notranslate"><span class="pre">reconcile_schema_with_database()</span></code></a>) and has its
+column types repaired (see <a class="reference internal" href="#squirrel.modules.agents.exploratory.TabularDataExploratoryAgent.TabularDataExploratoryAgent.fix_column_types" title="squirrel.modules.agents.exploratory.TabularDataExploratoryAgent.TabularDataExploratoryAgent.fix_column_types"><code class="xref py py-meth docutils literal notranslate"><span class="pre">fix_column_types()</span></code></a>) before any
+enrichment or prompting happens, so downstream stages never operate
+on stale, incomplete, or mistyped caller-supplied metadata.</p>
+</div></blockquote>
+<p><strong>Attributes:</strong></p>
+<blockquote>
+<div><ul class="simple">
+<li><p><strong>postgres_service (PostgresService):</strong> Live database connection used
+for schema introspection and query execution.</p></li>
+<li><p><strong>max_hypotheses (int):</strong> Cap on generated hypotheses (default: 10).</p></li>
+<li><p><strong>max_sql_retries (int):</strong> Times to ask the LLM to fix broken SQL
+before skipping a hypothesis (default: 2).</p></li>
+<li><p><strong>row_sample_for_observation (int):</strong> Rows sent to the LLM for
+observation generation (default: 100).</p></li>
+</ul>
+</div></blockquote>
+<p><strong>Pipeline:</strong></p>
+<blockquote>
+<div><p><code class="docutils literal notranslate"><span class="pre">explore()</span></code> → <code class="docutils literal notranslate"><span class="pre">_reconcile_schema()</span></code> → <code class="docutils literal notranslate"><span class="pre">fix_column_types()</span></code>
+→ <code class="docutils literal notranslate"><span class="pre">_inspect_schema()</span></code> → <code class="docutils literal notranslate"><span class="pre">_infer_domain()</span></code>
+→ <code class="docutils literal notranslate"><span class="pre">_extract_entities_and_metrics()</span></code> → <code class="docutils literal notranslate"><span class="pre">_generate_hypotheses()</span></code>
+→ per-hypothesis: <code class="docutils literal notranslate"><span class="pre">_generate_sql()</span></code> → <code class="docutils literal notranslate"><span class="pre">_execute_sql()</span></code>
+→ <code class="docutils literal notranslate"><span class="pre">_generate_observation()</span></code> → <code class="docutils literal notranslate"><span class="pre">_generate_summary()</span></code></p>
+</div></blockquote>
+<p><strong>Example:</strong></p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">agent</span> <span class="o">=</span> <span class="n">TabularDataExploratoryAgent</span><span class="p">(</span>
+    <span class="n">provider</span><span class="o">=</span><span class="n">Provider</span><span class="o">.</span><span class="n">GROQ</span><span class="p">,</span>
+    <span class="n">postgres_service</span><span class="o">=</span><span class="n">PostgresService</span><span class="p">(),</span>
+<span class="p">)</span>
+
+<span class="c1"># Single source</span>
+<span class="n">result</span> <span class="o">=</span> <span class="n">agent</span><span class="o">.</span><span class="n">explore</span><span class="p">({</span><span class="s2">"orders"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"columns"</span><span class="p">:</span> <span class="p">[</span><span class="o">...</span><span class="p">]}})</span>
+
+<span class="c1"># Multiple sources — relationships between them are inferred</span>
+<span class="c1"># automatically from shared / foreign-key-style column names.</span>
+<span class="n">result</span> <span class="o">=</span> <span class="n">agent</span><span class="o">.</span><span class="n">explore</span><span class="p">({</span>
+    <span class="s2">"orders"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"columns"</span><span class="p">:</span> <span class="p">[</span><span class="o">...</span><span class="p">]},</span>
+    <span class="s2">"customers"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"columns"</span><span class="p">:</span> <span class="p">[</span><span class="o">...</span><span class="p">]},</span>
+<span class="p">})</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">result</span><span class="p">[</span><span class="s2">"summary"</span><span class="p">][</span><span class="s2">"key_findings"</span><span class="p">])</span>
+</pre></div>
+</div>
+<dl class="py method">
+<dt class="sig sig-object py" id="squirrel.modules.agents.exploratory.TabularDataExploratoryAgent.TabularDataExploratoryAgent.explore">
+<span class="sig-name descname"><span class="pre">explore</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">schema_metadata</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/modules/agents/exploratory/TabularDataExploratoryAgent.html#TabularDataExploratoryAgent.explore"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.modules.agents.exploratory.TabularDataExploratoryAgent.TabularDataExploratoryAgent.explore" title="Link to this definition"></a></dt>
+<dd><p>Run the full hypothesis-driven EDA pipeline.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>schema_metadata</strong> (<em>dict</em>) – Raw schema dict — <code class="docutils literal notranslate"><span class="pre">{table:</span> <span class="pre">{columns:</span> <span class="pre">[...]}}</span></code>.
+May describe a single table or several; when more than one table
+is present, candidate relationships between them are detected
+deterministically (see <a class="reference internal" href="#squirrel.modules.agents.exploratory.TabularDataExploratoryAgent.TabularDataExploratoryAgent.generate_table_relationships" title="squirrel.modules.agents.exploratory.TabularDataExploratoryAgent.TabularDataExploratoryAgent.generate_table_relationships"><code class="xref py py-meth docutils literal notranslate"><span class="pre">generate_table_relationships()</span></code></a>) and
+surfaced to every LLM stage via <a class="reference internal" href="#squirrel.modules.agents.exploratory.TabularDataExploratoryAgent.TabularDataExploratoryAgent.generate_schema_summary" title="squirrel.modules.agents.exploratory.TabularDataExploratoryAgent.TabularDataExploratoryAgent.generate_schema_summary"><code class="xref py py-meth docutils literal notranslate"><span class="pre">generate_schema_summary()</span></code></a>,
+so hypotheses and SQL can join across sources.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Result dict with keys <code class="docutils literal notranslate"><span class="pre">dataset_context</span></code>, <code class="docutils literal notranslate"><span class="pre">entities_and_metrics</span></code>,
+<code class="docutils literal notranslate"><span class="pre">charts</span></code>, and <code class="docutils literal notranslate"><span class="pre">summary</span></code>.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>dict</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="squirrel.modules.agents.exploratory.TabularDataExploratoryAgent.TabularDataExploratoryAgent.reconcile_schema_with_database">
+<span class="sig-name descname"><span class="pre">reconcile_schema_with_database</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">schema_metadata</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/modules/agents/exploratory/TabularDataExploratoryAgent.html#TabularDataExploratoryAgent.reconcile_schema_with_database"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.modules.agents.exploratory.TabularDataExploratoryAgent.TabularDataExploratoryAgent.reconcile_schema_with_database" title="Link to this definition"></a></dt>
+<dd><p>Cross-check caller-supplied <code class="docutils literal notranslate"><span class="pre">schema_metadata</span></code> against the live
+database’s <code class="docutils literal notranslate"><span class="pre">information_schema.columns</span></code> and repair drift <em>before</em>
+anything downstream (enrichment, prompting, SQL generation) ever sees
+it.</p>
+<p><strong>Why this exists:</strong></p>
+<blockquote>
+<div><p>Every previous safeguard in this pipeline (the hallucination
+guard, the retry-with-error loop, the case-normalizer) assumes
+the <em>real</em> column name is somewhere in <code class="docutils literal notranslate"><span class="pre">schema_metadata</span></code> for
+the LLM to eventually land on. If the caller’s metadata is
+stale, hand-written, or simply missing a column, that assumption
+is false — the LLM has nothing correct to converge toward, and
+every retry is an independent blind guess. This stage removes
+that failure mode by making the DB itself the source of truth
+for <em>which columns exist</em>, while still respecting any extra
+caller-supplied metadata (types, descriptions, etc.) for columns
+that do match.</p>
+</div></blockquote>
+<p><strong>Behavior:</strong></p>
+<blockquote>
+<div><ul class="simple">
+<li><p>For each table, fetch the real column list from
+<code class="docutils literal notranslate"><span class="pre">information_schema.columns</span></code>.</p></li>
+<li><p>Any real column missing from the caller’s <code class="docutils literal notranslate"><span class="pre">columns</span></code> list is
+appended (bare <code class="docutils literal notranslate"><span class="pre">{&quot;name&quot;:</span> <span class="pre">col}</span></code>), so it will show up in
+<code class="docutils literal notranslate"><span class="pre">AVAILABLE</span> <span class="pre">COLUMNS</span></code> for every LLM stage.</p></li>
+<li><p>Any caller-supplied column that does <em>not</em> exist in the live
+table is dropped and logged — it would only mislead the LLM
+into “confirming” a name that will 500 at execution time.</p></li>
+<li><p>Tables in <code class="docutils literal notranslate"><span class="pre">schema_metadata</span></code> that don’t exist in the DB at all
+are logged and left as-is (nothing to reconcile against);
+downstream stages will simply get no stats for them.</p></li>
+<li><p>Failures fetching live columns for a given table are logged and
+that table’s metadata is passed through unchanged, so a single
+DB hiccup doesn’t take down the whole pipeline.</p></li>
+</ul>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>schema_metadata</strong> (<em>dict</em>) – Raw, caller-supplied schema dict.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Reconciled schema dict, same shape as the input, with
+column lists corrected against the live database.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>dict</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="squirrel.modules.agents.exploratory.TabularDataExploratoryAgent.TabularDataExploratoryAgent.fix_column_types">
+<span class="sig-name descname"><span class="pre">fix_column_types</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">schema_metadata</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/modules/agents/exploratory/TabularDataExploratoryAgent.html#TabularDataExploratoryAgent.fix_column_types"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.modules.agents.exploratory.TabularDataExploratoryAgent.TabularDataExploratoryAgent.fix_column_types" title="Link to this definition"></a></dt>
+<dd><p>Repair TEXT/VARCHAR columns that actually hold dates or numbers,
+directly in the live database, before any LLM stage ever sees the
+schema.</p>
+<p><strong>Why this exists:</strong></p>
+<blockquote>
+<div><p><code class="docutils literal notranslate"><span class="pre">PostgresService.load</span></code> writes CSV-derived tables via
+<code class="docutils literal notranslate"><span class="pre">pandas.DataFrame.to_sql</span></code>, which has no schema awareness — a
+date column with no explicit <code class="docutils literal notranslate"><span class="pre">dtype=</span></code> therefore lands in
+Postgres as plain <code class="docutils literal notranslate"><span class="pre">TEXT</span></code>. Reconciliation (Stage 0) confirms the
+column <em>exists</em> under the right name, but says nothing about
+whether its type is usable. Every downstream SQL-generation
+attempt then has to guess a date format blind, because
+<code class="docutils literal notranslate"><span class="pre">AVAILABLE</span> <span class="pre">COLUMNS</span></code> only ever showed a name, not a type the LLM
+could trust.</p>
+<blockquote>
+<div><p>Behavior (LLM-first):</p>
+<ul class="simple">
+<li><dl class="simple">
+<dt>Only considers columns whose live Postgres type is</dt><dd><p><code class="docutils literal notranslate"><span class="pre">text</span></code>/<code class="docutils literal notranslate"><span class="pre">character</span> <span class="pre">varying</span></code>. Already-typed columns are skipped,
+making repeated calls cheap and idempotent.</p>
+</dd>
+</dl>
+</li>
+<li><p>Samples up to 200 distinct non-null values per candidate column.</p></li>
+<li><dl class="simple">
+<dt>The primary path hands the sample to</dt><dd><p><code class="xref py py-meth docutils literal notranslate"><span class="pre">_infer_column_type_via_llm()</span></code>, which returns a
+<code class="docutils literal notranslate"><span class="pre">pg_type</span></code>/<code class="docutils literal notranslate"><span class="pre">date_format</span></code>/<code class="docutils literal notranslate"><span class="pre">confidence</span></code> verdict. The column is
+altered only when confidence is <code class="docutils literal notranslate"><span class="pre">&quot;high&quot;</span></code>.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt>If the LLM call fails, returns malformed JSON, or has lower</dt><dd><p>confidence, deterministic date and numeric heuristics are used.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt>Ambiguous or mixed columns are left untouched. Any sampling, LLM,</dt><dd><p>or <code class="docutils literal notranslate"><span class="pre">ALTER</span> <span class="pre">TABLE</span></code> failure is logged and isolated to that column.</p>
+</dd>
+</dl>
+</li>
+</ul>
+</div></blockquote>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>schema_metadata</strong> (<em>dict</em>) – Reconciled schema dict (same shape as
+<a class="reference internal" href="#squirrel.modules.agents.exploratory.TabularDataExploratoryAgent.TabularDataExploratoryAgent.reconcile_schema_with_database" title="squirrel.modules.agents.exploratory.TabularDataExploratoryAgent.TabularDataExploratoryAgent.reconcile_schema_with_database"><code class="xref py py-meth docutils literal notranslate"><span class="pre">reconcile_schema_with_database()</span></code></a>’s output — this is
+typically called immediately after it).</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The same schema dict (unchanged shape — this method’s
+effect is on the live database, not on the metadata dict itself;
+callers should re-run <a class="reference internal" href="#squirrel.modules.agents.exploratory.TabularDataExploratoryAgent.TabularDataExploratoryAgent.generate_schema_details" title="squirrel.modules.agents.exploratory.TabularDataExploratoryAgent.TabularDataExploratoryAgent.generate_schema_details"><code class="xref py py-meth docutils literal notranslate"><span class="pre">generate_schema_details()</span></code></a> afterward
+to pick up the corrected types in <code class="docutils literal notranslate"><span class="pre">_stats</span></code>).</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>dict</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="squirrel.modules.agents.exploratory.TabularDataExploratoryAgent.TabularDataExploratoryAgent.generate_schema_details">
+<span class="sig-name descname"><span class="pre">generate_schema_details</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">schema_metadata</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reconcile</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/modules/agents/exploratory/TabularDataExploratoryAgent.html#TabularDataExploratoryAgent.generate_schema_details"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.modules.agents.exploratory.TabularDataExploratoryAgent.TabularDataExploratoryAgent.generate_schema_details" title="Link to this definition"></a></dt>
+<dd><p>Enrich raw schema metadata with DB-level statistics.</p>
+<p><strong>Description:</strong></p>
+<blockquote>
+<div><p>For each table, fetches approximate row count, column nullability,
+and cardinality hints for low-cardinality columns (≤ 50 distinct values).
+Failures are logged and skipped so the pipeline continues with partial
+enrichment.</p>
+</div></blockquote>
+<div class="admonition important">
+<p class="admonition-title">Important</p>
+<p>This method is a common integration seam — callers that don’t go
+through <a class="reference internal" href="#squirrel.modules.agents.exploratory.TabularDataExploratoryAgent.TabularDataExploratoryAgent.explore" title="squirrel.modules.agents.exploratory.TabularDataExploratoryAgent.TabularDataExploratoryAgent.explore"><code class="xref py py-meth docutils literal notranslate"><span class="pre">explore()</span></code></a> (e.g. a caching layer that calls it
+directly) would otherwise silently skip schema reconciliation
+<em>and</em> column-type repair entirely, which defeats the whole point
+of Stages 0 and 0.5. So by default this method reconciles <em>and</em>
+repairs types for you on every call; pass <code class="docutils literal notranslate"><span class="pre">reconcile=False</span></code>
+only if the caller has already reconciled and type-repaired
+<em>this exact</em> <code class="docutils literal notranslate"><span class="pre">schema_metadata</span></code> and wants to avoid a redundant
+<code class="docutils literal notranslate"><span class="pre">information_schema</span></code> round-trip.</p>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>schema_metadata</strong> (<em>dict</em>) – Raw schema dict. Reconciled and type-repaired
+against the live DB internally unless <code class="docutils literal notranslate"><span class="pre">reconcile=False</span></code>.</p></li>
+<li><p><strong>reconcile</strong> (<em>bool</em>) – Whether to run <a class="reference internal" href="#squirrel.modules.agents.exploratory.TabularDataExploratoryAgent.TabularDataExploratoryAgent.reconcile_schema_with_database" title="squirrel.modules.agents.exploratory.TabularDataExploratoryAgent.TabularDataExploratoryAgent.reconcile_schema_with_database"><code class="xref py py-meth docutils literal notranslate"><span class="pre">reconcile_schema_with_database()</span></code></a>
+and <a class="reference internal" href="#squirrel.modules.agents.exploratory.TabularDataExploratoryAgent.TabularDataExploratoryAgent.fix_column_types" title="squirrel.modules.agents.exploratory.TabularDataExploratoryAgent.TabularDataExploratoryAgent.fix_column_types"><code class="xref py py-meth docutils literal notranslate"><span class="pre">fix_column_types()</span></code></a> on <em>schema_metadata</em> before
+enriching. Defaults to <code class="docutils literal notranslate"><span class="pre">True</span></code>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Enriched schema dict (original metadata + <code class="docutils literal notranslate"><span class="pre">_stats</span></code> per table).</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>dict</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="squirrel.modules.agents.exploratory.TabularDataExploratoryAgent.TabularDataExploratoryAgent.generate_domain_context">
+<span class="sig-name descname"><span class="pre">generate_domain_context</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">schema</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/modules/agents/exploratory/TabularDataExploratoryAgent.html#TabularDataExploratoryAgent.generate_domain_context"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.modules.agents.exploratory.TabularDataExploratoryAgent.TabularDataExploratoryAgent.generate_domain_context" title="Link to this definition"></a></dt>
+<dd><p>Ask the LLM to infer the business domain and analytical opportunities.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>schema</strong> (<em>Dict</em>) – Enriched schema from <code class="docutils literal notranslate"><span class="pre">_inspect_schema</span></code>.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Domain context dict.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Dict | None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="squirrel.modules.agents.exploratory.TabularDataExploratoryAgent.TabularDataExploratoryAgent.extract_entities_and_metrics">
+<span class="sig-name descname"><span class="pre">extract_entities_and_metrics</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">schema_details</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">domain_context</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/modules/agents/exploratory/TabularDataExploratoryAgent.html#TabularDataExploratoryAgent.extract_entities_and_metrics"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.modules.agents.exploratory.TabularDataExploratoryAgent.TabularDataExploratoryAgent.extract_entities_and_metrics" title="Link to this definition"></a></dt>
+<dd><p>Resolve concrete measurable metrics and grouping dimensions.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>schema_details</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code></span>) – Enriched schema.</p></li>
+<li><p><strong>domain_context</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code></span>) – Output of <code class="docutils literal notranslate"><span class="pre">_infer_domain</span></code>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Dict with <code class="docutils literal notranslate"><span class="pre">metrics</span></code> and <code class="docutils literal notranslate"><span class="pre">dimensions</span></code> lists.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Dict | None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="squirrel.modules.agents.exploratory.TabularDataExploratoryAgent.TabularDataExploratoryAgent.generate_hypotheses">
+<span class="sig-name descname"><span class="pre">generate_hypotheses</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">schema_details</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">domain_context</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">entities_and_metrics</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">previous_questions</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/modules/agents/exploratory/TabularDataExploratoryAgent.html#TabularDataExploratoryAgent.generate_hypotheses"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.modules.agents.exploratory.TabularDataExploratoryAgent.TabularDataExploratoryAgent.generate_hypotheses" title="Link to this definition"></a></dt>
+<dd><p>Generate sophisticated, non-trivial analytical hypotheses.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>schema_details</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code></span>) – Enriched schema.</p></li>
+<li><p><strong>domain_context</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code></span>) – Output of <code class="docutils literal notranslate"><span class="pre">_infer_domain</span></code>.</p></li>
+<li><p><strong>entities_and_metrics</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code></span>) – Output of <code class="docutils literal notranslate"><span class="pre">_extract_entities_and_metrics</span></code>.</p></li>
+<li><p><strong>previous_questions</strong> (<em>Optional</em><em>[</em><em>List</em><em>[</em><em>str</em><em>]</em><em>]</em>) – Questions already answered for this same
+source set in an earlier cell/EDA run (e.g. via
+<code class="xref py py-meth docutils literal notranslate"><span class="pre">NotebookService._previous_eda_questions()</span></code>). When provided,
+the prompt explicitly instructs the LLM to avoid repeating or
+closely paraphrasing them, so re-running EDA on the same data
+produces analytically distinct hypotheses instead of duplicates.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>List of <code class="xref py py-class docutils literal notranslate"><span class="pre">Hypothesis</span></code> objects.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>List[<a class="reference internal" href="schemas_reference.html#squirrel.schemas.eda.Hypothesis" title="squirrel.schemas.eda.Hypothesis">Hypothesis</a>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="squirrel.modules.agents.exploratory.TabularDataExploratoryAgent.TabularDataExploratoryAgent.generate_sql">
+<span class="sig-name descname"><span class="pre">generate_sql</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">hypothesis</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">schema_details</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">domain_context</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">entities_and_metrics</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">previous_error</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/modules/agents/exploratory/TabularDataExploratoryAgent.html#TabularDataExploratoryAgent.generate_sql"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.modules.agents.exploratory.TabularDataExploratoryAgent.TabularDataExploratoryAgent.generate_sql" title="Link to this definition"></a></dt>
+<dd><p>Generate a PostgreSQL query for a hypothesis.</p>
+<p>If <em>previous_error</em> is provided the LLM is asked to fix the broken
+query rather than generating from scratch.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>hypothesis</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="schemas_reference.html#squirrel.schemas.eda.Hypothesis" title="squirrel.schemas.eda.Hypothesis"><code class="xref py py-class docutils literal notranslate"><span class="pre">Hypothesis</span></code></a></span>) – The hypothesis to answer.</p></li>
+<li><p><strong>schema_details</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code></span>) – Enriched schema.</p></li>
+<li><p><strong>domain_context</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code></span>) – Domain context.</p></li>
+<li><p><strong>entities_and_metrics</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code></span>) – Entities and metrics.</p></li>
+<li><p><strong>previous_error</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]</span>) – Execution error from the previous attempt (if any).</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">SqlSpec</span></code> with SQL and axis metadata.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="schemas_reference.html#squirrel.schemas.eda.SqlSpec" title="squirrel.schemas.eda.SqlSpec">SqlSpec</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="squirrel.modules.agents.exploratory.TabularDataExploratoryAgent.TabularDataExploratoryAgent.execute_sql">
+<span class="sig-name descname"><span class="pre">execute_sql</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sql</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/modules/agents/exploratory/TabularDataExploratoryAgent.html#TabularDataExploratoryAgent.execute_sql"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.modules.agents.exploratory.TabularDataExploratoryAgent.TabularDataExploratoryAgent.execute_sql" title="Link to this definition"></a></dt>
+<dd><p>Execute <em>sql</em> via PostgresService and return a DataFrame.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>sql</strong> (<em>str</em>) – SELECT statement to execute.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Query result as a DataFrame (empty on no rows).</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>pd.DataFrame</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>Exception</strong> – Any database error is re-raised for the caller to handle.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="squirrel.modules.agents.exploratory.TabularDataExploratoryAgent.TabularDataExploratoryAgent.generate_observation">
+<span class="sig-name descname"><span class="pre">generate_observation</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">hypothesis</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">df</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">domain_context</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/modules/agents/exploratory/TabularDataExploratoryAgent.html#TabularDataExploratoryAgent.generate_observation"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.modules.agents.exploratory.TabularDataExploratoryAgent.TabularDataExploratoryAgent.generate_observation" title="Link to this definition"></a></dt>
+<dd><p>Generate a plain-text analytical observation from query results.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>hypothesis</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="schemas_reference.html#squirrel.schemas.eda.Hypothesis" title="squirrel.schemas.eda.Hypothesis"><code class="xref py py-class docutils literal notranslate"><span class="pre">Hypothesis</span></code></a></span>) – The hypothesis being examined.</p></li>
+<li><p><strong>df</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataFrame</span></code></span>) – Query results.</p></li>
+<li><p><strong>domain_context</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code>]</span>) – Domain context from Stage 2, used to ground the observation.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>2-3 sentence observation.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="squirrel.modules.agents.exploratory.TabularDataExploratoryAgent.TabularDataExploratoryAgent.generate_summary">
+<span class="sig-name descname"><span class="pre">generate_summary</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">chart_results</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/modules/agents/exploratory/TabularDataExploratoryAgent.html#TabularDataExploratoryAgent.generate_summary"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.modules.agents.exploratory.TabularDataExploratoryAgent.TabularDataExploratoryAgent.generate_summary" title="Link to this definition"></a></dt>
+<dd><p>Synthesise all succeeded chart observations into an executive summary.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>chart_results</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<a class="reference internal" href="schemas_reference.html#squirrel.schemas.eda.ChartResult" title="squirrel.schemas.eda.ChartResult"><code class="xref py py-class docutils literal notranslate"><span class="pre">ChartResult</span></code></a>]</span>) – Succeeded <code class="xref py py-class docutils literal notranslate"><span class="pre">ChartResult</span></code> objects.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Summary dict with <code class="docutils literal notranslate"><span class="pre">dataset_description</span></code>, <code class="docutils literal notranslate"><span class="pre">key_findings</span></code>,
+and <code class="docutils literal notranslate"><span class="pre">recommended_next_steps</span></code>.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>dict</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="squirrel.modules.agents.exploratory.TabularDataExploratoryAgent.TabularDataExploratoryAgent.process_hypothesis">
+<span class="sig-name descname"><span class="pre">process_hypothesis</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">hypothesis</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">enriched_schema</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">domain_context</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">entities_and_metrics</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/modules/agents/exploratory/TabularDataExploratoryAgent.html#TabularDataExploratoryAgent.process_hypothesis"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.modules.agents.exploratory.TabularDataExploratoryAgent.TabularDataExploratoryAgent.process_hypothesis" title="Link to this definition"></a></dt>
+<dd><p>Run stages 5–7 for a single hypothesis with SQL retry on failure.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>hypothesis</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="schemas_reference.html#squirrel.schemas.eda.Hypothesis" title="squirrel.schemas.eda.Hypothesis"><code class="xref py py-class docutils literal notranslate"><span class="pre">Hypothesis</span></code></a></span>) – The hypothesis to process.</p></li>
+<li><p><strong>enriched_schema</strong> (<em>Dict</em>)</p></li>
+<li><p><strong>domain_context</strong> (<em>Dict</em>)</p></li>
+<li><p><strong>entities_and_metrics</strong> (<em>Dict</em>)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Type<span class="colon">:</span></dt>
+<dd class="field-even"><p>Hypthesis</p>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Populated <code class="xref py py-class docutils literal notranslate"><span class="pre">ChartResult</span></code>.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="schemas_reference.html#squirrel.schemas.eda.ChartResult" title="squirrel.schemas.eda.ChartResult">ChartResult</a></p>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>On execution failure (DB error or hallucinated-column detection) the
+LLM is asked to fix the SQL up to <code class="docutils literal notranslate"><span class="pre">self.max_sql_retries</span></code> times before
+giving up and recording an error result. Two convergence safeguards
+were added:</p>
+<ul class="simple">
+<li><p>The error fed back to the LLM now includes a nearest-real-column
+suggestion per hallucinated identifier (see
+<code class="xref py py-meth docutils literal notranslate"><span class="pre">_suggest_column_fixes()</span></code>), so retries have something new to
+act on instead of re-guessing.</p></li>
+<li><p>If a retry hallucinates the <em>exact same</em> column set as the
+previous attempt, the loop gives up immediately rather than
+spending the remaining attempts on a guess that has already
+demonstrably not changed.</p></li>
+</ul>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="squirrel.modules.agents.exploratory.TabularDataExploratoryAgent.TabularDataExploratoryAgent.generate_table_relationships">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">generate_table_relationships</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">enriched_schema</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/modules/agents/exploratory/TabularDataExploratoryAgent.html#TabularDataExploratoryAgent.generate_table_relationships"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.modules.agents.exploratory.TabularDataExploratoryAgent.TabularDataExploratoryAgent.generate_table_relationships" title="Link to this definition"></a></dt>
+<dd><p>Deterministically detect candidate join keys between every pair of
+tables in <em>enriched_schema</em>, so multi-table hypotheses/SQL are
+grounded in real schema evidence rather than an LLM guess made from
+table names alone.</p>
+<p>Two signals are combined per table pair:</p>
+<ul class="simple">
+<li><p><strong>Shared column names</strong> — an exact (case-insensitive) column-name
+match in both tables, excluding generic/noisy names (see
+<code class="docutils literal notranslate"><span class="pre">_JOIN_KEY_STOPWORDS</span></code>) that are common across unrelated tables
+and rarely usable as a join key on their own.</p></li>
+<li><p><strong>Foreign-key-style naming</strong> — a column in one table named
+<code class="docutils literal notranslate"><span class="pre">&quot;&lt;singular</span> <span class="pre">of</span> <span class="pre">the</span> <span class="pre">other</span> <span class="pre">table&gt;_id&quot;</span></code> (e.g. a <code class="docutils literal notranslate"><span class="pre">customers</span></code> table
+and an <code class="docutils literal notranslate"><span class="pre">order.customer_id</span></code> column), which is a very common
+convention even when the two tables don’t share any other column
+name.</p></li>
+</ul>
+<p>This is a heuristic, not a guarantee — it surfaces <em>candidates</em> for
+the LLM to confirm/use, not a verified foreign-key constraint (which
+would require introspecting the database’s actual constraints).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>enriched_schema</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code></span>) – Table-keyed schema dict, each value carrying
+a <code class="docutils literal notranslate"><span class="pre">columns</span></code> list of <code class="docutils literal notranslate"><span class="pre">{&quot;name&quot;|&quot;column_name&quot;:</span> <span class="pre">str,</span> <span class="pre">...}</span></code> dicts.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]]</span></p>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Dict keyed by <code class="docutils literal notranslate"><span class="pre">&quot;{table_a}__{table_b}&quot;</span></code> (only pairs with at
+least one candidate key are included) mapping to a sorted list of
+candidate join-key column names.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="squirrel.modules.agents.exploratory.TabularDataExploratoryAgent.TabularDataExploratoryAgent.generate_schema_summary">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">generate_schema_summary</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">enriched_schema</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/modules/agents/exploratory/TabularDataExploratoryAgent.html#TabularDataExploratoryAgent.generate_schema_summary"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.modules.agents.exploratory.TabularDataExploratoryAgent.TabularDataExploratoryAgent.generate_schema_summary" title="Link to this definition"></a></dt>
+<dd><p>Render a compact, token-efficient schema summary for LLM prompts.
+Includes table row counts, column names, types, null counts, distinct
+counts, and sample values for low-cardinality columns.</p>
+<p>When <em>enriched_schema</em> describes more than one table, a “Table
+relationships” section is appended (see
+<a class="reference internal" href="#squirrel.modules.agents.exploratory.TabularDataExploratoryAgent.TabularDataExploratoryAgent.generate_table_relationships" title="squirrel.modules.agents.exploratory.TabularDataExploratoryAgent.TabularDataExploratoryAgent.generate_table_relationships"><code class="xref py py-meth docutils literal notranslate"><span class="pre">generate_table_relationships()</span></code></a>) so every prompt that consumes
+this summary — domain inference, hypothesis generation, and SQL
+generation — is grounded in how the tables can be joined, not just
+their individual shapes.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>enriched_schema</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code></span>) – Enriched schema from <code class="docutils literal notranslate"><span class="pre">_inspect_schema</span></code>.</p>
+</dd>
+<dt class="field-even">Type<span class="colon">:</span></dt>
+<dd class="field-even"><p>Dict</p>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Multi-line string representation.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="squirrel.modules.agents.exploratory.TabularDataExploratoryAgent.TabularDataExploratoryAgent.generate_column_details">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">generate_column_details</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">enriched_schema</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/modules/agents/exploratory/TabularDataExploratoryAgent.html#TabularDataExploratoryAgent.generate_column_details"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.modules.agents.exploratory.TabularDataExploratoryAgent.TabularDataExploratoryAgent.generate_column_details" title="Link to this definition"></a></dt>
+<dd><p>Render a terse, unambiguous per-table column list for injection into
+SQL-generation prompts as a hard constraint.</p>
+<p>Format:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">table_name</span><span class="p">:</span> <span class="n">col_a</span><span class="p">,</span> <span class="n">col_b</span><span class="p">,</span> <span class="n">col_c</span>
+<span class="n">other_table</span><span class="p">:</span> <span class="nb">id</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">created_at</span>
+</pre></div>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>enriched_schema</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code></span>) – Enriched schema from <code class="docutils literal notranslate"><span class="pre">_inspect_schema</span></code>.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Multi-line string, one table per line.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="squirrel.modules.agents.exploratory.TabularDataExploratoryAgent.TabularDataExploratoryAgent.classify_question_intent">
+<span class="sig-name descname"><span class="pre">classify_question_intent</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">question</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/modules/agents/exploratory/TabularDataExploratoryAgent.html#TabularDataExploratoryAgent.classify_question_intent"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.modules.agents.exploratory.TabularDataExploratoryAgent.TabularDataExploratoryAgent.classify_question_intent" title="Link to this definition"></a></dt>
+<dd><p>Decide whether <em>question</em> should be answered with a chart or with a
+plain tabular result (a saved view, no visualization forced onto it).</p>
+<p>This is also the entry point for manipulation-flavored requests
+(“dedupe this”, “drop outliers from X”, “give me a filtered list”)
+— they aren’t a distinct request type, they’re just questions that
+this classifier is expected to route to a table/view rather than a
+chart. See <a class="reference internal" href="#squirrel.modules.agents.exploratory.TabularDataExploratoryAgent.TabularDataExploratoryAgent.process_view_request" title="squirrel.modules.agents.exploratory.TabularDataExploratoryAgent.TabularDataExploratoryAgent.process_view_request"><code class="xref py py-meth docutils literal notranslate"><span class="pre">process_view_request()</span></code></a> for what happens next.</p>
+<p>Never raises - any failures to classify defaults to <code class="docutils literal notranslate"><span class="pre">needs_chart=True</span></code>
+so the pipeline degrades to its previous (chart-always) behavior rather
+than silently doing nothing.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>question</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></span>) – The user’s question, verbatim.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">{&quot;needs_chart&quot;:</span> <span class="pre">bool,</span> <span class="pre">&quot;chart_type&quot;:</span> <span class="pre">Optional[str],</span> <span class="pre">&quot;reasoning&quot;:</span> <span class="pre">str}</span></code></p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Dict</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="squirrel.modules.agents.exploratory.TabularDataExploratoryAgent.TabularDataExploratoryAgent.generate_view_sql">
+<span class="sig-name descname"><span class="pre">generate_view_sql</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">question</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">schema_details</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">view_name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">previous_error</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/modules/agents/exploratory/TabularDataExploratoryAgent.html#TabularDataExploratoryAgent.generate_view_sql"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.modules.agents.exploratory.TabularDataExploratoryAgent.TabularDataExploratoryAgent.generate_view_sql" title="Link to this definition"></a></dt>
+<dd><p>Generate a single <code class="docutils literal notranslate"><span class="pre">CREATE</span> <span class="pre">OR</span> <span class="pre">REPLACE</span> <span class="pre">VIEW</span> <span class="pre">...</span> <span class="pre">AS</span> <span class="pre">SELECT</span> <span class="pre">...</span></code> statement.</p>
+<p>This is how a manipulation-flavored question (“dedupe by X”, “drop
+rows where Y is null”, “aggregate by Z”) gets turned into something
+the user can actually use: a read-only view over the existing
+tables, reshaped/filtered/aggregated by the SELECT, never a mutation
+of the tables themselves.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></span></p>
+</dd>
+<dt class="field-even">Parameters<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>question</strong> (<em>str</em>)</p></li>
+<li><p><strong>schema_details</strong> (<em>Dict</em>)</p></li>
+<li><p><strong>view_name</strong> (<em>str</em>)</p></li>
+<li><p><strong>previous_error</strong> (<em>str</em><em> | </em><em>None</em>)</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="squirrel.modules.agents.exploratory.TabularDataExploratoryAgent.TabularDataExploratoryAgent.process_view_request">
+<span class="sig-name descname"><span class="pre">process_view_request</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">question</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">schema_details</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">view_name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">preview_limit</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">200</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/modules/agents/exploratory/TabularDataExploratoryAgent.html#TabularDataExploratoryAgent.process_view_request"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.modules.agents.exploratory.TabularDataExploratoryAgent.TabularDataExploratoryAgent.process_view_request" title="Link to this definition"></a></dt>
+<dd><p>Create a named, non-destructive view answering <em>question</em> and return a
+preview of its contents.</p>
+<p>This is the mechanism behind “ask a question that manipulates data,
+get a view back”: the request is turned into a
+<code class="docutils literal notranslate"><span class="pre">CREATE</span> <span class="pre">OR</span> <span class="pre">REPLACE</span> <span class="pre">VIEW</span></code> (never <code class="docutils literal notranslate"><span class="pre">ALTER</span></code>/<code class="docutils literal notranslate"><span class="pre">UPDATE</span></code>/<code class="docutils literal notranslate"><span class="pre">DELETE</span></code> on
+the source table), so the user gets a reshaped/filtered/aggregated
+result to reference in later questions without the original data
+source ever changing underneath them.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code></span></p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">{&quot;sql&quot;:</span> <span class="pre">str,</span> <span class="pre">&quot;view_name&quot;:</span> <span class="pre">str,</span> <span class="pre">&quot;data&quot;:</span> <span class="pre">pd.DataFrame,</span>
+<span class="pre">&quot;observation&quot;:</span> <span class="pre">str,</span> <span class="pre">&quot;error&quot;:</span> <span class="pre">Optional[str]}</span></code>. On failure <code class="docutils literal notranslate"><span class="pre">data</span></code>
+is empty and <code class="docutils literal notranslate"><span class="pre">error</span></code> is set; the caller decides how to surface
+that (mirrors <a class="reference internal" href="#squirrel.modules.agents.exploratory.TabularDataExploratoryAgent.TabularDataExploratoryAgent.process_hypothesis" title="squirrel.modules.agents.exploratory.TabularDataExploratoryAgent.TabularDataExploratoryAgent.process_hypothesis"><code class="xref py py-meth docutils literal notranslate"><span class="pre">process_hypothesis()</span></code></a>’s error handling).</p>
+</dd>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>question</strong> (<em>str</em>)</p></li>
+<li><p><strong>schema_details</strong> (<em>Dict</em>)</p></li>
+<li><p><strong>view_name</strong> (<em>str</em>)</p></li>
+<li><p><strong>preview_limit</strong> (<em>int</em>)</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>postgres_service</strong> (<a class="reference internal" href="services_reference.html#squirrel.services.storage.database.PostgresService.PostgresService" title="squirrel.services.storage.database.PostgresService.PostgresService"><em>PostgresService</em></a>)</p></li>
+<li><p><strong>prompt_generator</strong> (<a class="reference internal" href="prompts_reference.html#squirrel.modules.prompts.abstract.IPromptGenerator.IPromptGenerator" title="squirrel.modules.prompts.abstract.IPromptGenerator.IPromptGenerator"><em>IPromptGenerator</em></a>)</p></li>
+<li><p><strong>max_hypotheses</strong> (<em>int</em>)</p></li>
+<li><p><strong>max_sql_retries</strong> (<em>int</em>)</p></li>
+<li><p><strong>row_sample_for_observation</strong> (<em>int</em>)</p></li>
+<li><p><strong>user_id</strong> (<em>str</em><em> | </em><em>None</em>)</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+<section id="inspector">
+<h2>Inspector<a class="headerlink" href="#inspector" title="Link to this heading"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="squirrel.modules.agents.inspector.TabularDataInsepctorAgent.TabularDataInspectorAgent">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">TabularDataInspectorAgent</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">prompt_generator=&lt;squirrel.modules.prompts.inspect.InspectPromptGenerator.InspectPromptGenerator</span> <span class="pre">object&gt;</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/modules/agents/inspector/TabularDataInsepctorAgent.html#TabularDataInspectorAgent"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.modules.agents.inspector.TabularDataInsepctorAgent.TabularDataInspectorAgent" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#squirrel.modules.agents.abstract.IAgent.IAgent" title="squirrel.modules.agents.abstract.IAgent.IAgent"><code class="xref py py-class docutils literal notranslate"><span class="pre">IAgent</span></code></a></p>
+<p>Agent for inspecting tabular data and generating insights based on the analysis.</p>
+<dl class="simple">
+<dt>Lifecycle:</dt><dd><ol class="arabic simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">plan</span></code>    — asks the LLM to choose and order inspection strategies.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">execute</span></code> — runs each planned strategy and collects structured outputs.</p></li>
+<li><dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">summarize</span></code>— asks the LLM to interpret execution results and emit</dt><dd><p>findings, anomalies, and recommended next steps.</p>
+</dd>
+</dl>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">run</span></code>     — convenience wrapper that chains all three stages.</p></li>
+</ol>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>prompt_generator</strong> (<em>Any</em>)</p>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="squirrel.modules.agents.inspector.TabularDataInsepctorAgent.TabularDataInspectorAgent.visualize">
+<span class="sig-name descname"><span class="pre">visualize</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/modules/agents/inspector/TabularDataInsepctorAgent.html#TabularDataInspectorAgent.visualize"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.modules.agents.inspector.TabularDataInsepctorAgent.TabularDataInspectorAgent.visualize" title="Link to this definition"></a></dt>
+<dd><p>Generate visualizations for the given DataFrame.</p>
+<p><strong>Description:</strong></p>
+<blockquote>
+<div><p>This method generates visualizations for the given DataFrame. It can be used to create charts, graphs, or other visual representations of the data to help with analysis and interpretation.</p>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>data</strong> (<em>pd.DataFrame</em>) – Input dataset.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A string representation of the generated visualizations.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="squirrel.modules.agents.inspector.TabularDataInsepctorAgent.TabularDataInspectorAgent.inspect">
+<span class="sig-name descname"><span class="pre">inspect</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">objective</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/modules/agents/inspector/TabularDataInsepctorAgent.html#TabularDataInspectorAgent.inspect"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.modules.agents.inspector.TabularDataInsepctorAgent.TabularDataInspectorAgent.inspect" title="Link to this definition"></a></dt>
+<dd><p>Inspect the given DataFrame and return a JSON summary report with findings,</p>
+<p><strong>Description:</strong></p>
+<blockquote>
+<div><p>Inspect the given DataFrame and return a JSON summary report with findings,
+anomalies, and recommended next steps. The agent will first ask the LLM to
+plan an ordered sequence of inspection strategies, then execute each strategy
+while capturing structured outputs and any errors, and finally ask the LLM
+to interpret the execution results and produce a final summary.</p>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data</strong> (<em>pd.DataFrame</em>) – Input dataset.</p></li>
+<li><p><strong>objective</strong> (<em>str</em>) – Optional free-text goal passed to the planner.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>JSON summary report.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="squirrel.modules.agents.inspector.TabularDataInsepctorAgent.TabularDataInspectorAgent.plan">
+<span class="sig-name descname"><span class="pre">plan</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">objective</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/modules/agents/inspector/TabularDataInsepctorAgent.html#TabularDataInspectorAgent.plan"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.modules.agents.inspector.TabularDataInsepctorAgent.TabularDataInspectorAgent.plan" title="Link to this definition"></a></dt>
+<dd><p>Ask the LLM to build an ordered inspection plan from the available
+inspection strategies, tailored to the shape and column types of <em>data</em>.</p>
+<p><strong>Description:</strong></p>
+<blockquote>
+<div><p>The agent sends a dataset profile and the catalog of available inspections to the LLM,
+which responds with a JSON plan specifying which inspections to run, in what order
+and with what arguments. The agent validates the plan against the registry and, if any
+steps specify unknown inspections or are missing required arguments,
+the agent will ask the LLM to regenerate those specific steps, up to a max number of attempts per step.</p>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data</strong> (<em>pd.DataFrame</em>) – Input dataset.</p></li>
+<li><p><strong>objective</strong> (<em>str</em>) – Optional caller-supplied goal.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>JSON plan string.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="squirrel.modules.agents.inspector.TabularDataInsepctorAgent.TabularDataInspectorAgent.execute">
+<span class="sig-name descname"><span class="pre">execute</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">plan</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/modules/agents/inspector/TabularDataInsepctorAgent.html#TabularDataInspectorAgent.execute"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.modules.agents.inspector.TabularDataInsepctorAgent.TabularDataInspectorAgent.execute" title="Link to this definition"></a></dt>
+<dd><p>Execute the inspection plan produced by <code class="docutils literal notranslate"><span class="pre">plan()</span></code>.</p>
+<p>Unknown or failed strategies are recorded in the report rather than
+raising so the pipeline always produces a complete result.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataFrame</span></code></span>) – Input dataset.</p></li>
+<li><p><strong>plan</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code>]</span>) – JSON plan string or dict from <code class="docutils literal notranslate"><span class="pre">plan()</span></code>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>JSON execution report string.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="squirrel.modules.agents.inspector.TabularDataInsepctorAgent.TabularDataInspectorAgent.summarize">
+<span class="sig-name descname"><span class="pre">summarize</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">execution_report</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/modules/agents/inspector/TabularDataInsepctorAgent.html#TabularDataInspectorAgent.summarize"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.modules.agents.inspector.TabularDataInsepctorAgent.TabularDataInspectorAgent.summarize" title="Link to this definition"></a></dt>
+<dd><p>Ask the LLM to interpret the execution results and return a structured
+summary with findings, anomalies, and recommended next steps.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>execution_report</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code>]</span>) – JSON execution report from <code class="docutils literal notranslate"><span class="pre">execute()</span></code>.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>JSON summary string.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="squirrel.modules.agents.inspector.TabularDataInsepctorAgent.TabularDataInspectorAgent.inspect_multi">
+<span class="sig-name descname"><span class="pre">inspect_multi</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dataframes</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">objective</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/modules/agents/inspector/TabularDataInsepctorAgent.html#TabularDataInspectorAgent.inspect_multi"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.modules.agents.inspector.TabularDataInsepctorAgent.TabularDataInspectorAgent.inspect_multi" title="Link to this definition"></a></dt>
+<dd><p>Inspect every input source individually, then reason about how the
+sources relate to each other, grounded in the caller’s objective/query.
+Must run BEFORE TabularDataProcessorAgent so that merging/preprocessing
+is informed by real findings instead of shape-only guessing.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></span></p>
+</dd>
+<dt class="field-even">Parameters<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>dataframes</strong> (<em>Dict</em><em>[</em><em>str</em><em>, </em><em>DataFrame</em><em>]</em>)</p></li>
+<li><p><strong>objective</strong> (<em>str</em>)</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="orchestrator">
+<h2>Orchestrator<a class="headerlink" href="#orchestrator" title="Link to this heading"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="squirrel.modules.agents.orchestrator.OrchestratorAgent.OrchestratorAgent">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">OrchestratorAgent</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">api_key</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'GEMINI_API_KEY_V1'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">provider</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">Provider.GEMINI</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">model_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'models/gemini-2.5-flash'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prompt_generator</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">config</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/modules/agents/orchestrator/OrchestratorAgent.html#OrchestratorAgent"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.modules.agents.orchestrator.OrchestratorAgent.OrchestratorAgent" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#squirrel.modules.agents.abstract.IAgent.IAgent" title="squirrel.modules.agents.abstract.IAgent.IAgent"><code class="xref py py-class docutils literal notranslate"><span class="pre">IAgent</span></code></a></p>
+<p>Classify a request and return the route the service should execute.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>api_key</strong> (<em>Optional</em><em>[</em><em>str</em><em>]</em>)</p></li>
+<li><p><strong>provider</strong> (<em>Optional</em><em>[</em><a class="reference internal" href="providers_reference.html#squirrel.modules.providers.abstract.IProvider.Provider" title="squirrel.modules.providers.abstract.IProvider.Provider"><em>Provider</em></a><em>]</em>)</p></li>
+<li><p><strong>model_name</strong> (<em>Optional</em><em>[</em><em>str</em><em>]</em>)</p></li>
+<li><p><strong>prompt_generator</strong> (<em>Optional</em><em>[</em><a class="reference internal" href="prompts_reference.html#squirrel.modules.prompts.orchestrator.OrchestratorPromptGenerator.OrchestratorPromptGenerator" title="squirrel.modules.prompts.orchestrator.OrchestratorPromptGenerator.OrchestratorPromptGenerator"><em>OrchestratorPromptGenerator</em></a><em>]</em>)</p></li>
+<li><p><strong>config</strong> (<em>Optional</em><em>[</em><em>Dict</em><em>[</em><em>str</em><em>, </em><em>Any</em><em>]</em><em>]</em>)</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="squirrel.modules.agents.orchestrator.OrchestratorAgent.OrchestratorAgent.orchestrate">
+<span class="sig-name descname"><span class="pre">orchestrate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">query</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">body</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">file_urls</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">metadata</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/modules/agents/orchestrator/OrchestratorAgent.html#OrchestratorAgent.orchestrate"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.modules.agents.orchestrator.OrchestratorAgent.OrchestratorAgent.orchestrate" title="Link to this definition"></a></dt>
+<dd><p>Ask the LLM to classify <em>query</em>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>query</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></span>) – User’s natural-language instruction.</p></li>
+<li><p><strong>body</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code>]]</span>) – Optional structured payload.</p></li>
+<li><p><strong>file_urls</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code>]]</span>) – Attached <code class="docutils literal notranslate"><span class="pre">s3://</span></code> or HTTP URLs (included in the
+prompt for context only).</p></li>
+<li><p><strong>metadata</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code>]]</span>) – Ambient metadata forwarded from the chat layer.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code>]</span></p>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Route-decision dict — see <code class="xref py py-meth docutils literal notranslate"><span class="pre">_decision()</span></code>.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="preprocessor">
+<h2>Preprocessor<a class="headerlink" href="#preprocessor" title="Link to this heading"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="squirrel.modules.agents.preprocessor.TabularDataProcessorAgent.TabularDataProcessorAgent">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">TabularDataProcessorAgent</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">prompt_generator</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/modules/agents/preprocessor/TabularDataProcessorAgent.html#TabularDataProcessorAgent"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.modules.agents.preprocessor.TabularDataProcessorAgent.TabularDataProcessorAgent" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#squirrel.modules.agents.abstract.IAgent.IAgent" title="squirrel.modules.agents.abstract.IAgent.IAgent"><code class="xref py py-class docutils literal notranslate"><span class="pre">IAgent</span></code></a></p>
+<p>Agent for cleaning and transforming tabular datasets.</p>
+<p><strong>Description:</strong></p>
+<blockquote>
+<div><p>The agent accepts an optional EDA summary (from <code class="docutils literal notranslate"><span class="pre">TabularDataInspectorAgent</span></code>)
+to ground its preprocessing plan in concrete findings rather than relying on
+generic heuristics.</p>
+</div></blockquote>
+<dl class="simple">
+<dt>Lifecycle:</dt><dd><ol class="arabic simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">plan</span></code>     — asks the LLM to build an ordered preprocessing plan.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">execute</span></code>  — runs each planned step and collects structured outputs.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">summarize</span></code>— asks the LLM to interpret results into a concise report.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">run</span></code>      — convenience wrapper chaining all three stages.</p></li>
+</ol>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>prompt_generator</strong> (<em>Any</em>)</p>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="squirrel.modules.agents.preprocessor.TabularDataProcessorAgent.TabularDataProcessorAgent.detect_column_conflicts">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">detect_column_conflicts</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dataframes</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target_column</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/modules/agents/preprocessor/TabularDataProcessorAgent.html#TabularDataProcessorAgent.detect_column_conflicts"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.modules.agents.preprocessor.TabularDataProcessorAgent.TabularDataProcessorAgent.detect_column_conflicts" title="Link to this definition"></a></dt>
+<dd><p>Return the list of column names that appear in more than one of
+<em>dataframes</em>, excluding <code class="docutils literal notranslate"><span class="pre">target_column</span></code> (the predicted column is
+expected to live in exactly one source and is validated separately).</p>
+<p>This is used as a fast, deterministic signal — not a hard veto — for
+whether a column-wise merge would be ambiguous. See
+<a class="reference internal" href="#squirrel.modules.agents.preprocessor.TabularDataProcessorAgent.TabularDataProcessorAgent.merge_sources" title="squirrel.modules.agents.preprocessor.TabularDataProcessorAgent.TabularDataProcessorAgent.merge_sources"><code class="xref py py-meth docutils literal notranslate"><span class="pre">merge_sources()</span></code></a> for how it’s used.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>dataframes</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">DataFrame</span></code>]</span>) – Mapping of source_id -&gt; DataFrame, as returned by
+<code class="docutils literal notranslate"><span class="pre">WorkspaceService.load_source_dataframes</span></code>.</p></li>
+<li><p><strong>target_column</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]</span>) – Column the user picked to predict, if any;
+excluded from the conflict check since the target is allowed (and
+expected) to be named the same as feature columns in spirit, but
+must exist in exactly one source — that’s enforced by the caller.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]</span></p>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Sorted list of conflicting column names. Empty if none.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="squirrel.modules.agents.preprocessor.TabularDataProcessorAgent.TabularDataProcessorAgent.merge_sources">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">merge_sources</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dataframes</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target_column</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">objective</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">agent</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">merge_recommendation</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/modules/agents/preprocessor/TabularDataProcessorAgent.html#TabularDataProcessorAgent.merge_sources"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.modules.agents.preprocessor.TabularDataProcessorAgent.TabularDataProcessorAgent.merge_sources" title="Link to this definition"></a></dt>
+<dd><p>Fold two or more source DataFrames into a single DataFrame ready for
+the rest of the preprocessing pipeline.</p>
+<dl class="simple">
+<dt>Merge strategy:</dt><dd><ul class="simple">
+<li><p>A single source is returned as-is (no-op — covers the common
+single-CSV workspace).</p></li>
+<li><p>Multiple sources with an identical column set and no conflicts
+are merged row-wise (<code class="docutils literal notranslate"><span class="pre">pd.concat(axis=0)</span></code>) — the common case
+of several batches/exports of the same schema (e.g. monthly
+extracts).</p></li>
+<li><p>Multiple sources with the same row count, disjoint columns,
+and no name conflicts are merged column-wise
+(<code class="docutils literal notranslate"><span class="pre">pd.concat(axis=1)</span></code>), on the assumption that row <em>i</em> in
+every source describes the same entity (e.g. one CSV of
+customer demographics and another of customer usage stats,
+both ordered by the same customer list).</p></li>
+<li><p>Anything else — different schemas that don’t obviously stack
+or align, and/or column-name collisions — is handed to
+<code class="xref py py-meth docutils literal notranslate"><span class="pre">_merge_via_agent()</span></code>, which asks the LLM to inspect each
+source’s schema/sample rows and infer a relationship (most
+commonly a shared join key), grounded in <code class="docutils literal notranslate"><span class="pre">target_column</span></code> and
+<code class="docutils literal notranslate"><span class="pre">objective</span></code>. If the LLM can’t find a defensible
+relationship, the merge is refused with an explanation.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>objective</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></span>) – Optional free-text context from the caller (e.g.
+“join the two sources on customer_id”, or a description of what
+the eventual model should optimize for). Passed to the LLM
+fallback path only — it doesn’t affect the deterministic
+heuristics above.</p></li>
+<li><p><strong>agent</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<a class="reference internal" href="#squirrel.modules.agents.preprocessor.TabularDataProcessorAgent.TabularDataProcessorAgent" title="squirrel.modules.agents.preprocessor.TabularDataProcessorAgent.TabularDataProcessorAgent"><code class="xref py py-class docutils literal notranslate"><span class="pre">TabularDataProcessorAgent</span></code></a>]</span>) – Optional existing agent instance to reuse for the LLM
+fallback path (avoids constructing a second one when called from
+<a class="reference internal" href="#squirrel.modules.agents.preprocessor.TabularDataProcessorAgent.TabularDataProcessorAgent.run_multi" title="squirrel.modules.agents.preprocessor.TabularDataProcessorAgent.TabularDataProcessorAgent.run_multi"><code class="xref py py-meth docutils literal notranslate"><span class="pre">run_multi()</span></code></a>). A fresh instance is created if omitted.</p></li>
+<li><p><strong>dataframes</strong> (<em>Dict</em><em>[</em><em>str</em><em>, </em><em>DataFrame</em><em>]</em>)</p></li>
+<li><p><strong>target_column</strong> (<em>str</em><em> | </em><em>None</em>)</p></li>
+<li><p><strong>merge_recommendation</strong> (<em>Dict</em><em>[</em><em>str</em><em>, </em><em>Any</em><em>] </em><em>| </em><em>None</em>)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><a class="reference internal" href="schemas_reference.html#squirrel.schemas.error.DuplicateColumnError" title="squirrel.schemas.error.DuplicateColumnError"><strong>DuplicateColumnError</strong></a> – if a column-wise merge would collide
+on a non-target column name and the LLM fallback can’t resolve it.</p></li>
+<li><p><strong>ValueError</strong> – if no defensible merge strategy applies, including
+when the LLM fallback explicitly rejects the sources as unrelated.</p></li>
+</ul>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataFrame</span></code></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="squirrel.modules.agents.preprocessor.TabularDataProcessorAgent.TabularDataProcessorAgent.run_multi">
+<span class="sig-name descname"><span class="pre">run_multi</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dataframes</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target_column</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">eda_summary</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">objective</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">merge_recommendation</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_refinements</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/modules/agents/preprocessor/TabularDataProcessorAgent.html#TabularDataProcessorAgent.run_multi"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.modules.agents.preprocessor.TabularDataProcessorAgent.TabularDataProcessorAgent.run_multi" title="Link to this definition"></a></dt>
+<dd><p>Multi-source convenience wrapper: merge every source into one
+DataFrame (see <a class="reference internal" href="#squirrel.modules.agents.preprocessor.TabularDataProcessorAgent.TabularDataProcessorAgent.merge_sources" title="squirrel.modules.agents.preprocessor.TabularDataProcessorAgent.TabularDataProcessorAgent.merge_sources"><code class="xref py py-meth docutils literal notranslate"><span class="pre">merge_sources()</span></code></a>), then run the normal
+plan → execute → summarize pipeline on the result.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>dataframes</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">DataFrame</span></code>]</span>) – Mapping of source_id -&gt; DataFrame.</p></li>
+<li><p><strong>target_column</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]</span>) – Column the user chose to predict; used both to
+exclude it from the duplicate-column check (see
+<a class="reference internal" href="#squirrel.modules.agents.preprocessor.TabularDataProcessorAgent.TabularDataProcessorAgent.detect_column_conflicts" title="squirrel.modules.agents.preprocessor.TabularDataProcessorAgent.TabularDataProcessorAgent.detect_column_conflicts"><code class="xref py py-meth docutils literal notranslate"><span class="pre">detect_column_conflicts()</span></code></a>) and to ground the LLM’s
+relationship-finding when sources need to be joined.</p></li>
+<li><p><strong>objective</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></span>) – Optional free-text instruction describing how the
+sources relate and/or what the model should optimize for.
+Forwarded to <a class="reference internal" href="#squirrel.modules.agents.preprocessor.TabularDataProcessorAgent.TabularDataProcessorAgent.merge_sources" title="squirrel.modules.agents.preprocessor.TabularDataProcessorAgent.TabularDataProcessorAgent.merge_sources"><code class="xref py py-meth docutils literal notranslate"><span class="pre">merge_sources()</span></code></a>’s LLM fallback, and to the
+preprocessing plan/summarize stages as the run’s objective.</p></li>
+<li><p><strong>eda_summary</strong> (<em>dict</em><em> | </em><em>None</em>)</p></li>
+<li><p><strong>merge_recommendation</strong> (<em>Dict</em><em>[</em><em>str</em><em>, </em><em>Any</em><em>] </em><em>| </em><em>None</em>)</p></li>
+<li><p><strong>max_refinements</strong> (<em>int</em>)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">DataFrame</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]</span></p>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">(processed_df,</span> <span class="pre">summary,</span> <span class="pre">plan_json,</span> <span class="pre">execution_report_json)</span></code>
+— the last two are the raw plan and execution report, returned
+so the caller can persist them as the “fitted pipeline” artifact
+needed by <a class="reference internal" href="#squirrel.modules.agents.preprocessor.TabularDataProcessorAgent.TabularDataProcessorAgent.apply_fitted_pipeline" title="squirrel.modules.agents.preprocessor.TabularDataProcessorAgent.TabularDataProcessorAgent.apply_fitted_pipeline"><code class="xref py py-meth docutils literal notranslate"><span class="pre">apply_fitted_pipeline()</span></code></a> at inference time.</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><a class="reference internal" href="schemas_reference.html#squirrel.schemas.error.DuplicateColumnError" title="squirrel.schemas.error.DuplicateColumnError"><strong>DuplicateColumnError</strong></a> – propagated from <a class="reference internal" href="#squirrel.modules.agents.preprocessor.TabularDataProcessorAgent.TabularDataProcessorAgent.merge_sources" title="squirrel.modules.agents.preprocessor.TabularDataProcessorAgent.TabularDataProcessorAgent.merge_sources"><code class="xref py py-meth docutils literal notranslate"><span class="pre">merge_sources()</span></code></a>.</p></li>
+<li><p><strong>ValueError</strong> – propagated from <a class="reference internal" href="#squirrel.modules.agents.preprocessor.TabularDataProcessorAgent.TabularDataProcessorAgent.merge_sources" title="squirrel.modules.agents.preprocessor.TabularDataProcessorAgent.TabularDataProcessorAgent.merge_sources"><code class="xref py py-meth docutils literal notranslate"><span class="pre">merge_sources()</span></code></a> when no
+relationship between sources could be established.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="squirrel.modules.agents.preprocessor.TabularDataProcessorAgent.TabularDataProcessorAgent.run">
+<span class="sig-name descname"><span class="pre">run</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">eda_summary</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">objective</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target_column</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_refinements</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/modules/agents/preprocessor/TabularDataProcessorAgent.html#TabularDataProcessorAgent.run"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.modules.agents.preprocessor.TabularDataProcessorAgent.TabularDataProcessorAgent.run" title="Link to this definition"></a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>target_column</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]</span>) – The column the downstream model will predict, if
+known. When given, the planner is told to preserve it and any step
+that would drop it is defensively stripped/skipped in execute() —
+preprocessing has no other way to know a column it judges
+“redundant” (e.g. highly collinear with another feature) is
+actually the label, and losing it here surfaces only much later
+as a hard failure in the model-builder stage.</p></li>
+<li><p><strong>data</strong> (<em>DataFrame</em>)</p></li>
+<li><p><strong>eda_summary</strong> (<em>dict</em><em> | </em><em>None</em>)</p></li>
+<li><p><strong>objective</strong> (<em>str</em>)</p></li>
+<li><p><strong>max_refinements</strong> (<em>int</em>)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">DataFrame</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]</span></p>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">(processed_df,</span> <span class="pre">summary_dict,</span> <span class="pre">plan_json,</span> <span class="pre">execution_report_json)</span></code>.
+<code class="docutils literal notranslate"><span class="pre">plan_json</span></code> and <code class="docutils literal notranslate"><span class="pre">execution_report_json</span></code> are the plan/execution
+report from whichever attempt was selected as <code class="docutils literal notranslate"><span class="pre">best</span></code> — this is
+the pair to persist (e.g. via
+<code class="docutils literal notranslate"><span class="pre">WorkspaceService.save_pipeline_artifact</span></code>) if you want to be
+able to replay this exact preprocessing against new data later
+via <a class="reference internal" href="#squirrel.modules.agents.preprocessor.TabularDataProcessorAgent.TabularDataProcessorAgent.apply_fitted_pipeline" title="squirrel.modules.agents.preprocessor.TabularDataProcessorAgent.TabularDataProcessorAgent.apply_fitted_pipeline"><code class="xref py py-meth docutils literal notranslate"><span class="pre">apply_fitted_pipeline()</span></code></a>.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="squirrel.modules.agents.preprocessor.TabularDataProcessorAgent.TabularDataProcessorAgent.plan">
+<span class="sig-name descname"><span class="pre">plan</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">eda_summary</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">objective</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target_column</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/modules/agents/preprocessor/TabularDataProcessorAgent.html#TabularDataProcessorAgent.plan"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.modules.agents.preprocessor.TabularDataProcessorAgent.TabularDataProcessorAgent.plan" title="Link to this definition"></a></dt>
+<dd><p>Ask the LLM to build an ordered preprocessing plan.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataFrame</span></code></span>) – Input DataFrame.</p></li>
+<li><p><strong>eda_summary</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code>]</span>) – Optional structured EDA findings.</p></li>
+<li><p><strong>objective</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></span>) – Optional caller-supplied goal.</p></li>
+<li><p><strong>target_column</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]</span>) – The column the downstream model will predict, if
+known. Passed through to the prompt so the planner doesn’t drop,
+encode-away, or otherwise destroy it while cleaning “redundant”
+columns (e.g. a feature highly correlated with the target itself).</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></span></p>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>JSON plan string.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="squirrel.modules.agents.preprocessor.TabularDataProcessorAgent.TabularDataProcessorAgent.execute">
+<span class="sig-name descname"><span class="pre">execute</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">plan</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target_column</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/modules/agents/preprocessor/TabularDataProcessorAgent.html#TabularDataProcessorAgent.execute"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.modules.agents.preprocessor.TabularDataProcessorAgent.TabularDataProcessorAgent.execute" title="Link to this definition"></a></dt>
+<dd><p>Execute the preprocessing plan produced by <code class="docutils literal notranslate"><span class="pre">plan()</span></code> in “fit” mode:
+every strategy computes its parameters (means, bounds, encoding
+maps, …) fresh from <em>data</em>. This is always the training-time path.</p>
+<p>Cleaning steps are dispatched through <code class="docutils literal notranslate"><span class="pre">TabularDataCleaner</span></code> and
+transformation steps through <code class="docutils literal notranslate"><span class="pre">TabularDataTransformer</span></code>.  Unknown or
+failed steps are recorded in the report rather than raising, so the
+pipeline always produces a complete result.</p>
+<p>A strategy can report a top-level status of “completed” while one or
+more of its columns silently failed internally (e.g. a step
+referencing a column an earlier step already dropped/renamed —
+strategies record this as <code class="docutils literal notranslate"><span class="pre">per_column:</span> <span class="pre">{col:</span> <span class="pre">{&quot;error&quot;:</span> <span class="pre">...}}</span></code>
+rather than raising). Left unchecked, this produces a pipeline that
+“trains successfully” but can never be replayed against new data at
+inference time (see <a class="reference internal" href="#squirrel.modules.agents.preprocessor.TabularDataProcessorAgent.TabularDataProcessorAgent.apply_fitted_pipeline" title="squirrel.modules.agents.preprocessor.TabularDataProcessorAgent.TabularDataProcessorAgent.apply_fitted_pipeline"><code class="xref py py-meth docutils literal notranslate"><span class="pre">apply_fitted_pipeline()</span></code></a>, which already
+checks for exactly this). Every step here is now checked the same
+way immediately after execution, and demoted to “failed” if any
+column silently failed — so the problem surfaces at build time,
+feeds into refinement, and doesn’t wait until a predict request to
+appear.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataFrame</span></code></span>) – Input DataFrame.</p></li>
+<li><p><strong>plan</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code> | <code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></span>) – JSON plan string or dict from <code class="docutils literal notranslate"><span class="pre">plan()</span></code>.</p></li>
+<li><p><strong>target_column</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]</span>) – The column the downstream model will predict, if
+known. Prompting the planner to preserve it (see <a class="reference internal" href="#squirrel.modules.agents.preprocessor.TabularDataProcessorAgent.TabularDataProcessorAgent.plan" title="squirrel.modules.agents.preprocessor.TabularDataProcessorAgent.TabularDataProcessorAgent.plan"><code class="xref py py-meth docutils literal notranslate"><span class="pre">plan()</span></code></a>) is
+not sufficient on its own — the LLM can and does drop it anyway
+(e.g. judging it “redundant” against a near-duplicate feature it
+doesn’t recognise as the label). Every step is defensively
+checked here and the target column is stripped out of any
+drop-columns arguments before execution, independent of what the
+plan says.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">DataFrame</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]</span></p>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">(processed_df,</span> <span class="pre">json_execution_report_string)</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="squirrel.modules.agents.preprocessor.TabularDataProcessorAgent.TabularDataProcessorAgent.apply_fitted_pipeline">
+<span class="sig-name descname"><span class="pre">apply_fitted_pipeline</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">new_data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">execution_report</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/modules/agents/preprocessor/TabularDataProcessorAgent.html#TabularDataProcessorAgent.apply_fitted_pipeline"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.modules.agents.preprocessor.TabularDataProcessorAgent.TabularDataProcessorAgent.apply_fitted_pipeline" title="Link to this definition"></a></dt>
+<dd><p>Inference-time counterpart to <a class="reference internal" href="#squirrel.modules.agents.preprocessor.TabularDataProcessorAgent.TabularDataProcessorAgent.execute" title="squirrel.modules.agents.preprocessor.TabularDataProcessorAgent.TabularDataProcessorAgent.execute"><code class="xref py py-meth docutils literal notranslate"><span class="pre">execute()</span></code></a>: replay a previously
+completed preprocessing run against <em>new_data</em>, reusing each step’s
+already-fitted parameters instead of recomputing them.</p>
+<p>This walks <code class="docutils literal notranslate"><span class="pre">execution_report[&quot;steps&quot;]</span></code> in the same order they ran
+at training time. Completed steps are re-applied to <em>new_data</em> with
+their recorded <code class="docutils literal notranslate"><span class="pre">per_column</span></code> fitted state, including means, bounds,
+encoding maps, fitted lambda values, and dummy-column sets. Each
+data-dependent strategy therefore reuses its training-time value
+instead of re-fitting from <em>new_data</em>.
+Steps that were <code class="docutils literal notranslate"><span class="pre">&quot;failed&quot;</span></code> or <code class="docutils literal notranslate"><span class="pre">&quot;skipped&quot;</span></code> during training are
+skipped here too, since they never touched the training frame either.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>new_data</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataFrame</span></code></span>) – Raw new data to transform into the same feature
+space the model was trained on.</p></li>
+<li><p><strong>execution_report</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code> | <code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></span>) – The JSON execution report string or dict
+returned by <a class="reference internal" href="#squirrel.modules.agents.preprocessor.TabularDataProcessorAgent.TabularDataProcessorAgent.execute" title="squirrel.modules.agents.preprocessor.TabularDataProcessorAgent.TabularDataProcessorAgent.execute"><code class="xref py py-meth docutils literal notranslate"><span class="pre">execute()</span></code></a> (or, equivalently,
+<code class="docutils literal notranslate"><span class="pre">run()</span></code>’s fourth return value) during training. This is what
+<code class="docutils literal notranslate"><span class="pre">WorkspaceService.save_pipeline_artifact</span></code> persists and
+<code class="docutils literal notranslate"><span class="pre">WorkspaceService.predict</span></code> loads back.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataFrame</span></code></span></p>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p><em>new_data</em> transformed through the identical pipeline the
+training data went through, ready to feed to the fitted model
+(after dropping the target column, if present).</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>ValueError</strong> – if <em>execution_report</em> can’t be parsed.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="squirrel.modules.agents.preprocessor.TabularDataProcessorAgent.TabularDataProcessorAgent.summarize">
+<span class="sig-name descname"><span class="pre">summarize</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">original_df</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">processed_df</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">execution_report</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/modules/agents/preprocessor/TabularDataProcessorAgent.html#TabularDataProcessorAgent.summarize"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.modules.agents.preprocessor.TabularDataProcessorAgent.TabularDataProcessorAgent.summarize" title="Link to this definition"></a></dt>
+<dd><p>Ask the LLM to interpret the execution report and return a structured
+preprocessing summary.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>original_df</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataFrame</span></code></span>) – The unprocessed input DataFrame.</p></li>
+<li><p><strong>processed_df</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataFrame</span></code></span>) – The DataFrame after all steps have been applied.</p></li>
+<li><p><strong>execution_report</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code> | <code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></span>) – JSON execution report from <code class="docutils literal notranslate"><span class="pre">execute()</span></code>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></span></p>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>JSON summary string.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="squirrel.modules.agents.preprocessor.TabularDataProcessorAgent._AgentMergeRejected">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">_AgentMergeRejected</span></span><a class="reference internal" href="../_modules/squirrel/modules/agents/preprocessor/TabularDataProcessorAgent.html#_AgentMergeRejected"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.modules.agents.preprocessor.TabularDataProcessorAgent._AgentMergeRejected" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Exception</span></code></p>
+<p>Internal signal used within <a class="reference internal" href="#squirrel.modules.agents.preprocessor.TabularDataProcessorAgent.TabularDataProcessorAgent.merge_sources" title="squirrel.modules.agents.preprocessor.TabularDataProcessorAgent.TabularDataProcessorAgent.merge_sources"><code class="xref py py-meth docutils literal notranslate"><span class="pre">TabularDataProcessorAgent.merge_sources()</span></code></a>
+to distinguish “the LLM looked and found nothing usable” from a normal
+Python exception, so the caller can decide whether to surface it as a
+<code class="docutils literal notranslate"><span class="pre">DuplicateColumnError</span></code> (409, name collision) or a plain <code class="docutils literal notranslate"><span class="pre">ValueError</span></code>
+(409, no relationship found). Never escapes <code class="docutils literal notranslate"><span class="pre">merge_sources</span></code> itself.</p>
+</dd></dl>
+
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="services_reference.html" class="btn btn-neutral float-left" title="Services" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="prompts_reference.html" class="btn btn-neutral float-right" title="Prompt Components" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, Mazen Soliman.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+  
+  <span class="version">Squirrel version 0.1.0</span>
+
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -1,0 +1,860 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>HTTP API &mdash; SQRL Documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/custom.css?v=35931533" />
+
+  
+    <link rel="shortcut icon" href="../_static/sqrl.png"/>
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=01f34227"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="../_static/copybutton.js?v=a46eff05"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Data Schemas" href="schemas_reference.html" />
+    <link rel="prev" title="Backend API Reference" href="../api.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html">
+            
+              <img src="../_static/sqrl.png" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Learn and build</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../getting-started.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../workflow.html">Product workflow</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../architecture.html">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../deployment.html">Deployment and operations</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Reference</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="../api.html">Backend API Reference</a><ul class="current">
+<li class="toctree-l2 current"><a class="current reference internal" href="#">HTTP API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="schemas_reference.html">Data Schemas</a></li>
+<li class="toctree-l2"><a class="reference internal" href="services_reference.html">Services</a></li>
+<li class="toctree-l2"><a class="reference internal" href="agents_reference.html">Agents</a></li>
+<li class="toctree-l2"><a class="reference internal" href="prompts_reference.html">Prompt Components</a></li>
+<li class="toctree-l2"><a class="reference internal" href="providers_reference.html">Model Providers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="inspectors_reference.html">Data Inspectors</a></li>
+<li class="toctree-l2"><a class="reference internal" href="preprocessors_reference.html">Preprocessors</a></li>
+<li class="toctree-l2"><a class="reference internal" href="core_reference.html">Core Infrastructure</a></li>
+<li class="toctree-l2"><a class="reference internal" href="models_reference.html">Machine Learning Models</a></li>
+<li class="toctree-l2"><a class="reference internal" href="constants_reference.html">Constants</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">squirrel</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../api.html">Backend API Reference</a></li>
+      <li class="breadcrumb-item active">HTTP API</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/generated/api_reference.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="http-api">
+<h1>HTTP API<a class="headerlink" href="#http-api" title="Link to this heading"></a></h1>
+<p>Reference documentation for SQRL http api.</p>
+<section id="module-squirrel.api.api">
+<span id="api"></span><h2>Api<a class="headerlink" href="#module-squirrel.api.api" title="Link to this heading"></a></h2>
+<section id="api-router-module">
+<h3>API Router Module<a class="headerlink" href="#api-router-module" title="Link to this heading"></a></h3>
+<section id="overview">
+<h4>Overview<a class="headerlink" href="#overview" title="Link to this heading"></a></h4>
+<p>This module configures and registers all API routes for the SQRL FastAPI application.</p>
+</section>
+</section>
+</section>
+<section id="module-squirrel.api.routes.auth">
+<span id="auth"></span><h2>Auth<a class="headerlink" href="#module-squirrel.api.routes.auth" title="Link to this heading"></a></h2>
+<section id="auth-route-module">
+<h3>Auth Route Module<a class="headerlink" href="#auth-route-module" title="Link to this heading"></a></h3>
+<p>Endpoints for registering users, authenticating requests, and revoking tokens.</p>
+</section>
+</section>
+<section id="module-squirrel.api.routes.chat">
+<span id="chat"></span><h2>Chat<a class="headerlink" href="#module-squirrel.api.routes.chat" title="Link to this heading"></a></h2>
+<section id="chat-route">
+<h3>Chat Route<a class="headerlink" href="#chat-route" title="Link to this heading"></a></h3>
+<section id="id1">
+<h4>Overview<a class="headerlink" href="#id1" title="Link to this heading"></a></h4>
+<p>This module defines the API routes for handling chat interactions in SQRL.
+It provides endpoints for sending messages, retrieving chat history, and managing conversations.</p>
+<p>Each <code class="docutils literal notranslate"><span class="pre">POST</span> <span class="pre">/</span></code> call follows this pipeline:</p>
+<ol class="arabic simple">
+<li><p>Forward the request to <code class="xref py py-class docutils literal notranslate"><span class="pre">OrchestratorService</span></code>, which classifies the
+request (<code class="docutils literal notranslate"><span class="pre">chat</span></code> / <code class="docutils literal notranslate"><span class="pre">explore</span></code> / <code class="docutils literal notranslate"><span class="pre">build</span></code>) and runs the matching pipeline.</p></li>
+<li><p>Persist the full chat turn — user message, file URLs, assistant reply,
+agent output, token counts, and response time — to PostgreSQL.</p></li>
+<li><p>Return the <code class="xref py py-class docutils literal notranslate"><span class="pre">AgentResponse</span></code> to the caller.</p></li>
+</ol>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p><code class="docutils literal notranslate"><span class="pre">request.fileUrls</span></code> are expected to already be resolved <code class="docutils literal notranslate"><span class="pre">s3://</span></code> URLs.
+Files are uploaded to MinIO by a dedicated upload endpoint <em>before</em> the
+chat request is sent; this route never receives raw file blobs and does
+not perform any upload step itself.</p>
+</div>
+</section>
+<section id="endpoints">
+<h4>Endpoints<a class="headerlink" href="#endpoints" title="Link to this heading"></a></h4>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">POST</span> <span class="pre">/</span></code>  — send a message and receive an assistant reply.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">WS</span>&#160; <span class="pre">/ws</span></code> — stream orchestrator observations over a websocket.</p></li>
+</ul>
+</section>
+</section>
+<dl class="py function">
+<dt class="sig sig-object py" id="squirrel.api.routes.chat.chat">
+<em class="property"><span class="k"><span class="pre">async</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">chat</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">request</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">Body(PydanticUndefined)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">current_user</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">Depends(get_current_user)</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/api/routes/chat.html#chat"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.api.routes.chat.chat" title="Link to this definition"></a></dt>
+<dd><section id="chat-endpoint">
+<h3>Chat Endpoint<a class="headerlink" href="#chat-endpoint" title="Link to this heading"></a></h3>
+<p><strong>Pipeline:</strong></p>
+<ol class="arabic simple">
+<li><p>Invoke the orchestrator with <code class="docutils literal notranslate"><span class="pre">request.fileUrls</span></code> as-is (already
+resolved <code class="docutils literal notranslate"><span class="pre">s3://</span></code> URLs) and await the assistant reply.</p></li>
+<li><p>Persist the full turn (request + response + file URLs + agent output)
+to PostgreSQL.</p></li>
+<li><p>Return the <code class="xref py py-class docutils literal notranslate"><span class="pre">AgentResponse</span></code>.</p></li>
+</ol>
+<dl class="field-list simple">
+<dt class="field-odd">type request<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="schemas_reference.html#squirrel.schemas.api.AgentRequest" title="squirrel.schemas.api.AgentRequest"><code class="xref py py-class docutils literal notranslate"><span class="pre">AgentRequest</span></code></a></span></p>
+</dd>
+<dt class="field-even">param request<span class="colon">:</span></dt>
+<dd class="field-even"><p>Structured chat request (JSON body). <code class="docutils literal notranslate"><span class="pre">fileUrls</span></code> must
+already be <code class="docutils literal notranslate"><span class="pre">s3://</span></code> URLs.</p>
+</dd>
+<dt class="field-odd">type request<span class="colon">:</span></dt>
+<dd class="field-odd"><p>AgentRequest</p>
+</dd>
+<dt class="field-even">return<span class="colon">:</span></dt>
+<dd class="field-even"><p>Assistant response.</p>
+</dd>
+<dt class="field-odd">rtype<span class="colon">:</span></dt>
+<dd class="field-odd"><p>AgentResponse</p>
+</dd>
+<dt class="field-even">raises HTTPException<span class="colon">:</span></dt>
+<dd class="field-even"><p>500 if the orchestrator fails unexpectedly.</p>
+</dd>
+</dl>
+</section>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>request</strong> (<a class="reference internal" href="schemas_reference.html#squirrel.schemas.api.AgentRequest" title="squirrel.schemas.api.AgentRequest"><em>AgentRequest</em></a>)</p></li>
+<li><p><strong>current_user</strong> (<a class="reference internal" href="schemas_reference.html#squirrel.schemas.auth.AuthUserRead" title="squirrel.schemas.auth.AuthUserRead"><em>AuthUserRead</em></a>)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="schemas_reference.html#squirrel.schemas.api.AgentResponse" title="squirrel.schemas.api.AgentResponse"><em>AgentResponse</em></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="squirrel.api.routes.chat.chat_websocket">
+<em class="property"><span class="k"><span class="pre">async</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">chat_websocket</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">websocket</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/api/routes/chat.html#chat_websocket"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.api.routes.chat.chat_websocket" title="Link to this definition"></a></dt>
+<dd><p>Accept a websocket connection, run each incoming chat message through
+<code class="xref py py-class docutils literal notranslate"><span class="pre">OrchestratorService</span></code>, and stream back the assistant’s response.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p><code class="docutils literal notranslate"><span class="pre">fileUrls</span></code> in each incoming payload must already be resolved
+<code class="docutils literal notranslate"><span class="pre">s3://</span></code> URLs — no upload step is performed here, matching the
+<code class="docutils literal notranslate"><span class="pre">POST</span> <span class="pre">/</span></code> endpoint’s contract.</p>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p><code class="xref py py-class docutils literal notranslate"><span class="pre">OrchestratorService</span></code> does not currently expose a dedicated
+streaming entry point — each message is processed via the same
+<code class="xref py py-meth docutils literal notranslate"><span class="pre">OrchestratorService.handle_request()</span></code> used by the <code class="docutils literal notranslate"><span class="pre">POST</span> <span class="pre">/</span></code>
+endpoint, and the resulting <code class="xref py py-class docutils literal notranslate"><span class="pre">AgentResponse</span></code> is sent back as a
+single JSON frame per message rather than token-by-token streaming.</p>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>websocket</strong> (<em>WebSocket</em>) – The websocket connection managed by FastAPI.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+<section id="module-squirrel.api.routes.connector">
+<span id="connector"></span><h2>Connector<a class="headerlink" href="#module-squirrel.api.routes.connector" title="Link to this heading"></a></h2>
+<section id="connector-route">
+<h3>Connector Route<a class="headerlink" href="#connector-route" title="Link to this heading"></a></h3>
+<p>Backs the frontend’s Data Connectors page (<code class="docutils literal notranslate"><span class="pre">DataConnectorsPage.tsx</span></code>) and
+its <code class="docutils literal notranslate"><span class="pre">connectorsApi</span></code> client:</p>
+<ol class="arabic simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">GET</span> <span class="pre">/connectors/types</span></code>
+The catalog of supported connector types and their form fields — the
+“Add a source” tiles are built from this.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">GET</span> <span class="pre">/connectors</span></code>
+List every configured connection, for the “Connected sources” list.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">POST</span> <span class="pre">/connectors</span></code>
+Create a new connection (<code class="docutils literal notranslate"><span class="pre">connectorsApi.create</span></code>).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">PATCH</span> <span class="pre">/connectors/{connector_id}</span></code>
+Rename a connection and/or update its config
+(<code class="docutils literal notranslate"><span class="pre">connectorsApi.update</span></code>) — a blank secret field means “keep the
+current value”, matching the form’s placeholder behaviour.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">POST</span> <span class="pre">/connectors/{connector_id}/test</span></code>
+Run a live connectivity check and persist the resulting status
+(<code class="docutils literal notranslate"><span class="pre">connectorsApi.test</span></code>).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">DELETE</span> <span class="pre">/connectors/{connector_id}</span></code>
+Remove a connection (<code class="docutils literal notranslate"><span class="pre">connectorsApi.remove</span></code>).</p></li>
+</ol>
+<p>Every response uses <code class="xref py py-class docutils literal notranslate"><span class="pre">DataConnectionOut</span></code>, which always redacts
+secret fields — the frontend never receives a decrypted password/key back,
+consistent with the “leave blank to keep current value” pattern already
+built into the edit form.</p>
+</section>
+<dl class="py function">
+<dt class="sig sig-object py" id="squirrel.api.routes.connector.list_connector_types">
+<em class="property"><span class="k"><span class="pre">async</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">list_connector_types</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/api/routes/connector.html#list_connector_types"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.api.routes.connector.list_connector_types" title="Link to this definition"></a></dt>
+<dd><p>Backs the “Add a source” tiles: one entry per connector type, with the
+fields the create form should render.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<a class="reference internal" href="schemas_reference.html#squirrel.schemas.connector.ConnectorType" title="squirrel.schemas.connector.ConnectorType"><code class="xref py py-class docutils literal notranslate"><span class="pre">ConnectorType</span></code></a>]</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="squirrel.api.routes.connector.test_connection">
+<em class="property"><span class="k"><span class="pre">async</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">test_connection</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">connector_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">current_user</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">Depends(get_current_user)</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/api/routes/connector.html#test_connection"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.api.routes.connector.test_connection" title="Link to this definition"></a></dt>
+<dd><p>Attempts to actually connect using the stored (decrypted) config and
+persists the resulting status (‘connected’ or ‘error’) — a failed test
+is a normal 200 response with <code class="docutils literal notranslate"><span class="pre">status:</span> <span class="pre">&quot;error&quot;</span></code> and a message, not an
+HTTP error, since “can’t reach this database” is an expected outcome
+the user needs to see in the row, not a server failure.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="schemas_reference.html#squirrel.schemas.connector.DataConnectionOut" title="squirrel.schemas.connector.DataConnectionOut"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataConnectionOut</span></code></a></span></p>
+</dd>
+<dt class="field-even">Parameters<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>connector_id</strong> (<em>str</em>)</p></li>
+<li><p><strong>current_user</strong> (<a class="reference internal" href="schemas_reference.html#squirrel.schemas.auth.AuthUserRead" title="squirrel.schemas.auth.AuthUserRead"><em>AuthUserRead</em></a>)</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="squirrel.api.routes.connector.preview_connector_tables">
+<em class="property"><span class="k"><span class="pre">async</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">preview_connector_tables</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">connector_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">limit</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">current_user</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">Depends(get_current_user)</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/api/routes/connector.html#preview_connector_tables"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.api.routes.connector.preview_connector_tables" title="Link to this definition"></a></dt>
+<dd><p>Runs a capped preview against every table this connector reports, so
+the “Connect a data source” picker can show all of them at once
+instead of one at a time. Each table is previewed independently — one
+slow/broken table shows an inline error, it doesn’t fail the others.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="schemas_reference.html#squirrel.schemas.connector.ConnectorTablesPreviewResponse" title="squirrel.schemas.connector.ConnectorTablesPreviewResponse"><code class="xref py py-class docutils literal notranslate"><span class="pre">ConnectorTablesPreviewResponse</span></code></a></span></p>
+</dd>
+<dt class="field-even">Parameters<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>connector_id</strong> (<em>str</em>)</p></li>
+<li><p><strong>limit</strong> (<em>int</em>)</p></li>
+<li><p><strong>current_user</strong> (<a class="reference internal" href="schemas_reference.html#squirrel.schemas.auth.AuthUserRead" title="squirrel.schemas.auth.AuthUserRead"><em>AuthUserRead</em></a>)</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+<section id="module-squirrel.api.routes.files">
+<span id="files"></span><h2>Files<a class="headerlink" href="#module-squirrel.api.routes.files" title="Link to this heading"></a></h2>
+<section id="files-route-module">
+<h3>Files Route Module<a class="headerlink" href="#files-route-module" title="Link to this heading"></a></h3>
+<p>…</p>
+</section>
+<dl class="py function">
+<dt class="sig sig-object py" id="squirrel.api.routes.files.retrieve_file">
+<em class="property"><span class="k"><span class="pre">async</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">retrieve_file</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">request</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">Body(PydanticUndefined)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">current_user</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">Depends(get_current_user)</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/api/routes/files.html#retrieve_file"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.api.routes.files.retrieve_file" title="Link to this definition"></a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="schemas_reference.html#squirrel.schemas.file.FileResponse" title="squirrel.schemas.file.FileResponse"><code class="xref py py-class docutils literal notranslate"><span class="pre">FileResponse</span></code></a></span></p>
+</dd>
+<dt class="field-even">Parameters<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>request</strong> (<a class="reference internal" href="schemas_reference.html#squirrel.schemas.file.FileRequest" title="squirrel.schemas.file.FileRequest"><em>FileRequest</em></a>)</p></li>
+<li><p><strong>current_user</strong> (<a class="reference internal" href="schemas_reference.html#squirrel.schemas.auth.AuthUserRead" title="squirrel.schemas.auth.AuthUserRead"><em>AuthUserRead</em></a>)</p></li>
+</ul>
+</dd>
+</dl>
+<section id="retrieve-file-endpoint">
+<h3>Retrieve File Endpoint<a class="headerlink" href="#retrieve-file-endpoint" title="Link to this heading"></a></h3>
+<p>Only files recorded as belonging to <code class="docutils literal notranslate"><span class="pre">current_user</span></code> in
+<code class="docutils literal notranslate"><span class="pre">file</span></code> may be retrieved — this keeps the endpoint from
+being usable to fetch arbitrary MinIO objects belonging to other
+users just by knowing/guessing their <code class="docutils literal notranslate"><span class="pre">fileUrl</span></code>.</p>
+</section>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="squirrel.api.routes.files.upload_multiple_files">
+<em class="property"><span class="k"><span class="pre">async</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">upload_multiple_files</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">files</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">File(PydanticUndefined)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">current_user</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">Depends(get_current_user)</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/api/routes/files.html#upload_multiple_files"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.api.routes.files.upload_multiple_files" title="Link to this definition"></a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="schemas_reference.html#squirrel.schemas.file.FileResponse" title="squirrel.schemas.file.FileResponse"><code class="xref py py-class docutils literal notranslate"><span class="pre">FileResponse</span></code></a></span></p>
+</dd>
+<dt class="field-even">Parameters<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>files</strong> (<em>list</em><em>[</em><em>UploadFile</em><em>]</em>)</p></li>
+<li><p><strong>current_user</strong> (<a class="reference internal" href="schemas_reference.html#squirrel.schemas.auth.AuthUserRead" title="squirrel.schemas.auth.AuthUserRead"><em>AuthUserRead</em></a>)</p></li>
+</ul>
+</dd>
+</dl>
+<section id="upload-multiple-files-endpoint">
+<h3>Upload Multiple Files Endpoint<a class="headerlink" href="#upload-multiple-files-endpoint" title="Link to this heading"></a></h3>
+</section>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="squirrel.api.routes.files.rename_file_by_url">
+<em class="property"><span class="k"><span class="pre">async</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">rename_file_by_url</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">file_url</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">body</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">Body(PydanticUndefined)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">current_user</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">Depends(get_current_user)</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/api/routes/files.html#rename_file_by_url"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.api.routes.files.rename_file_by_url" title="Link to this definition"></a></dt>
+<dd><p>Rename a file record by <code class="docutils literal notranslate"><span class="pre">file_url</span></code>. Delegates the ownership check,
+the update, and propagation into <code class="docutils literal notranslate"><span class="pre">sqrl_notebook_data_sources</span></code> to
+<code class="docutils literal notranslate"><span class="pre">FileService.rename_file</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="schemas_reference.html#squirrel.schemas.file.File" title="squirrel.schemas.file.File"><code class="xref py py-class docutils literal notranslate"><span class="pre">File</span></code></a></span></p>
+</dd>
+<dt class="field-even">Parameters<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>file_url</strong> (<em>str</em>)</p></li>
+<li><p><strong>body</strong> (<a class="reference internal" href="schemas_reference.html#squirrel.schemas.file.RenameFileRequest" title="squirrel.schemas.file.RenameFileRequest"><em>RenameFileRequest</em></a>)</p></li>
+<li><p><strong>current_user</strong> (<a class="reference internal" href="schemas_reference.html#squirrel.schemas.auth.AuthUserRead" title="squirrel.schemas.auth.AuthUserRead"><em>AuthUserRead</em></a>)</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="squirrel.api.routes.files.delete_file">
+<em class="property"><span class="k"><span class="pre">async</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">delete_file</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">file_url</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">current_user</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">Depends(get_current_user)</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/api/routes/files.html#delete_file"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.api.routes.files.delete_file" title="Link to this definition"></a></dt>
+<dd><p>Delete a file, but only if it is not attached to a workspace or notebook.</p>
+<p>Ownership + attachment checks and the DB row deletion live in
+<code class="docutils literal notranslate"><span class="pre">FileService.delete_file</span></code>; this route is only responsible for the
+MinIO blob removal, since FileService intentionally doesn’t own a
+storage client. The attachment check below runs before the storage
+delete so an attached file’s blob is never removed.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>file_url</strong> (<em>str</em>)</p></li>
+<li><p><strong>current_user</strong> (<a class="reference internal" href="schemas_reference.html#squirrel.schemas.auth.AuthUserRead" title="squirrel.schemas.auth.AuthUserRead"><em>AuthUserRead</em></a>)</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+<section id="module-squirrel.api.routes.health">
+<span id="health"></span><h2>Health<a class="headerlink" href="#module-squirrel.api.routes.health" title="Link to this heading"></a></h2>
+<section id="health-route">
+<h3>Health Route<a class="headerlink" href="#health-route" title="Link to this heading"></a></h3>
+<section id="id2">
+<h4>Overview<a class="headerlink" href="#id2" title="Link to this heading"></a></h4>
+<p>Provides API endpoints for application health checks and status monitoring.
+Enables monitoring and verification of the SQRL application’s availability and uptime.</p>
+</section>
+<section id="id3">
+<h4>Endpoints<a class="headerlink" href="#id3" title="Link to this heading"></a></h4>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>GET /
+</pre></div>
+</div>
+<p>Health check endpoint that returns application status and uptime.</p>
+</section>
+</section>
+<dl class="py data">
+<dt class="sig sig-object py" id="squirrel.api.routes.health.START_TIME">
+<span class="sig-name descname"><span class="pre">START_TIME</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">1794517908.0844193</span></em><a class="headerlink" href="#squirrel.api.routes.health.START_TIME" title="Link to this definition"></a></dt>
+<dd><p>Application startup timestamp for uptime calculation</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="squirrel.api.routes.health.health_check">
+<em class="property"><span class="k"><span class="pre">async</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">health_check</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/api/routes/health.html#health_check"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.api.routes.health.health_check" title="Link to this definition"></a></dt>
+<dd><p>Application health check endpoint.</p>
+<p>Performs a simple health check and returns comprehensive information about
+the SQRL application’s current status, including uptime and system memory usage.
+This endpoint is useful for monitoring and load balancer health probes.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p><p>A dictionary containing:</p>
+<ul>
+<li><p><strong>status</strong> (str): Application status (“ok” when healthy)</p></li>
+<li><p><strong>name</strong> (str): Application name from configuration</p></li>
+<li><p><strong>environment</strong> (str): Current deployment environment</p></li>
+<li><p><strong>uptime_seconds</strong> (float): Time elapsed since application startup (in seconds)</p></li>
+<li><p><strong>memory</strong> (dict): System memory information:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p><strong>memory_percent</strong> (float): Process memory usage as percentage</p></li>
+<li><p><strong>memory_mb</strong> (float): Process memory usage in megabytes</p></li>
+<li><p><strong>status</strong> (str): “psutil not installed” if psutil unavailable</p></li>
+</ul>
+</div></blockquote>
+</li>
+</ul>
+</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>Dict</p>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<ul class="simple">
+<li><p>Memory information requires the psutil library to be installed</p></li>
+<li><p>If psutil is unavailable, memory information will contain a status message</p></li>
+<li><p>This endpoint performs minimal processing and is suitable for frequent polling</p></li>
+</ul>
+</div>
+<p class="rubric">Example Response</p>
+<p>With psutil installed:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+    <span class="s2">"status"</span><span class="p">:</span> <span class="s2">"ok"</span><span class="p">,</span>
+    <span class="s2">"name"</span><span class="p">:</span> <span class="s2">"SQRL"</span><span class="p">,</span>
+    <span class="s2">"environment"</span><span class="p">:</span> <span class="s2">"development"</span><span class="p">,</span>
+    <span class="s2">"uptime_seconds"</span><span class="p">:</span> <span class="mf">3600.5</span><span class="p">,</span>
+    <span class="s2">"memory"</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s2">"memory_percent"</span><span class="p">:</span> <span class="mf">2.5</span><span class="p">,</span>
+        <span class="s2">"memory_mb"</span><span class="p">:</span> <span class="mf">128.3</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>Without psutil:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+    <span class="s2">"status"</span><span class="p">:</span> <span class="s2">"ok"</span><span class="p">,</span>
+    <span class="s2">"name"</span><span class="p">:</span> <span class="s2">"SQRL"</span><span class="p">,</span>
+    <span class="s2">"environment"</span><span class="p">:</span> <span class="s2">"development"</span><span class="p">,</span>
+    <span class="s2">"uptime_seconds"</span><span class="p">:</span> <span class="mf">3600.5</span><span class="p">,</span>
+    <span class="s2">"memory"</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s2">"status"</span><span class="p">:</span> <span class="s2">"psutil not installed"</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</dd></dl>
+
+</section>
+<section id="module-squirrel.api.routes.logs">
+<span id="logs"></span><h2>Logs<a class="headerlink" href="#module-squirrel.api.routes.logs" title="Link to this heading"></a></h2>
+<section id="logging-route-module">
+<h3>Logging Route Module<a class="headerlink" href="#logging-route-module" title="Link to this heading"></a></h3>
+<p>Endpoints for retrieving request context and recent application logs.</p>
+</section>
+</section>
+<section id="module-squirrel.api.routes.notebook">
+<span id="notebook"></span><h2>Notebook<a class="headerlink" href="#module-squirrel.api.routes.notebook" title="Link to this heading"></a></h2>
+<section id="notebook-routes">
+<h3>Notebook Routes<a class="headerlink" href="#notebook-routes" title="Link to this heading"></a></h3>
+<section id="id4">
+<h4>Overview<a class="headerlink" href="#id4" title="Link to this heading"></a></h4>
+<p>HTTP surface for the Notebook feature:</p>
+<ol class="arabic simple">
+<li><p><strong>CRUD</strong> — create / list / get / delete notebooks.</p></li>
+<li><p><strong>Data source binding</strong> — a notebook owns one or more data sources, either
+an uploaded CSV (freshly uploaded, or reused from an existing Files-page
+upload) or a table on an existing connector managed by
+<code class="xref py py-class docutils literal notranslate"><span class="pre">DataConnectorService</span></code>.</p></li>
+<li><p><strong>Cell execution</strong> — every cell (a full EDA sweep, a dashboard, a specific
+question, or a markdown note) is answered by
+<code class="xref py py-class docutils literal notranslate"><span class="pre">TabularDataExploratoryAgent</span></code>.</p></li>
+</ol>
+<p>There is deliberately no data-manipulation/”transform” endpoint: a user asking
+for something that reshapes the data (dedupe, filter outliers, fill missing
+values, …) is served by the normal <code class="docutils literal notranslate"><span class="pre">POST</span> <span class="pre">.../cells</span></code> question pipeline,
+which — via
+<code class="xref py py-meth docutils literal notranslate"><span class="pre">TabularDataExploratoryAgent.classify_question_intent()</span></code>/<code class="docutils literal notranslate"><span class="pre">process_view_request</span></code>
+— can answer with a saved, non-destructive SQL VIEW instead of a chart when
+that fits the request better. The underlying data source’s live table is
+never rewritten by this service.</p>
+</section>
+<section id="integration-seam">
+<h4>Integration seam<a class="headerlink" href="#integration-seam" title="Link to this heading"></a></h4>
+<p>Connector-backed notebooks need a live, query-capable <code class="xref py py-class docutils literal notranslate"><span class="pre">PostgresService</span></code>
+pointed at the connector’s underlying database. This service calls
+<code class="docutils literal notranslate"><span class="pre">DataConnectorService.get_postgres_service(connector_id)</span></code> for that — if
+your <code class="xref py py-class docutils literal notranslate"><span class="pre">DataConnectorService</span></code> doesn’t yet expose this, add a small
+method that decrypts the stored config and returns a connected
+<code class="docutils literal notranslate"><span class="pre">PostgresService</span></code> (the same object <code class="docutils literal notranslate"><span class="pre">preview_table</span></code> presumably builds
+internally). Everything else in this file is fully wired.</p>
+</section>
+</section>
+</section>
+<section id="module-squirrel.api.routes.token">
+<span id="token"></span><h2>Token<a class="headerlink" href="#module-squirrel.api.routes.token" title="Link to this heading"></a></h2>
+<section id="token-route-module">
+<h3>Token Route Module<a class="headerlink" href="#token-route-module" title="Link to this heading"></a></h3>
+<p>Endpoints letting an authenticated user save, list, and delete their own
+provider tokens (LLM API keys, etc.) for later reuse. Mirrors the auth
+route’s dependency pattern.</p>
+</section>
+</section>
+<section id="module-squirrel.api.routes.workspace">
+<span id="workspace"></span><h2>Workspace<a class="headerlink" href="#module-squirrel.api.routes.workspace" title="Link to this heading"></a></h2>
+<section id="workspace-route">
+<h3>Workspace Route<a class="headerlink" href="#workspace-route" title="Link to this heading"></a></h3>
+<section id="id5">
+<h4>Overview<a class="headerlink" href="#id5" title="Link to this heading"></a></h4>
+<p>Every workspace is identified by its <code class="docutils literal notranslate"><span class="pre">workspace_id</span></code> — that’s the primary
+key throughout, both in <code class="xref py py-class docutils literal notranslate"><span class="pre">WorkspaceService</span></code> and in every URL below.</p>
+</section>
+<section id="pipeline-per-workspace">
+<h4>Pipeline per workspace<a class="headerlink" href="#pipeline-per-workspace" title="Link to this heading"></a></h4>
+<ol class="arabic simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">POST</span> <span class="pre">/workspace</span></code>
+Create an empty workspace (name + data type). Returns its
+<code class="docutils literal notranslate"><span class="pre">workspace_id</span></code>, which every later call for this workspace is keyed on.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">POST</span> <span class="pre">/workspace/{workspace_id}/upload</span></code>
+Upload one or more files as input sources. Each file is stored in MinIO
+as its own input source. Only CSV uploads are actually parsed today
+(their column names come back so the frontend can populate the
+“predict this column” dropdown) — the upload path itself is generic,
+so adding a new file type (plain text, a zip of files, …) is a matter
+of registering a parser (see <code class="docutils literal notranslate"><span class="pre">_SOURCE_PARSERS</span></code> below) and a loader on
+<code class="docutils literal notranslate"><span class="pre">WorkspaceService</span></code>, not rewriting this endpoint.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">POST</span> <span class="pre">/workspace/{workspace_id}/sources/connector</span></code>
+Attach an existing data connector (see the Data Connectors page) as an
+additional input source, instead of / alongside uploaded files.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">DELETE</span> <span class="pre">/workspace/{workspace_id}/sources/{source_id}</span></code>
+Remove a single input source from a workspace.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">POST</span> <span class="pre">/workspace/{workspace_id}/build</span></code>
+Given the <code class="docutils literal notranslate"><span class="pre">target_column</span></code> chosen in the dropdown and, optionally, a
+free-text <code class="docutils literal notranslate"><span class="pre">query</span></code> describing how sources relate or what the model should
+optimize for, the route loads the input sources, merges their data,
+preprocesses the merged frame, builds and persists fitted models, and
+returns model summaries with accuracy metrics for the frontend.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">GET</span> <span class="pre">/workspace</span></code> / <code class="docutils literal notranslate"><span class="pre">GET</span> <span class="pre">/library/workspaces/{workspace_id}</span></code>
+List workspaces / fetch one workspace, for the Library page.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">PATCH</span> <span class="pre">/workspace/{workspace_id}</span></code>
+Rename a workspace and/or change its declared data type.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">DELETE</span> <span class="pre">/workspace/{workspace_id}</span></code>
+Permanently delete a workspace, its run history, and its stored
+artifacts. The frontend is expected to confirm this with the user
+before calling it.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">GET</span> <span class="pre">/workspace/{workspace_id}/models</span></code>
+Convenience endpoint returning just the latest model-building summary
+(model list + accuracy metrics + recommended model) for the workspace.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">POST</span> <span class="pre">/workspace/{workspace_id}/predict</span></code>
+Given new, raw rows shaped like the workspace’s original input
+source(s), replays the workspace’s saved fitted preprocessing pipeline
+on them (reusing training-time fitted parameters — means, bounds,
+encoding maps, etc. — rather than re-fitting from the new rows) and
+runs the chosen (or best) fitted model to produce predictions.</p></li>
+</ol>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Data-type values other than <code class="docutils literal notranslate"><span class="pre">&quot;structured&quot;</span></code> (image / text / audio /
+other) are recorded on the workspace so the frontend can route to a
+dedicated pipeline later, but only <code class="docutils literal notranslate"><span class="pre">&quot;structured&quot;</span></code> currently drives
+the preprocessing/model-building pipeline below; attempting to
+<code class="docutils literal notranslate"><span class="pre">/build</span></code> a non-structured workspace returns 400.</p>
+</div>
+</section>
+</section>
+<dl class="py function">
+<dt class="sig sig-object py" id="squirrel.api.routes.workspace.create_workspace">
+<em class="property"><span class="k"><span class="pre">async</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">create_workspace</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">request</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">Body(PydanticUndefined)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">current_user</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">Depends(get_current_user)</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/api/routes/workspace.html#create_workspace"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.api.routes.workspace.create_workspace" title="Link to this definition"></a></dt>
+<dd><p>Create an empty workspace that one or more data sources can later be
+added to.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="schemas_reference.html#squirrel.schemas.workspace.WorkspaceRecord" title="squirrel.schemas.workspace.WorkspaceRecord"><code class="xref py py-class docutils literal notranslate"><span class="pre">WorkspaceRecord</span></code></a></span></p>
+</dd>
+<dt class="field-even">Parameters<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>request</strong> (<a class="reference internal" href="schemas_reference.html#squirrel.schemas.workspace.WorkspaceCreateRequest" title="squirrel.schemas.workspace.WorkspaceCreateRequest"><em>WorkspaceCreateRequest</em></a>)</p></li>
+<li><p><strong>current_user</strong> (<a class="reference internal" href="schemas_reference.html#squirrel.schemas.auth.AuthUserRead" title="squirrel.schemas.auth.AuthUserRead"><em>AuthUserRead</em></a>)</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="squirrel.api.routes.workspace.list_workspaces">
+<em class="property"><span class="k"><span class="pre">async</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">list_workspaces</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">current_user</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">Depends(get_current_user)</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/api/routes/workspace.html#list_workspaces"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.api.routes.workspace.list_workspaces" title="Link to this definition"></a></dt>
+<dd><p>List every workspace, newest first, for the Library page.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<a class="reference internal" href="schemas_reference.html#squirrel.schemas.workspace.WorkspaceRecord" title="squirrel.schemas.workspace.WorkspaceRecord"><code class="xref py py-class docutils literal notranslate"><span class="pre">WorkspaceRecord</span></code></a>]</span></p>
+</dd>
+<dt class="field-even">Parameters<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>current_user</strong> (<a class="reference internal" href="schemas_reference.html#squirrel.schemas.auth.AuthUserRead" title="squirrel.schemas.auth.AuthUserRead"><em>AuthUserRead</em></a>)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="squirrel.api.routes.workspace.update_workspace">
+<em class="property"><span class="k"><span class="pre">async</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">update_workspace</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">workspace_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">request</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">Body(PydanticUndefined)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">current_user</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">Depends(get_current_user)</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/api/routes/workspace.html#update_workspace"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.api.routes.workspace.update_workspace" title="Link to this definition"></a></dt>
+<dd><p>Edit a workspace’s display name.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="schemas_reference.html#squirrel.schemas.workspace.WorkspaceRecord" title="squirrel.schemas.workspace.WorkspaceRecord"><code class="xref py py-class docutils literal notranslate"><span class="pre">WorkspaceRecord</span></code></a></span></p>
+</dd>
+<dt class="field-even">Parameters<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>workspace_id</strong> (<em>str</em>)</p></li>
+<li><p><strong>request</strong> (<a class="reference internal" href="schemas_reference.html#squirrel.schemas.workspace.WorkspaceUpdateRequest" title="squirrel.schemas.workspace.WorkspaceUpdateRequest"><em>WorkspaceUpdateRequest</em></a>)</p></li>
+<li><p><strong>current_user</strong> (<a class="reference internal" href="schemas_reference.html#squirrel.schemas.auth.AuthUserRead" title="squirrel.schemas.auth.AuthUserRead"><em>AuthUserRead</em></a>)</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="squirrel.api.routes.workspace.delete_workspace">
+<em class="property"><span class="k"><span class="pre">async</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">delete_workspace</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">workspace_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">current_user</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">Depends(get_current_user)</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/api/routes/workspace.html#delete_workspace"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.api.routes.workspace.delete_workspace" title="Link to this definition"></a></dt>
+<dd><p>Permanently delete a workspace: its run history, stored artifacts, and
+the workspace row itself. This cannot be undone.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">Response</span></code></span></p>
+</dd>
+<dt class="field-even">Parameters<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>workspace_id</strong> (<em>str</em>)</p></li>
+<li><p><strong>current_user</strong> (<a class="reference internal" href="schemas_reference.html#squirrel.schemas.auth.AuthUserRead" title="squirrel.schemas.auth.AuthUserRead"><em>AuthUserRead</em></a>)</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="squirrel.api.routes.workspace.upload_files">
+<em class="property"><span class="k"><span class="pre">async</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">upload_files</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">workspace_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">files</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">File(PydanticUndefined)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">current_user</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">Depends(get_current_user)</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/api/routes/workspace.html#upload_files"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.api.routes.workspace.upload_files" title="Link to this definition"></a></dt>
+<dd><p>Upload one or more files into a workspace, each becoming its own input
+source. Stores every file in MinIO regardless of type; only file types
+with a registered parser (currently just CSV) are actually inspected
+for columns/row-count/preview — anything else 501s until a parser is
+added, rather than silently mis-handling it.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="schemas_reference.html#squirrel.schemas.workspace.UploadResponse" title="squirrel.schemas.workspace.UploadResponse"><code class="xref py py-class docutils literal notranslate"><span class="pre">UploadResponse</span></code></a></span></p>
+</dd>
+<dt class="field-even">Parameters<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>workspace_id</strong> (<em>str</em>)</p></li>
+<li><p><strong>files</strong> (<em>List</em><em>[</em><em>UploadFile</em><em>]</em>)</p></li>
+<li><p><strong>current_user</strong> (<a class="reference internal" href="schemas_reference.html#squirrel.schemas.auth.AuthUserRead" title="squirrel.schemas.auth.AuthUserRead"><em>AuthUserRead</em></a>)</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="squirrel.api.routes.workspace.remove_source">
+<em class="property"><span class="k"><span class="pre">async</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">remove_source</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">workspace_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">source_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">current_user</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">Depends(get_current_user)</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/api/routes/workspace.html#remove_source"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.api.routes.workspace.remove_source" title="Link to this definition"></a></dt>
+<dd><p>Remove a single input source (upload or connector) from a workspace.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<a class="reference internal" href="schemas_reference.html#squirrel.schemas.workspace.DataSource" title="squirrel.schemas.workspace.DataSource"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataSource</span></code></a>]</span></p>
+</dd>
+<dt class="field-even">Parameters<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>workspace_id</strong> (<em>str</em>)</p></li>
+<li><p><strong>source_id</strong> (<em>str</em>)</p></li>
+<li><p><strong>current_user</strong> (<a class="reference internal" href="schemas_reference.html#squirrel.schemas.auth.AuthUserRead" title="squirrel.schemas.auth.AuthUserRead"><em>AuthUserRead</em></a>)</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="squirrel.api.routes.workspace.build_structured_models">
+<em class="property"><span class="k"><span class="pre">async</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">build_structured_models</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">workspace_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">request</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">Body(PydanticUndefined)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">current_user</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">Depends(get_current_user)</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/api/routes/workspace.html#build_structured_models"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.api.routes.workspace.build_structured_models" title="Link to this definition"></a></dt>
+<dd><p>Run the full pipeline for a workspace: load every input source, merge
+them into one training frame (deterministically when possible, via the
+preprocessing agent’s LLM-grounded relationship-finding otherwise),
+preprocess it, then fit and compare models against <code class="docutils literal notranslate"><span class="pre">target_column</span></code>.</p>
+<p><code class="docutils literal notranslate"><span class="pre">request.query</span></code> — if given — is passed through to both the
+preprocessing and model-building agents as free-text context: it’s
+most useful when the sources don’t share an identical or obviously
+disjoint schema and the agent has to infer how they relate (e.g. “join
+the two sources on customer_id”) or what the model should prioritize.</p>
+<p>Both stages are persisted through <code class="xref py py-class docutils literal notranslate"><span class="pre">WorkspaceService</span></code>, so this
+workspace’s run history is queryable the same way a chat-driven run
+would be. The preprocessing stage additionally persists the fitted
+plan + execution report as a standalone “pipeline artifact” — see
+<code class="xref py py-meth docutils literal notranslate"><span class="pre">WorkspaceService.save_pipeline_artifact()</span></code> — so that
+<code class="docutils literal notranslate"><span class="pre">POST</span> <span class="pre">/{workspace_id}/predict</span></code> can later replay the exact same
+preprocessing against new rows.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="schemas_reference.html#squirrel.schemas.workspace.BuildResponse" title="squirrel.schemas.workspace.BuildResponse"><code class="xref py py-class docutils literal notranslate"><span class="pre">BuildResponse</span></code></a></span></p>
+</dd>
+<dt class="field-even">Parameters<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>workspace_id</strong> (<em>str</em>)</p></li>
+<li><p><strong>request</strong> (<a class="reference internal" href="schemas_reference.html#squirrel.schemas.workspace.BuildRequest" title="squirrel.schemas.workspace.BuildRequest"><em>BuildRequest</em></a>)</p></li>
+<li><p><strong>current_user</strong> (<a class="reference internal" href="schemas_reference.html#squirrel.schemas.auth.AuthUserRead" title="squirrel.schemas.auth.AuthUserRead"><em>AuthUserRead</em></a>)</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="squirrel.api.routes.workspace.get_models">
+<em class="property"><span class="k"><span class="pre">async</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">get_models</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">workspace_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">current_user</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">Depends(get_current_user)</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/api/routes/workspace.html#get_models"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.api.routes.workspace.get_models" title="Link to this definition"></a></dt>
+<dd><p>Return the most recent model-building summary for a workspace, for the results panel.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="schemas_reference.html#squirrel.schemas.workspace.ModelsResponse" title="squirrel.schemas.workspace.ModelsResponse"><code class="xref py py-class docutils literal notranslate"><span class="pre">ModelsResponse</span></code></a></span></p>
+</dd>
+<dt class="field-even">Parameters<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>workspace_id</strong> (<em>str</em>)</p></li>
+<li><p><strong>current_user</strong> (<a class="reference internal" href="schemas_reference.html#squirrel.schemas.auth.AuthUserRead" title="squirrel.schemas.auth.AuthUserRead"><em>AuthUserRead</em></a>)</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="squirrel.api.routes.workspace.predict">
+<em class="property"><span class="k"><span class="pre">async</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">predict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">workspace_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">request</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">Body(PydanticUndefined)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">current_user</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">Depends(get_current_user)</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/api/routes/workspace.html#predict"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.api.routes.workspace.predict" title="Link to this definition"></a></dt>
+<dd><p>Replay the workspace’s saved preprocessing pipeline (persisted during
+the most recent <code class="docutils literal notranslate"><span class="pre">/build/structured</span></code> call — see
+<code class="xref py py-meth docutils literal notranslate"><span class="pre">WorkspaceService.save_pipeline_artifact()</span></code>) against
+<code class="docutils literal notranslate"><span class="pre">request.rows</span></code>, reusing every strategy’s training-time fitted
+parameters instead of re-fitting scalers/encoders from the new rows,
+then runs the requested (or workspace-recommended) fitted model.</p>
+<p><code class="docutils literal notranslate"><span class="pre">request.rows</span></code> should be shaped like the workspace’s original raw
+input — i.e. exactly what you’d upload as a CSV/connector source —
+not already preprocessed.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>404</strong> – workspace not found.</p></li>
+<li><p><strong>400</strong> – no rows provided.</p></li>
+<li><p><strong>409</strong> – no saved pipeline / fitted model yet (run <code class="docutils literal notranslate"><span class="pre">/build</span></code>
+first), or <code class="docutils literal notranslate"><span class="pre">model_key</span></code> doesn’t match any fitted model.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="schemas_reference.html#squirrel.schemas.workspace.PredictResponse" title="squirrel.schemas.workspace.PredictResponse"><code class="xref py py-class docutils literal notranslate"><span class="pre">PredictResponse</span></code></a></span></p>
+</dd>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>workspace_id</strong> (<em>str</em>)</p></li>
+<li><p><strong>request</strong> (<a class="reference internal" href="schemas_reference.html#squirrel.schemas.workspace.PredictRequest" title="squirrel.schemas.workspace.PredictRequest"><em>PredictRequest</em></a>)</p></li>
+<li><p><strong>current_user</strong> (<a class="reference internal" href="schemas_reference.html#squirrel.schemas.auth.AuthUserRead" title="squirrel.schemas.auth.AuthUserRead"><em>AuthUserRead</em></a>)</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="squirrel.api.routes.workspace.download_output_file">
+<em class="property"><span class="k"><span class="pre">async</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">download_output_file</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">workspace_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">file_url</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">current_user</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">Depends(get_current_user)</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/api/routes/workspace.html#download_output_file"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.api.routes.workspace.download_output_file" title="Link to this definition"></a></dt>
+<dd><p>Stream a previously produced output artifact back to the caller.</p>
+<p><code class="docutils literal notranslate"><span class="pre">file_url</span></code> must be one of the <code class="docutils literal notranslate"><span class="pre">output_file_urls</span></code> recorded against
+this workspace’s runs (preprocessing or model-building) — this keeps
+the endpoint from being used to fetch arbitrary S3 objects belonging to
+other workspaces.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">Response</span></code></span></p>
+</dd>
+<dt class="field-even">Parameters<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>workspace_id</strong> (<em>str</em>)</p></li>
+<li><p><strong>file_url</strong> (<em>str</em>)</p></li>
+<li><p><strong>current_user</strong> (<a class="reference internal" href="schemas_reference.html#squirrel.schemas.auth.AuthUserRead" title="squirrel.schemas.auth.AuthUserRead"><em>AuthUserRead</em></a>)</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="../api.html" class="btn btn-neutral float-left" title="Backend API Reference" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="schemas_reference.html" class="btn btn-neutral float-right" title="Data Schemas" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, Mazen Soliman.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+  
+  <span class="version">Squirrel version 0.1.0</span>
+
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

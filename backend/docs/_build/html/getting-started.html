@@ -1,0 +1,236 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Getting started &mdash; SQRL Documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" type="text/css" href="_static/css/custom.css?v=35931533" />
+
+  
+    <link rel="shortcut icon" href="_static/sqrl.png"/>
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=01f34227"></script>
+      <script src="_static/doctools.js?v=9bcbadda"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script src="_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="_static/copybutton.js?v=a46eff05"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Product workflow" href="workflow.html" />
+    <link rel="prev" title="SQRL Documentation" href="index.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html">
+            
+              <img src="_static/sqrl.png" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Learn and build</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="workflow.html">Product workflow</a></li>
+<li class="toctree-l1"><a class="reference internal" href="architecture.html">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="deployment.html">Deployment and operations</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="api.html">Backend API Reference</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="generated/api_reference.html">HTTP API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="generated/schemas_reference.html">Data Schemas</a></li>
+<li class="toctree-l2"><a class="reference internal" href="generated/services_reference.html">Services</a></li>
+<li class="toctree-l2"><a class="reference internal" href="generated/agents_reference.html">Agents</a></li>
+<li class="toctree-l2"><a class="reference internal" href="generated/prompts_reference.html">Prompt Components</a></li>
+<li class="toctree-l2"><a class="reference internal" href="generated/providers_reference.html">Model Providers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="generated/inspectors_reference.html">Data Inspectors</a></li>
+<li class="toctree-l2"><a class="reference internal" href="generated/preprocessors_reference.html">Preprocessors</a></li>
+<li class="toctree-l2"><a class="reference internal" href="generated/core_reference.html">Core Infrastructure</a></li>
+<li class="toctree-l2"><a class="reference internal" href="generated/models_reference.html">Machine Learning Models</a></li>
+<li class="toctree-l2"><a class="reference internal" href="generated/constants_reference.html">Constants</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">squirrel</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Getting started</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/getting-started.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="getting-started">
+<h1>Getting started<a class="headerlink" href="#getting-started" title="Link to this heading"></a></h1>
+<p>This guide gets a local SQRL environment running with the same service layout
+used by the containerized application.</p>
+<section id="prerequisites">
+<h2>Prerequisites<a class="headerlink" href="#prerequisites" title="Link to this heading"></a></h2>
+<p>For the recommended Docker workflow, install Docker Desktop with Compose
+support. For split local development, install Python 3.10+, Node.js 20+, npm,
+PostgreSQL, and MinIO.</p>
+</section>
+<section id="run-with-docker-compose">
+<h2>Run with Docker Compose<a class="headerlink" href="#run-with-docker-compose" title="Link to this heading"></a></h2>
+<p>From the repository root:</p>
+<div class="highlight-powershell notranslate"><div class="highlight"><pre><span></span><span class="nb">Copy-Item</span> <span class="p">.</span><span class="n">env</span><span class="p">.</span><span class="n">example</span> <span class="p">.</span><span class="n">env</span>
+<span class="n">docker</span> <span class="n">compose</span> <span class="n">up</span> <span class="p">-</span><span class="n">-build</span> <span class="n">-d</span>
+</pre></div>
+</div>
+<p>The stack exposes these services:</p>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 40.0%" />
+<col style="width: 60.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Service</p></th>
+<th class="head"><p>Address</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>SQRL application</p></td>
+<td><p><a class="reference external" href="http://localhost:8000">http://localhost:8000</a></p></td>
+</tr>
+<tr class="row-odd"><td><p>Interactive API docs</p></td>
+<td><p><a class="reference external" href="http://localhost:8000/docs">http://localhost:8000/docs</a></p></td>
+</tr>
+<tr class="row-even"><td><p>PostgreSQL</p></td>
+<td><p>localhost:5433</p></td>
+</tr>
+<tr class="row-odd"><td><p>MinIO API</p></td>
+<td><p><a class="reference external" href="http://localhost:9000">http://localhost:9000</a></p></td>
+</tr>
+<tr class="row-even"><td><p>MinIO console</p></td>
+<td><p><a class="reference external" href="http://localhost:9001">http://localhost:9001</a></p></td>
+</tr>
+<tr class="row-odd"><td><p>pgAdmin</p></td>
+<td><p><a class="reference external" href="http://localhost:5050">http://localhost:5050</a></p></td>
+</tr>
+</tbody>
+</table>
+<p>Check the application and follow logs:</p>
+<div class="highlight-powershell notranslate"><div class="highlight"><pre><span></span><span class="nb">curl </span><span class="n">http</span><span class="p">://</span><span class="n">localhost</span><span class="p">:</span><span class="n">8000</span><span class="p">/</span><span class="n">api</span><span class="p">/</span><span class="n">health</span>
+<span class="n">docker</span> <span class="n">compose</span> <span class="n">logs</span> <span class="o">-f</span> <span class="n">sqrl</span>
+</pre></div>
+</div>
+<p>Stop the stack with <code class="docutils literal notranslate"><span class="pre">docker</span> <span class="pre">compose</span> <span class="pre">down</span></code>. Use
+<code class="docutils literal notranslate"><span class="pre">docker</span> <span class="pre">compose</span> <span class="pre">down</span> <span class="pre">-v</span></code> only when you intentionally want to remove the
+local PostgreSQL and MinIO volumes.</p>
+</section>
+<section id="run-the-backend-locally">
+<h2>Run the backend locally<a class="headerlink" href="#run-the-backend-locally" title="Link to this heading"></a></h2>
+<div class="highlight-powershell notranslate"><div class="highlight"><pre><span></span><span class="nb">Push-Location</span> <span class="n">backend</span>
+<span class="n">python</span> <span class="n">-m</span> <span class="n">venv</span> <span class="p">.</span><span class="n">venv</span>
+<span class="p">.\.</span><span class="n">venv</span><span class="p">\</span><span class="n">Scripts</span><span class="p">\</span><span class="n">Activate</span><span class="p">.</span><span class="n">ps1</span>
+<span class="n">pip</span> <span class="n">install</span> <span class="n">-r</span> <span class="n">requirements</span><span class="p">.</span><span class="n">txt</span>
+<span class="n">uvicorn</span> <span class="n">main</span><span class="p">:</span><span class="n">app</span> <span class="p">-</span><span class="n">-reload</span> <span class="p">-</span><span class="n">-port</span> <span class="n">8000</span>
+<span class="nb">Pop-Location</span>
+</pre></div>
+</div>
+<p>The backend expects PostgreSQL and MinIO to be available. The API is mounted
+under <code class="docutils literal notranslate"><span class="pre">/api</span></code> and the development documentation is available at <code class="docutils literal notranslate"><span class="pre">/docs</span></code>.</p>
+</section>
+<section id="run-the-frontend-locally">
+<h2>Run the frontend locally<a class="headerlink" href="#run-the-frontend-locally" title="Link to this heading"></a></h2>
+<div class="highlight-powershell notranslate"><div class="highlight"><pre><span></span><span class="nb">Push-Location</span> <span class="n">frontend</span>
+<span class="n">npm</span> <span class="n">ci</span>
+<span class="n">npm</span> <span class="n">run</span> <span class="n">dev</span>
+<span class="nb">Pop-Location</span>
+</pre></div>
+</div>
+<p>The production client uses the same-origin <code class="docutils literal notranslate"><span class="pre">/api</span></code> base. During local
+development, use the Vite proxy configuration or point the client at the
+running backend.</p>
+</section>
+<section id="first-request">
+<h2>First request<a class="headerlink" href="#first-request" title="Link to this heading"></a></h2>
+<ol class="arabic simple">
+<li><p>Register at <code class="docutils literal notranslate"><span class="pre">POST</span> <span class="pre">/api/auth/register</span></code>.</p></li>
+<li><p>Log in at <code class="docutils literal notranslate"><span class="pre">POST</span> <span class="pre">/api/auth/login</span></code> and keep the bearer token.</p></li>
+<li><p>Create a workspace and attach a data source.</p></li>
+<li><p>Inspect and preprocess the data.</p></li>
+<li><p>Train a model and use the recommended model for predictions.</p></li>
+</ol>
+</section>
+<section id="configuration">
+<h2>Configuration<a class="headerlink" href="#configuration" title="Link to this heading"></a></h2>
+<p>Copy <code class="docutils literal notranslate"><span class="pre">.env.example</span></code> before starting the application. Important settings
+include <code class="docutils literal notranslate"><span class="pre">DATABASE_URL</span></code>, <code class="docutils literal notranslate"><span class="pre">MINIO_ENDPOINT</span></code>, <code class="docutils literal notranslate"><span class="pre">MINIO_BUCKET</span></code>,
+<code class="docutils literal notranslate"><span class="pre">TOKEN_ENCRYPTION_KEY</span></code>, <code class="docutils literal notranslate"><span class="pre">SQUIRREL_CONNECTOR_SECRET_KEY</span></code>, and
+<code class="docutils literal notranslate"><span class="pre">CORS_ORIGINS</span></code>. Provider credentials are required only for the providers
+used by the assisted workflow.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="index.html" class="btn btn-neutral float-left" title="SQRL Documentation" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="workflow.html" class="btn btn-neutral float-right" title="Product workflow" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, Mazen Soliman.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+  
+  <span class="version">Squirrel version 0.1.0</span>
+
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

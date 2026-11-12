@@ -5,17 +5,17 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>squirrel.services.storage.database.PostgresService &mdash; squirrel  documentation</title>
+  <title>squirrel.services.storage.database.PostgresService &mdash; SQRL Documentation</title>
       <link rel="stylesheet" type="text/css" href="../../../../../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../../../../../_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="../../../../../_static/copybutton.css?v=76b2166b" />
-      <link rel="stylesheet" type="text/css" href="../../../../../_static/css/custom.css?v=adc7883a" />
+      <link rel="stylesheet" type="text/css" href="../../../../../_static/css/custom.css?v=35931533" />
 
   
     <link rel="shortcut icon" href="../../../../../_static/sqrl.png"/>
       <script src="../../../../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../../../../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../../../../../_static/documentation_options.js?v=01f34227"></script>
       <script src="../../../../../_static/doctools.js?v=9bcbadda"></script>
       <script src="../../../../../_static/sphinx_highlight.js?v=dc90522c"></script>
       <script src="../../../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -33,8 +33,8 @@
 
           
           
-          <a href="../../../../../index.html" class="icon icon-home">
-            squirrel
+          <a href="../../../../../index.html">
+            
               <img src="../../../../../_static/sqrl.png" class="logo" alt="Logo"/>
           </a>
 <div role="search">
@@ -45,9 +45,29 @@
   </form>
 </div>
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
-              <p class="caption" role="heading"><span class="caption-text">Python API Reference:</span></p>
+              <p class="caption" role="heading"><span class="caption-text">Learn and build</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="../../../../../api.html">Python API Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../getting-started.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../workflow.html">Product workflow</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../architecture.html">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../deployment.html">Deployment and operations</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../api.html">Backend API Reference</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../generated/api_reference.html">HTTP API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../generated/schemas_reference.html">Data Schemas</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../generated/services_reference.html">Services</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../generated/agents_reference.html">Agents</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../generated/prompts_reference.html">Prompt Components</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../generated/providers_reference.html">Model Providers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../generated/inspectors_reference.html">Data Inspectors</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../generated/preprocessors_reference.html">Preprocessors</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../generated/core_reference.html">Core Infrastructure</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../generated/models_reference.html">Machine Learning Models</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../generated/constants_reference.html">Constants</a></li>
+</ul>
+</li>
 </ul>
 
         </div>
@@ -87,6 +107,8 @@
 <span class="c1"># Standard Libraries</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">re</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">io</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">csv</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">time</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Dict</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">typing_extensions</span><span class="w"> </span><span class="kn">import</span> <span class="n">override</span>
@@ -125,7 +147,7 @@
 <span class="c1"># ——————————————————————————————————————————————————————————————</span>
 <span class="c1"># PostgreSQL Service Class</span>
 <div class="viewcode-block" id="PostgresService">
-<a class="viewcode-back" href="../../../../../generated/squirrel_services_storage_database_PostgresService.html#squirrel.services.storage.database.PostgresService.PostgresService">[docs]</a>
+<a class="viewcode-back" href="../../../../../generated/services_reference.html#squirrel.services.storage.database.PostgresService.PostgresService">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">PostgresService</span><span class="p">(</span><span class="n">IDatabaseService</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">"""</span>
 <span class="sd">    Concrete database service for PostgreSQL via *psycopg* (v3).</span>
@@ -162,10 +184,11 @@
         <span class="n">autoconnect</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">squirrel.core.config</span><span class="w"> </span><span class="kn">import</span> <span class="n">settings</span>
+
         <span class="bp">self</span><span class="o">.</span><span class="n">connection_string</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="p">(</span>
             <span class="n">connection_string</span>
-            <span class="ow">or</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">"DATABASE_URL"</span><span class="p">)</span>
-            <span class="ow">or</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">"POSTGRES_DSN"</span><span class="p">)</span>
+            <span class="ow">or</span> <span class="n">settings</span><span class="o">.</span><span class="n">database_url</span>
             <span class="ow">or</span> <span class="s2">""</span>
         <span class="p">)</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">connection_string</span><span class="p">:</span>
@@ -192,7 +215,8 @@
         <span class="p">)</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_ensure_connection</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">"""Return an open connection, reconnecting if necessary.</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Return an open connection, reconnecting if necessary.</span>
 
 <span class="sd">        Ensures a live connection is available and returns it.</span>
 
@@ -225,7 +249,7 @@
         <span class="k">return</span> <span class="p">{</span><span class="s2">"columns"</span><span class="p">:</span> <span class="n">columns</span><span class="p">}</span>
 
 <div class="viewcode-block" id="PostgresService.execute">
-<a class="viewcode-back" href="../../../../../generated/squirrel_services_storage_database_PostgresService.html#squirrel.services.storage.database.PostgresService.PostgresService.execute">[docs]</a>
+<a class="viewcode-back" href="../../../../../generated/services_reference.html#squirrel.services.storage.database.PostgresService.PostgresService.execute">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">execute</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">statement</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
@@ -297,7 +321,8 @@
 
     <span class="nd">@staticmethod</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">_safe_rollback</span><span class="p">(</span><span class="n">connection</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">"""Attempt a rollback without masking the original exception.</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Attempt a rollback without masking the original exception.</span>
 
 <span class="sd">        :param connection: Connection object to rollback.</span>
 <span class="sd">        :type connection: Any</span>
@@ -309,22 +334,54 @@
         <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
             <span class="n">logger</span><span class="o">.</span><span class="n">exception</span><span class="p">(</span><span class="s2">"Rollback failed"</span><span class="p">)</span>
 
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_copy</span><span class="p">(</span>
+        <span class="n">table</span><span class="p">,</span>
+        <span class="n">conn</span><span class="p">,</span>
+        <span class="n">keys</span><span class="p">,</span>
+        <span class="n">data_iter</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Custom COPY function for efficient bulk inserts.</span>
+<span class="sd">        </span>
+<span class="sd">        :param table: Target table name.</span>
+<span class="sd">        :param conn: Active database connection.</span>
+<span class="sd">        :param keys: List of column names.</span>
+<span class="sd">        :param data_iter: Iterable of data rows to insert.</span>
+<span class="sd">        </span>
+<span class="sd">        :return: None</span>
+<span class="sd">        """</span>
+        <span class="n">dbapi_conn</span> <span class="o">=</span> <span class="n">conn</span><span class="o">.</span><span class="n">connection</span>  <span class="c1"># raw psycopg connection</span>
+        <span class="n">buf</span> <span class="o">=</span> <span class="n">io</span><span class="o">.</span><span class="n">StringIO</span><span class="p">()</span>
+        <span class="n">csv</span><span class="o">.</span><span class="n">writer</span><span class="p">(</span><span class="n">buf</span><span class="p">)</span><span class="o">.</span><span class="n">writerows</span><span class="p">(</span><span class="n">data_iter</span><span class="p">)</span>
+        <span class="n">payload</span> <span class="o">=</span> <span class="n">buf</span><span class="o">.</span><span class="n">getvalue</span><span class="p">()</span>
+        
+        <span class="n">cols</span> <span class="o">=</span> <span class="s1">', '</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="sa">f</span><span class="s1">'"</span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s1">"'</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">keys</span><span class="p">)</span>
+        <span class="n">name</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">'"</span><span class="si">{</span><span class="n">table</span><span class="o">.</span><span class="n">schema</span><span class="si">}</span><span class="s1">"."</span><span class="si">{</span><span class="n">table</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s1">"'</span> <span class="k">if</span> <span class="n">table</span><span class="o">.</span><span class="n">schema</span> <span class="k">else</span> <span class="sa">f</span><span class="s1">'"</span><span class="si">{</span><span class="n">table</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s1">"'</span>
+        <span class="k">with</span> <span class="n">dbapi_conn</span><span class="o">.</span><span class="n">cursor</span><span class="p">()</span> <span class="k">as</span> <span class="n">cur</span><span class="p">:</span>
+            <span class="k">with</span> <span class="n">cur</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="sa">f</span><span class="s2">"COPY </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2"> (</span><span class="si">{</span><span class="n">cols</span><span class="si">}</span><span class="s2">) FROM STDIN WITH (FORMAT csv)"</span><span class="p">)</span> <span class="k">as</span> <span class="n">copy</span><span class="p">:</span>
+                <span class="n">copy</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">payload</span><span class="p">)</span>
+
     <span class="c1"># ------------------------------------------------------------------</span>
     <span class="c1"># Statement builders</span>
 
     <span class="nd">@staticmethod</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">_build_insert_statement</span><span class="p">(</span><span class="n">table</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">values</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">"""Build a parameterised INSERT statement for *table*.</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_build_insert_statement</span><span class="p">(</span>
+        <span class="n">table</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> 
+        <span class="n">values</span><span class="p">:</span> <span class="nb">dict</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Build a parameterised INSERT statement for *table*.</span>
 
 <span class="sd">        :param table: Target table name.</span>
 <span class="sd">        :type table: str</span>
 <span class="sd">        :param values: Mapping of column names to values.</span>
 <span class="sd">        :type values: dict</span>
+<span class="sd">        </span>
 <span class="sd">        :return: A :class:`psycopg.sql.Composable` INSERT statement.</span>
 <span class="sd">        :rtype: Any</span>
 <span class="sd">        :raises ValueError: If *values* is empty.</span>
 <span class="sd">        """</span>
-
         <span class="n">columns</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">values</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">columns</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"Insert data must contain at least one column value."</span><span class="p">)</span>
@@ -340,7 +397,11 @@
         <span class="p">)</span>
 
     <span class="nd">@staticmethod</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">_build_update_statement</span><span class="p">(</span><span class="n">table</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">values</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">where_clause</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_build_update_statement</span><span class="p">(</span>
+        <span class="n">table</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> 
+        <span class="n">values</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> 
+        <span class="n">where_clause</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">"""</span>
 <span class="sd">        Build a parameterised UPDATE statement for *table*.</span>
 
@@ -350,6 +411,7 @@
 <span class="sd">        :type values: dict</span>
 <span class="sd">        :param where_clause: WHERE clause (with or without the "WHERE" keyword).</span>
 <span class="sd">        :type where_clause: str</span>
+<span class="sd">        </span>
 <span class="sd">        :return: A :class:`psycopg.sql.Composable` UPDATE statement.</span>
 <span class="sd">        :rtype: Any</span>
 <span class="sd">        :raises ValueError: If *values* is empty.</span>
@@ -394,7 +456,7 @@
     <span class="c1"># Lifecycle</span>
 
 <div class="viewcode-block" id="PostgresService.connect">
-<a class="viewcode-back" href="../../../../../generated/squirrel_services_storage_database_PostgresService.html#squirrel.services.storage.database.PostgresService.PostgresService.connect">[docs]</a>
+<a class="viewcode-back" href="../../../../../generated/services_reference.html#squirrel.services.storage.database.PostgresService.PostgresService.connect">[docs]</a>
     <span class="nd">@override</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">connect</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">"""Open a new PostgreSQL connection (no-op when already connected).</span>
@@ -414,7 +476,7 @@
 
 
 <div class="viewcode-block" id="PostgresService.disconnect">
-<a class="viewcode-back" href="../../../../../generated/squirrel_services_storage_database_PostgresService.html#squirrel.services.storage.database.PostgresService.PostgresService.disconnect">[docs]</a>
+<a class="viewcode-back" href="../../../../../generated/services_reference.html#squirrel.services.storage.database.PostgresService.PostgresService.disconnect">[docs]</a>
     <span class="nd">@override</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">disconnect</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">"""Close the PostgreSQL connection.</span>
@@ -436,7 +498,7 @@
 
 
 <div class="viewcode-block" id="PostgresService.load">
-<a class="viewcode-back" href="../../../../../generated/squirrel_services_storage_database_PostgresService.html#squirrel.services.storage.database.PostgresService.PostgresService.load">[docs]</a>
+<a class="viewcode-back" href="../../../../../generated/services_reference.html#squirrel.services.storage.database.PostgresService.PostgresService.load">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">load</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">data_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
@@ -477,8 +539,8 @@
                 <span class="n">engine</span><span class="p">,</span>
                 <span class="n">if_exists</span><span class="o">=</span><span class="n">if_exists</span><span class="p">,</span>
                 <span class="n">index</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-                <span class="n">chunksize</span><span class="o">=</span><span class="mi">5000</span><span class="p">,</span>
-                <span class="n">method</span><span class="o">=</span><span class="s2">"multi"</span>
+                <span class="n">chunksize</span><span class="o">=</span><span class="mi">10_000</span><span class="p">,</span>
+                <span class="n">method</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_copy</span> <span class="c1"># Use the custom COPY method for efficiency</span>
             <span class="p">)</span>
 
             <span class="k">return</span> <span class="p">{</span>
@@ -494,7 +556,7 @@
     <span class="c1"># Core CRUD</span>
 
 <div class="viewcode-block" id="PostgresService.query">
-<a class="viewcode-back" href="../../../../../generated/squirrel_services_storage_database_PostgresService.html#squirrel.services.storage.database.PostgresService.PostgresService.query">[docs]</a>
+<a class="viewcode-back" href="../../../../../generated/services_reference.html#squirrel.services.storage.database.PostgresService.PostgresService.query">[docs]</a>
     <span class="nd">@override</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">query</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
@@ -558,8 +620,12 @@
 
 
     <span class="nd">@staticmethod</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">_statement_returns_rows</span><span class="p">(</span><span class="n">query</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">"""Best-effort check for whether *query* yields a result set."""</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_statement_returns_rows</span><span class="p">(</span>
+        <span class="n">query</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Best-effort check for whether *query* yields a result set.</span>
+<span class="sd">        """</span>
         <span class="n">stripped</span> <span class="o">=</span> <span class="n">query</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">lstrip</span><span class="p">(</span><span class="s2">"("</span><span class="p">)</span>
         <span class="n">first_word</span> <span class="o">=</span> <span class="n">stripped</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="mi">1</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span> <span class="k">if</span> <span class="n">stripped</span> <span class="k">else</span> <span class="s2">""</span>
 
@@ -570,7 +636,7 @@
         <span class="k">return</span> <span class="kc">False</span>
 
 <div class="viewcode-block" id="PostgresService.retrieve">
-<a class="viewcode-back" href="../../../../../generated/squirrel_services_storage_database_PostgresService.html#squirrel.services.storage.database.PostgresService.PostgresService.retrieve">[docs]</a>
+<a class="viewcode-back" href="../../../../../generated/services_reference.html#squirrel.services.storage.database.PostgresService.PostgresService.retrieve">[docs]</a>
     <span class="nd">@override</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">retrieve</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> 
@@ -603,7 +669,7 @@
 
 
 <div class="viewcode-block" id="PostgresService.insert">
-<a class="viewcode-back" href="../../../../../generated/squirrel_services_storage_database_PostgresService.html#squirrel.services.storage.database.PostgresService.PostgresService.insert">[docs]</a>
+<a class="viewcode-back" href="../../../../../generated/services_reference.html#squirrel.services.storage.database.PostgresService.PostgresService.insert">[docs]</a>
     <span class="nd">@override</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">insert</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> 
@@ -659,11 +725,11 @@
 
 
 <div class="viewcode-block" id="PostgresService.update">
-<a class="viewcode-back" href="../../../../../generated/squirrel_services_storage_database_PostgresService.html#squirrel.services.storage.database.PostgresService.PostgresService.update">[docs]</a>
+<a class="viewcode-back" href="../../../../../generated/services_reference.html#squirrel.services.storage.database.PostgresService.PostgresService.update">[docs]</a>
     <span class="nd">@override</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">update</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span> 
-        <span class="n">query</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> 
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">query</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
         <span class="n">data</span><span class="p">:</span> <span class="nb">dict</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">"""</span>
@@ -674,6 +740,7 @@
 <span class="sd">        :param data: Either ``{"sql": "...", "params": {...}}`` or a</span>
 <span class="sd">            structured mapping containing ``table`` and ``values``.</span>
 <span class="sd">        :type data: dict</span>
+
 <span class="sd">        :return: ``True`` on success, ``False`` otherwise.</span>
 <span class="sd">        :rtype: bool</span>
 <span class="sd">        """</span>
@@ -702,7 +769,7 @@
 
 
 <div class="viewcode-block" id="PostgresService.delete">
-<a class="viewcode-back" href="../../../../../generated/squirrel_services_storage_database_PostgresService.html#squirrel.services.storage.database.PostgresService.PostgresService.delete">[docs]</a>
+<a class="viewcode-back" href="../../../../../generated/services_reference.html#squirrel.services.storage.database.PostgresService.PostgresService.delete">[docs]</a>
     <span class="nd">@override</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">delete</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> 
@@ -727,7 +794,7 @@
 
 
 <div class="viewcode-block" id="PostgresService.execute_many">
-<a class="viewcode-back" href="../../../../../generated/squirrel_services_storage_database_PostgresService.html#squirrel.services.storage.database.PostgresService.PostgresService.execute_many">[docs]</a>
+<a class="viewcode-back" href="../../../../../generated/services_reference.html#squirrel.services.storage.database.PostgresService.PostgresService.execute_many">[docs]</a>
     <span class="nd">@override</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">execute_many</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> 
@@ -775,7 +842,9 @@
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   
+  
+  <span class="version">Squirrel version 0.1.0</span>
+
 
 </footer>
         </div>

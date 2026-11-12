@@ -132,7 +132,7 @@ class Settings(BaseSettings):
     MINIO_ACCESS_KEY: str = os.getenv("MINIO_ACCESS_KEY", "minioadmin")
     MINIO_SECRET_KEY: str = os.getenv("MINIO_SECRET_KEY", "strongpassword123")
     MINIO_BUCKET: str = os.getenv("MINIO_BUCKET", "squirrel")
-    MINIO_REGION: str = os.getenv("MINIO_REGION", None)
+    MINIO_REGION: Optional[str] = os.getenv("MINIO_REGION")
     MINIO_SECURE: bool = os.getenv("MINIO_SECURE", "False").lower() in ("true", "1", "yes")
 
     # Secret-encryption keys
@@ -216,4 +216,3 @@ class Colors:
     
 # ——————————————————————————————————————————————————————————————
 settings = Settings()
-

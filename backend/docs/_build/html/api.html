@@ -6,17 +6,17 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Python API Reference &mdash; squirrel  documentation</title>
+  <title>Backend API Reference &mdash; SQRL Documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="_static/copybutton.css?v=76b2166b" />
-      <link rel="stylesheet" type="text/css" href="_static/css/custom.css?v=adc7883a" />
+      <link rel="stylesheet" type="text/css" href="_static/css/custom.css?v=35931533" />
 
   
     <link rel="shortcut icon" href="_static/sqrl.png"/>
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="_static/documentation_options.js?v=01f34227"></script>
       <script src="_static/doctools.js?v=9bcbadda"></script>
       <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
       <script src="_static/clipboard.min.js?v=a7894cd8"></script>
@@ -24,8 +24,8 @@
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="Generated API classes" href="generated_classes.html" />
-    <link rel="prev" title="Squirrel Documentation" href="index.html" /> 
+    <link rel="next" title="HTTP API" href="generated/api_reference.html" />
+    <link rel="prev" title="Deployment and operations" href="deployment.html" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -36,8 +36,8 @@
 
           
           
-          <a href="index.html" class="icon icon-home">
-            squirrel
+          <a href="index.html">
+            
               <img src="_static/sqrl.png" class="logo" alt="Logo"/>
           </a>
 <div role="search">
@@ -48,10 +48,27 @@
   </form>
 </div>
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
-              <p class="caption" role="heading"><span class="caption-text">Python API Reference:</span></p>
+              <p class="caption" role="heading"><span class="caption-text">Learn and build</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="getting-started.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="workflow.html">Product workflow</a></li>
+<li class="toctree-l1"><a class="reference internal" href="architecture.html">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="deployment.html">Deployment and operations</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Reference</span></p>
 <ul class="current">
-<li class="toctree-l1 current"><a class="current reference internal" href="#">Python API Reference</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="generated_classes.html">Generated API classes</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Backend API Reference</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="generated/api_reference.html">HTTP API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="generated/schemas_reference.html">Data Schemas</a></li>
+<li class="toctree-l2"><a class="reference internal" href="generated/services_reference.html">Services</a></li>
+<li class="toctree-l2"><a class="reference internal" href="generated/agents_reference.html">Agents</a></li>
+<li class="toctree-l2"><a class="reference internal" href="generated/prompts_reference.html">Prompt Components</a></li>
+<li class="toctree-l2"><a class="reference internal" href="generated/providers_reference.html">Model Providers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="generated/inspectors_reference.html">Data Inspectors</a></li>
+<li class="toctree-l2"><a class="reference internal" href="generated/preprocessors_reference.html">Preprocessors</a></li>
+<li class="toctree-l2"><a class="reference internal" href="generated/core_reference.html">Core Infrastructure</a></li>
+<li class="toctree-l2"><a class="reference internal" href="generated/models_reference.html">Machine Learning Models</a></li>
+<li class="toctree-l2"><a class="reference internal" href="generated/constants_reference.html">Constants</a></li>
 </ul>
 </li>
 </ul>
@@ -70,7 +87,7 @@
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
       <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
-      <li class="breadcrumb-item active">Python API Reference</li>
+      <li class="breadcrumb-item active">Backend API Reference</li>
       <li class="wy-breadcrumbs-aside">
             <a href="_sources/api.rst.txt" rel="nofollow"> View page source</a>
       </li>
@@ -80,75 +97,118 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <section id="python-api-reference">
-<h1>Python API Reference<a class="headerlink" href="#python-api-reference" title="Link to this heading"></a></h1>
-<p>This reference is generated from the backend source code. Each discovered
-class is rendered on its own page with its methods, attributes, and inheritance
-relationships.</p>
+  <section id="backend-api-reference">
+<h1>Backend API Reference<a class="headerlink" href="#backend-api-reference" title="Link to this heading"></a></h1>
+<p>The SQRL backend reference documents the Python modules that power the
+application, including its HTTP routes, validation schemas, domain services,
+storage adapters, and machine-learning components.</p>
+<p>Use the sections below to navigate by responsibility. Related modules are
+combined into category pages—for example, all prompt generators are presented
+together under <strong>Prompt Components</strong> instead of appearing as separate pages with
+long fully qualified titles. Route modules describe the application boundary,
+service modules contain business operations, and supporting modules provide the
+shared infrastructure used across the platform.
+The pages are generated directly from the backend source and include available
+classes, methods, attributes, signatures, and inheritance relationships.</p>
+<p>For endpoint-oriented testing and request examples, run the application and
+open the interactive OpenAPI reference at <code class="docutils literal notranslate"><span class="pre">http://localhost:8000/docs</span></code>.</p>
+<p>Browse the generated backend reference by responsibility rather than by file.</p>
+<section id="http-api">
+<h2>HTTP API<a class="headerlink" href="#http-api" title="Link to this heading"></a></h2>
 <div class="toctree-wrapper compound">
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="generated_classes.html">Generated API classes</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="generated/squirrel_constants_connector.html">squirrel.constants.connector</a></li>
-<li class="toctree-l2"><a class="reference internal" href="generated/squirrel_constants_workspace.html">squirrel.constants.workspace</a></li>
-<li class="toctree-l2"><a class="reference internal" href="generated/squirrel_core_config.html">squirrel.core.config</a></li>
-<li class="toctree-l2"><a class="reference internal" href="generated/squirrel_core_error_handlers.html">squirrel.core.error_handlers</a></li>
-<li class="toctree-l2"><a class="reference internal" href="generated/squirrel_core_logging.html">squirrel.core.logging</a></li>
-<li class="toctree-l2"><a class="reference internal" href="generated/squirrel_core_middleware.html">squirrel.core.middleware</a></li>
-<li class="toctree-l2"><a class="reference internal" href="generated/squirrel_models_classification.html">squirrel.models.classification</a></li>
-<li class="toctree-l2"><a class="reference internal" href="generated/squirrel_models_time_series.html">squirrel.models.time_series</a></li>
-<li class="toctree-l2"><a class="reference internal" href="generated/squirrel_modules_agents_abstract_IAgent.html">squirrel.modules.agents.abstract.IAgent</a></li>
-<li class="toctree-l2"><a class="reference internal" href="generated/squirrel_modules_agents_builder_TabularDataModelBuilderAgent.html">squirrel.modules.agents.builder.TabularDataModelBuilderAgent</a></li>
-<li class="toctree-l2"><a class="reference internal" href="generated/squirrel_modules_agents_exploratory_TabularDataExploratoryAgent.html">squirrel.modules.agents.exploratory.TabularDataExploratoryAgent</a></li>
-<li class="toctree-l2"><a class="reference internal" href="generated/squirrel_modules_agents_inspector_TabularDataInsepctorAgent.html">squirrel.modules.agents.inspector.TabularDataInsepctorAgent</a></li>
-<li class="toctree-l2"><a class="reference internal" href="generated/squirrel_modules_agents_orchestrator_OrchestratorAgent.html">squirrel.modules.agents.orchestrator.OrchestratorAgent</a></li>
-<li class="toctree-l2"><a class="reference internal" href="generated/squirrel_modules_agents_preprocessor_TabularDataProcessorAgent.html">squirrel.modules.agents.preprocessor.TabularDataProcessorAgent</a></li>
-<li class="toctree-l2"><a class="reference internal" href="generated/squirrel_modules_inspectors_tabular.html">squirrel.modules.inspectors.tabular</a></li>
-<li class="toctree-l2"><a class="reference internal" href="generated/squirrel_modules_preprocessors_cleaning_tabular.html">squirrel.modules.preprocessors.cleaning.tabular</a></li>
-<li class="toctree-l2"><a class="reference internal" href="generated/squirrel_modules_preprocessors_transformers_tabular.html">squirrel.modules.preprocessors.transformers.tabular</a></li>
-<li class="toctree-l2"><a class="reference internal" href="generated/squirrel_modules_prompts_abstract_IPromptGenerator.html">squirrel.modules.prompts.abstract.IPromptGenerator</a></li>
-<li class="toctree-l2"><a class="reference internal" href="generated/squirrel_modules_prompts_builder_TabularDataPromptGenerator.html">squirrel.modules.prompts.builder.TabularDataPromptGenerator</a></li>
-<li class="toctree-l2"><a class="reference internal" href="generated/squirrel_modules_prompts_exploratory_ExploratoryPromptGenerator.html">squirrel.modules.prompts.exploratory.ExploratoryPromptGenerator</a></li>
-<li class="toctree-l2"><a class="reference internal" href="generated/squirrel_modules_prompts_inspect_InspectPromptGenerator.html">squirrel.modules.prompts.inspect.InspectPromptGenerator</a></li>
-<li class="toctree-l2"><a class="reference internal" href="generated/squirrel_modules_prompts_orchestrator_OrchestratorPromptGenerator.html">squirrel.modules.prompts.orchestrator.OrchestratorPromptGenerator</a></li>
-<li class="toctree-l2"><a class="reference internal" href="generated/squirrel_modules_prompts_preprocess_PreprocessPromptGenerator.html">squirrel.modules.prompts.preprocess.PreprocessPromptGenerator</a></li>
-<li class="toctree-l2"><a class="reference internal" href="generated/squirrel_modules_providers_abstract_IProvider.html">squirrel.modules.providers.abstract.IProvider</a></li>
-<li class="toctree-l2"><a class="reference internal" href="generated/squirrel_modules_providers_gemini_GeminiProvider.html">squirrel.modules.providers.gemini.GeminiProvider</a></li>
-<li class="toctree-l2"><a class="reference internal" href="generated/squirrel_modules_providers_groq_GroqProvider.html">squirrel.modules.providers.groq.GroqProvider</a></li>
-<li class="toctree-l2"><a class="reference internal" href="generated/squirrel_modules_providers_openrouter_OpenRouterProvider.html">squirrel.modules.providers.openrouter.OpenRouterProvider</a></li>
-<li class="toctree-l2"><a class="reference internal" href="generated/squirrel_schemas_api.html">squirrel.schemas.api</a></li>
-<li class="toctree-l2"><a class="reference internal" href="generated/squirrel_schemas_argument_spec.html">squirrel.schemas.argument_spec</a></li>
-<li class="toctree-l2"><a class="reference internal" href="generated/squirrel_schemas_auth.html">squirrel.schemas.auth</a></li>
-<li class="toctree-l2"><a class="reference internal" href="generated/squirrel_schemas_connector.html">squirrel.schemas.connector</a></li>
-<li class="toctree-l2"><a class="reference internal" href="generated/squirrel_schemas_eda.html">squirrel.schemas.eda</a></li>
-<li class="toctree-l2"><a class="reference internal" href="generated/squirrel_schemas_error.html">squirrel.schemas.error</a></li>
-<li class="toctree-l2"><a class="reference internal" href="generated/squirrel_schemas_file.html">squirrel.schemas.file</a></li>
-<li class="toctree-l2"><a class="reference internal" href="generated/squirrel_schemas_notebook.html">squirrel.schemas.notebook</a></li>
-<li class="toctree-l2"><a class="reference internal" href="generated/squirrel_schemas_token.html">squirrel.schemas.token</a></li>
-<li class="toctree-l2"><a class="reference internal" href="generated/squirrel_schemas_workspace.html">squirrel.schemas.workspace</a></li>
-<li class="toctree-l2"><a class="reference internal" href="generated/squirrel_services_auth_AuthService.html">squirrel.services.auth.AuthService</a></li>
-<li class="toctree-l2"><a class="reference internal" href="generated/squirrel_services_auth_TokenService.html">squirrel.services.auth.TokenService</a></li>
-<li class="toctree-l2"><a class="reference internal" href="generated/squirrel_services_chat_MessagingService.html">squirrel.services.chat.MessagingService</a></li>
-<li class="toctree-l2"><a class="reference internal" href="generated/squirrel_services_data_connector_DataConnectorService.html">squirrel.services.data_connector.DataConnectorService</a></li>
-<li class="toctree-l2"><a class="reference internal" href="generated/squirrel_services_file_FileService.html">squirrel.services.file.FileService</a></li>
-<li class="toctree-l2"><a class="reference internal" href="generated/squirrel_services_notebook_NotebookService.html">squirrel.services.notebook.NotebookService</a></li>
-<li class="toctree-l2"><a class="reference internal" href="generated/squirrel_services_orchestrator_OrchestratorService.html">squirrel.services.orchestrator.OrchestratorService</a></li>
-<li class="toctree-l2"><a class="reference internal" href="generated/squirrel_services_storage_blob_IBlobStorageService.html">squirrel.services.storage.blob.IBlobStorageService</a></li>
-<li class="toctree-l2"><a class="reference internal" href="generated/squirrel_services_storage_blob_MinIOService.html">squirrel.services.storage.blob.MinIOService</a></li>
-<li class="toctree-l2"><a class="reference internal" href="generated/squirrel_services_storage_database_IDatabaseService.html">squirrel.services.storage.database.IDatabaseService</a></li>
-<li class="toctree-l2"><a class="reference internal" href="generated/squirrel_services_storage_database_PostgresService.html">squirrel.services.storage.database.PostgresService</a></li>
-<li class="toctree-l2"><a class="reference internal" href="generated/squirrel_services_workspace_WorkspaceService.html">squirrel.services.workspace.WorkspaceService</a></li>
-</ul>
-</li>
+<li class="toctree-l1"><a class="reference internal" href="generated/api_reference.html">HTTP API</a></li>
 </ul>
 </div>
+</section>
+<section id="data-schemas">
+<h2>Data Schemas<a class="headerlink" href="#data-schemas" title="Link to this heading"></a></h2>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="generated/schemas_reference.html">Data Schemas</a></li>
+</ul>
+</div>
+</section>
+<section id="services">
+<h2>Services<a class="headerlink" href="#services" title="Link to this heading"></a></h2>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="generated/services_reference.html">Services</a></li>
+</ul>
+</div>
+</section>
+<section id="agents">
+<h2>Agents<a class="headerlink" href="#agents" title="Link to this heading"></a></h2>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="generated/agents_reference.html">Agents</a></li>
+</ul>
+</div>
+</section>
+<section id="prompt-components">
+<h2>Prompt Components<a class="headerlink" href="#prompt-components" title="Link to this heading"></a></h2>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="generated/prompts_reference.html">Prompt Components</a></li>
+</ul>
+</div>
+</section>
+<section id="model-providers">
+<h2>Model Providers<a class="headerlink" href="#model-providers" title="Link to this heading"></a></h2>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="generated/providers_reference.html">Model Providers</a></li>
+</ul>
+</div>
+</section>
+<section id="data-inspectors">
+<h2>Data Inspectors<a class="headerlink" href="#data-inspectors" title="Link to this heading"></a></h2>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="generated/inspectors_reference.html">Data Inspectors</a></li>
+</ul>
+</div>
+</section>
+<section id="preprocessors">
+<h2>Preprocessors<a class="headerlink" href="#preprocessors" title="Link to this heading"></a></h2>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="generated/preprocessors_reference.html">Preprocessors</a></li>
+</ul>
+</div>
+</section>
+<section id="core-infrastructure">
+<h2>Core Infrastructure<a class="headerlink" href="#core-infrastructure" title="Link to this heading"></a></h2>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="generated/core_reference.html">Core Infrastructure</a></li>
+</ul>
+</div>
+</section>
+<section id="machine-learning-models">
+<h2>Machine Learning Models<a class="headerlink" href="#machine-learning-models" title="Link to this heading"></a></h2>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="generated/models_reference.html">Machine Learning Models</a></li>
+</ul>
+</div>
+</section>
+<section id="constants">
+<h2>Constants<a class="headerlink" href="#constants" title="Link to this heading"></a></h2>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="generated/constants_reference.html">Constants</a></li>
+</ul>
+</div>
+</section>
 </section>
 
 
            </div>
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
-        <a href="index.html" class="btn btn-neutral float-left" title="Squirrel Documentation" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
-        <a href="generated_classes.html" class="btn btn-neutral float-right" title="Generated API classes" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="deployment.html" class="btn btn-neutral float-left" title="Deployment and operations" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="generated/api_reference.html" class="btn btn-neutral float-right" title="HTTP API" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 
   <hr/>
@@ -160,7 +220,9 @@ relationships.</p>
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   
+  
+  <span class="version">Squirrel version 0.1.0</span>
+
 
 </footer>
         </div>

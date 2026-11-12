@@ -1,0 +1,422 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>squirrel.api.routes.files &mdash; SQRL Documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../../../_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" type="text/css" href="../../../../_static/css/custom.css?v=35931533" />
+
+  
+    <link rel="shortcut icon" href="../../../../_static/sqrl.png"/>
+      <script src="../../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../../_static/documentation_options.js?v=01f34227"></script>
+      <script src="../../../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script src="../../../../_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="../../../../_static/copybutton.js?v=a46eff05"></script>
+    <script src="../../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../../index.html">
+            
+              <img src="../../../../_static/sqrl.png" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Learn and build</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../getting-started.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../workflow.html">Product workflow</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../architecture.html">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../deployment.html">Deployment and operations</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../api.html">Backend API Reference</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../generated/api_reference.html">HTTP API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../generated/schemas_reference.html">Data Schemas</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../generated/services_reference.html">Services</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../generated/agents_reference.html">Agents</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../generated/prompts_reference.html">Prompt Components</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../generated/providers_reference.html">Model Providers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../generated/inspectors_reference.html">Data Inspectors</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../generated/preprocessors_reference.html">Preprocessors</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../generated/core_reference.html">Core Infrastructure</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../generated/models_reference.html">Machine Learning Models</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../generated/constants_reference.html">Constants</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../index.html">squirrel</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">squirrel.api.routes.files</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for squirrel.api.routes.files</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/python</span>
+<span class="sd">"""</span>
+<span class="sd">Files Route Module</span>
+<span class="sd">==================</span>
+<span class="sd">...</span>
+<span class="sd">"""</span>
+<span class="c1"># ——————————————————————————————————————————————————————————————</span>
+<span class="c1"># Imports</span>
+
+<span class="c1"># Standard Libraries</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">uuid</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">tempfile</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+
+<span class="c1"># FastAPI</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fastapi</span><span class="w"> </span><span class="kn">import</span> <span class="n">APIRouter</span><span class="p">,</span> <span class="n">Body</span><span class="p">,</span> <span class="n">Depends</span><span class="p">,</span> <span class="n">File</span> <span class="k">as</span> <span class="n">FastAPIFile</span><span class="p">,</span> <span class="n">HTTPException</span><span class="p">,</span> <span class="n">UploadFile</span><span class="p">,</span> <span class="n">status</span>
+
+<span class="c1"># Models</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">squirrel.schemas.file</span><span class="w"> </span><span class="kn">import</span> <span class="n">File</span> <span class="k">as</span> <span class="n">StorageFile</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">squirrel.schemas.file</span><span class="w"> </span><span class="kn">import</span> <span class="n">FileRequest</span><span class="p">,</span> <span class="n">RenameFileRequest</span><span class="p">,</span> <span class="n">FileResponse</span><span class="p">,</span> <span class="n">FileType</span>
+
+<span class="c1"># Services</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">squirrel.services.storage.blob.MinIOService</span><span class="w"> </span><span class="kn">import</span> <span class="n">MinIOService</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">squirrel.services.file.FileService</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">FileService</span><span class="p">,</span>
+    <span class="n">FileRecordNotFound</span><span class="p">,</span>
+    <span class="n">FileInUseError</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="c1"># Schema</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">squirrel.schemas.file</span><span class="w"> </span><span class="kn">import</span> <span class="n">File</span><span class="p">,</span> <span class="n">FilesResponse</span>
+
+<span class="c1"># Auth</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">squirrel.api.routes.auth</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_current_user</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">squirrel.schemas.auth</span><span class="w"> </span><span class="kn">import</span> <span class="n">AuthUserRead</span>
+
+<span class="c1"># Settings</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">squirrel.core.config</span><span class="w"> </span><span class="kn">import</span> <span class="n">settings</span>
+
+<span class="c1"># Logging</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">loguru</span><span class="w"> </span><span class="kn">import</span> <span class="n">logger</span>
+
+<span class="c1"># API Router</span>
+<span class="n">router</span> <span class="o">=</span> <span class="n">APIRouter</span><span class="p">()</span>
+
+<span class="c1"># ——————————————————————————————————————————————————————————————</span>
+<span class="c1"># Endpoints</span>
+
+<div class="viewcode-block" id="retrieve_file">
+<a class="viewcode-back" href="../../../../generated/api_reference.html#squirrel.api.routes.files.retrieve_file">[docs]</a>
+<span class="nd">@router</span><span class="o">.</span><span class="n">post</span><span class="p">(</span>
+    <span class="s2">"/retrieve"</span><span class="p">,</span>
+    <span class="n">summary</span><span class="o">=</span><span class="s2">"Send a file retrieval request to the files endpoint"</span><span class="p">,</span>
+    <span class="n">status_code</span><span class="o">=</span><span class="n">status</span><span class="o">.</span><span class="n">HTTP_200_OK</span><span class="p">,</span>
+    <span class="n">description</span><span class="o">=</span><span class="s2">"Send a file retrieval request to the files endpoint and receive a response."</span><span class="p">,</span>
+    <span class="n">response_description</span><span class="o">=</span><span class="s2">"The response from the files endpoint, including any generated content or files."</span><span class="p">,</span>
+    <span class="n">response_model</span><span class="o">=</span><span class="n">FileResponse</span>
+<span class="p">)</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">retrieve_file</span><span class="p">(</span>
+    <span class="n">request</span><span class="p">:</span> <span class="n">FileRequest</span> <span class="o">=</span> <span class="n">Body</span><span class="p">(</span>
+        <span class="o">...</span><span class="p">,</span>
+        <span class="n">description</span><span class="o">=</span><span class="s2">"The file request payload containing the file reference and optional parameters."</span>
+    <span class="p">),</span>
+    <span class="n">current_user</span><span class="p">:</span> <span class="n">AuthUserRead</span> <span class="o">=</span> <span class="n">Depends</span><span class="p">(</span><span class="n">get_current_user</span><span class="p">),</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">FileResponse</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Retrieve File Endpoint</span>
+<span class="sd">    ----------------------</span>
+<span class="sd">    Only files recorded as belonging to ``current_user`` in</span>
+<span class="sd">    ``file`` may be retrieved — this keeps the endpoint from</span>
+<span class="sd">    being usable to fetch arbitrary MinIO objects belonging to other</span>
+<span class="sd">    users just by knowing/guessing their ``fileUrl``.</span>
+<span class="sd">    """</span>
+    <span class="n">storage_service</span> <span class="o">=</span> <span class="n">MinIOService</span><span class="p">()</span>
+    <span class="n">file_service</span> <span class="o">=</span> <span class="n">FileService</span><span class="p">()</span>
+    <span class="n">output_files</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">StorageFile</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+
+    <span class="k">for</span> <span class="n">index</span><span class="p">,</span> <span class="n">file_item</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">request</span><span class="o">.</span><span class="n">file</span><span class="p">):</span>
+        <span class="n">file_url</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">file_item</span><span class="o">.</span><span class="n">fileUrl</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">file_service</span><span class="o">.</span><span class="n">is_owned_by</span><span class="p">(</span><span class="n">file_url</span><span class="p">,</span> <span class="n">current_user</span><span class="o">.</span><span class="n">id</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span>
+                <span class="n">status_code</span><span class="o">=</span><span class="n">status</span><span class="o">.</span><span class="n">HTTP_404_NOT_FOUND</span><span class="p">,</span>
+                <span class="n">detail</span><span class="o">=</span><span class="sa">f</span><span class="s2">"File '</span><span class="si">{</span><span class="n">file_item</span><span class="o">.</span><span class="n">fileName</span><span class="w"> </span><span class="ow">or</span><span class="w"> </span><span class="n">file_url</span><span class="si">}</span><span class="s2">' not found."</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="n">retrieved</span> <span class="o">=</span> <span class="n">storage_service</span><span class="o">.</span><span class="n">retrieve_file</span><span class="p">(</span><span class="n">file_url</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">retrieved</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">continue</span>
+        <span class="n">output_files</span><span class="p">[</span><span class="n">file_item</span><span class="o">.</span><span class="n">fileName</span> <span class="ow">or</span> <span class="sa">f</span><span class="s2">"file_</span><span class="si">{</span><span class="n">index</span><span class="si">}</span><span class="s2">"</span><span class="p">]</span> <span class="o">=</span> <span class="n">retrieved</span>
+
+    <span class="k">return</span> <span class="n">FileResponse</span><span class="p">(</span><span class="n">success</span><span class="o">=</span><span class="nb">bool</span><span class="p">(</span><span class="n">output_files</span><span class="p">),</span> <span class="n">outputFiles</span><span class="o">=</span><span class="n">output_files</span> <span class="ow">or</span> <span class="kc">None</span><span class="p">)</span></div>
+
+
+
+<span class="nd">@router</span><span class="o">.</span><span class="n">post</span><span class="p">(</span>
+    <span class="s2">"/upload"</span><span class="p">,</span>
+    <span class="n">summary</span><span class="o">=</span><span class="s2">"Upload a file to MinIO"</span><span class="p">,</span>
+    <span class="n">status_code</span><span class="o">=</span><span class="n">status</span><span class="o">.</span><span class="n">HTTP_200_OK</span><span class="p">,</span>
+    <span class="n">description</span><span class="o">=</span><span class="s2">"Upload a file to MinIO and return the stored file metadata."</span><span class="p">,</span>
+    <span class="n">response_description</span><span class="o">=</span><span class="s2">"The response from the storage backend, including any generated file metadata."</span><span class="p">,</span>
+    <span class="n">response_model</span><span class="o">=</span><span class="n">FileResponse</span>
+<span class="p">)</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">upload_file</span><span class="p">(</span>
+    <span class="n">file</span><span class="p">:</span> <span class="n">UploadFile</span> <span class="o">=</span> <span class="n">FastAPIFile</span><span class="p">(</span><span class="o">...</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">"The file to be uploaded"</span><span class="p">),</span>
+    <span class="n">file_type</span><span class="p">:</span> <span class="n">FileType</span> <span class="o">=</span> <span class="n">FileType</span><span class="o">.</span><span class="n">CSV</span><span class="p">,</span>
+    <span class="n">current_user</span><span class="p">:</span> <span class="n">AuthUserRead</span> <span class="o">=</span> <span class="n">Depends</span><span class="p">(</span><span class="n">get_current_user</span><span class="p">),</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">FileResponse</span><span class="p">:</span>
+    <span class="n">storage_service</span> <span class="o">=</span> <span class="n">MinIOService</span><span class="p">()</span>
+    <span class="n">file_service</span> <span class="o">=</span> <span class="n">FileService</span><span class="p">()</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">with</span> <span class="n">tempfile</span><span class="o">.</span><span class="n">NamedTemporaryFile</span><span class="p">(</span><span class="n">delete</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">suffix</span><span class="o">=</span><span class="n">Path</span><span class="p">(</span><span class="n">file</span><span class="o">.</span><span class="n">filename</span> <span class="ow">or</span> <span class="s2">"upload"</span><span class="p">)</span><span class="o">.</span><span class="n">suffix</span><span class="p">)</span> <span class="k">as</span> <span class="n">tmp</span><span class="p">:</span>
+            <span class="n">temp_path</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">tmp</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+            <span class="k">while</span> <span class="n">chunk</span> <span class="o">:=</span> <span class="k">await</span> <span class="n">file</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="mi">1024</span> <span class="o">*</span> <span class="mi">1024</span><span class="p">):</span>
+                <span class="n">tmp</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">chunk</span><span class="p">)</span>
+
+        <span class="n">original_name</span> <span class="o">=</span> <span class="n">file</span><span class="o">.</span><span class="n">filename</span> <span class="ow">or</span> <span class="n">temp_path</span><span class="o">.</span><span class="n">name</span>
+        <span class="n">object_name</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">current_user</span><span class="o">.</span><span class="n">id</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">uuid</span><span class="o">.</span><span class="n">uuid4</span><span class="p">()</span><span class="o">.</span><span class="n">hex</span><span class="p">[:</span><span class="mi">8</span><span class="p">]</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">original_name</span><span class="si">}</span><span class="s2">"</span>
+
+        <span class="n">uploaded</span> <span class="o">=</span> <span class="n">storage_service</span><span class="o">.</span><span class="n">upload_file</span><span class="p">(</span><span class="n">file_path</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">temp_path</span><span class="p">),</span> <span class="n">object_name</span><span class="o">=</span><span class="n">object_name</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">uploaded</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">FileResponse</span><span class="p">(</span><span class="n">success</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">outputFiles</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+
+        <span class="n">uploaded</span><span class="o">.</span><span class="n">fileName</span> <span class="o">=</span> <span class="n">original_name</span>  <span class="c1"># display name stays clean of the namespace prefix</span>
+        <span class="k">if</span> <span class="n">file_type</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">uploaded</span><span class="o">.</span><span class="n">fileType</span> <span class="o">=</span> <span class="n">file_type</span>
+
+        <span class="n">file_service</span><span class="o">.</span><span class="n">record_upload</span><span class="p">(</span><span class="n">uploaded</span><span class="p">,</span> <span class="n">owner_user_id</span><span class="o">=</span><span class="n">current_user</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">FileResponse</span><span class="p">(</span><span class="n">success</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">outputFiles</span><span class="o">=</span><span class="p">{</span><span class="n">original_name</span><span class="p">:</span> <span class="n">uploaded</span><span class="p">})</span>
+    <span class="k">finally</span><span class="p">:</span>
+        <span class="k">await</span> <span class="n">file</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+        <span class="k">if</span> <span class="s2">"temp_path"</span> <span class="ow">in</span> <span class="nb">locals</span><span class="p">()</span> <span class="ow">and</span> <span class="n">temp_path</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+            <span class="n">temp_path</span><span class="o">.</span><span class="n">unlink</span><span class="p">(</span><span class="n">missing_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="upload_multiple_files">
+<a class="viewcode-back" href="../../../../generated/api_reference.html#squirrel.api.routes.files.upload_multiple_files">[docs]</a>
+<span class="nd">@router</span><span class="o">.</span><span class="n">post</span><span class="p">(</span>
+    <span class="s2">"/upload-multiple"</span><span class="p">,</span>
+    <span class="n">summary</span><span class="o">=</span><span class="s2">"Upload multiple files to MinIO"</span><span class="p">,</span>
+    <span class="n">status_code</span><span class="o">=</span><span class="n">status</span><span class="o">.</span><span class="n">HTTP_200_OK</span><span class="p">,</span>
+    <span class="n">description</span><span class="o">=</span><span class="s2">"Upload multiple files to MinIO and return the stored file metadata."</span><span class="p">,</span>
+    <span class="n">response_description</span><span class="o">=</span><span class="s2">"The response from the storage backend, including any generated file metadata."</span><span class="p">,</span>
+    <span class="n">response_model</span><span class="o">=</span><span class="n">FileResponse</span>
+<span class="p">)</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">upload_multiple_files</span><span class="p">(</span>
+    <span class="n">files</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">UploadFile</span><span class="p">]</span> <span class="o">=</span> <span class="n">FastAPIFile</span><span class="p">(</span><span class="o">...</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">"The files to be uploaded"</span><span class="p">),</span>
+    <span class="n">current_user</span><span class="p">:</span> <span class="n">AuthUserRead</span> <span class="o">=</span> <span class="n">Depends</span><span class="p">(</span><span class="n">get_current_user</span><span class="p">),</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">FileResponse</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Upload Multiple Files Endpoint</span>
+<span class="sd">    ------------------------------</span>
+<span class="sd">    """</span>
+    <span class="n">storage_service</span> <span class="o">=</span> <span class="n">MinIOService</span><span class="p">()</span>
+    <span class="n">file_service</span> <span class="o">=</span> <span class="n">FileService</span><span class="p">()</span>
+    <span class="n">output_files</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">StorageFile</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+
+    <span class="k">for</span> <span class="n">index</span><span class="p">,</span> <span class="n">upload</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">files</span><span class="p">):</span>
+        <span class="n">file_type</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">upload</span><span class="o">.</span><span class="n">filename</span> <span class="ow">or</span> <span class="s2">"upload"</span><span class="p">)</span><span class="o">.</span><span class="n">suffix</span><span class="o">.</span><span class="n">lstrip</span><span class="p">(</span><span class="s2">"."</span><span class="p">)</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">with</span> <span class="n">tempfile</span><span class="o">.</span><span class="n">NamedTemporaryFile</span><span class="p">(</span>
+                <span class="n">delete</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> 
+                <span class="n">suffix</span><span class="o">=</span><span class="n">Path</span><span class="p">(</span><span class="n">upload</span><span class="o">.</span><span class="n">filename</span> <span class="ow">or</span> <span class="s2">"upload"</span><span class="p">)</span><span class="o">.</span><span class="n">suffix</span>
+            <span class="p">)</span> <span class="k">as</span> <span class="n">tmp</span><span class="p">:</span>
+                <span class="n">temp_path</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">tmp</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+                <span class="k">while</span> <span class="n">chunk</span> <span class="o">:=</span> <span class="k">await</span> <span class="n">upload</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="mi">1024</span> <span class="o">*</span> <span class="mi">1024</span><span class="p">):</span>
+                    <span class="n">tmp</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">chunk</span><span class="p">)</span>
+
+            <span class="n">original_name</span> <span class="o">=</span> <span class="n">upload</span><span class="o">.</span><span class="n">filename</span> <span class="ow">or</span> <span class="n">temp_path</span><span class="o">.</span><span class="n">name</span>
+            <span class="n">object_name</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">current_user</span><span class="o">.</span><span class="n">id</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">uuid</span><span class="o">.</span><span class="n">uuid4</span><span class="p">()</span><span class="o">.</span><span class="n">hex</span><span class="p">[:</span><span class="mi">8</span><span class="p">]</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">original_name</span><span class="si">}</span><span class="s2">"</span>
+
+            <span class="n">uploaded</span> <span class="o">=</span> <span class="n">storage_service</span><span class="o">.</span><span class="n">upload_file</span><span class="p">(</span><span class="n">file_path</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">temp_path</span><span class="p">),</span> <span class="n">object_name</span><span class="o">=</span><span class="n">object_name</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">uploaded</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">continue</span>
+
+            <span class="n">uploaded</span><span class="o">.</span><span class="n">fileName</span> <span class="o">=</span> <span class="n">original_name</span>
+            <span class="k">if</span> <span class="n">file_type</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">uploaded</span><span class="o">.</span><span class="n">fileType</span> <span class="o">=</span> <span class="n">file_type</span>
+
+            <span class="n">file_service</span><span class="o">.</span><span class="n">record_upload</span><span class="p">(</span><span class="n">uploaded</span><span class="p">,</span> <span class="n">owner_user_id</span><span class="o">=</span><span class="n">current_user</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
+            <span class="n">output_files</span><span class="p">[</span><span class="n">original_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">uploaded</span>
+        <span class="k">finally</span><span class="p">:</span>
+            <span class="k">await</span> <span class="n">upload</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+            <span class="k">if</span> <span class="s2">"temp_path"</span> <span class="ow">in</span> <span class="nb">locals</span><span class="p">()</span> <span class="ow">and</span> <span class="n">temp_path</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+                <span class="n">temp_path</span><span class="o">.</span><span class="n">unlink</span><span class="p">(</span><span class="n">missing_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">FileResponse</span><span class="p">(</span><span class="n">success</span><span class="o">=</span><span class="nb">bool</span><span class="p">(</span><span class="n">output_files</span><span class="p">),</span> <span class="n">outputFiles</span><span class="o">=</span><span class="n">output_files</span> <span class="ow">or</span> <span class="kc">None</span><span class="p">)</span></div>
+
+
+
+<span class="nd">@router</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+    <span class="s2">"/"</span><span class="p">,</span>
+    <span class="n">summary</span><span class="o">=</span><span class="s2">"List all uploaded files"</span><span class="p">,</span>
+    <span class="n">status_code</span><span class="o">=</span><span class="n">status</span><span class="o">.</span><span class="n">HTTP_200_OK</span><span class="p">,</span>
+    <span class="n">description</span><span class="o">=</span><span class="s2">"Return metadata for every file the current user has uploaded, whether or not it is attached to a workspace or notebook."</span><span class="p">,</span>
+    <span class="n">response_model</span><span class="o">=</span><span class="n">FilesResponse</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">list_files</span><span class="p">(</span><span class="n">current_user</span><span class="p">:</span> <span class="n">AuthUserRead</span> <span class="o">=</span> <span class="n">Depends</span><span class="p">(</span><span class="n">get_current_user</span><span class="p">))</span> <span class="o">-&gt;</span> <span class="n">FilesResponse</span><span class="p">:</span>
+    <span class="n">file_service</span> <span class="o">=</span> <span class="n">FileService</span><span class="p">()</span>
+    <span class="n">files</span> <span class="o">=</span> <span class="n">file_service</span><span class="o">.</span><span class="n">list_files</span><span class="p">(</span><span class="n">current_user</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">FilesResponse</span><span class="p">(</span><span class="n">success</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">files</span><span class="o">=</span><span class="n">files</span><span class="p">)</span>
+
+<div class="viewcode-block" id="rename_file_by_url">
+<a class="viewcode-back" href="../../../../generated/api_reference.html#squirrel.api.routes.files.rename_file_by_url">[docs]</a>
+<span class="nd">@router</span><span class="o">.</span><span class="n">patch</span><span class="p">(</span>
+    <span class="s2">"/by-url"</span><span class="p">,</span>
+    <span class="n">summary</span><span class="o">=</span><span class="s2">"Rename a file by its storage URL"</span><span class="p">,</span>
+    <span class="n">status_code</span><span class="o">=</span><span class="n">status</span><span class="o">.</span><span class="n">HTTP_200_OK</span><span class="p">,</span>
+    <span class="n">response_model</span><span class="o">=</span><span class="n">File</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">rename_file_by_url</span><span class="p">(</span>
+    <span class="n">file_url</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">body</span><span class="p">:</span> <span class="n">RenameFileRequest</span> <span class="o">=</span> <span class="n">Body</span><span class="p">(</span><span class="o">...</span><span class="p">),</span>
+    <span class="n">current_user</span><span class="p">:</span> <span class="n">AuthUserRead</span> <span class="o">=</span> <span class="n">Depends</span><span class="p">(</span><span class="n">get_current_user</span><span class="p">),</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">File</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Rename a file record by ``file_url``. Delegates the ownership check,</span>
+<span class="sd">    the update, and propagation into ``sqrl_notebook_data_sources`` to</span>
+<span class="sd">    ``FileService.rename_file``.</span>
+<span class="sd">    """</span>
+    <span class="n">trimmed</span> <span class="o">=</span> <span class="p">(</span><span class="n">body</span><span class="o">.</span><span class="n">fileName</span> <span class="ow">or</span> <span class="s2">""</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">trimmed</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span><span class="n">status_code</span><span class="o">=</span><span class="n">status</span><span class="o">.</span><span class="n">HTTP_400_BAD_REQUEST</span><span class="p">,</span> <span class="n">detail</span><span class="o">=</span><span class="s2">"fileName must not be empty."</span><span class="p">)</span>
+
+    <span class="n">file_service</span> <span class="o">=</span> <span class="n">FileService</span><span class="p">()</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">file_service</span><span class="o">.</span><span class="n">rename_file</span><span class="p">(</span><span class="n">file_url</span><span class="p">,</span> <span class="n">current_user</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="n">trimmed</span><span class="p">)</span>
+    <span class="k">except</span> <span class="n">FileRecordNotFound</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span>
+            <span class="n">status_code</span><span class="o">=</span><span class="n">status</span><span class="o">.</span><span class="n">HTTP_404_NOT_FOUND</span><span class="p">,</span>
+            <span class="n">detail</span><span class="o">=</span><span class="s2">"File not found or not owned by this user."</span><span class="p">,</span>
+        <span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="delete_file">
+<a class="viewcode-back" href="../../../../generated/api_reference.html#squirrel.api.routes.files.delete_file">[docs]</a>
+<span class="nd">@router</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span>
+    <span class="s2">"/by-url"</span><span class="p">,</span>
+    <span class="n">summary</span><span class="o">=</span><span class="s2">"Delete a file by its storage URL"</span><span class="p">,</span>
+    <span class="n">status_code</span><span class="o">=</span><span class="n">status</span><span class="o">.</span><span class="n">HTTP_200_OK</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">delete_file</span><span class="p">(</span>
+    <span class="n">file_url</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">current_user</span><span class="p">:</span> <span class="n">AuthUserRead</span> <span class="o">=</span> <span class="n">Depends</span><span class="p">(</span><span class="n">get_current_user</span><span class="p">),</span>
+<span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Delete a file, but only if it is not attached to a workspace or notebook.</span>
+
+<span class="sd">    Ownership + attachment checks and the DB row deletion live in</span>
+<span class="sd">    ``FileService.delete_file``; this route is only responsible for the</span>
+<span class="sd">    MinIO blob removal, since FileService intentionally doesn't own a</span>
+<span class="sd">    storage client. The attachment check below runs before the storage</span>
+<span class="sd">    delete so an attached file's blob is never removed.</span>
+<span class="sd">    """</span>
+    <span class="n">file_service</span> <span class="o">=</span> <span class="n">FileService</span><span class="p">()</span>
+    <span class="n">storage_service</span> <span class="o">=</span> <span class="n">MinIOService</span><span class="p">()</span>
+
+    <span class="c1"># Fail fast on ownership/attachment before touching blob storage.</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">record</span> <span class="o">=</span> <span class="n">file_service</span><span class="o">.</span><span class="n">get_owned_file</span><span class="p">(</span><span class="n">file_url</span><span class="p">,</span> <span class="n">current_user</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">record</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">FileRecordNotFound</span><span class="p">(</span><span class="n">file_url</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">record</span><span class="o">.</span><span class="n">workspaceIds</span> <span class="ow">or</span> <span class="n">record</span><span class="o">.</span><span class="n">notebookIds</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">FileInUseError</span><span class="p">(</span><span class="n">file_url</span><span class="p">)</span>
+    <span class="k">except</span> <span class="n">FileRecordNotFound</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span><span class="n">status_code</span><span class="o">=</span><span class="n">status</span><span class="o">.</span><span class="n">HTTP_404_NOT_FOUND</span><span class="p">,</span> <span class="n">detail</span><span class="o">=</span><span class="s2">"File not found."</span><span class="p">)</span>
+    <span class="k">except</span> <span class="n">FileInUseError</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span>
+            <span class="n">status_code</span><span class="o">=</span><span class="n">status</span><span class="o">.</span><span class="n">HTTP_409_CONFLICT</span><span class="p">,</span>
+            <span class="n">detail</span><span class="o">=</span><span class="s2">"This file is attached to a workspace or notebook and can't be deleted. "</span>
+                   <span class="s2">"Remove it from there first."</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="n">deleted_from_storage</span> <span class="o">=</span> <span class="n">storage_service</span><span class="o">.</span><span class="n">delete_file</span><span class="p">(</span><span class="n">file_url</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">deleted_from_storage</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span>
+            <span class="n">status_code</span><span class="o">=</span><span class="n">status</span><span class="o">.</span><span class="n">HTTP_500_INTERNAL_SERVER_ERROR</span><span class="p">,</span>
+            <span class="n">detail</span><span class="o">=</span><span class="s2">"Failed to delete file from storage."</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">file_service</span><span class="o">.</span><span class="n">delete_file</span><span class="p">(</span><span class="n">file_url</span><span class="p">,</span> <span class="n">current_user</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
+    <span class="k">except</span> <span class="p">(</span><span class="n">FileRecordNotFound</span><span class="p">,</span> <span class="n">FileInUseError</span><span class="p">)</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+        <span class="c1"># Extremely unlikely race (record changed between the check above</span>
+        <span class="c1"># and now), but surface it rather than silently succeeding.</span>
+        <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span>
+            <span class="n">status_code</span><span class="o">=</span><span class="n">status</span><span class="o">.</span><span class="n">HTTP_409_CONFLICT</span><span class="p">,</span>
+            <span class="n">detail</span><span class="o">=</span><span class="sa">f</span><span class="s2">"File state changed during delete: </span><span class="si">{</span><span class="n">exc</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="k">return</span> <span class="p">{</span><span class="s2">"success"</span><span class="p">:</span> <span class="kc">True</span><span class="p">}</span></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, Mazen Soliman.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+  
+  <span class="version">Squirrel version 0.1.0</span>
+
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

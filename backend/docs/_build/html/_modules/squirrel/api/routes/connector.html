@@ -1,0 +1,464 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>squirrel.api.routes.connector &mdash; SQRL Documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../../../_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" type="text/css" href="../../../../_static/css/custom.css?v=35931533" />
+
+  
+    <link rel="shortcut icon" href="../../../../_static/sqrl.png"/>
+      <script src="../../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../../_static/documentation_options.js?v=01f34227"></script>
+      <script src="../../../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script src="../../../../_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="../../../../_static/copybutton.js?v=a46eff05"></script>
+    <script src="../../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../../index.html">
+            
+              <img src="../../../../_static/sqrl.png" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Learn and build</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../getting-started.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../workflow.html">Product workflow</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../architecture.html">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../deployment.html">Deployment and operations</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../api.html">Backend API Reference</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../generated/api_reference.html">HTTP API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../generated/schemas_reference.html">Data Schemas</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../generated/services_reference.html">Services</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../generated/agents_reference.html">Agents</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../generated/prompts_reference.html">Prompt Components</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../generated/providers_reference.html">Model Providers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../generated/inspectors_reference.html">Data Inspectors</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../generated/preprocessors_reference.html">Preprocessors</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../generated/core_reference.html">Core Infrastructure</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../generated/models_reference.html">Machine Learning Models</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../generated/constants_reference.html">Constants</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../index.html">squirrel</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">squirrel.api.routes.connector</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for squirrel.api.routes.connector</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/python</span>
+<span class="sd">"""</span>
+<span class="sd">Connector Route</span>
+<span class="sd">================</span>
+
+<span class="sd">Backs the frontend's Data Connectors page (``DataConnectorsPage.tsx``) and</span>
+<span class="sd">its ``connectorsApi`` client:</span>
+
+<span class="sd">1. ``GET /connectors/types``</span>
+<span class="sd">   The catalog of supported connector types and their form fields — the</span>
+<span class="sd">   "Add a source" tiles are built from this.</span>
+
+<span class="sd">2. ``GET /connectors``</span>
+<span class="sd">   List every configured connection, for the "Connected sources" list.</span>
+
+<span class="sd">3. ``POST /connectors``</span>
+<span class="sd">   Create a new connection (``connectorsApi.create``).</span>
+
+<span class="sd">4. ``PATCH /connectors/{connector_id}``</span>
+<span class="sd">   Rename a connection and/or update its config</span>
+<span class="sd">   (``connectorsApi.update``) — a blank secret field means "keep the</span>
+<span class="sd">   current value", matching the form's placeholder behaviour.</span>
+
+<span class="sd">5. ``POST /connectors/{connector_id}/test``</span>
+<span class="sd">   Run a live connectivity check and persist the resulting status</span>
+<span class="sd">   (``connectorsApi.test``).</span>
+
+<span class="sd">6. ``DELETE /connectors/{connector_id}``</span>
+<span class="sd">   Remove a connection (``connectorsApi.remove``).</span>
+
+<span class="sd">Every response uses :class:`DataConnectionOut`, which always redacts</span>
+<span class="sd">secret fields — the frontend never receives a decrypted password/key back,</span>
+<span class="sd">consistent with the "leave blank to keep current value" pattern already</span>
+<span class="sd">built into the edit form.</span>
+<span class="sd">"""</span>
+<span class="c1"># ——————————————————————————————————————————————————————————————</span>
+<span class="c1"># Imports</span>
+
+<span class="c1"># Standard Libraries</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">List</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+
+<span class="c1"># Third-Party Libraries</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fastapi</span><span class="w"> </span><span class="kn">import</span> <span class="n">APIRouter</span><span class="p">,</span> <span class="n">Body</span><span class="p">,</span> <span class="n">Depends</span><span class="p">,</span> <span class="n">HTTPException</span><span class="p">,</span> <span class="n">status</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fastapi.concurrency</span><span class="w"> </span><span class="kn">import</span> <span class="n">run_in_threadpool</span>
+
+<span class="c1"># Auth</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">squirrel.api.routes.auth</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_current_user</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">squirrel.schemas.auth</span><span class="w"> </span><span class="kn">import</span> <span class="n">AuthUserRead</span>
+
+<span class="c1"># Services</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">squirrel.services.data_connector.DataConnectorService</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">DataConnectorService</span><span class="p">,</span>
+    <span class="n">ConnectorNotFoundError</span><span class="p">,</span>
+    <span class="n">ConnectorValidationError</span><span class="p">,</span>
+    <span class="n">ConnectorInUseError</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="c1"># Constants</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">squirrel.constants.connector</span><span class="w"> </span><span class="kn">import</span> <span class="n">CONNECTOR_TYPE_SPECS</span>
+
+<span class="c1"># Schema</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">squirrel.schemas.connector</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">ConnectorType</span><span class="p">,</span>
+    <span class="n">ConnectorField</span><span class="p">,</span>
+    <span class="n">ConnectorCreateRequest</span><span class="p">,</span>
+    <span class="n">ConnectorUpdateRequest</span><span class="p">,</span>
+    <span class="n">DataConnectionOut</span><span class="p">,</span>
+    <span class="n">ConnectorTablesPreviewResponse</span><span class="p">,</span>
+    <span class="n">TablePreview</span>
+<span class="p">)</span>
+
+<span class="c1"># Logging</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">loguru</span><span class="w"> </span><span class="kn">import</span> <span class="n">logger</span>
+
+<span class="c1"># API Router</span>
+<span class="n">router</span> <span class="o">=</span> <span class="n">APIRouter</span><span class="p">()</span>
+
+<span class="c1"># ——————————————————————————————————————————————————————————————</span>
+<span class="c1"># Helpers</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_connector_service</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">DataConnectorService</span><span class="p">:</span>
+    <span class="k">return</span> <span class="n">DataConnectorService</span><span class="p">()</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_not_found</span><span class="p">(</span><span class="n">connector_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">HTTPException</span><span class="p">:</span>
+    <span class="k">return</span> <span class="n">HTTPException</span><span class="p">(</span>
+        <span class="n">status_code</span><span class="o">=</span><span class="n">status</span><span class="o">.</span><span class="n">HTTP_404_NOT_FOUND</span><span class="p">,</span>
+        <span class="n">detail</span><span class="o">=</span><span class="sa">f</span><span class="s2">"Connection '</span><span class="si">{</span><span class="n">connector_id</span><span class="si">}</span><span class="s2">' not found."</span><span class="p">,</span>
+    <span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_to_out</span><span class="p">(</span><span class="n">row</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DataConnectionOut</span><span class="p">:</span>
+    <span class="k">return</span> <span class="n">DataConnectionOut</span><span class="p">(</span><span class="o">**</span><span class="n">DataConnectorService</span><span class="o">.</span><span class="n">to_public_dict</span><span class="p">(</span><span class="n">row</span><span class="p">))</span>
+
+
+<span class="c1"># ——————————————————————————————————————————————————————————————</span>
+<span class="c1"># Endpoints — connector type catalog</span>
+
+
+<div class="viewcode-block" id="list_connector_types">
+<a class="viewcode-back" href="../../../../generated/api_reference.html#squirrel.api.routes.connector.list_connector_types">[docs]</a>
+<span class="nd">@router</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+    <span class="s2">"/types"</span><span class="p">,</span>
+    <span class="n">summary</span><span class="o">=</span><span class="s2">"List supported connector types and their form fields"</span><span class="p">,</span>
+    <span class="n">response_model</span><span class="o">=</span><span class="n">List</span><span class="p">[</span><span class="n">ConnectorType</span><span class="p">],</span>
+<span class="p">)</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">list_connector_types</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">ConnectorType</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Backs the "Add a source" tiles: one entry per connector type, with the</span>
+<span class="sd">    fields the create form should render.</span>
+<span class="sd">    """</span>
+    <span class="k">return</span> <span class="p">[</span>
+        <span class="n">ConnectorType</span><span class="p">(</span>
+            <span class="nb">id</span><span class="o">=</span><span class="n">spec</span><span class="o">.</span><span class="n">id</span><span class="p">,</span>
+            <span class="n">label</span><span class="o">=</span><span class="n">spec</span><span class="o">.</span><span class="n">label</span><span class="p">,</span>
+            <span class="n">description</span><span class="o">=</span><span class="n">spec</span><span class="o">.</span><span class="n">description</span><span class="p">,</span>
+            <span class="n">fields</span><span class="o">=</span><span class="p">[</span>
+                <span class="n">ConnectorField</span><span class="p">(</span>
+                    <span class="n">key</span><span class="o">=</span><span class="n">f</span><span class="o">.</span><span class="n">key</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="n">f</span><span class="o">.</span><span class="n">label</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="n">f</span><span class="o">.</span><span class="n">type</span><span class="p">,</span>
+                    <span class="n">required</span><span class="o">=</span><span class="n">f</span><span class="o">.</span><span class="n">required</span><span class="p">,</span> <span class="n">placeholder</span><span class="o">=</span><span class="n">f</span><span class="o">.</span><span class="n">placeholder</span><span class="p">,</span>
+                <span class="p">)</span>
+                <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">spec</span><span class="o">.</span><span class="n">fields</span>
+            <span class="p">],</span>
+        <span class="p">)</span>
+        <span class="k">for</span> <span class="n">spec</span> <span class="ow">in</span> <span class="n">CONNECTOR_TYPE_SPECS</span><span class="o">.</span><span class="n">values</span><span class="p">()</span>
+    <span class="p">]</span></div>
+
+
+
+<span class="c1"># ——————————————————————————————————————————————————————————————</span>
+<span class="c1"># Endpoints — connection CRUD</span>
+
+
+<span class="nd">@router</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+    <span class="s2">""</span><span class="p">,</span>
+    <span class="n">summary</span><span class="o">=</span><span class="s2">"List all data connections"</span><span class="p">,</span>
+    <span class="n">response_model</span><span class="o">=</span><span class="n">List</span><span class="p">[</span><span class="n">DataConnectionOut</span><span class="p">],</span>
+<span class="p">)</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">list_connections</span><span class="p">(</span>
+    <span class="n">current_user</span><span class="p">:</span> <span class="n">AuthUserRead</span> <span class="o">=</span> <span class="n">Depends</span><span class="p">(</span><span class="n">get_current_user</span><span class="p">),</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">DataConnectionOut</span><span class="p">]:</span>
+    <span class="n">rows</span> <span class="o">=</span> <span class="k">await</span> <span class="n">run_in_threadpool</span><span class="p">(</span>
+        <span class="n">_connector_service</span><span class="p">()</span><span class="o">.</span><span class="n">list_connections</span><span class="p">,</span> <span class="n">owner_user_id</span><span class="o">=</span><span class="n">current_user</span><span class="o">.</span><span class="n">id</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="p">[</span><span class="n">_to_out</span><span class="p">(</span><span class="n">row</span><span class="p">)</span> <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">rows</span><span class="p">]</span>
+
+
+<span class="nd">@router</span><span class="o">.</span><span class="n">post</span><span class="p">(</span>
+    <span class="s2">""</span><span class="p">,</span>
+    <span class="n">summary</span><span class="o">=</span><span class="s2">"Create a new data connection"</span><span class="p">,</span>
+    <span class="n">status_code</span><span class="o">=</span><span class="n">status</span><span class="o">.</span><span class="n">HTTP_201_CREATED</span><span class="p">,</span>
+    <span class="n">response_model</span><span class="o">=</span><span class="n">DataConnectionOut</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">create_connection</span><span class="p">(</span>
+    <span class="n">request</span><span class="p">:</span> <span class="n">ConnectorCreateRequest</span> <span class="o">=</span> <span class="n">Body</span><span class="p">(</span><span class="o">...</span><span class="p">),</span>
+    <span class="n">current_user</span><span class="p">:</span> <span class="n">AuthUserRead</span> <span class="o">=</span> <span class="n">Depends</span><span class="p">(</span><span class="n">get_current_user</span><span class="p">),</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DataConnectionOut</span><span class="p">:</span>
+    <span class="n">connector_svc</span> <span class="o">=</span> <span class="n">_connector_service</span><span class="p">()</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">row</span> <span class="o">=</span> <span class="k">await</span> <span class="n">run_in_threadpool</span><span class="p">(</span>
+            <span class="n">connector_svc</span><span class="o">.</span><span class="n">create_connection</span><span class="p">,</span>
+            <span class="n">request</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+            <span class="n">request</span><span class="o">.</span><span class="n">type</span><span class="p">,</span>
+            <span class="n">request</span><span class="o">.</span><span class="n">config</span><span class="p">,</span>
+            <span class="n">current_user</span><span class="o">.</span><span class="n">id</span><span class="p">,</span>
+        <span class="p">)</span>
+    <span class="k">except</span> <span class="ne">ValueError</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span><span class="n">status_code</span><span class="o">=</span><span class="n">status</span><span class="o">.</span><span class="n">HTTP_400_BAD_REQUEST</span><span class="p">,</span> <span class="n">detail</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">exc</span><span class="p">))</span>
+    <span class="k">except</span> <span class="n">ConnectorValidationError</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span><span class="n">status_code</span><span class="o">=</span><span class="n">status</span><span class="o">.</span><span class="n">HTTP_400_BAD_REQUEST</span><span class="p">,</span> <span class="n">detail</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">exc</span><span class="p">))</span>
+    <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">exception</span><span class="p">(</span><span class="s2">"Failed to create connection '</span><span class="si">{}</span><span class="s2">'"</span><span class="p">,</span> <span class="n">request</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span>
+            <span class="n">status_code</span><span class="o">=</span><span class="n">status</span><span class="o">.</span><span class="n">HTTP_500_INTERNAL_SERVER_ERROR</span><span class="p">,</span>
+            <span class="n">detail</span><span class="o">=</span><span class="s2">"Failed to create connection."</span><span class="p">,</span>
+        <span class="p">)</span>
+    <span class="k">return</span> <span class="n">_to_out</span><span class="p">(</span><span class="n">row</span><span class="p">)</span>
+
+
+<span class="nd">@router</span><span class="o">.</span><span class="n">patch</span><span class="p">(</span>
+    <span class="s2">"/</span><span class="si">{connector_id}</span><span class="s2">"</span><span class="p">,</span>
+    <span class="n">summary</span><span class="o">=</span><span class="s2">"Rename a connection and/or update its config"</span><span class="p">,</span>
+    <span class="n">response_model</span><span class="o">=</span><span class="n">DataConnectionOut</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">update_connection</span><span class="p">(</span>
+    <span class="n">connector_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">request</span><span class="p">:</span> <span class="n">ConnectorUpdateRequest</span> <span class="o">=</span> <span class="n">Body</span><span class="p">(</span><span class="o">...</span><span class="p">),</span>
+    <span class="n">current_user</span><span class="p">:</span> <span class="n">AuthUserRead</span> <span class="o">=</span> <span class="n">Depends</span><span class="p">(</span><span class="n">get_current_user</span><span class="p">),</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DataConnectionOut</span><span class="p">:</span>
+    <span class="n">connector_svc</span> <span class="o">=</span> <span class="n">_connector_service</span><span class="p">()</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">row</span> <span class="o">=</span> <span class="k">await</span> <span class="n">run_in_threadpool</span><span class="p">(</span>
+            <span class="n">connector_svc</span><span class="o">.</span><span class="n">update_connection</span><span class="p">,</span>
+            <span class="n">connector_id</span><span class="p">,</span>
+            <span class="n">request</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+            <span class="n">request</span><span class="o">.</span><span class="n">config</span><span class="p">,</span>
+            <span class="n">current_user</span><span class="o">.</span><span class="n">id</span><span class="p">,</span>
+        <span class="p">)</span>
+    <span class="k">except</span> <span class="n">ConnectorNotFoundError</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">_not_found</span><span class="p">(</span><span class="n">connector_id</span><span class="p">)</span>
+    <span class="k">except</span> <span class="p">(</span><span class="ne">ValueError</span><span class="p">,</span> <span class="n">ConnectorValidationError</span><span class="p">)</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span><span class="n">status_code</span><span class="o">=</span><span class="n">status</span><span class="o">.</span><span class="n">HTTP_400_BAD_REQUEST</span><span class="p">,</span> <span class="n">detail</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">exc</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">_to_out</span><span class="p">(</span><span class="n">row</span><span class="p">)</span>
+
+
+<span class="nd">@router</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span>
+    <span class="s2">"/</span><span class="si">{connector_id}</span><span class="s2">"</span><span class="p">,</span>
+    <span class="n">summary</span><span class="o">=</span><span class="s2">"Delete a data connection"</span><span class="p">,</span>
+    <span class="n">status_code</span><span class="o">=</span><span class="n">status</span><span class="o">.</span><span class="n">HTTP_204_NO_CONTENT</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">delete_connection</span><span class="p">(</span>
+    <span class="n">connector_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">current_user</span><span class="p">:</span> <span class="n">AuthUserRead</span> <span class="o">=</span> <span class="n">Depends</span><span class="p">(</span><span class="n">get_current_user</span><span class="p">),</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="n">connector_svc</span> <span class="o">=</span> <span class="n">_connector_service</span><span class="p">()</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">await</span> <span class="n">run_in_threadpool</span><span class="p">(</span>
+            <span class="n">connector_svc</span><span class="o">.</span><span class="n">delete_connection</span><span class="p">,</span> <span class="n">connector_id</span><span class="p">,</span> <span class="n">current_user</span><span class="o">.</span><span class="n">id</span>
+        <span class="p">)</span>
+    <span class="k">except</span> <span class="n">ConnectorNotFoundError</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">_not_found</span><span class="p">(</span><span class="n">connector_id</span><span class="p">)</span>
+    <span class="k">except</span> <span class="n">ConnectorInUseError</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span><span class="n">status_code</span><span class="o">=</span><span class="n">status</span><span class="o">.</span><span class="n">HTTP_409_CONFLICT</span><span class="p">,</span> <span class="n">detail</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">exc</span><span class="p">))</span>
+    <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">exception</span><span class="p">(</span><span class="s2">"Failed to delete connection connector_id=</span><span class="si">{}</span><span class="s2">"</span><span class="p">,</span> <span class="n">connector_id</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span>
+            <span class="n">status_code</span><span class="o">=</span><span class="n">status</span><span class="o">.</span><span class="n">HTTP_500_INTERNAL_SERVER_ERROR</span><span class="p">,</span>
+            <span class="n">detail</span><span class="o">=</span><span class="s2">"Failed to delete connection."</span><span class="p">,</span>
+        <span class="p">)</span>
+
+
+<span class="c1"># ——————————————————————————————————————————————————————————————</span>
+<span class="c1"># Endpoints — test</span>
+
+
+<div class="viewcode-block" id="test_connection">
+<a class="viewcode-back" href="../../../../generated/api_reference.html#squirrel.api.routes.connector.test_connection">[docs]</a>
+<span class="nd">@router</span><span class="o">.</span><span class="n">post</span><span class="p">(</span>
+    <span class="s2">"/</span><span class="si">{connector_id}</span><span class="s2">/test"</span><span class="p">,</span>
+    <span class="n">summary</span><span class="o">=</span><span class="s2">"Run a live connectivity check for a connection"</span><span class="p">,</span>
+    <span class="n">response_model</span><span class="o">=</span><span class="n">DataConnectionOut</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">test_connection</span><span class="p">(</span>
+    <span class="n">connector_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">current_user</span><span class="p">:</span> <span class="n">AuthUserRead</span> <span class="o">=</span> <span class="n">Depends</span><span class="p">(</span><span class="n">get_current_user</span><span class="p">),</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DataConnectionOut</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Attempts to actually connect using the stored (decrypted) config and</span>
+<span class="sd">    persists the resulting status ('connected' or 'error') — a failed test</span>
+<span class="sd">    is a normal 200 response with ``status: "error"`` and a message, not an</span>
+<span class="sd">    HTTP error, since "can't reach this database" is an expected outcome</span>
+<span class="sd">    the user needs to see in the row, not a server failure.</span>
+<span class="sd">    """</span>
+    <span class="n">connector_svc</span> <span class="o">=</span> <span class="n">_connector_service</span><span class="p">()</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">row</span> <span class="o">=</span> <span class="k">await</span> <span class="n">run_in_threadpool</span><span class="p">(</span>
+            <span class="n">connector_svc</span><span class="o">.</span><span class="n">test_connection</span><span class="p">,</span> <span class="n">connector_id</span><span class="p">,</span> <span class="n">current_user</span><span class="o">.</span><span class="n">id</span>
+        <span class="p">)</span>
+    <span class="k">except</span> <span class="n">ConnectorNotFoundError</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">_not_found</span><span class="p">(</span><span class="n">connector_id</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">_to_out</span><span class="p">(</span><span class="n">row</span><span class="p">)</span></div>
+
+
+
+<span class="nd">@router</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+    <span class="s2">"/</span><span class="si">{connector_id}</span><span class="s2">/tables"</span><span class="p">,</span>
+    <span class="n">summary</span><span class="o">=</span><span class="s2">"List queryable tables for a connector"</span><span class="p">,</span>
+    <span class="n">response_model</span><span class="o">=</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
+<span class="p">)</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">list_connector_tables</span><span class="p">(</span>
+    <span class="n">connector_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">current_user</span><span class="p">:</span> <span class="n">AuthUserRead</span> <span class="o">=</span> <span class="n">Depends</span><span class="p">(</span><span class="n">get_current_user</span><span class="p">),</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+    <span class="n">connector_svc</span> <span class="o">=</span> <span class="n">DataConnectorService</span><span class="p">()</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">return</span> <span class="k">await</span> <span class="n">run_in_threadpool</span><span class="p">(</span>
+            <span class="n">connector_svc</span><span class="o">.</span><span class="n">list_tables</span><span class="p">,</span> <span class="n">connector_id</span><span class="p">,</span> <span class="n">current_user</span><span class="o">.</span><span class="n">id</span>
+        <span class="p">)</span>
+    <span class="k">except</span> <span class="n">ConnectorNotFoundError</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span><span class="n">status</span><span class="o">.</span><span class="n">HTTP_404_NOT_FOUND</span><span class="p">,</span> <span class="sa">f</span><span class="s2">"Connector '</span><span class="si">{</span><span class="n">connector_id</span><span class="si">}</span><span class="s2">' not found."</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">NotImplementedError</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span><span class="n">status</span><span class="o">.</span><span class="n">HTTP_501_NOT_IMPLEMENTED</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">exc</span><span class="p">))</span>
+
+
+<div class="viewcode-block" id="preview_connector_tables">
+<a class="viewcode-back" href="../../../../generated/api_reference.html#squirrel.api.routes.connector.preview_connector_tables">[docs]</a>
+<span class="nd">@router</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+    <span class="s2">"/</span><span class="si">{connector_id}</span><span class="s2">/tables/preview"</span><span class="p">,</span>
+    <span class="n">summary</span><span class="o">=</span><span class="s2">"Preview every table in a data source"</span><span class="p">,</span>
+    <span class="n">response_model</span><span class="o">=</span><span class="n">ConnectorTablesPreviewResponse</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">preview_connector_tables</span><span class="p">(</span>
+    <span class="n">connector_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">limit</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">5</span><span class="p">,</span>
+    <span class="n">current_user</span><span class="p">:</span> <span class="n">AuthUserRead</span> <span class="o">=</span> <span class="n">Depends</span><span class="p">(</span><span class="n">get_current_user</span><span class="p">),</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ConnectorTablesPreviewResponse</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Runs a capped preview against every table this connector reports, so</span>
+<span class="sd">    the "Connect a data source" picker can show all of them at once</span>
+<span class="sd">    instead of one at a time. Each table is previewed independently — one</span>
+<span class="sd">    slow/broken table shows an inline error, it doesn't fail the others.</span>
+<span class="sd">    """</span>
+    <span class="n">connector_svc</span> <span class="o">=</span> <span class="n">DataConnectorService</span><span class="p">()</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">table_names</span> <span class="o">=</span> <span class="k">await</span> <span class="n">run_in_threadpool</span><span class="p">(</span>
+            <span class="n">connector_svc</span><span class="o">.</span><span class="n">list_tables</span><span class="p">,</span> <span class="n">connector_id</span><span class="p">,</span> <span class="n">current_user</span><span class="o">.</span><span class="n">id</span>
+        <span class="p">)</span>
+    <span class="k">except</span> <span class="n">ConnectorNotFoundError</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span><span class="n">status</span><span class="o">.</span><span class="n">HTTP_404_NOT_FOUND</span><span class="p">,</span> <span class="sa">f</span><span class="s2">"Connector '</span><span class="si">{</span><span class="n">connector_id</span><span class="si">}</span><span class="s2">' not found."</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">NotImplementedError</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span><span class="n">status</span><span class="o">.</span><span class="n">HTTP_501_NOT_IMPLEMENTED</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">exc</span><span class="p">))</span>
+
+    <span class="n">results</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">TablePreview</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">table_name</span> <span class="ow">in</span> <span class="n">table_names</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">df</span> <span class="o">=</span> <span class="k">await</span> <span class="n">run_in_threadpool</span><span class="p">(</span>
+                <span class="n">connector_svc</span><span class="o">.</span><span class="n">preview_table</span><span class="p">,</span>
+                <span class="n">connector_id</span><span class="p">,</span>
+                <span class="n">table_name</span><span class="p">,</span>
+                <span class="n">limit</span><span class="p">,</span>
+                <span class="kc">None</span><span class="p">,</span>
+                <span class="n">current_user</span><span class="o">.</span><span class="n">id</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="n">preview_df</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">object</span><span class="p">)</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">notnull</span><span class="p">(</span><span class="n">df</span><span class="p">),</span> <span class="kc">None</span><span class="p">)</span>
+            <span class="n">preview</span> <span class="o">=</span> <span class="p">[</span>
+                <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="p">(</span><span class="n">v</span><span class="o">.</span><span class="n">item</span><span class="p">()</span> <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="s2">"item"</span><span class="p">)</span> <span class="k">else</span> <span class="n">v</span><span class="p">)</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">row</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
+                <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">preview_df</span><span class="o">.</span><span class="n">to_dict</span><span class="p">(</span><span class="n">orient</span><span class="o">=</span><span class="s2">"records"</span><span class="p">)</span>
+            <span class="p">]</span>
+            <span class="n">results</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">TablePreview</span><span class="p">(</span><span class="n">table</span><span class="o">=</span><span class="n">table_name</span><span class="p">,</span> <span class="n">columns</span><span class="o">=</span><span class="nb">list</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">columns</span><span class="p">),</span> <span class="n">preview</span><span class="o">=</span><span class="n">preview</span><span class="p">))</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+            <span class="n">results</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">TablePreview</span><span class="p">(</span><span class="n">table</span><span class="o">=</span><span class="n">table_name</span><span class="p">,</span> <span class="n">error</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">exc</span><span class="p">)))</span>
+            
+    <span class="k">return</span> <span class="n">ConnectorTablesPreviewResponse</span><span class="p">(</span><span class="n">tables</span><span class="o">=</span><span class="n">results</span><span class="p">)</span></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, Mazen Soliman.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+  
+  <span class="version">Squirrel version 0.1.0</span>
+
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

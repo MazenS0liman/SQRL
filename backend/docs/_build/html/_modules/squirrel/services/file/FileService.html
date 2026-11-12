@@ -5,17 +5,17 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>squirrel.services.file.FileService &mdash; squirrel  documentation</title>
+  <title>squirrel.services.file.FileService &mdash; SQRL Documentation</title>
       <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../../../../_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="../../../../_static/copybutton.css?v=76b2166b" />
-      <link rel="stylesheet" type="text/css" href="../../../../_static/css/custom.css?v=adc7883a" />
+      <link rel="stylesheet" type="text/css" href="../../../../_static/css/custom.css?v=35931533" />
 
   
     <link rel="shortcut icon" href="../../../../_static/sqrl.png"/>
       <script src="../../../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../../../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../../../../_static/documentation_options.js?v=01f34227"></script>
       <script src="../../../../_static/doctools.js?v=9bcbadda"></script>
       <script src="../../../../_static/sphinx_highlight.js?v=dc90522c"></script>
       <script src="../../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -33,8 +33,8 @@
 
           
           
-          <a href="../../../../index.html" class="icon icon-home">
-            squirrel
+          <a href="../../../../index.html">
+            
               <img src="../../../../_static/sqrl.png" class="logo" alt="Logo"/>
           </a>
 <div role="search">
@@ -45,9 +45,29 @@
   </form>
 </div>
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
-              <p class="caption" role="heading"><span class="caption-text">Python API Reference:</span></p>
+              <p class="caption" role="heading"><span class="caption-text">Learn and build</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="../../../../api.html">Python API Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../getting-started.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../workflow.html">Product workflow</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../architecture.html">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../deployment.html">Deployment and operations</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../api.html">Backend API Reference</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../generated/api_reference.html">HTTP API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../generated/schemas_reference.html">Data Schemas</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../generated/services_reference.html">Services</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../generated/agents_reference.html">Agents</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../generated/prompts_reference.html">Prompt Components</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../generated/providers_reference.html">Model Providers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../generated/inspectors_reference.html">Data Inspectors</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../generated/preprocessors_reference.html">Preprocessors</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../generated/core_reference.html">Core Infrastructure</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../generated/models_reference.html">Machine Learning Models</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../generated/constants_reference.html">Constants</a></li>
+</ul>
+</li>
 </ul>
 
         </div>
@@ -113,7 +133,7 @@
 <span class="c1"># File Service class</span>
 
 <div class="viewcode-block" id="FileService">
-<a class="viewcode-back" href="../../../../generated/squirrel_services_file_FileService.html#squirrel.services.file.FileService.FileService">[docs]</a>
+<a class="viewcode-back" href="../../../../generated/services_reference.html#squirrel.services.file.FileService.FileService">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">FileService</span><span class="p">:</span>
 
     <span class="n">TABLE</span> <span class="o">=</span> <span class="s2">"file"</span>
@@ -128,7 +148,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">ensure_table</span><span class="p">()</span>
 
 <div class="viewcode-block" id="FileService.ensure_table">
-<a class="viewcode-back" href="../../../../generated/squirrel_services_file_FileService.html#squirrel.services.file.FileService.FileService.ensure_table">[docs]</a>
+<a class="viewcode-back" href="../../../../generated/services_reference.html#squirrel.services.file.FileService.FileService.ensure_table">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">ensure_table</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">"""</span>
 <span class="sd">        Ensure the ``file`` table exists (with a unique constraint on</span>
@@ -149,6 +169,7 @@
 <span class="s2">                    workspace_ids TEXT[] NOT NULL DEFAULT '</span><span class="se">{{}}</span><span class="s2">',</span>
 <span class="s2">                    notebook_ids TEXT[] NOT NULL DEFAULT '</span><span class="se">{{}}</span><span class="s2">',</span>
 <span class="s2">                    owner_user_id TEXT,</span>
+<span class="s2">                    user_uploaded BOOLEAN NOT NULL DEFAULT TRUE,</span>
 <span class="s2">                    created_at TIMESTAMPTZ DEFAULT NOW(),</span>
 <span class="s2">                    updated_at TIMESTAMPTZ DEFAULT NOW()</span>
 <span class="s2">                )</span>
@@ -161,6 +182,7 @@
                 <span class="p">(</span><span class="s2">"workspace_ids"</span><span class="p">,</span> <span class="s2">"TEXT[] NOT NULL DEFAULT '</span><span class="si">{}</span><span class="s2">'"</span><span class="p">),</span>
                 <span class="p">(</span><span class="s2">"notebook_ids"</span><span class="p">,</span> <span class="s2">"TEXT[] NOT NULL DEFAULT '</span><span class="si">{}</span><span class="s2">'"</span><span class="p">),</span>
                 <span class="p">(</span><span class="s2">"owner_user_id"</span><span class="p">,</span> <span class="s2">"TEXT"</span><span class="p">),</span>
+                <span class="p">(</span><span class="s2">"user_uploaded"</span><span class="p">,</span> <span class="s2">"BOOLEAN NOT NULL DEFAULT TRUE"</span><span class="p">),</span>
             <span class="p">):</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">db_service</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span>
                     <span class="sa">f</span><span class="s2">"ALTER TABLE </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">TABLE</span><span class="si">}</span><span class="s2"> ADD COLUMN IF NOT EXISTS </span><span class="si">{</span><span class="n">column</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">coltype</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
@@ -177,13 +199,14 @@
     <span class="c1"># Writes</span>
 
 <div class="viewcode-block" id="FileService.record_upload">
-<a class="viewcode-back" href="../../../../generated/squirrel_services_file_FileService.html#squirrel.services.file.FileService.FileService.record_upload">[docs]</a>
+<a class="viewcode-back" href="../../../../generated/services_reference.html#squirrel.services.file.FileService.FileService.record_upload">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">record_upload</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">file</span><span class="p">:</span> <span class="n">File</span><span class="p">,</span>
         <span class="n">owner_user_id</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
         <span class="n">workspace_id</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">notebook_id</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">user_uploaded</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">"""</span>
 <span class="sd">        Persist a record of an uploaded file. On conflict (same file_url),</span>
@@ -196,14 +219,16 @@
                 <span class="s2">"sql"</span><span class="p">:</span> <span class="p">(</span>
                     <span class="sa">f</span><span class="s2">"INSERT INTO </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">TABLE</span><span class="si">}</span><span class="s2"> "</span>
                     <span class="s2">"(file_name, file_url, file_type, size, uploaded_at, "</span>
-                    <span class="s2">" workspace_ids, notebook_ids, owner_user_id) "</span>
+                    <span class="s2">" workspace_ids, notebook_ids, owner_user_id, user_uploaded) "</span>
                     <span class="s2">"VALUES (</span><span class="si">%(file_name)s</span><span class="s2">, </span><span class="si">%(file_url)s</span><span class="s2">, </span><span class="si">%(file_type)s</span><span class="s2">, </span><span class="si">%(size)s</span><span class="s2">, "</span>
-                    <span class="s2">"</span><span class="si">%(uploaded_at)s</span><span class="s2">, </span><span class="si">%(workspace_ids)s</span><span class="s2">, </span><span class="si">%(notebook_ids)s</span><span class="s2">, </span><span class="si">%(owner_user_id)s</span><span class="s2">) "</span>
+                    <span class="s2">"</span><span class="si">%(uploaded_at)s</span><span class="s2">, </span><span class="si">%(workspace_ids)s</span><span class="s2">, </span><span class="si">%(notebook_ids)s</span><span class="s2">, "</span>
+                    <span class="s2">"</span><span class="si">%(owner_user_id)s</span><span class="s2">, </span><span class="si">%(user_uploaded)s</span><span class="s2">) "</span>
                     <span class="s2">"ON CONFLICT (file_url) DO UPDATE SET "</span>
                     <span class="sa">f</span><span class="s2">"workspace_ids = ARRAY(SELECT DISTINCT unnest("</span>
                     <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">TABLE</span><span class="si">}</span><span class="s2">.workspace_ids || EXCLUDED.workspace_ids)), "</span>
                     <span class="sa">f</span><span class="s2">"notebook_ids = ARRAY(SELECT DISTINCT unnest("</span>
                     <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">TABLE</span><span class="si">}</span><span class="s2">.notebook_ids || EXCLUDED.notebook_ids)), "</span>
+                    <span class="sa">f</span><span class="s2">"user_uploaded = </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">TABLE</span><span class="si">}</span><span class="s2">.user_uploaded OR EXCLUDED.user_uploaded, "</span>
                     <span class="s2">"updated_at = NOW()"</span>
                 <span class="p">),</span>
                 <span class="s2">"params"</span><span class="p">:</span> <span class="p">{</span>
@@ -215,6 +240,7 @@
                     <span class="s2">"workspace_ids"</span><span class="p">:</span> <span class="p">[</span><span class="n">workspace_id</span><span class="p">]</span> <span class="k">if</span> <span class="n">workspace_id</span> <span class="k">else</span> <span class="p">[],</span>
                     <span class="s2">"notebook_ids"</span><span class="p">:</span> <span class="p">[</span><span class="n">notebook_id</span><span class="p">]</span> <span class="k">if</span> <span class="n">notebook_id</span> <span class="k">else</span> <span class="p">[],</span>
                     <span class="s2">"owner_user_id"</span><span class="p">:</span> <span class="n">owner_user_id</span><span class="p">,</span>
+                    <span class="s2">"user_uploaded"</span><span class="p">:</span> <span class="n">user_uploaded</span><span class="p">,</span>
                 <span class="p">},</span>
             <span class="p">})</span>
         <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
@@ -224,7 +250,7 @@
 
 
 <div class="viewcode-block" id="FileService.rename_file">
-<a class="viewcode-back" href="../../../../generated/squirrel_services_file_FileService.html#squirrel.services.file.FileService.FileService.rename_file">[docs]</a>
+<a class="viewcode-back" href="../../../../generated/services_reference.html#squirrel.services.file.FileService.FileService.rename_file">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">rename_file</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">file_url</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">owner_user_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">new_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">File</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">"""</span>
 <span class="sd">        Rename a file record by ``file_url``, propagating the new name into</span>
@@ -259,7 +285,7 @@
 
 
 <div class="viewcode-block" id="FileService.delete_file">
-<a class="viewcode-back" href="../../../../generated/squirrel_services_file_FileService.html#squirrel.services.file.FileService.FileService.delete_file">[docs]</a>
+<a class="viewcode-back" href="../../../../generated/services_reference.html#squirrel.services.file.FileService.FileService.delete_file">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">delete_file</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">file_url</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">owner_user_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">"""</span>
@@ -286,21 +312,42 @@
     <span class="c1"># Reads</span>
 
 <div class="viewcode-block" id="FileService.is_owned_by">
-<a class="viewcode-back" href="../../../../generated/squirrel_services_file_FileService.html#squirrel.services.file.FileService.FileService.is_owned_by">[docs]</a>
+<a class="viewcode-back" href="../../../../generated/services_reference.html#squirrel.services.file.FileService.FileService.is_owned_by">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">is_owned_by</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">file_url</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">owner_user_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">"""Return True if ``file_url`` has a row owned by ``owner_user_id``."""</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_row</span><span class="p">(</span><span class="n">file_url</span><span class="p">,</span> <span class="n">owner_user_id</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span></div>
 
 
 <div class="viewcode-block" id="FileService.list_files">
-<a class="viewcode-back" href="../../../../generated/squirrel_services_file_FileService.html#squirrel.services.file.FileService.FileService.list_files">[docs]</a>
+<a class="viewcode-back" href="../../../../generated/services_reference.html#squirrel.services.file.FileService.FileService.list_files">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">list_files</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> 
         <span class="n">owner_user_id</span><span class="p">:</span> <span class="nb">str</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">File</span><span class="p">]:</span>
-<span class="w">        </span><span class="sd">"""Return every file record owned by ``owner_user_id``."""</span>
+<span class="w">        </span><span class="sd">"""Return user-uploaded files owned by ``owner_user_id``.</span>
+
+<span class="sd">        URL exclusions also hide artifacts recorded before ``user_uploaded``</span>
+<span class="sd">        was introduced.</span>
+<span class="sd">        """</span>
         <span class="k">try</span><span class="p">:</span>
-            <span class="n">result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">db_service</span><span class="o">.</span><span class="n">retrieve</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">TABLE</span><span class="p">,</span> <span class="n">filters</span><span class="o">=</span><span class="p">{</span><span class="s2">"owner_user_id"</span><span class="p">:</span> <span class="n">owner_user_id</span><span class="p">})</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">db_service</span><span class="o">.</span><span class="n">query</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"""</span>
+<span class="s2">                SELECT *</span>
+<span class="s2">                FROM </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">TABLE</span><span class="si">}</span>
+<span class="s2">                WHERE owner_user_id = %(owner_user_id)s</span>
+<span class="s2">                  AND COALESCE(user_uploaded, TRUE)</span>
+<span class="s2">                  AND file_url NOT LIKE %(preprocessed_pattern)s</span>
+<span class="s2">                  AND file_url NOT LIKE %(models_pattern)s</span>
+<span class="s2">                  AND file_url NOT LIKE %(pipelines_pattern)s</span>
+<span class="s2">                """</span><span class="p">,</span>
+                <span class="n">params</span><span class="o">=</span><span class="p">{</span>
+                    <span class="s2">"owner_user_id"</span><span class="p">:</span> <span class="n">owner_user_id</span><span class="p">,</span>
+                    <span class="s2">"preprocessed_pattern"</span><span class="p">:</span> <span class="s2">"%/preprocessed/%"</span><span class="p">,</span>
+                    <span class="s2">"models_pattern"</span><span class="p">:</span> <span class="s2">"%/models/%"</span><span class="p">,</span>
+                    <span class="s2">"pipelines_pattern"</span><span class="p">:</span> <span class="s2">"%/pipelines/%"</span><span class="p">,</span>
+                <span class="p">},</span>
+                <span class="n">fetch</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+            <span class="p">)</span>
         <span class="k">finally</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">db_service</span><span class="o">.</span><span class="n">disconnect</span><span class="p">()</span>
 
@@ -309,7 +356,7 @@
 
 
 <div class="viewcode-block" id="FileService.get_owned_file">
-<a class="viewcode-back" href="../../../../generated/squirrel_services_file_FileService.html#squirrel.services.file.FileService.FileService.get_owned_file">[docs]</a>
+<a class="viewcode-back" href="../../../../generated/services_reference.html#squirrel.services.file.FileService.FileService.get_owned_file">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">get_owned_file</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> 
         <span class="n">file_url</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> 
@@ -369,7 +416,9 @@
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   
+  
+  <span class="version">Squirrel version 0.1.0</span>
+
 
 </footer>
         </div>

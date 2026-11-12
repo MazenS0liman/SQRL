@@ -5,17 +5,17 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>squirrel.services.chat.MessagingService &mdash; squirrel  documentation</title>
+  <title>squirrel.services.chat.MessagingService &mdash; SQRL Documentation</title>
       <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../../../../_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="../../../../_static/copybutton.css?v=76b2166b" />
-      <link rel="stylesheet" type="text/css" href="../../../../_static/css/custom.css?v=adc7883a" />
+      <link rel="stylesheet" type="text/css" href="../../../../_static/css/custom.css?v=35931533" />
 
   
     <link rel="shortcut icon" href="../../../../_static/sqrl.png"/>
       <script src="../../../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../../../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../../../../_static/documentation_options.js?v=01f34227"></script>
       <script src="../../../../_static/doctools.js?v=9bcbadda"></script>
       <script src="../../../../_static/sphinx_highlight.js?v=dc90522c"></script>
       <script src="../../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -33,8 +33,8 @@
 
           
           
-          <a href="../../../../index.html" class="icon icon-home">
-            squirrel
+          <a href="../../../../index.html">
+            
               <img src="../../../../_static/sqrl.png" class="logo" alt="Logo"/>
           </a>
 <div role="search">
@@ -45,9 +45,29 @@
   </form>
 </div>
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
-              <p class="caption" role="heading"><span class="caption-text">Python API Reference:</span></p>
+              <p class="caption" role="heading"><span class="caption-text">Learn and build</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="../../../../api.html">Python API Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../getting-started.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../workflow.html">Product workflow</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../architecture.html">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../deployment.html">Deployment and operations</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../api.html">Backend API Reference</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../generated/api_reference.html">HTTP API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../generated/schemas_reference.html">Data Schemas</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../generated/services_reference.html">Services</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../generated/agents_reference.html">Agents</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../generated/prompts_reference.html">Prompt Components</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../generated/providers_reference.html">Model Providers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../generated/inspectors_reference.html">Data Inspectors</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../generated/preprocessors_reference.html">Preprocessors</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../generated/core_reference.html">Core Infrastructure</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../generated/models_reference.html">Machine Learning Models</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../generated/constants_reference.html">Constants</a></li>
+</ul>
+</li>
 </ul>
 
         </div>
@@ -122,7 +142,7 @@
 
 
 <div class="viewcode-block" id="MessagingService">
-<a class="viewcode-back" href="../../../../generated/squirrel_services_chat_MessagingService.html#squirrel.services.chat.MessagingService.MessagingService">[docs]</a>
+<a class="viewcode-back" href="../../../../generated/services_reference.html#squirrel.services.chat.MessagingService.MessagingService">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">MessagingService</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""</span>
 <span class="sd">    Handle messaging operations for chat interactions.</span>
@@ -174,7 +194,7 @@
     <span class="c1"># Public API</span>
 
 <div class="viewcode-block" id="MessagingService.save_chat_turn">
-<a class="viewcode-back" href="../../../../generated/squirrel_services_chat_MessagingService.html#squirrel.services.chat.MessagingService.MessagingService.save_chat_turn">[docs]</a>
+<a class="viewcode-back" href="../../../../generated/services_reference.html#squirrel.services.chat.MessagingService.MessagingService.save_chat_turn">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">save_chat_turn</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">request</span><span class="p">:</span> <span class="n">AgentRequest</span><span class="p">,</span>
@@ -250,7 +270,7 @@
 
 
 <div class="viewcode-block" id="MessagingService.get_conversation_history">
-<a class="viewcode-back" href="../../../../generated/squirrel_services_chat_MessagingService.html#squirrel.services.chat.MessagingService.MessagingService.get_conversation_history">[docs]</a>
+<a class="viewcode-back" href="../../../../generated/services_reference.html#squirrel.services.chat.MessagingService.MessagingService.get_conversation_history">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">get_conversation_history</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">conversation_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
@@ -294,7 +314,9 @@
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   
+  
+  <span class="version">Squirrel version 0.1.0</span>
+
 
 </footer>
         </div>

@@ -5,17 +5,17 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>squirrel.services.notebook.NotebookService &mdash; squirrel  documentation</title>
+  <title>squirrel.services.notebook.NotebookService &mdash; SQRL Documentation</title>
       <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../../../../_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="../../../../_static/copybutton.css?v=76b2166b" />
-      <link rel="stylesheet" type="text/css" href="../../../../_static/css/custom.css?v=adc7883a" />
+      <link rel="stylesheet" type="text/css" href="../../../../_static/css/custom.css?v=35931533" />
 
   
     <link rel="shortcut icon" href="../../../../_static/sqrl.png"/>
       <script src="../../../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../../../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../../../../_static/documentation_options.js?v=01f34227"></script>
       <script src="../../../../_static/doctools.js?v=9bcbadda"></script>
       <script src="../../../../_static/sphinx_highlight.js?v=dc90522c"></script>
       <script src="../../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -33,8 +33,8 @@
 
           
           
-          <a href="../../../../index.html" class="icon icon-home">
-            squirrel
+          <a href="../../../../index.html">
+            
               <img src="../../../../_static/sqrl.png" class="logo" alt="Logo"/>
           </a>
 <div role="search">
@@ -45,9 +45,29 @@
   </form>
 </div>
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
-              <p class="caption" role="heading"><span class="caption-text">Python API Reference:</span></p>
+              <p class="caption" role="heading"><span class="caption-text">Learn and build</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="../../../../api.html">Python API Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../getting-started.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../workflow.html">Product workflow</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../architecture.html">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../deployment.html">Deployment and operations</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../api.html">Backend API Reference</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../generated/api_reference.html">HTTP API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../generated/schemas_reference.html">Data Schemas</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../generated/services_reference.html">Services</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../generated/agents_reference.html">Agents</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../generated/prompts_reference.html">Prompt Components</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../generated/providers_reference.html">Model Providers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../generated/inspectors_reference.html">Data Inspectors</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../generated/preprocessors_reference.html">Preprocessors</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../generated/core_reference.html">Core Infrastructure</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../generated/models_reference.html">Machine Learning Models</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../generated/constants_reference.html">Constants</a></li>
+</ul>
+</li>
 </ul>
 
         </div>
@@ -166,7 +186,7 @@
 <span class="c1"># Notebook Service Class</span>
 
 <div class="viewcode-block" id="NotebookService">
-<a class="viewcode-back" href="../../../../generated/squirrel_services_notebook_NotebookService.html#squirrel.services.notebook.NotebookService.NotebookService">[docs]</a>
+<a class="viewcode-back" href="../../../../generated/services_reference.html#squirrel.services.notebook.NotebookService.NotebookService">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">NotebookService</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""</span>
 <span class="sd">    :param connection_string: Main app DB connection string. Defaults to</span>
@@ -181,7 +201,9 @@
         <span class="n">connection_string</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">minio</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">MinIOService</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">connection_string</span> <span class="o">=</span> <span class="n">connection_string</span> <span class="ow">or</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s2">"DATABASE_URL"</span><span class="p">]</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">squirrel.core.config</span><span class="w"> </span><span class="kn">import</span> <span class="n">settings</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">connection_string</span> <span class="o">=</span> <span class="n">connection_string</span> <span class="ow">or</span> <span class="n">settings</span><span class="o">.</span><span class="n">database_url</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">postgres</span> <span class="o">=</span> <span class="n">PostgresService</span><span class="p">(</span><span class="n">connection_string</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">connection_string</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">minio</span> <span class="o">=</span> <span class="n">minio</span> <span class="ow">or</span> <span class="n">MinIOService</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">file_service</span> <span class="o">=</span> <span class="n">FileService</span><span class="p">()</span>
@@ -632,7 +654,7 @@
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_add_data_source</span><span class="p">(</span><span class="n">notebook_id</span><span class="p">,</span> <span class="n">data_source</span><span class="p">,</span> <span class="n">table_schema</span><span class="p">,</span> <span class="n">owner_user_id</span><span class="o">=</span><span class="n">owner_user_id</span><span class="p">)</span>
 
 <div class="viewcode-block" id="NotebookService.add_existing_file_data_source">
-<a class="viewcode-back" href="../../../../generated/squirrel_services_notebook_NotebookService.html#squirrel.services.notebook.NotebookService.NotebookService.add_existing_file_data_source">[docs]</a>
+<a class="viewcode-back" href="../../../../generated/services_reference.html#squirrel.services.notebook.NotebookService.NotebookService.add_existing_file_data_source">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">add_existing_file_data_source</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">notebook_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
@@ -740,7 +762,7 @@
             <span class="p">)</span>
 
 <div class="viewcode-block" id="NotebookService.add_connector_data_source">
-<a class="viewcode-back" href="../../../../generated/squirrel_services_notebook_NotebookService.html#squirrel.services.notebook.NotebookService.NotebookService.add_connector_data_source">[docs]</a>
+<a class="viewcode-back" href="../../../../generated/services_reference.html#squirrel.services.notebook.NotebookService.NotebookService.add_connector_data_source">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">add_connector_data_source</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">notebook_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">connector_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">table_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">owner_user_id</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Notebook</span><span class="p">:</span>
@@ -748,16 +770,24 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">get_notebook</span><span class="p">(</span><span class="n">notebook_id</span><span class="p">,</span> <span class="n">owner_user_id</span><span class="o">=</span><span class="n">owner_user_id</span><span class="p">)</span>
 
         <span class="n">connector_svc</span> <span class="o">=</span> <span class="n">DataConnectorService</span><span class="p">()</span>
-        <span class="n">connector_svc</span><span class="o">.</span><span class="n">list_tables</span><span class="p">(</span><span class="n">connector_id</span><span class="p">)</span>  <span class="c1"># raises ConnectorNotFoundError if missing</span>
+        <span class="n">connector_svc</span><span class="o">.</span><span class="n">list_tables</span><span class="p">(</span>
+            <span class="n">connector_id</span><span class="p">,</span> <span class="n">owner_user_id</span><span class="o">=</span><span class="n">owner_user_id</span>
+        <span class="p">)</span>  <span class="c1"># raises ConnectorNotFoundError if missing</span>
 
-        <span class="n">connector_row</span> <span class="o">=</span> <span class="n">connector_svc</span><span class="o">.</span><span class="n">get_connection</span><span class="p">(</span><span class="n">connector_id</span><span class="p">)</span>
+        <span class="n">connector_row</span> <span class="o">=</span> <span class="n">connector_svc</span><span class="o">.</span><span class="n">get_connection</span><span class="p">(</span>
+            <span class="n">connector_id</span><span class="p">,</span> <span class="n">owner_user_id</span><span class="o">=</span><span class="n">owner_user_id</span>
+        <span class="p">)</span>
         <span class="n">connector_name</span> <span class="o">=</span> <span class="n">connector_row</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"name"</span><span class="p">)</span> <span class="ow">or</span> <span class="n">connector_id</span>
         <span class="n">connector_type</span> <span class="o">=</span> <span class="n">connector_row</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"type"</span><span class="p">)</span>
 
-        <span class="n">source_postgres</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_connector_postgres_service</span><span class="p">(</span><span class="n">connector_svc</span><span class="p">,</span> <span class="n">connector_id</span><span class="p">)</span>
+        <span class="n">source_postgres</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_connector_postgres_service</span><span class="p">(</span>
+            <span class="n">connector_svc</span><span class="p">,</span> <span class="n">connector_id</span><span class="p">,</span> <span class="n">owner_user_id</span><span class="o">=</span><span class="n">owner_user_id</span>
+        <span class="p">)</span>
         <span class="n">table_schema</span> <span class="o">=</span> <span class="n">source_postgres</span><span class="o">.</span><span class="n">_generate_schema_metadata</span><span class="p">(</span><span class="n">table_name</span><span class="o">=</span><span class="n">table_name</span><span class="p">)</span>
 
-        <span class="n">preview_df</span> <span class="o">=</span> <span class="n">connector_svc</span><span class="o">.</span><span class="n">preview_table</span><span class="p">(</span><span class="n">connector_id</span><span class="p">,</span> <span class="n">table_name</span><span class="p">,</span> <span class="n">limit</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">preview_df</span> <span class="o">=</span> <span class="n">connector_svc</span><span class="o">.</span><span class="n">preview_table</span><span class="p">(</span>
+            <span class="n">connector_id</span><span class="p">,</span> <span class="n">table_name</span><span class="p">,</span> <span class="n">limit</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">owner_user_id</span><span class="o">=</span><span class="n">owner_user_id</span>
+        <span class="p">)</span>
 
         <span class="n">row_count</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="n">count_result</span> <span class="o">=</span> <span class="n">source_postgres</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="sa">f</span><span class="s1">'SELECT COUNT(*) AS cnt FROM "</span><span class="si">{</span><span class="n">table_name</span><span class="si">}</span><span class="s1">"'</span><span class="p">)</span>
@@ -831,7 +861,7 @@
 
 
 <div class="viewcode-block" id="NotebookService.rename_data_source">
-<a class="viewcode-back" href="../../../../generated/squirrel_services_notebook_NotebookService.html#squirrel.services.notebook.NotebookService.NotebookService.rename_data_source">[docs]</a>
+<a class="viewcode-back" href="../../../../generated/services_reference.html#squirrel.services.notebook.NotebookService.NotebookService.rename_data_source">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">rename_data_source</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">notebook_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
@@ -977,7 +1007,9 @@
             <span class="n">raw</span> <span class="o">=</span> <span class="n">row</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"raw_schema"</span><span class="p">)</span>
             <span class="n">schema_metadata</span><span class="p">[</span><span class="n">row</span><span class="p">[</span><span class="s2">"table_name"</span><span class="p">]]</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">raw</span><span class="p">)</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">raw</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="k">else</span> <span class="n">raw</span>
 
-        <span class="n">postgres_service</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_resolve_postgres_service_for_sources</span><span class="p">(</span><span class="n">sources</span><span class="p">)</span>
+        <span class="n">postgres_service</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_resolve_postgres_service_for_sources</span><span class="p">(</span>
+            <span class="n">sources</span><span class="p">,</span> <span class="n">owner_user_id</span><span class="o">=</span><span class="n">owner_user_id</span>
+        <span class="p">)</span>
         <span class="n">agent</span> <span class="o">=</span> <span class="n">TabularDataExploratoryAgent</span><span class="p">(</span><span class="n">postgres_service</span><span class="o">=</span><span class="n">postgres_service</span><span class="p">,</span> <span class="n">user_id</span><span class="o">=</span><span class="n">owner_user_id</span><span class="p">)</span>
 
         <span class="n">schema_details</span> <span class="o">=</span> <span class="n">agent</span><span class="o">.</span><span class="n">generate_schema_details</span><span class="p">(</span><span class="n">schema_metadata</span><span class="p">)</span>
@@ -1208,7 +1240,9 @@
         <span class="c1"># cache, so a mistyped column gets fixed before SQL generation ever</span>
         <span class="c1"># has to guess a cast for it — not just once, the first time this</span>
         <span class="c1"># source set was ever cached. See _repair_column_types docstring.</span>
-        <span class="n">postgres_service</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_resolve_postgres_service_for_sources</span><span class="p">(</span><span class="n">sources</span><span class="p">)</span>
+        <span class="n">postgres_service</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_resolve_postgres_service_for_sources</span><span class="p">(</span>
+            <span class="n">sources</span><span class="p">,</span> <span class="n">owner_user_id</span><span class="o">=</span><span class="n">owner_user_id</span>
+        <span class="p">)</span>
         <span class="n">agent</span> <span class="o">=</span> <span class="n">TabularDataExploratoryAgent</span><span class="p">(</span><span class="n">postgres_service</span><span class="o">=</span><span class="n">postgres_service</span><span class="p">,</span> <span class="n">user_id</span><span class="o">=</span><span class="n">owner_user_id</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_repair_column_types</span><span class="p">(</span><span class="n">agent</span><span class="p">,</span> <span class="n">sources</span><span class="p">)</span>
 
@@ -1425,6 +1459,7 @@
     <span class="k">def</span><span class="w"> </span><span class="nf">_resolve_postgres_service_for_sources</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">sources</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">NotebookDataSource</span><span class="p">],</span>
+        <span class="n">owner_user_id</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PostgresService</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">"""</span>
 <span class="sd">        Resolve a single query-capable PostgresService for a set of sources.</span>
@@ -1455,12 +1490,15 @@
             <span class="p">)</span>
 
         <span class="n">connector_svc</span> <span class="o">=</span> <span class="n">DataConnectorService</span><span class="p">()</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_connector_postgres_service</span><span class="p">(</span><span class="n">connector_svc</span><span class="p">,</span> <span class="nb">next</span><span class="p">(</span><span class="nb">iter</span><span class="p">(</span><span class="n">connector_ids</span><span class="p">)))</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_connector_postgres_service</span><span class="p">(</span>
+            <span class="n">connector_svc</span><span class="p">,</span> <span class="nb">next</span><span class="p">(</span><span class="nb">iter</span><span class="p">(</span><span class="n">connector_ids</span><span class="p">)),</span> <span class="n">owner_user_id</span><span class="o">=</span><span class="n">owner_user_id</span>
+        <span class="p">)</span>
 
     <span class="nd">@staticmethod</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">_connector_postgres_service</span><span class="p">(</span>
         <span class="n">connector_svc</span><span class="p">:</span> <span class="n">DataConnectorService</span><span class="p">,</span> 
-        <span class="n">connector_id</span><span class="p">:</span> <span class="nb">str</span>
+        <span class="n">connector_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">owner_user_id</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PostgresService</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">"""</span>
 <span class="sd">        Resolve a query-capable :class:`PostgresService` for a connector.</span>
@@ -1469,7 +1507,9 @@
 <span class="sd">        :class:`DataConnectorService` if it doesn't already exist.</span>
 <span class="sd">        """</span>
         <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">connector_svc</span><span class="p">,</span> <span class="s2">"get_postgres_service"</span><span class="p">):</span>
-            <span class="k">return</span> <span class="n">connector_svc</span><span class="o">.</span><span class="n">get_postgres_service</span><span class="p">(</span><span class="n">connector_id</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">connector_svc</span><span class="o">.</span><span class="n">get_postgres_service</span><span class="p">(</span>
+                <span class="n">connector_id</span><span class="p">,</span> <span class="n">owner_user_id</span><span class="o">=</span><span class="n">owner_user_id</span>
+            <span class="p">)</span>
         <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span>
             <span class="s2">"DataConnectorService.get_postgres_service(connector_id) is required to "</span>
             <span class="s2">"run notebook cells against a connector-backed data source."</span>
@@ -1620,7 +1660,7 @@
     <span class="c1"># ──────────────────────────────────────────────────────────────────────</span>
 
 <div class="viewcode-block" id="NotebookService.save_dashboard_layout">
-<a class="viewcode-back" href="../../../../generated/squirrel_services_notebook_NotebookService.html#squirrel.services.notebook.NotebookService.NotebookService.save_dashboard_layout">[docs]</a>
+<a class="viewcode-back" href="../../../../generated/services_reference.html#squirrel.services.notebook.NotebookService.NotebookService.save_dashboard_layout">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">save_dashboard_layout</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">notebook_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
@@ -1651,7 +1691,7 @@
 
 
 <div class="viewcode-block" id="NotebookService.list_dashboard_versions">
-<a class="viewcode-back" href="../../../../generated/squirrel_services_notebook_NotebookService.html#squirrel.services.notebook.NotebookService.NotebookService.list_dashboard_versions">[docs]</a>
+<a class="viewcode-back" href="../../../../generated/services_reference.html#squirrel.services.notebook.NotebookService.NotebookService.list_dashboard_versions">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">list_dashboard_versions</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">notebook_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
@@ -1755,7 +1795,7 @@
         <span class="p">)</span>
 
 <div class="viewcode-block" id="NotebookService.update_cell">
-<a class="viewcode-back" href="../../../../generated/squirrel_services_notebook_NotebookService.html#squirrel.services.notebook.NotebookService.NotebookService.update_cell">[docs]</a>
+<a class="viewcode-back" href="../../../../generated/services_reference.html#squirrel.services.notebook.NotebookService.NotebookService.update_cell">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">update_cell</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> 
         <span class="n">notebook_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> 
@@ -1823,7 +1863,9 @@
         <span class="p">)</span>
         <span class="n">resolved_ids</span> <span class="o">=</span> <span class="p">[</span><span class="n">s</span><span class="o">.</span><span class="n">id</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">sources</span><span class="p">]</span>
 
-        <span class="n">postgres_service</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_resolve_postgres_service_for_sources</span><span class="p">(</span><span class="n">sources</span><span class="p">)</span>
+        <span class="n">postgres_service</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_resolve_postgres_service_for_sources</span><span class="p">(</span>
+            <span class="n">sources</span><span class="p">,</span> <span class="n">owner_user_id</span><span class="o">=</span><span class="n">owner_user_id</span>
+        <span class="p">)</span>
         <span class="n">agent</span> <span class="o">=</span> <span class="n">TabularDataExploratoryAgent</span><span class="p">(</span><span class="n">postgres_service</span><span class="o">=</span><span class="n">postgres_service</span><span class="p">,</span> <span class="n">user_id</span><span class="o">=</span><span class="n">owner_user_id</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_repair_column_types</span><span class="p">(</span><span class="n">agent</span><span class="p">,</span> <span class="n">sources</span><span class="p">)</span>
 
@@ -1935,7 +1977,7 @@
         <span class="p">)</span>
 
 <div class="viewcode-block" id="NotebookService.preview_data_source">
-<a class="viewcode-back" href="../../../../generated/squirrel_services_notebook_NotebookService.html#squirrel.services.notebook.NotebookService.NotebookService.preview_data_source">[docs]</a>
+<a class="viewcode-back" href="../../../../generated/services_reference.html#squirrel.services.notebook.NotebookService.NotebookService.preview_data_source">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">preview_data_source</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">notebook_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
@@ -1960,7 +2002,9 @@
         <span class="p">)</span>
         <span class="n">source</span> <span class="o">=</span> <span class="n">sources</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
 
-        <span class="n">postgres_service</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_resolve_postgres_service_for_sources</span><span class="p">([</span><span class="n">source</span><span class="p">])</span>
+        <span class="n">postgres_service</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_resolve_postgres_service_for_sources</span><span class="p">(</span>
+            <span class="p">[</span><span class="n">source</span><span class="p">],</span> <span class="n">owner_user_id</span><span class="o">=</span><span class="n">owner_user_id</span>
+        <span class="p">)</span>
         <span class="n">table_name</span> <span class="o">=</span> <span class="n">source</span><span class="o">.</span><span class="n">table_name</span>
 
         <span class="n">result</span> <span class="o">=</span> <span class="n">postgres_service</span><span class="o">.</span><span class="n">query</span><span class="p">(</span>
@@ -2031,7 +2075,7 @@
     
     
 <div class="viewcode-block" id="NotebookService.reorder_cells">
-<a class="viewcode-back" href="../../../../generated/squirrel_services_notebook_NotebookService.html#squirrel.services.notebook.NotebookService.NotebookService.reorder_cells">[docs]</a>
+<a class="viewcode-back" href="../../../../generated/services_reference.html#squirrel.services.notebook.NotebookService.NotebookService.reorder_cells">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">reorder_cells</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">notebook_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
@@ -2074,7 +2118,7 @@
 
 
 <div class="viewcode-block" id="NotebookService.duplicate_notebook">
-<a class="viewcode-back" href="../../../../generated/squirrel_services_notebook_NotebookService.html#squirrel.services.notebook.NotebookService.NotebookService.duplicate_notebook">[docs]</a>
+<a class="viewcode-back" href="../../../../generated/services_reference.html#squirrel.services.notebook.NotebookService.NotebookService.duplicate_notebook">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">duplicate_notebook</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">notebook_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">owner_user_id</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Notebook</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">"""</span>
 <span class="sd">        Clone a notebook: its metadata, every attached data source (as new</span>
@@ -2172,7 +2216,7 @@
     <span class="c1"># ──────────────────────────────────────────────────────────────────────</span>
 
 <div class="viewcode-block" id="NotebookService.export_notebook_ipynb">
-<a class="viewcode-back" href="../../../../generated/squirrel_services_notebook_NotebookService.html#squirrel.services.notebook.NotebookService.NotebookService.export_notebook_ipynb">[docs]</a>
+<a class="viewcode-back" href="../../../../generated/services_reference.html#squirrel.services.notebook.NotebookService.NotebookService.export_notebook_ipynb">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">export_notebook_ipynb</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">notebook_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
@@ -2449,7 +2493,9 @@
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   
+  
+  <span class="version">Squirrel version 0.1.0</span>
+
 
 </footer>
         </div>

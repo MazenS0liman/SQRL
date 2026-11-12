@@ -589,10 +589,11 @@ class TabularDataModelBuilderAgent(IAgent):
         Execute the model-building plan.
 
         For each planned model step the agent:
-          - Instantiates the model with the specified hyperparameters.
-          - Fits it on the bounded selection sample (minus the target column).
-          - Runs any attached actions (cv_evaluate, feature_importance,
+          * Instantiates the model with the specified hyperparameters.
+          * Fits it on the bounded selection sample (minus the target column).
+          * Runs any attached actions (cv_evaluate, feature_importance,
             holdout_evaluate).
+
         After comparison, the winning non-sequential model is refit on the
         complete dataset.
 
