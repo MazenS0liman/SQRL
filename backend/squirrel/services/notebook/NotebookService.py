@@ -14,7 +14,10 @@ Owns the Notebook feature end-to-end:
 2. **Data source binding** — a notebook owns one or more data sources, either
    an uploaded CSV (freshly uploaded, or reused from an existing Files-page
    upload) or a table on an existing connector managed by
-   :class:`DataConnectorService`.
+   :class:`DataConnectorService`. Postgres-compatible connectors (Postgres,
+   Lakebase) are queried live; data warehouses (Databricks) are snapshotted
+   (up to ``_SNAPSHOT_ROW_LIMIT`` rows) into the app DB at bind time and can be
+   re-pulled with :meth:`refresh_data_source`.
 3. **Cell execution** — every cell (a full EDA sweep, a dashboard, a specific
    question, or a markdown note) is answered by
    :class:`TabularDataExploratoryAgent`.
@@ -96,6 +99,16 @@ class NotebookService:
     """
 
     _DASHBOARD_TILE_COUNT = 8
+
+    # Connector types whose engine can't be queried by the Postgres-based
+    # exploratory agent (data warehouses / lakes). Their tables are copied
+    # ("snapshotted") into the app database when bound, and every cell then
+    # runs against that copy exactly like an uploaded CSV. Postgres-compatible
+    # connectors (postgres, lakebase) stay live and are queried in place.
+    _SNAPSHOT_CONNECTOR_TYPES = frozenset({"databricks"})
+
+    # Max rows copied from a warehouse table into the app DB per snapshot.
+    _SNAPSHOT_ROW_LIMIT = 100_000
 
     def __init__(
         self,
@@ -676,6 +689,17 @@ class NotebookService:
         connector_name = connector_row.get("name") or connector_id
         connector_type = connector_row.get("type")
 
+        if connector_type in self._SNAPSHOT_CONNECTOR_TYPES:
+            return self._add_snapshot_data_source(
+                notebook_id=notebook_id,
+                connector_svc=connector_svc,
+                connector_id=connector_id,
+                connector_type=connector_type,
+                connector_name=connector_name,
+                table_name=table_name,
+                owner_user_id=owner_user_id,
+            )
+
         source_postgres = self._connector_postgres_service(
             connector_svc, connector_id, owner_user_id=owner_user_id
         )
@@ -703,6 +727,125 @@ class NotebookService:
         )
 
         return self._add_data_source(notebook_id, data_source, table_schema, owner_user_id=owner_user_id)
+
+    # ── Warehouse / lake snapshots ────────────────────────────────────────
+
+    def _snapshot_table_name(self, notebook_id: str, connector_id: str, table_name: str) -> str:
+        """Deterministic app-DB table name, so a refresh replaces the same table."""
+        return self._safe_table_name(f"nb_{notebook_id[:8]}_{connector_id[-6:]}_{table_name}")
+
+    def _load_snapshot(
+        self,
+        connector_svc: DataConnectorService,
+        connector_id: str,
+        table_name: str,
+        local_table: str,
+        owner_user_id: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """
+        Pull up to ``_SNAPSHOT_ROW_LIMIT`` rows of a connector table through
+        :class:`DataConnectorService` and load them into the app DB as
+        *local_table*. Goes via a temp CSV so type inference and the later
+        column-type repair behave exactly as they do for uploads.
+        """
+        query = connector_svc.build_table_query(
+            connector_id, table_name, owner_user_id=owner_user_id
+        )  # validates table_name against what the connector reports
+        df = connector_svc.preview_dataframe(
+            connector_id, query, limit=self._SNAPSHOT_ROW_LIMIT, owner_user_id=owner_user_id
+        )
+        if df is None or len(df.columns) == 0:
+            raise ValueError(f"Table '{table_name}' returned no columns.")
+
+        if len(df) >= self._SNAPSHOT_ROW_LIMIT:
+            logger.warning(
+                "Snapshot of {} hit the {}-row cap; the notebook sees a truncated copy.",
+                table_name, self._SNAPSHOT_ROW_LIMIT,
+            )
+
+        tmp_path = None
+        try:
+            with tempfile.NamedTemporaryFile(delete=False, suffix=".csv", mode="w", newline="") as tmp:
+                tmp_path = tmp.name
+                df.to_csv(tmp, index=False)
+            self._drop_table_cascade(local_table)
+            return self.postgres.load(
+                data_path=tmp_path, table_name=local_table, if_exists="replace"
+            )
+        finally:
+            if tmp_path and os.path.exists(tmp_path):
+                os.remove(tmp_path)
+
+    def _add_snapshot_data_source(
+        self,
+        notebook_id: str,
+        connector_svc: DataConnectorService,
+        connector_id: str,
+        connector_type: str,
+        connector_name: str,
+        table_name: str,
+        owner_user_id: Optional[str] = None,
+    ) -> Notebook:
+        local_table = self._snapshot_table_name(notebook_id, connector_id, table_name)
+        table_schema = self._load_snapshot(
+            connector_svc, connector_id, table_name, local_table, owner_user_id
+        )
+
+        data_source = NotebookDataSource(
+            id=str(uuid.uuid4()),
+            kind="connector",
+            table_name=local_table,  # the app-DB copy, not the warehouse name
+            connector_id=connector_id,
+            connector_type=connector_type,
+            original_filename=table_name,  # remembers the upstream table for refresh
+            row_count=table_schema.get("row_count"),
+            column_count=len(table_schema.get("columns", [])),
+            label=f"{connector_name}/{table_name}",
+        )
+        return self._add_data_source(notebook_id, data_source, table_schema, owner_user_id=owner_user_id)
+
+    def refresh_data_source(
+        self,
+        notebook_id: str,
+        source_id: str,
+        owner_user_id: Optional[str] = None,
+    ) -> Notebook:
+        """
+        Re-pull a warehouse/lake-backed source's snapshot from its connector.
+        Live (Postgres/Lakebase) and upload sources have nothing to refresh.
+        """
+        self.get_notebook(notebook_id, owner_user_id=owner_user_id)
+        source = self._get_data_source(notebook_id, source_id, owner_user_id=owner_user_id)
+        if not self._is_local_source(source) or source.kind != "connector":
+            raise ValueError("Only warehouse/lake-backed data sources can be refreshed.")
+
+        upstream_table = source.original_filename
+        if not upstream_table:
+            raise ValueError("This source has no upstream table recorded; remove and re-add it.")
+
+        connector_svc = DataConnectorService()
+        table_schema = self._load_snapshot(
+            connector_svc, source.connector_id, upstream_table, source.table_name, owner_user_id
+        )
+        self.postgres.query(
+            "UPDATE sqrl_notebook_data_sources SET row_count = %(row_count)s, "
+            "column_count = %(column_count)s, raw_schema = %(raw_schema)s "
+            "WHERE id = %(id)s AND notebook_id = %(notebook_id)s",
+            params={
+                "row_count": table_schema.get("row_count"),
+                "column_count": len(table_schema.get("columns", [])),
+                "raw_schema": json.dumps(table_schema, default=str),
+                "id": source_id,
+                "notebook_id": notebook_id,
+            },
+        )
+        # Schema/column stats memoized for this source are now stale.
+        self._invalidate_schema_cache_entries(notebook_id, source_id)
+        return self.get_notebook(notebook_id, owner_user_id=owner_user_id)
+
+    def _is_local_source(self, source: NotebookDataSource) -> bool:
+        """True when the source's table lives in the app DB (uploads + snapshots)."""
+        return source.kind == "upload" or source.connector_type in self._SNAPSHOT_CONNECTOR_TYPES
 
     def _unbind_upload_from_source(self, file_url: str, notebook_id: str) -> None:
         """
@@ -1363,15 +1506,17 @@ class NotebookService:
         if not sources:
             raise NotebookNotReadyError("No data sources to resolve a database connection for.")
 
-        kinds = {s.kind for s in sources}
-        if len(kinds) > 1:
+        # Uploads and warehouse snapshots both live in the app DB, so they can
+        # share a cell; only live connector tables live elsewhere.
+        locality = {self._is_local_source(s) for s in sources}
+        if len(locality) > 1:
             raise ValueError(
-                "Can't run a single cell across an uploaded CSV and a connector "
-                "table together — split them into separate @mentions/cells."
+                "Can't run a single cell across local data (an uploaded CSV or a "
+                "warehouse table) and a live connector table together — split "
+                "them into separate @mentions/cells."
             )
 
-        kind = next(iter(kinds))
-        if kind == "upload":
+        if next(iter(locality)):
             return self.postgres
 
         connector_ids = {s.connector_id for s in sources}

@@ -11,9 +11,6 @@
 
 Squirrel is a full-stack application for analyzing, preparing, building machine learning models, and serving predictions.
 
-See the [initial release notes](RELEASE_NOTES.md) for the v0.1.0 feature
-summary and getting-started highlights.
-
 ## Features
 
 SQRL brings the complete machine-learning workflow into one workspace:

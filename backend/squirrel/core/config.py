@@ -153,6 +153,14 @@ class Settings(BaseSettings):
     #: str: Allowed browser origins, comma separated.
     CORS_ORIGINS: str = "http://localhost:5173,http://localhost:8000,http://localhost:3000"
 
+    # Databricks SQL integration
+    DATABRICKS_SERVER_HOSTNAME: str = os.getenv("DATABRICKS_SERVER_HOSTNAME", "")
+    DATABRICKS_HTTP_PATH: str = os.getenv("DATABRICKS_HTTP_PATH", "")
+    DATABRICKS_TOKEN: Optional[str] = os.getenv("DATABRICKS_TOKEN", None)
+    
+    
+    AIRFLOW_DAGS_DIR: str = os.getenv("AIRFLOW_DAGS_DIR", "airflow/dags")
+
     @property
     def database_url(self) -> str:
         """Resolve the effective database URL (DATABASE_URL wins)."""

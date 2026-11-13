@@ -30,8 +30,11 @@ class ConnectorType:
     """
     # Database
     POSTGRES      = "postgres"
+    MYSQL         = "mysql"
+    DATABRICKS    = "databricks"
+    LAKEBASE      = "lakebase"
 
-    ALL = {POSTGRES}
+    ALL = {POSTGRES, DATABRICKS, LAKEBASE}
 
 
 class ConnectionStatus:
@@ -103,7 +106,29 @@ CONNECTOR_TYPE_SPECS: Dict[str, ConnectorTypeSpec] = {
             ConnectorFieldSpec("username", "Username"),
             ConnectorFieldSpec("password", "Password", type="password", secret=True),
         ],
-    )
+    ),
+    ConnectorType.DATABRICKS: ConnectorTypeSpec(
+        id=ConnectorType.DATABRICKS,
+        label="Databricks",
+        description="Connect to a Databricks SQL warehouse.",
+        fields=[
+            ConnectorFieldSpec("server_hostname", "Server hostname", placeholder="workspace.cloud.databricks.com"),
+            ConnectorFieldSpec("http_path", "HTTP path", placeholder="/sql/1.0/warehouses/..."),
+            ConnectorFieldSpec("token", "Access token", type="password", secret=True),
+        ],
+    ),
+    ConnectorType.LAKEBASE: ConnectorTypeSpec(
+        id=ConnectorType.LAKEBASE,
+        label="Lakebase",
+        description="Connect to a Databricks Lakebase database.",
+        fields=[
+            ConnectorFieldSpec("host", "Host", placeholder="ep-....database.cloud.databricks.com"),
+            ConnectorFieldSpec("database", "Database"),
+            ConnectorFieldSpec("username", "Username"),
+            ConnectorFieldSpec("password", "Password", type="password", secret=True),
+            ConnectorFieldSpec("port", "Port", type="number", required=False, placeholder="5432"),
+        ],
+    ),
 }
 
 

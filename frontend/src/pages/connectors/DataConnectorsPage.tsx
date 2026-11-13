@@ -13,7 +13,15 @@ import {
   CircleDashed,
 } from "lucide-react";
 import type { ConnectorField, ConnectorTypeDef, ConnectorTypeId, DataConnection } from "./shared.tsx";
-import { CONNECTOR_TYPES, connectorTypeDef, connectorsApi, statusBadge, ConnectorApiError } from "./shared.tsx";
+import {
+  CONNECTOR_TYPES,
+  DEFAULT_QUERY,
+  connectorTypeDef,
+  connectorsApi,
+  isQueryable,
+  statusBadge,
+  ConnectorApiError,
+} from "./shared.tsx";
 
 // Dotted background, same component used elsewhere in the app.
 import DotField from "@/components/background/DotField";
@@ -115,6 +123,7 @@ export default function DataConnectorsPage(): JSX.Element {
 
   const [formTypeId, setFormTypeId] = useState<ConnectorTypeId | null>(null);
   const [editingConnection, setEditingConnection] = useState<DataConnection | null>(null);
+  const [queryConnection, setQueryConnection] = useState<DataConnection | null>(null);
 
   const [testingId, setTestingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -304,6 +313,7 @@ export default function DataConnectorsPage(): JSX.Element {
                   onTest={() => handleTest(conn)}
                   onDelete={() => handleDelete(conn)}
                   onEdit={() => setEditingConnection(conn)}
+                  onQuery={isQueryable(conn.type) ?() => setQueryConnection(conn) : undefined}
                 />
               ))}
             </ul>
@@ -332,6 +342,12 @@ export default function DataConnectorsPage(): JSX.Element {
           message={deleteBlocked.message}
           conflict={deleteBlocked.conflict}
           onClose={() => setDeleteBlocked(null)}
+        />
+      )}
+      {queryConnection && (
+        <WarehouseQueryModal
+          connection={queryConnection}
+          onClose={() => setQueryConnection(null)}
         />
       )}
     </div>
@@ -377,6 +393,7 @@ function ConnectionRow({
   onTest,
   onDelete,
   onEdit,
+  onQuery,
 }: {
   connection: DataConnection;
   testing: boolean;
@@ -385,6 +402,7 @@ function ConnectionRow({
   onTest: () => void;
   onDelete: () => void;
   onEdit: () => void;
+  onQuery?: () => void;
 }): JSX.Element {
   const badge = statusBadge(connection.status);
   const typeDef = connectorTypeDef(connection.type);
@@ -413,6 +431,14 @@ function ConnectionRow({
         </div>
 
         <div className="flex shrink-0 items-center gap-2">
+          {onQuery && (
+            <button
+              onClick={onQuery}
+              className="rounded-md border border-border px-2.5 py-1 text-xs font-medium text-foreground transition-colors hover:bg-secondary"
+            >
+              Query
+            </button>
+          )}
           <button
             onClick={onTest}
             disabled={testing}
@@ -549,7 +575,7 @@ function ConnectorFormModal({
                 ref={firstFieldRef}
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder="e.g. Production Postgres"
+                placeholder="e.g. My DB"
                 className="w-full rounded-md border border-input bg-secondary px-3 py-1.5 text-sm text-foreground outline-none placeholder:text-muted-foreground focus:ring-2 focus:ring-ring"
               />
             </Field>
@@ -583,6 +609,82 @@ function ConnectorFormModal({
               {saving ? "Saving…" : isEditing ? "Save changes" : "Connect"}
             </button>
           </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+function WarehouseQueryModal({
+  connection,
+  onClose,
+}: {
+  connection: DataConnection;
+  onClose: () => void;
+}): JSX.Element {
+  const [query, setQuery] = useState(DEFAULT_QUERY[connection.type] ?? "SELECT 1");
+  const [result, setResult] = useState<{ columns: string[]; rows: Record<string, unknown>[]; row_count: number } | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [running, setRunning] = useState(false);
+
+  const runQuery = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setRunning(true);
+    setError(null);
+    try {
+      setResult(await connectorsApi.query(connection.connector_id, query));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Query failed.");
+    } finally {
+      setRunning(false);
+    }
+  };
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
+      onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}
+    >
+      <div className="w-full max-w-4xl rounded-lg border border-border bg-card shadow-lg">
+        <form onSubmit={runQuery} className="p-5">
+          <div className="mb-4 flex items-start justify-between">
+            <div>
+              <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">{connectorTypeDef(connection.type).label}</span>
+              <h2 className="text-sm font-semibold text-foreground">{connection.name}</h2>
+            </div>
+            <button type="button" onClick={onClose} className="text-muted-foreground hover:text-foreground" aria-label="Close">×</button>
+          </div>
+          <textarea
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            rows={5}
+            className="w-full rounded-md border border-input bg-secondary px-3 py-2 font-mono text-sm text-foreground outline-none focus:ring-2 focus:ring-ring"
+            aria-label="SQL query"
+          />
+          {error && <p className="mt-2 text-xs text-destructive">{error}</p>}
+          <div className="mt-3 flex items-center justify-between">
+            <span className="text-xs text-muted-foreground">Read-only queries, capped at 100 rows.</span>
+            <button type="submit" disabled={running || !query.trim()} className="rounded-md bg-primary-gradient px-3 py-1.5 text-sm font-medium text-primary-foreground disabled:opacity-40">
+              {running ? "Running…" : "Run query"}
+            </button>
+          </div>
+          {result && (
+            <div className="mt-5 max-h-72 overflow-auto rounded-md border border-border">
+              <table className="w-full text-left text-xs">
+                <thead className="sticky top-0 bg-secondary text-muted-foreground">
+                  <tr>{result.columns.map((column) => <th key={column} className="px-2 py-1.5 font-medium">{column}</th>)}</tr>
+                </thead>
+                <tbody>
+                  {result.rows.map((row, index) => (
+                    <tr key={index} className="border-t border-border">
+                      {result.columns.map((column) => <td key={column} className="px-2 py-1.5 text-foreground">{String(row[column] ?? "")}</td>)}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              <p className="border-t border-border px-2 py-1.5 text-[11px] text-muted-foreground">{result.row_count} row(s)</p>
+            </div>
+          )}
         </form>
       </div>
     </div>

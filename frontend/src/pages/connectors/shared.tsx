@@ -6,7 +6,9 @@
 import { ApiError, apiFetch } from "@/lib/utils";
 
 export type ConnectorTypeId =
-  | "postgres";
+  | "postgres"
+  | "databricks"
+  | "lakebase";
 
 export interface ConnectorField {
   key: string;
@@ -39,8 +41,50 @@ export const CONNECTOR_TYPES: ConnectorTypeDef[] = [
       { key: "username", label: "Username", type: "text", required: true },
       { key: "password", label: "Password", type: "password", required: true },
     ],
-  }
+  },
+  {
+    id: "databricks",
+    label: "Databricks",
+    description: "Connect to a Databricks SQL warehouse.",
+    badgeClass: "bg-secondary text-foreground border border-border",
+    logo: "/imgs/databricks.png",
+    fields: [
+      { key: "server_hostname", label: "Server hostname", type: "text", required: true },
+      { key: "http_path", label: "HTTP path", type: "text", required: true },
+      { key: "token", label: "Access token", type: "password", required: true },
+      { key: "catalog", label: "Catalog", type: "text", placeholder: "main (optional)" },
+      { key: "schema", label: "Schema", type: "text", placeholder: "default (optional)" },
+    ],
+  },
+  {
+    id: "lakebase",
+    label: "Lakebase",
+    description: "Connect to a Databricks Lakebase database.",
+    badgeClass: "bg-secondary text-foreground border border-border",
+    logo: "/imgs/lakebase.png",
+    fields: [
+      { key: "host", label: "Host", type: "text", required: true },
+      { key: "database", label: "Database", type: "text", required: true },
+      { key: "username", label: "Username", type: "text", required: true },
+      { key: "password", label: "Password", type: "password", required: true },
+      { key: "port", label: "Port", type: "number", placeholder: "5432" },
+    ],
+  },
 ];
+
+/** Types the backend can run bounded read-only SQL against (POST /connector/{id}/query). */
+export const QUERYABLE_TYPES: ConnectorTypeId[] = ["postgres", "databricks", "lakebase"];
+
+export function isQueryable(type: ConnectorTypeId): boolean {
+  return QUERYABLE_TYPES.includes(type);
+}
+
+/** Starter SQL for the query modal, per connector type. */
+export const DEFAULT_QUERY: Record<ConnectorTypeId, string> = {
+  postgres: "SELECT * FROM public.table_name",
+  lakebase: "SELECT * FROM public.table_name",
+  databricks: "SELECT * FROM catalog.schema.table",
+};
 
 export function connectorTypeDef(id: ConnectorTypeId): ConnectorTypeDef {
   const def = CONNECTOR_TYPES.find((t) => t.id === id);
@@ -104,9 +148,18 @@ export const connectorsApi = {
   remove: (id: string) => connectorsFetch<void>(`/${id}`, { method: "DELETE" }),
   listTables: (connectorId: string) =>
     connectorsFetch<string[]>(`/${connectorId}/tables`),
+  describeTable: (connectorId: string, table: string) =>
+    connectorsFetch<{ column_name: string; data_type: string }[]>(
+      `/${connectorId}/tables/${encodeURIComponent(table)}/columns`
+    ),
   previewAllTables: (connectorId: string, limit = 5) =>
     connectorsFetch<{ tables: { table: string; columns: string[]; preview: Record<string, unknown>[]; error?: string }[] }>(
       `/${connectorId}/tables/preview?limit=${limit}`
+    ),
+  query: (connectorId: string, query: string, limit = 100) =>
+    connectorsFetch<{ columns: string[]; rows: Record<string, unknown>[]; row_count: number }>(
+      `/${connectorId}/query`,
+      { method: "POST", body: JSON.stringify({ query, limit }) }
     ),
 };
 

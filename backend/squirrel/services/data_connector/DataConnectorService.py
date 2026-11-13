@@ -3,10 +3,16 @@
 Data Connector Service
 =======================
 
-Owns everything related to a **data connection**: its metadata (name,
-type, live status) and its config, including encrypting/redacting whatever
-fields the connector type marks as secret (see
-``squirrel.constants.connector.CONNECTOR_TYPE_SPECS``).
+Single owner of everything related to a **data connection**: its metadata
+(name, type, live status), its config (with secret fields encrypted at rest),
+and live access to the underlying source — Postgres, Databricks SQL
+(data warehouse) and Lakebase (managed Postgres / lake).
+
+This module absorbs what used to live in ``DataWarehouseService``: read-only
+SQL validation, bounded queries, table listing, and column description. All of
+it now runs against a stored *connection* (``connector_id``) instead of
+environment-level settings, so credentials, ownership and status live in one
+place.
 
 Table
 -----
@@ -15,6 +21,7 @@ Table
 
     CREATE TABLE IF NOT EXISTS data_connections (
         connector_id     TEXT            PRIMARY KEY,
+        owner_user_id    TEXT,
         name             TEXT            NOT NULL,
         type             TEXT            NOT NULL,
         status           TEXT            NOT NULL DEFAULT 'untested',
@@ -25,24 +32,17 @@ Table
         updated_at       TIMESTAMPTZ     NOT NULL DEFAULT NOW()
     );
 
-Secret fields (e.g. passwords, service-account JSON) are stored in
-``config`` **encrypted**, never in plaintext, and are always redacted
-(returned as ``""``) by :meth:`to_public_dict` — the API layer should only
-ever hand callers the output of that method, never a raw row.
+Secret fields are stored encrypted and always redacted by
+:meth:`DataConnectorService.to_public_dict`.
 
 .. note::
-    Encryption uses ``cryptography.fernet`` when the package is available,
-    keyed by the ``SQUIRREL_CONNECTOR_SECRET_KEY`` environment variable. If
-    either is missing, secrets are still stored obfuscated (base64) rather
-    than in plaintext, but this is **not** a substitute for a real secrets
-    manager in production — swap ``_encrypt_secret``/``_decrypt_secret`` for
-    calls to one (Vault, KMS, etc.) when this moves past a prototype.
+    Encryption uses ``cryptography.fernet`` keyed by
+    ``SQUIRREL_CONNECTOR_SECRET_KEY``. Without it secrets are only base64
+    obfuscated — fine for a prototype, not for production.
 
 .. note::
-    Postgres connectivity (testing + reading) goes through :mod:`psycopg`
-    (v3), matching :class:`PostgresService` elsewhere in this codebase —
-    not the legacy :mod:`psycopg2`. Install it via
-    ``psycopg[binary]>=3.2.0,<4.0.0``.
+    Postgres/Lakebase go through :mod:`psycopg` (v3). Databricks goes through
+    ``databricks-sql-connector`` (imported lazily).
 """
 # ——————————————————————————————————————————————————————————————
 # Imports
@@ -50,10 +50,12 @@ ever hand callers the output of that method, never a raw row.
 # Standard Libraries
 import base64
 import json
-import os
+import re
 import uuid
-from datetime import datetime, timezone
-from typing import Any, Callable, Dict, List, Optional
+from datetime import date, datetime, time, timezone
+from decimal import Decimal
+from functools import partial
+from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple
 
 # Third-Party Libraries
 import pandas as pd
@@ -64,7 +66,7 @@ from squirrel.core.config import settings
 # Services
 from squirrel.services.storage.database.PostgresService import PostgresService
 
-# Exceptiosn
+# Exceptions
 from squirrel.schemas.connector import (
     ConnectorNotFoundError,
     ConnectorValidationError,
@@ -75,31 +77,18 @@ from squirrel.schemas.connector import (
 from squirrel.constants.connector import (
     ConnectionStatus,
     ConnectorType,
-    get_connector_type_spec
+    get_connector_type_spec,
 )
 
 # Logging
 from loguru import logger
 
-# Optional: real symmetric encryption for secret config values. Falls back
-# to a clearly-marked obfuscation (not real security) if unavailable, the
-# same graceful-degradation pattern used for optional ML dependencies
-# elsewhere in this codebase (see TabularDataModelBuilderAgent's xgboost/
-# lightgbm imports).
 try:
     from cryptography.fernet import Fernet, InvalidToken
     _HAS_FERNET = True
 except ImportError:
     _HAS_FERNET = False
 
-# Optional: live-connection testers per connector type. Each import failure
-# only disables that one type's Test button (surfaced as a clear error),
-# never the whole service.
-#
-# Postgres uses psycopg (v3) — same driver as PostgresService — not the
-# legacy psycopg2. `psycopg[binary]` ships prebuilt wheels so there's no
-# libpq/pg_config build-toolchain requirement, same rationale as the
-# psycopg2-binary note this replaces.
 try:
     import psycopg  # pyright: ignore[reportMissingImports]
     _HAS_PSYCOPG = True
@@ -111,6 +100,18 @@ try:
     _HAS_PYMYSQL = True
 except ImportError:
     _HAS_PYMYSQL = False
+
+# Connector type ids. Plain-string fallbacks keep this importable even if the
+# constants module hasn't grown the attribute yet.
+_POSTGRES = ConnectorType.POSTGRES
+_MYSQL = ConnectorType.MYSQL
+_DATABRICKS = getattr(ConnectorType, "DATABRICKS", "databricks")
+_LAKEBASE = getattr(ConnectorType, "LAKEBASE", "lakebase")
+
+# Types that speak SQL through the shared bounded/read-only query path.
+_QUERYABLE_WAREHOUSE_TYPES = (_DATABRICKS, _LAKEBASE)
+
+MAX_ROWS = 100_000
 
 # ——————————————————————————————————————————————————————————————
 # Secret handling
@@ -137,8 +138,6 @@ def _encrypt_secret(value: str) -> str:
     cipher = _get_cipher()
     if cipher is not None:
         return "fernet:" + cipher.encrypt(value.encode()).decode()
-    # No usable cipher — obfuscate so it's at least not plaintext-legible
-    # in the database, and tag it so _decrypt_secret knows how to reverse it.
     return "b64:" + base64.b64encode(value.encode()).decode()
 
 
@@ -156,49 +155,103 @@ def _decrypt_secret(token: str) -> str:
             raise RuntimeError("Could not decrypt stored secret (invalid token).") from exc
     if token.startswith("b64:"):
         return base64.b64decode(token[len("b64:"):].encode()).decode()
-    # Unrecognised prefix — treat as legacy plaintext rather than crashing.
     return token
 
 
 # ——————————————————————————————————————————————————————————————
-# Live connection testers — one per ConnectorType. Add an entry to
-# ``DataConnectorService._TEST_DISPATCH`` when adding a new tester.
+# SQL safety (moved from DataWarehouseService)
 
-def _test_postgres(config: Dict[str, str]) -> None:
-    if not _HAS_PSYCOPG:
-        raise RuntimeError(
-            "psycopg is not installed; cannot test Postgres connections. "
-            "Install `psycopg[binary]>=3.2.0,<4.0.0`."
-        )
-    conn = psycopg.connect(
-        host=config["host"],
-        port=int(config.get("port") or 5432),
-        dbname=config["database"],
-        user=config["username"],
-        password=config.get("password", ""),
-        connect_timeout=5,
-    )
-    conn.close()
+_IDENTIFIER = re.compile(r"^[A-Za-z_][A-Za-z0-9_$]*(\.[A-Za-z_][A-Za-z0-9_$-]*){0,3}$")
+_READ_START = re.compile(r"^(select|with)\b", re.IGNORECASE)
+_FORBIDDEN = re.compile(
+    r"\b(insert|update|delete|merge|drop|alter|create|truncate|grant|revoke|"
+    r"copy|call|exec|execute|put|get|set|use|vacuum|optimize)\b",
+    re.IGNORECASE,
+)
+
+
+def _strip_literals_and_comments(sql_text: str) -> str:
+    """Remove string literals and comments so keyword checks can't be fooled."""
+    sql_text = re.sub(r"/\*.*?\*/", " ", sql_text, flags=re.DOTALL)
+    sql_text = re.sub(r"--[^\n]*", " ", sql_text)
+    sql_text = re.sub(r"'(?:''|\\.|[^'\\])*'", "''", sql_text)
+    sql_text = re.sub(r'"(?:""|[^"])*"', '""', sql_text)
+    sql_text = re.sub(r"`[^`]*`", "``", sql_text)
+    return sql_text
+
+
+def validate_read_query(query: str) -> str:
+    """Allow a single SELECT / WITH statement only. Returns the cleaned query."""
+    if not query or not query.strip():
+        raise ValueError("Query is empty.")
+    cleaned = query.strip().rstrip(";").strip()
+    skeleton = _strip_literals_and_comments(cleaned)
+    if not _READ_START.match(skeleton.strip()):
+        raise ValueError("Only SELECT or WITH queries are allowed.")
+    if ";" in skeleton:
+        raise ValueError("Multiple SQL statements are not allowed.")
+    if _FORBIDDEN.search(skeleton):
+        raise ValueError("Query contains a non read-only keyword.")
+    return cleaned
+
+
+def validate_identifier(value: str, label: str = "identifier") -> str:
+    if not _IDENTIFIER.fullmatch(value or ""):
+        raise ValueError(f"{label} must be a qualified SQL identifier.")
+    return value
+
+
+def _clamp_limit(limit: int) -> int:
+    limit = int(limit)  # also blocks injection through the limit argument
+    if limit < 1:
+        raise ValueError("limit must be >= 1.")
+    return min(limit, MAX_ROWS)
+
+
+def _jsonable(value: Any) -> Any:
+    if isinstance(value, Decimal):
+        return float(value)
+    if isinstance(value, (datetime, date, time)):
+        return value.isoformat()
+    if isinstance(value, (bytes, bytearray)):
+        return value.hex()
+    if isinstance(value, (list, tuple)):
+        return [_jsonable(v) for v in value]
+    if isinstance(value, dict):
+        return {k: _jsonable(v) for k, v in value.items()}
+    return value
+
 
 # ——————————————————————————————————————————————————————————————
-# List Tables
+# Postgres family (Postgres + Lakebase) — psycopg v3
 
-def _list_tables_postgres(
-    config: Dict[str, str]
-) -> List[str]:
+def _pg_connect(config: Dict[str, str], sslmode: Optional[str] = None, timeout: int = 5):
     if not _HAS_PSYCOPG:
         raise RuntimeError(
-            "psycopg is not installed; cannot list Postgres tables. "
-            "Install `psycopg[binary]>=3.2.0,<4.0.0`."
+            "psycopg is not installed; cannot reach Postgres-compatible "
+            "connections. Install `psycopg[binary]>=3.2.0,<4.0.0`."
         )
-    conn = psycopg.connect(
+    kwargs: Dict[str, Any] = dict(
         host=config["host"],
         port=int(config.get("port") or 5432),
         dbname=config["database"],
         user=config["username"],
         password=config.get("password", ""),
-        connect_timeout=5,
+        connect_timeout=timeout,
     )
+    if sslmode:
+        kwargs["sslmode"] = sslmode
+    return psycopg.connect(**kwargs)
+
+
+def _test_pg(config: Dict[str, str], sslmode: Optional[str] = None, timeout: int = 5) -> None:
+    _pg_connect(config, sslmode, timeout).close()
+
+
+def _list_tables_pg(
+    config: Dict[str, str], sslmode: Optional[str] = None, timeout: int = 5
+) -> List[str]:
+    conn = _pg_connect(config, sslmode, timeout)
     try:
         with conn.cursor() as cur:
             cur.execute(
@@ -207,17 +260,171 @@ def _list_tables_postgres(
                 "ORDER BY table_schema, table_name"
             )
             rows = cur.fetchall()
-        # Qualify with schema only when it isn't the default 'public', to
-        # keep the common case ("public.customers") readable as just
-        # "customers" in the picker.
+        # "public" is left implicit to keep the common case readable.
         return [name if schema == "public" else f"{schema}.{name}" for schema, name in rows]
     finally:
         conn.close()
 
-def _quote_ident_postgres(table_name: str) -> str:
-    # table_name may be "schema.table" (see _list_tables_postgres) or bare "table".
-    parts = table_name.split(".", 1)
-    return ".".join(f'"{p}"' for p in parts)
+
+def _run_pg(
+    config: Dict[str, str],
+    query: str,
+    limit: int,
+    sslmode: Optional[str] = None,
+    timeout: int = 5,
+) -> Tuple[List[str], List[Sequence[Any]]]:
+    conn = _pg_connect(config, sslmode, timeout)
+    try:
+        conn.read_only = True  # enforced by the server, on top of validate_read_query
+        with conn.cursor() as cur:
+            cur.execute(query)
+            rows = cur.fetchmany(limit)
+            columns = [d.name for d in cur.description or ()]
+        return columns, rows
+    finally:
+        conn.close()
+
+
+def _quote_ident_pg(name: str) -> str:
+    # "schema.table" or bare "table"
+    return ".".join('"' + p.replace('"', '""') + '"' for p in name.split(".", 1))
+
+
+# Lakebase = managed Postgres: same driver, TLS required, slower cold start.
+_LAKEBASE_KW = dict(sslmode="require", timeout=30)
+
+
+# ——————————————————————————————————————————————————————————————
+# Databricks SQL (data warehouse)
+
+def _dbx_connect(config: Dict[str, str]):
+    try:
+        from databricks import sql
+    except ImportError as exc:
+        raise RuntimeError("Install databricks-sql-connector.") from exc
+    return sql.connect(
+        server_hostname=config["server_hostname"],
+        http_path=config["http_path"],
+        access_token=config["token"],
+    )
+
+
+def _test_databricks(config: Dict[str, str]) -> None:
+    conn = _dbx_connect(config)
+    try:
+        with conn.cursor() as cur:
+            cur.execute("SELECT 1")
+            cur.fetchall()
+    finally:
+        conn.close()
+
+
+def _run_databricks(
+    config: Dict[str, str], query: str, limit: int
+) -> Tuple[List[str], List[Sequence[Any]]]:
+    conn = _dbx_connect(config)
+    try:
+        with conn.cursor() as cur:
+            cur.execute(query)
+            rows = cur.fetchmany(limit)
+            columns = [c[0] for c in cur.description or ()]
+        return columns, [tuple(r) for r in rows]
+    finally:
+        conn.close()
+
+
+def _databricks_scope(config: Dict[str, str]) -> Tuple[Optional[str], Optional[str]]:
+    """Optional ``catalog`` / ``schema`` narrowing from the connection config."""
+    catalog = (config.get("catalog") or "").strip() or None
+    schema = (config.get("schema") or "").strip() or None
+    if catalog:
+        validate_identifier(catalog, "catalog")
+    if schema:
+        validate_identifier(schema, "schema")
+    return catalog, schema
+
+
+_DATABRICKS_SKIP_CATALOGS = {"system", "__databricks_internal"}
+
+
+def _list_tables_databricks(config: Dict[str, str]) -> List[str]:
+    """
+    Every table the token can see, across **all** catalogs and schemas, as
+    fully-qualified ``catalog.schema.table`` names.
+
+    Strategy:
+      1. One query on ``system.information_schema.tables`` (Unity Catalog) —
+         covers every catalog in a single round trip.
+      2. If that isn't readable, ``SHOW CATALOGS`` then each catalog's own
+         ``information_schema`` (a catalog that can't be read, e.g.
+         ``hive_metastore``, is skipped rather than failing the listing;
+         ``hive_metastore`` is then covered via ``SHOW SCHEMAS/TABLES``).
+
+    The optional ``catalog`` / ``schema`` config fields now act as *filters*
+    that narrow the list, never as the only thing listed.
+    """
+    want_catalog, want_schema = _databricks_scope(config)
+    conn = _dbx_connect(config)
+    found: List[Tuple[str, str, str]] = []
+
+    def run(q: str) -> List[Sequence[Any]]:
+        with conn.cursor() as cur:
+            cur.execute(q)
+            return [tuple(r) for r in cur.fetchall()]
+
+    try:
+        try:
+            q = (
+                "SELECT table_catalog, table_schema, table_name "
+                "FROM system.information_schema.tables "
+                "WHERE table_schema <> 'information_schema'"
+            )
+            found = [(r[0], r[1], r[2]) for r in run(q)]
+        except Exception as exc:
+            logger.info("system.information_schema unavailable ({}); listing per catalog.", exc)
+            found = []
+            for (catalog,) in [(r[0],) for r in run("SHOW CATALOGS")]:
+                if catalog in _DATABRICKS_SKIP_CATALOGS:
+                    continue
+                if want_catalog and catalog != want_catalog:
+                    continue
+                try:
+                    rows = run(
+                        "SELECT table_schema, table_name FROM "
+                        f"{_quote_ident_databricks(catalog)}.information_schema.tables "
+                        "WHERE table_schema <> 'information_schema'"
+                    )
+                    found += [(catalog, r[0], r[1]) for r in rows]
+                except Exception:
+                    # No information_schema (e.g. hive_metastore): walk SHOW SCHEMAS/TABLES.
+                    try:
+                        qc = _quote_ident_databricks(catalog)
+                        for (schema,) in [(r[0],) for r in run(f"SHOW SCHEMAS IN {qc}")]:
+                            if schema == "information_schema":
+                                continue
+                            qs = f"{qc}.{_quote_ident_databricks(schema)}"
+                            for r in run(f"SHOW TABLES IN {qs}"):
+                                found.append((catalog, schema, r[1]))  # (database, tableName, ...)
+                    except Exception as exc2:
+                        logger.info("Skipping catalog {}: {}", catalog, exc2)
+    finally:
+        conn.close()
+
+    out = sorted(
+        {
+            f"{c}.{s}.{t}"
+            for c, s, t in found
+            if c not in _DATABRICKS_SKIP_CATALOGS
+            and (not want_catalog or c == want_catalog)
+            and (not want_schema or s == want_schema)
+        }
+    )
+    return out
+
+
+def _quote_ident_databricks(name: str) -> str:
+    return ".".join("`" + p.replace("`", "``") + "`" for p in name.split("."))
+
 
 # ——————————————————————————————————————————————————————————————
 # DataConnectorService
@@ -225,43 +432,48 @@ def _quote_ident_postgres(table_name: str) -> str:
 
 class DataConnectorService:
     """
-    Coordinate CRUD, secret handling, and live testing for data
-    connections used by workspaces as an alternative/additional input
-    source to file uploads.
+    CRUD, secret handling, live testing **and** read-only data access for data
+    connections (Postgres, MySQL, Databricks, Lakebase).
 
-    **Usage:**
-
-    1. Create / list / fetch / update / delete connections.
-    2. Validate a connector type's required fields on create.
-    3. Encrypt secret fields at rest; never surface them in plaintext.
-    4. Run a live connectivity check ("Test") per connector type and
-       persist the resulting status/error.
-    5. Resolve a connection into an in-memory DataFrame for the workspace
-       build pipeline (extension point — only a subset of types today).
+    Per-type behaviour is registered in the dispatch tables below; adding a
+    source type means adding one entry to each table it supports.
     """
 
     _TABLE = "data_connections"
 
     _TABLE_LIST_DISPATCH: Dict[str, Callable[[Dict[str, str]], List[str]]] = {
-        ConnectorType.POSTGRES: _list_tables_postgres
-    }
-    
-    _QUOTE_DISPATCH: Dict[str, Callable[[str], str]] = {
-        ConnectorType.POSTGRES: _quote_ident_postgres
-    }
-    
-    _TEST_DISPATCH: Dict[str, Callable[[Dict[str, str]], None]] = {
-        ConnectorType.POSTGRES: _test_postgres
+        _POSTGRES: _list_tables_pg,
+        _LAKEBASE: partial(_list_tables_pg, **_LAKEBASE_KW),
+        _DATABRICKS: _list_tables_databricks,
     }
 
-    def __init__(
-        self, 
-        db: Optional[PostgresService] = None
-    ) -> None:
+    _QUOTE_DISPATCH: Dict[str, Callable[[str], str]] = {
+        _POSTGRES: _quote_ident_pg,
+        _LAKEBASE: _quote_ident_pg,
+        _DATABRICKS: _quote_ident_databricks,
+    }
+
+    _TEST_DISPATCH: Dict[str, Callable[[Dict[str, str]], None]] = {
+        _POSTGRES: _test_pg,
+        _LAKEBASE: partial(_test_pg, **_LAKEBASE_KW),
+        _DATABRICKS: _test_databricks,
+    }
+
+    # (config, query, limit) -> (columns, rows)
+    _QUERY_DISPATCH: Dict[
+        str, Callable[[Dict[str, str], str, int], Tuple[List[str], List[Sequence[Any]]]]
+    ] = {
+        _POSTGRES: _run_pg,
+        _LAKEBASE: partial(_run_pg, **_LAKEBASE_KW),
+        _DATABRICKS: _run_databricks,
+    }
+
+    def __init__(self, db: Optional[PostgresService] = None) -> None:
         self._db = db or PostgresService()
-        
-        # Ensure the data_connections table exists and has the expected columns.
         self._ensure_table()
+
+    # ------------------------------------------------------------------
+    # Schema / migration (idempotent — safe to run on every start)
 
     def _ensure_table(self) -> None:
         try:
@@ -283,10 +495,22 @@ class DataConnectorService:
                 params={},
                 fetch=False,
             )
-            # Backfill the owner column for databases created before scoping
-            # was added.
+            # Databases created before ownership scoping.
             self._db.execute(
                 f"ALTER TABLE {self._TABLE} ADD COLUMN IF NOT EXISTS owner_user_id TEXT",
+                params={},
+                fetch=False,
+            )
+            # list_connections / get_connection always filter by owner.
+            self._db.execute(
+                f"CREATE INDEX IF NOT EXISTS idx_{self._TABLE}_owner_created "
+                f"ON {self._TABLE} (owner_user_id, created_at DESC)",
+                params={},
+                fetch=False,
+            )
+            self._db.execute(
+                f"CREATE INDEX IF NOT EXISTS idx_{self._TABLE}_type "
+                f"ON {self._TABLE} (type)",
                 params={},
                 fetch=False,
             )
@@ -303,14 +527,6 @@ class DataConnectorService:
         config: Dict[str, str],
         existing_config: Optional[Dict[str, str]] = None,
     ) -> None:
-        """
-        Check that every required field for *connector_type* is present.
-
-        On update (``existing_config`` given), a blank secret field is
-        allowed — it means "keep the current value" and is filled in by
-        :meth:`update_connection` before this is (re)validated against the
-        merged config.
-        """
         spec = get_connector_type_spec(connector_type)
         known_keys = set(spec.field_keys())
         unknown = set(config.keys()) - known_keys
@@ -338,13 +554,6 @@ class DataConnectorService:
         config: Dict[str, str],
         owner_user_id: Optional[str] = None,
     ) -> Dict[str, Any]:
-        """
-        Create a new connection. Secret fields in *config* are encrypted
-        before being persisted.
-
-        :raises ValueError: if ``connector_type`` isn't recognised.
-        :raises ConnectorValidationError: if required fields are missing.
-        """
         if connector_type not in ConnectorType.ALL:
             raise ValueError(f"Unknown connector type '{connector_type}'.")
 
@@ -388,12 +597,6 @@ class DataConnectorService:
         limit: int = 200,
         owner_user_id: Optional[str] = None,
     ) -> List[Dict[str, Any]]:
-        """
-        Return all connections, newest first.
-
-        :param owner_user_id: When provided, only return connections owned by
-            this user.
-        """
         filters: Dict[str, Any] = {}
         if owner_user_id:
             filters["owner_user_id"] = owner_user_id
@@ -407,12 +610,6 @@ class DataConnectorService:
         connector_id: str,
         owner_user_id: Optional[str] = None,
     ) -> Dict[str, Any]:
-        """
-        Fetch a single connection row, or raise ``ConnectorNotFoundError``.
-
-        :param owner_user_id: When provided, a connection owned by another
-            user is reported as not found rather than leaked.
-        """
         filters: Dict[str, Any] = {"connector_id": connector_id}
         if owner_user_id:
             filters["owner_user_id"] = owner_user_id
@@ -429,14 +626,6 @@ class DataConnectorService:
         config: Optional[Dict[str, str]] = None,
         owner_user_id: Optional[str] = None,
     ) -> Dict[str, Any]:
-        """
-        Update a connection's name and/or config.
-
-        A blank value for a secret field in *config* means "keep the
-        existing value" (matching the frontend form's behaviour) — it's
-        merged in from the stored config before validation and encryption,
-        rather than overwriting the secret with an empty string.
-        """
         row = self.get_connection(connector_id, owner_user_id=owner_user_id)
         fields: Dict[str, Any] = {}
 
@@ -454,7 +643,6 @@ class DataConnectorService:
             merged = dict(config)
             for f in spec.fields:
                 if f.secret and not (merged.get(f.key) or "").strip() and f.key in existing_config:
-                    # Blank secret on update => keep the existing encrypted value as-is.
                     merged[f.key] = "__KEEP_EXISTING__"
 
             to_validate = {
@@ -474,7 +662,6 @@ class DataConnectorService:
                     final_config[key] = value
 
             fields["config"] = final_config
-            # Config changed — require a fresh Test before trusting status again.
             fields["status"] = ConnectionStatus.UNTESTED
             fields["error"] = None
 
@@ -485,21 +672,7 @@ class DataConnectorService:
         return self.get_connection(connector_id, owner_user_id=owner_user_id)
 
     def _get_connector_usage(self, connector_id: str) -> Dict[str, List[str]]:
-        """
-        Find every notebook and workspace still referencing *connector_id*,
-        so :meth:`delete_connection` can refuse to remove a connection that's
-        still wired into live analysis.
-
-        Both lookups are best-effort against tables owned by other services
-        (``sqrl_notebooks``/``sqrl_notebook_data_sources`` from
-        :class:`NotebookService`, ``workspaces`` from :class:`WorkspaceService`)
-        rather than importing those services directly, to avoid a circular
-        service dependency. Either table may not exist yet if that feature has
-        never been used — treated as "no usage there", not an error.
-
-        :return: ``{"notebooks": [names...], "workspaces": [names...]}``.
-        :rtype: Dict[str, List[str]]
-        """
+        """Notebooks / workspaces still referencing *connector_id* (best-effort)."""
         notebooks: List[str] = []
         workspaces: List[str] = []
 
@@ -515,8 +688,6 @@ class DataConnectorService:
             )
             notebooks = [row["name"] for row in (result or {}).get("rows", [])]
         except Exception:
-            # Most likely: sqrl_notebooks/sqrl_notebook_data_sources don't
-            # exist yet because no notebook has ever been created.
             logger.debug(
                 "Skipping notebook-usage check for connector {} (table not "
                 "available yet).", connector_id,
@@ -548,16 +719,6 @@ class DataConnectorService:
         connector_id: str,
         owner_user_id: Optional[str] = None,
     ) -> None:
-        """
-        Permanently delete a connection.
-
-        :raises ConnectorNotFoundError: if the connector doesn't exist.
-        :raises ConnectorInUseError: if any notebook or workspace still has
-            a data/input source bound to this connector — those must be
-            detached first (remove the data source from the notebook, or
-            remove the source from the workspace) so a delete here can never
-            silently orphan a live notebook cell or workspace run.
-        """
         self.get_connection(connector_id, owner_user_id=owner_user_id)
 
         usage = self._get_connector_usage(connector_id)
@@ -583,11 +744,7 @@ class DataConnectorService:
             logger.exception("Failed to delete connection connector_id={}", connector_id)
             raise
 
-    def _update_connection_row(
-        self,
-        connector_id: str,
-        fields: Dict[str, Any]
-    ) -> None:
+    def _update_connection_row(self, connector_id: str, fields: Dict[str, Any]) -> None:
         jsonb_cols = {"config"}
         set_parts = []
         params: Dict[str, Any] = {"connector_id": connector_id, "updated_at": datetime.now(timezone.utc)}
@@ -610,29 +767,69 @@ class DataConnectorService:
             logger.exception("Failed to update connection connector_id={}", connector_id)
             raise
 
+    # ------------------------------------------------------------------
+    # Introspection
+
+    def _resolve(
+        self, connector_id: str, owner_user_id: Optional[str] = None
+    ) -> Tuple[str, Dict[str, str]]:
+        """``(connector_type, decrypted_config)`` for a stored connection."""
+        row = self.get_connection(connector_id, owner_user_id=owner_user_id)
+        return row["type"], self._decrypt_config(row.get("config") or {})
 
     def list_tables(
-        self, 
+        self,
         connector_id: str,
         owner_user_id: Optional[str] = None,
     ) -> List[str]:
         """
-        Best-effort list of queryable tables for this connection, to
-        populate a table picker. Raises ``NotImplementedError`` for
-        connector types with no lister registered (Snowflake, BigQuery,
-        Google Sheets today).
+        Queryable tables for this connection, to populate a table picker.
+        Raises ``NotImplementedError`` for types with no lister registered.
         """
-        row = self.get_connection(connector_id, owner_user_id=owner_user_id)
-        connector_type = row["type"]
+        connector_type, config = self._resolve(connector_id, owner_user_id)
         lister = self._TABLE_LIST_DISPATCH.get(connector_type)
         if lister is None:
             raise NotImplementedError(
                 f"Listing tables for connector type '{connector_type}' isn't "
                 "wired up yet."
             )
-        config = self._decrypt_config(row.get("config") or {})
         return lister(config)
 
+    def describe_table(
+        self,
+        connector_id: str,
+        table_name: str,
+        owner_user_id: Optional[str] = None,
+    ) -> List[Dict[str, Any]]:
+        """Column names and types for a table (Postgres, Lakebase, Databricks)."""
+        connector_type, config = self._resolve(connector_id, owner_user_id)
+        runner = self._QUERY_DISPATCH.get(connector_type)
+        if runner is None:
+            raise NotImplementedError(
+                f"Describing tables for connector type '{connector_type}' isn't wired up yet."
+            )
+
+        validate_identifier(table_name, "table")
+        parts = table_name.split(".")
+        name = parts[-1]
+        schema = parts[-2] if len(parts) > 1 else None
+
+        if connector_type == _DATABRICKS:
+            catalog = parts[-3] if len(parts) >= 3 else _databricks_scope(config)[0]
+            info = f"{catalog}.information_schema" if catalog else "information_schema"
+        else:
+            schema = schema or "public"
+            info = "information_schema"
+
+        where = f"table_name = '{name}'"
+        if schema:
+            where += f" AND table_schema = '{schema}'"
+        query = (
+            f"SELECT column_name, data_type FROM {info}.columns "
+            f"WHERE {where} ORDER BY ordinal_position"
+        )
+        columns, rows = self._run(runner, config, query, MAX_ROWS)
+        return [dict(zip(columns, r)) for r in rows]
 
     def build_table_query(
         self,
@@ -642,17 +839,11 @@ class DataConnectorService:
         owner_user_id: Optional[str] = None,
     ) -> str:
         """
-        Turn a table name — plus, optionally, a subset of its columns — into a
-        safe SELECT query. Both the table name and every column name are
-        validated against what this connector actually reports before being
-        quoted and used, same guarantee as before: nothing here can be used to
-        smuggle arbitrary SQL in via a name-shaped string.
-
-        :param columns: Column names to select. ``None`` or empty means "every
-            column" (``SELECT *``), same as today's behaviour.
+        Turn a table name (and optional column subset) into a safe SELECT.
+        Table and column names are validated against what the connector
+        reports before being quoted.
         """
-        row = self.get_connection(connector_id, owner_user_id=owner_user_id)
-        connector_type = row["type"]
+        connector_type, _ = self._resolve(connector_id, owner_user_id)
 
         known_tables = set(self.list_tables(connector_id, owner_user_id=owner_user_id))
         if table_name not in known_tables:
@@ -682,22 +873,15 @@ class DataConnectorService:
         column_sql = ", ".join(quoter(c) for c in columns)
         return f"SELECT {column_sql} FROM {quoter(table_name)}"
 
-
     def _known_columns(
-        self, 
-        connector_id: str, 
+        self,
+        connector_id: str,
         table_name: str,
         owner_user_id: Optional[str] = None,
     ) -> List[str]:
-        """
-        Cheap way to learn a table's column names for validating a column
-        subset: an unrestricted, zero-row-cost preview. Reuses the existing
-        preview machinery rather than adding a per-dialect information_schema
-        query.
-        """
         full_query = self.build_table_query(
             connector_id, table_name, owner_user_id=owner_user_id
-        )  # columns=None -> SELECT *
+        )
         df = self.preview_dataframe(
             connector_id, full_query, limit=1, owner_user_id=owner_user_id
         )
@@ -711,10 +895,6 @@ class DataConnectorService:
         columns: Optional[List[str]] = None,
         owner_user_id: Optional[str] = None,
     ) -> pd.DataFrame:
-        """
-        Preview the first *limit* rows of a specific table, restricted to
-        *columns* if given.
-        """
         query = self.build_table_query(
             connector_id, table_name, columns, owner_user_id=owner_user_id
         )
@@ -729,11 +909,7 @@ class DataConnectorService:
         limit: int = 50,
         owner_user_id: Optional[str] = None,
     ) -> pd.DataFrame:
-        """
-        Internal helper: run *query* capped to *limit* rows via an outer
-        LIMIT wrapper. Only called with queries this service built itself
-        (:meth:`build_table_query`) — never with caller-supplied SQL.
-        """
+        """Run *query* capped to *limit* rows. Service-built queries only."""
         wrapped = f"SELECT * FROM ({query}) AS _squirrel_preview LIMIT {int(limit)}"
         return self.fetch_dataframe(connector_id, wrapped, owner_user_id=owner_user_id)
 
@@ -744,10 +920,8 @@ class DataConnectorService:
         self, connector_id: str, owner_user_id: Optional[str] = None
     ) -> Dict[str, Any]:
         """
-        Run a live connectivity check for a connection and persist the
-        resulting status. Never raises for a failed *test* — a connection
-        that can't be reached is a normal outcome (status='error'), not a
-        service failure. Only genuinely unexpected errors bubble up.
+        Live connectivity check; persists status. A failed *test* is a normal
+        outcome (status='error'), not an exception.
         """
         row = self.get_connection(connector_id, owner_user_id=owner_user_id)
         connector_type = row["type"]
@@ -779,7 +953,52 @@ class DataConnectorService:
         return self.get_connection(connector_id, owner_user_id=owner_user_id)
 
     # ------------------------------------------------------------------
-    # Data retrieval — extension point for WorkspaceService.fetch_data
+    # Data retrieval
+
+    @staticmethod
+    def _run(
+        runner: Callable[[Dict[str, str], str, int], Tuple[List[str], List[Sequence[Any]]]],
+        config: Dict[str, str],
+        query: str,
+        limit: int,
+    ) -> Tuple[List[str], List[Sequence[Any]]]:
+        """
+        Execute via a driver, turning driver-level failures (bad table, bad
+        SQL, network) into ``RuntimeError`` so the API answers 400 with the
+        driver's message instead of an unhandled 500.
+        """
+        try:
+            return runner(config, query, limit)
+        except (ValueError, NotImplementedError):
+            raise
+        except Exception as exc:
+            logger.info("Query failed: {}", exc)
+            raise RuntimeError(f"Query failed: {exc}") from exc
+
+    def fetch_query(
+        self,
+        connector_id: str,
+        query: str,
+        limit: int = 100,
+        owner_user_id: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """
+        Bounded, read-only query against any queryable connection
+        (Postgres, Lakebase, Databricks). Returns JSON-safe rows.
+        """
+        connector_type, config = self._resolve(connector_id, owner_user_id)
+        runner = self._QUERY_DISPATCH.get(connector_type)
+        if runner is None:
+            raise NotImplementedError(
+                f"Querying connector type '{connector_type}' is not supported."
+            )
+
+        safe_query = validate_read_query(query)
+        limit = _clamp_limit(limit)
+        bounded = f"SELECT * FROM ({safe_query}) AS source_data LIMIT {limit}"
+        columns, rows = self._run(runner, config, bounded, limit)
+        records = [{c: _jsonable(v) for c, v in zip(columns, row)} for row in rows]
+        return {"columns": columns, "rows": records, "row_count": len(records)}
 
     def fetch_dataframe(
         self,
@@ -788,39 +1007,24 @@ class DataConnectorService:
         owner_user_id: Optional[str] = None,
     ) -> pd.DataFrame:
         """
-        Resolve a connection into an in-memory DataFrame.
-
-        This is the method ``WorkspaceService.fetch_data`` should call once
-        a workspace build needs a connector source's live data. Only
-        Postgres/MySQL are wired up (via the given ``query``); other types
-        raise ``NotImplementedError`` with a clear message, same as the
-        rest of this service's extension points.
-
-        Postgres reads go through a short-lived SQLAlchemy engine on the
-        ``postgresql+psycopg://`` dialect (psycopg v3) rather than a raw
-        DBAPI connection — this matches how :meth:`PostgresService.load`
-        already hands DataFrames to/from Postgres elsewhere in this
-        codebase, and keeps ``pandas.read_sql_query`` on its
-        fully-supported path instead of the raw-connection one pandas is
-        deprecating.
-
-        :param query: SQL query to run — required for both Postgres and
-            MySQL since there's no single default table to select from.
+        Resolve a connection into an in-memory DataFrame (extension point for
+        ``WorkspaceService.fetch_data``). ``query`` is required — there is no
+        default table. Databricks/Lakebase reads are capped at ``MAX_ROWS``.
         """
-        row = self.get_connection(connector_id, owner_user_id=owner_user_id)
-        connector_type = row["type"]
-        config = self._decrypt_config(row.get("config") or {})
+        connector_type, config = self._resolve(connector_id, owner_user_id)
 
-        if connector_type == ConnectorType.POSTGRES:
+        if connector_type in (_DATABRICKS, _LAKEBASE) or connector_type == _POSTGRES:
+            if not query:
+                raise NotImplementedError(
+                    f"Reading a {connector_type} connector requires a 'query' — "
+                    "there's no default table to select from."
+                )
+
+        if connector_type == _POSTGRES:
             if not _HAS_PSYCOPG:
                 raise NotImplementedError(
                     "psycopg is not installed; cannot read from Postgres connectors. "
                     "Install `psycopg[binary]>=3.2.0,<4.0.0`."
-                )
-            if not query:
-                raise NotImplementedError(
-                    "Reading a Postgres connector requires a 'query' — there's no "
-                    "default table to select from."
                 )
             from sqlalchemy import create_engine
             from sqlalchemy.engine import URL
@@ -839,7 +1043,13 @@ class DataConnectorService:
             finally:
                 engine.dispose()
 
-        if connector_type == ConnectorType.MYSQL:
+        if connector_type in (_DATABRICKS, _LAKEBASE):
+            columns, rows = self._run(
+                self._QUERY_DISPATCH[connector_type], config, query, MAX_ROWS
+            )
+            return pd.DataFrame.from_records([tuple(r) for r in rows], columns=columns)
+
+        if connector_type == _MYSQL:
             if not _HAS_PYMYSQL:
                 raise NotImplementedError("pymysql is not installed; cannot read from MySQL connectors.")
             if not query:
@@ -870,10 +1080,7 @@ class DataConnectorService:
     # Secret handling helpers
 
     @staticmethod
-    def _encrypt_config(
-        connector_type: str,
-        config: Dict[str, str]
-    ) -> Dict[str, str]:
+    def _encrypt_config(connector_type: str, config: Dict[str, str]) -> Dict[str, str]:
         spec = get_connector_type_spec(connector_type)
         secret_keys = set(spec.secret_keys())
         return {
@@ -895,15 +1102,8 @@ class DataConnectorService:
     # Public-facing serialization
 
     @staticmethod
-    def to_public_dict(
-        row: Dict[str, Any]
-    ) -> Dict[str, Any]:
-        """
-        Convert a raw DB row into a dict safe to hand to the API layer:
-        every secret field is redacted to ``""`` regardless of what's
-        stored, and non-secret fields are passed through as-is (they were
-        never encrypted).
-        """
+    def to_public_dict(row: Dict[str, Any]) -> Dict[str, Any]:
+        """Row safe for the API layer: every secret field redacted to ``""``."""
         connector_type = row.get("type")
         try:
             spec = get_connector_type_spec(connector_type) if connector_type else None
@@ -923,31 +1123,21 @@ class DataConnectorService:
         self, connector_id: str, owner_user_id: Optional[str] = None
     ) -> PostgresService:
         """
-        Resolve a Postgres-backed connection into a connected, query-capable
-        :class:`PostgresService` pointed at the connector's own database.
-
-        Used by callers (e.g. NotebookService) that need to run multiple
-        queries against a connector-backed data source, rather than a single
-        one-shot DataFrame read like :meth:`fetch_dataframe`.
-
-        :raises ConnectorNotFoundError: if ``connector_id`` doesn't exist.
-        :raises NotImplementedError: if this connector isn't Postgres-backed —
-            only Postgres connectors can be resolved into a PostgresService
-            today; other types (MySQL, Snowflake, BigQuery, Google Sheets)
-            would need their own query-capable service class first.
+        A connected :class:`PostgresService` for a Postgres-compatible
+        connection (Postgres, or Lakebase over TLS).
         """
-        row = self.get_connection(connector_id, owner_user_id=owner_user_id)
-        connector_type = row["type"]
+        connector_type, config = self._resolve(connector_id, owner_user_id)
 
-        if connector_type != ConnectorType.POSTGRES:
+        if connector_type not in (_POSTGRES, _LAKEBASE):
             raise NotImplementedError(
-                f"get_postgres_service() only supports Postgres connectors; "
+                f"get_postgres_service() only supports Postgres-compatible connectors; "
                 f"connector '{connector_id}' is type '{connector_type}'."
             )
 
-        config = self._decrypt_config(row.get("config") or {})
         connection_string = (
             f"postgresql://{config['username']}:{config.get('password', '')}"
             f"@{config['host']}:{int(config.get('port') or 5432)}/{config['database']}"
         )
+        if connector_type == _LAKEBASE:
+            connection_string += "?sslmode=require"
         return PostgresService(connection_string=connection_string)
