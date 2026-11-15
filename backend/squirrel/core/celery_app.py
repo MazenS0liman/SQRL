@@ -21,9 +21,17 @@ Redis is used as both broker and result backend by default; set
 
 # Third-party
 from celery import Celery
+from kombu import Exchange, Queue
 
 # Settings
 from squirrel.core.config import settings
+
+#: str: Queue every durable job is published to and the worker consumes first.
+DEFAULT_QUEUE = "default"
+
+#: str: Separate queue for the notification outbox drain so a backlog of jobs
+#: cannot starve email delivery.
+NOTIFICATIONS_QUEUE = "notifications"
 
 
 celery_app = Celery(
@@ -50,6 +58,24 @@ celery_app.conf.update(
         "squirrel.tasks.notifications",
         "squirrel.tasks.pipelines",
     ),
+    # Declare the queues explicitly. Without ``task_default_queue`` Celery
+    # publishes to its implicit ``celery`` queue, which the worker (started
+    # with ``-Q default,notifications``) never consumes — every job would sit
+    # in Redis forever.
+    task_default_queue=DEFAULT_QUEUE,
+    task_queues=(
+        Queue(DEFAULT_QUEUE, Exchange(DEFAULT_QUEUE, type="direct"), routing_key=DEFAULT_QUEUE),
+        Queue(
+            NOTIFICATIONS_QUEUE,
+            Exchange(NOTIFICATIONS_QUEUE, type="direct"),
+            routing_key=NOTIFICATIONS_QUEUE,
+        ),
+    ),
+    task_routes={
+        "squirrel.tasks.notifications.send_pending_notification_emails": {
+            "queue": NOTIFICATIONS_QUEUE,
+        },
+    },
 )
 
 # Periodic tasks. Feature-specific schedules (ETL, retraining, streaming) will
