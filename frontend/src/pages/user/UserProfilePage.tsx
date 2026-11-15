@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { Navigate, useNavigate } from 'react-router-dom';
+import { Navigate } from 'react-router-dom';
 import {
   CalendarDays,
   Mail,
@@ -44,8 +44,7 @@ const PROVIDERS = [
 ];
 
 export default function UserProfilePage(): JSX.Element {
-  const navigate = useNavigate();
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
   const { theme, setTheme } = useTheme();
 
   if (!user) {

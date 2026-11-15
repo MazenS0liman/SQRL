@@ -8,7 +8,7 @@ Overview
 
 This module provides prompt generation capabilities for the orchestrator
 agent's routing task: classifying an incoming chat request into exactly one
-of three execution routes:
+of four execution routes:
 
 ``chat``
     General conversation — no specialised data pipeline applies.
@@ -20,6 +20,10 @@ of three execution routes:
 ``build``
     Full ML pipeline — the user wants to predict, classify, or forecast a
     specific target variable, i.e. they want a trained model.
+
+``etl``
+    Data movement — the user wants to clean, transform, or copy tabular data
+    into a destination table or file.
 
 Prompts
 -------
@@ -59,11 +63,11 @@ class OrchestratorPromptType(Enum):
     **Enum Values:**
 
         - **CLASSIFY_ROUTE:** Classify a chat request as ``chat``, ``explore``,
-          or ``build``.
+          ``build``, or ``etl``.
 
     """
     CLASSIFY_ROUTE = "classify_route"
-    """Classify a chat request as 'chat', 'explore', or 'build'."""
+    """Classify a chat request as 'chat', 'explore', 'build', or 'etl'."""
 
 
 # ——————————————————————————————————————————————————————————————
@@ -106,8 +110,8 @@ class OrchestratorPromptGenerator(IPromptGenerator):
         **Description:**
 
             Creates the system prompt that defines the classifier's role, the
-            three available routes (``chat`` / ``explore`` / ``build``), and
-            the rules for extracting a target column when the route is
+            four available routes (``chat`` / ``explore`` / ``build`` / ``etl``),
+            and the rules for extracting a target column when the route is
             ``build``.
 
         :param prompt_type: The type of system prompt to generate. Currently
@@ -124,11 +128,11 @@ class OrchestratorPromptGenerator(IPromptGenerator):
             "You are a routing classifier for a tabular-data analysis assistant. "
             "Given a user's request (plus any attached files and structured "
             "metadata), decide whether the request should be handled by exactly "
-            "one of three pipelines:\n\n"
+            "one of four pipelines:\n\n"
             "1. \"chat\" — the request is general conversation, a greeting, a "
             "clarifying question, or anything that does not require a "
-            "specialised data-analysis or modelling pipeline. Use this as the "
-            "default when neither \"explore\" nor \"build\" clearly applies.\n\n"
+            "specialised data-analysis, modelling, or data-movement pipeline. "
+            "Use this as the default when no other route clearly applies.\n\n"
             "2. \"explore\" — the user wants to understand, analyse, query, or "
             "visualise their data: find patterns, trends, correlations, "
             "anomalies, segments, or ask open-ended analytical questions. No "
@@ -138,14 +142,20 @@ class OrchestratorPromptGenerator(IPromptGenerator):
             "transactions as fraud or not\", \"build a model to forecast sales\". "
             "This implies training a machine-learning model against a target "
             "column.\n\n"
+            "4. \"etl\" — the user wants to move, clean, filter, join, "
+            "aggregate, deduplicate, or copy tabular data into a destination "
+            "table or file, e.g. \"join orders and customers and write the "
+            "result to etl_customer_orders\", \"clean this CSV and save it as "
+            "etl_cleaned\". This is data preparation/movement, not analysis and "
+            "not model training.\n\n"
             "Rules:\n"
-            "- Choose exactly one route: \"chat\", \"explore\", or \"build\".\n"
+            "- Choose exactly one route: \"chat\", \"explore\", \"build\", or \"etl\".\n"
             "- If the route is \"build\", extract the target column name when it "
             "is explicitly mentioned or clearly inferable from the request "
             "(e.g. \"predict whether a customer churns\" implies a target column "
             "like 'churn'). If no target column can be confidently determined, "
             "set target_column to null — do not guess wildly.\n"
-            "- If the route is \"chat\" or \"explore\", target_column must be null.\n"
+            "- If the route is not \"build\", target_column must be null.\n"
             "- confidence is a float between 0 and 1 reflecting how certain you "
             "are in the chosen route.\n"
             "- reasoning is a single concise sentence explaining the decision.\n\n"
@@ -247,9 +257,9 @@ class OrchestratorPromptGenerator(IPromptGenerator):
         {json.dumps(metadata, default=str) if metadata else "none"}
 
         # TASK:
-        Classify this request as "chat", "explore", or "build" following the
-        rules in the system prompt, and return the JSON object with fields:
-        route, target_column, confidence, reasoning.
+        Classify this request as "chat", "explore", "build", or "etl"
+        following the rules in the system prompt, and return the JSON object
+        with fields: route, target_column, confidence, reasoning.
         """
 
         return prompt

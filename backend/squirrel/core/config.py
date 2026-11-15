@@ -161,6 +161,51 @@ class Settings(BaseSettings):
     
     AIRFLOW_DAGS_DIR: str = os.getenv("AIRFLOW_DAGS_DIR", "airflow/dags")
 
+    # Background jobs (Celery + Redis). All four Phase 0 features (ETL,
+    # scheduled retraining, streaming, notifications) run through this queue.
+    #: str: Redis connection used as both broker and result backend by default.
+    REDIS_URL: str = "redis://localhost:6379/0"
+    #: str: Explicit Celery broker override. Falls back to REDIS_URL.
+    CELERY_BROKER_URL: str = ""
+    #: str: Explicit Celery result-backend override. Falls back to REDIS_URL.
+    CELERY_RESULT_BACKEND: str = ""
+    #: bool: Run tasks inline (useful for tests; never enable in production).
+    CELERY_TASK_ALWAYS_EAGER: bool = False
+
+    # ETL pipelines (Phase 1)
+    #: bool: Master switch for the agent-built ETL feature.
+    ETL_ENABLED: bool = True
+    #: str: Prefix every Postgres sink must use when no explicit allow-list is set.
+    ETL_SINK_TABLE_PREFIX: str = "etl_"
+    #: str: Comma-separated explicit Postgres destination allow-list. When set,
+    #: only these table names may be written to (the prefix rule is bypassed).
+    ETL_ALLOWED_SINK_TABLES: str = ""
+    #: str: Comma-separated prefixes for app-DB tables an ETL source may read.
+    ETL_SOURCE_TABLE_PREFIXES: str = "etl_"
+    #: str: Comma-separated explicit app-DB source table allow-list.
+    ETL_ALLOWED_SOURCE_TABLES: str = ""
+    #: str: MinIO object-key prefix every ETL export must use.
+    ETL_MINIO_PREFIX: str = "etl/"
+    #: int: Maximum rows copied from one source into a staging table.
+    ETL_MAX_SOURCE_ROWS: int = 500_000
+    #: int: Maximum number of steps allowed in one pipeline definition.
+    ETL_MAX_STEPS: int = 100
+
+    # Email notifications
+    #: bool: Master switch for outbound notification email.
+    NOTIFICATIONS_ENABLED: bool = False
+    #: str: Public frontend URL used to build links in notification emails.
+    APP_BASE_URL: str = "http://localhost:5173"
+    SMTP_HOST: str = ""
+    SMTP_PORT: int = 587
+    SMTP_USERNAME: str = ""
+    SMTP_PASSWORD: str = ""
+    SMTP_FROM: str = "notifications@squirrel.local"
+    #: bool: STARTTLS (usually port 587).
+    SMTP_USE_TLS: bool = True
+    #: bool: Implicit TLS (usually port 465). Takes precedence over STARTTLS.
+    SMTP_USE_SSL: bool = False
+
     @property
     def database_url(self) -> str:
         """Resolve the effective database URL (DATABASE_URL wins)."""
@@ -170,6 +215,36 @@ class Settings(BaseSettings):
     def cors_origins(self) -> List[str]:
         """Return CORS origins as a list, trimming blanks."""
         return [origin.strip() for origin in self.CORS_ORIGINS.split(",") if origin.strip()]
+
+    @property
+    def celery_broker_url(self) -> str:
+        """Resolve the Celery broker URL (explicit override wins)."""
+        return self.CELERY_BROKER_URL or self.REDIS_URL
+
+    @property
+    def celery_result_backend(self) -> str:
+        """Resolve the Celery result backend URL (explicit override wins)."""
+        return self.CELERY_RESULT_BACKEND or self.REDIS_URL
+
+    @property
+    def etl_allowed_sink_tables(self) -> List[str]:
+        """Explicit Postgres sink allow-list, if configured."""
+        return [name.strip() for name in self.ETL_ALLOWED_SINK_TABLES.split(",") if name.strip()]
+
+    @property
+    def etl_allowed_source_tables(self) -> List[str]:
+        """Explicit app-DB source allow-list, if configured."""
+        return [name.strip() for name in self.ETL_ALLOWED_SOURCE_TABLES.split(",") if name.strip()]
+
+    @property
+    def etl_source_table_prefixes(self) -> List[str]:
+        """Allowed app-DB source table prefixes."""
+        prefixes = [
+            prefix.strip()
+            for prefix in self.ETL_SOURCE_TABLE_PREFIXES.split(",")
+            if prefix.strip()
+        ]
+        return prefixes or ["etl_"]
 
 # ——————————————————————————————————————————————————————————————
 # Colors class

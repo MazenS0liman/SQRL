@@ -15,7 +15,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
   const hideTopNav2 = /^\/workspace\/[^/]+$/.test(location.pathname);
 
   // Determine active tab based on current route
-  const getActiveTab = (): 'home' | 'workspace' | 'notebooks' | 'files' | 'models' | 'data connectors' => {
+  const getActiveTab = (): 'home' | 'workspace' | 'notebooks' | 'files' | 'models' | 'data connectors' | 'pipelines' => {
     const path = location.pathname;
 
     if (path.startsWith('/workspace')) return 'workspace';
@@ -23,11 +23,12 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
     if (path.startsWith('/files')) return 'files';
     if (path.startsWith('/models')) return 'models';
     if (path.startsWith('/data-connectors')) return 'data connectors';
+    if (path.startsWith('/pipelines')) return 'pipelines';
 
     return 'home';
   };
 
-  const handleTabChange = (tab: 'home' | 'workspace' | 'notebooks' | 'files' | 'models' | 'data connectors') => {
+  const handleTabChange = (tab: 'home' | 'workspace' | 'notebooks' | 'files' | 'models' | 'data connectors' | 'pipelines') => {
     if (tab === 'home') {
       navigate('/');
     } else if (tab === 'workspace') {
@@ -40,6 +41,8 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
       navigate('/models');
     } else if (tab === 'data connectors') {
       navigate('/data-connectors');
+    } else if (tab === 'pipelines') {
+      navigate('/pipelines');
     }
   };
 

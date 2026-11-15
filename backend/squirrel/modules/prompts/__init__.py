@@ -19,14 +19,17 @@ from .abstract.IPromptGenerator import IPromptGenerator
 from .exploratory.ExploratoryPromptGenerator import ExploratoryPromptGenerator, ExplorePromptType
 from .inspect.InspectPromptGenerator import InspectPromptGenerator, InspectPromptType
 from .orchestrator.OrchestratorPromptGenerator import OrchestratorPromptGenerator, OrchestratorPromptType
+from .etl.ETLPlannerPromptGenerator import ETLPlannerPromptGenerator, ETLPlannerPromptType
 
 __all__ = [
     IPromptGenerator.__name__,
     ExploratoryPromptGenerator.__name__,
     InspectPromptGenerator.__name__,
     OrchestratorPromptGenerator.__name__,
+    ETLPlannerPromptGenerator.__name__,
     ExplorePromptType.__name__,
     InspectPromptType.__name__,
-    OrchestratorPromptType.__name__
+    OrchestratorPromptType.__name__,
+    ETLPlannerPromptType.__name__,
 ]
 

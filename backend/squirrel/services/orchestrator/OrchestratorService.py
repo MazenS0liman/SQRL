@@ -6,11 +6,13 @@ Orchestrator Service
 Coordinates chat requests end-to-end:
 
 1. :class:`OrchestratorAgent` makes a single LLM call to classify the
-   request as ``chat``, ``explore``, or ``build``.
+   request as ``chat``, ``explore``, ``build``, or ``etl``.
 2. The matching private method runs the full pipeline for that route.
 3. Every agent run (``explore`` / ``build``) is persisted to the
    ``workspaces`` table via :class:`WorkspaceService`. ``chat`` is a plain
    LLM reply with no specialised pipeline and is not persisted there.
+   ``etl`` returns a validated pipeline proposal for human approval and does
+   not execute it.
 4. A :class:`AgentResponse` is assembled and returned.
 
 Routes
@@ -35,6 +37,13 @@ Routes
     classifier (from ``body.targetColumn`` or inferred from the query)
     before the pipeline runs.  Persists three workspace rows
     (``inspection``, ``preprocessing``, ``model_building``).
+
+``etl``
+    Plan a constrained batch pipeline (source → transforms → sink) from the
+    user's request. The definition is validated by
+    :class:`~squirrel.services.pipelines.compiler.PipelineCompiler` and
+    returned as a proposal; it is not executed until a human creates and
+    approves it.
 """
 
 from __future__ import annotations
@@ -62,6 +71,7 @@ from squirrel.core.utils import download_files, cleanup
 
 # Agents
 from squirrel.modules.agents import (
+    ETLPlannerAgent,
     OrchestratorAgent,
     TabularDataExploratoryAgent,
     TabularDataInspectorAgent,
@@ -79,7 +89,9 @@ from squirrel.services.storage.blob.MinIOService import MinIOService
 
 # Schemas
 from squirrel.schemas.api import AgentRequest, AgentResponse, LLMTokens
+from squirrel.schemas.etl import PipelinePlanRead
 from squirrel.schemas.file import FileProcessingIssue
+from squirrel.services.pipelines.compiler import PipelineValidationError
 
 # Errors
 from squirrel.schemas.error import (
@@ -155,6 +167,10 @@ class OrchestratorService:
                 )
             elif route_key == "explore":
                 output = await self._explore_data(
+                    request, websocket, owner_user_id=owner_user_id
+                )
+            elif route_key == "etl":
+                output = await self._plan_etl(
                     request, websocket, owner_user_id=owner_user_id
                 )
             else:  # "chat" — also the default fallback for an unrecognised route
@@ -275,6 +291,118 @@ class OrchestratorService:
             )
             return {
                 "reply": "I'm sorry, I couldn't process your request."
+            }
+
+    # ──────────────────────────────────────────────────────────────────────────
+    # Route: etl — plan a constrained pipeline for human approval
+    # ──────────────────────────────────────────────────────────────────────────
+
+    async def _plan_etl(
+        self,
+        request:   AgentRequest,
+        websocket: Optional[WebSocket] = None,
+        owner_user_id: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """
+        Turn a natural-language request into a validated ETL pipeline proposal.
+
+        This route deliberately does **not** execute anything. The planner's
+        output is parsed into the strict DSL and structurally validated, then
+        returned to the caller as a plan. A human must create and approve the
+        pipeline before a production run is allowed.
+
+        :param request: Must carry a ``query`` and, for connector sources, the
+            connector/table identifiers in ``body``.
+        :return: Output dict consumed by :meth:`handle_request`.
+        """
+        body = request.body or {}
+        conversation_id = request.conversationId or ""
+
+        if not settings.ETL_ENABLED:
+            return {
+                "reply": (
+                    "The ETL feature is disabled on this deployment. Enable "
+                    "ETL_ENABLED to let me plan pipelines."
+                )
+            }
+
+        connector_id = body.get("connectorId") or body.get("connector_id")
+        table = body.get("table") or body.get("table_name")
+        sink_table = body.get("sinkTable") or body.get("sink_table")
+        notebook_id = body.get("notebookId") or body.get("notebook_id")
+        context = body.get("context") or {}
+        if not isinstance(context, dict):
+            context = {}
+
+        try:
+            agent = ETLPlannerAgent()
+            plan = agent.plan(
+                request.query or "",
+                connector_id=connector_id,
+                table=table,
+                file_urls=request.fileUrls or [],
+                sink_table=sink_table,
+                notebook_id=notebook_id,
+                context=context,
+            )
+
+            plan_read = PipelinePlanRead(
+                name=plan["name"],
+                description=plan["description"],
+                definition=plan["definition"],
+                validation=plan["validation"],
+            )
+            sink = next(
+                step.sink for step in plan["definition"].steps
+                if step.type == "sink"
+            )
+            destination = sink.table if sink.kind == "postgres" else sink.object_key
+            reply = (
+                f"I've drafted an ETL pipeline named '{plan_read.name}' with "
+                f"{len(plan['definition'].steps)} step(s) that writes to "
+                f"`{destination}`. Review the plan, run a dry run, then approve "
+                "it before the first production run."
+            )
+
+            prompt_tokens     = _tokens(agent, "last_input_tokens")
+            completion_tokens = _tokens(agent, "last_output_tokens")
+
+            return {
+                "reply": reply,
+                "body": {"plan": plan_read.model_dump(mode="json")},
+                "promptTokens":     prompt_tokens,
+                "completionTokens": completion_tokens,
+                "totalTokens":      prompt_tokens + completion_tokens,
+                "metadata": {
+                    "agent": "ETLPlannerAgent",
+                    "task": "etl",
+                    "validation": plan["validation"],
+                    "owner_user_id": owner_user_id,
+                },
+            }
+
+        except PipelineValidationError as exc:
+            logger.warning(
+                "ETL planning rejected for conversation={}: {}",
+                conversation_id,
+                exc,
+            )
+            return {
+                "reply": (
+                    "I couldn't turn that request into a safe ETL pipeline: "
+                    f"{exc}. Try naming the source columns and destination "
+                    "explicitly, or create the pipeline from the Pipelines page."
+                ),
+                "body": {"error": str(exc)},
+            }
+        except Exception as exc:
+            logger.exception(
+                "Error in _plan_etl for conversation={}: {}",
+                conversation_id,
+                exc,
+            )
+            return {
+                "reply": f"An error occurred while planning the ETL pipeline: {exc}"
             }
 
     # ──────────────────────────────────────────────────────────────────────────

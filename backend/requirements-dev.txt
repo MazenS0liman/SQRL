@@ -1,0 +1,4 @@
+# Development/test dependencies. Installs the runtime requirements first so the
+# test environment matches what the application image runs.
+-r requirements.txt
+pytest==8.4.2

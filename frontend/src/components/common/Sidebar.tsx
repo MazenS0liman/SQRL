@@ -6,6 +6,7 @@ import {
   Library,
   Cpu,
   Database,
+  Workflow,
   NotebookText,
   Files,
   CircleUserRound,
@@ -14,8 +15,8 @@ import {
 import { useAuth } from '@/contexts/AuthContext';
 
 interface SidebarProps {
-  activeTab: 'home' | 'workspace' | 'notebooks' | 'files' | 'models' | 'data connectors';
-  onTabChange: (tab: 'home' | 'workspace' | 'notebooks' | 'files' | 'models' | 'data connectors') => void;
+  activeTab: 'home' | 'workspace' | 'notebooks' | 'files' | 'models' | 'data connectors' | 'pipelines';
+  onTabChange: (tab: 'home' | 'workspace' | 'notebooks' | 'files' | 'models' | 'data connectors' | 'pipelines') => void;
 }
 
 // Nav item height (h-10) + the gap `space-y-1` inserts between siblings —
@@ -40,6 +41,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, onTabChange }) => {
     { id: 'files' as const, icon: Files, label: 'Files' },
     { id: 'models' as const, icon: Cpu, label: 'Models' },
     { id: 'data connectors' as const, icon: Database, label: 'Data Connectors' },
+    { id: 'pipelines' as const, icon: Workflow, label: 'Pipelines' },
   ];
 
   const activeIndex = navItems.findIndex((item) => item.id === activeTab);

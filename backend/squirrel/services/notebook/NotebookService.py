@@ -497,6 +497,126 @@ class NotebookService:
         )
         return self.get_notebook(notebook_id, owner_user_id=owner_user_id)
 
+    def add_managed_table_data_source(
+        self,
+        notebook_id: str,
+        table_name: str,
+        label: Optional[str] = None,
+        owner_user_id: Optional[str] = None,
+    ) -> Notebook:
+        """
+        Bind a notebook to a table that already lives in the app database.
+
+        This is how ETL sinks become notebook data sources: the table is owned
+        by the pipeline, not by an upload or a connector, so it is represented
+        as a local (``kind='upload'``) source with no file URL. Re-binding the
+        same table is idempotent.
+        """
+        self.get_notebook(notebook_id, owner_user_id=owner_user_id)
+
+        existing = self.postgres.query(
+            "SELECT id FROM sqrl_notebook_data_sources "
+            "WHERE notebook_id = %(notebook_id)s AND table_name = %(table_name)s LIMIT 1",
+            params={"notebook_id": notebook_id, "table_name": table_name},
+        )
+        if (existing or {}).get("rows"):
+            return self.get_notebook(notebook_id, owner_user_id=owner_user_id)
+
+        columns = self.postgres.query(
+            """
+            SELECT column_name, data_type, is_nullable
+            FROM information_schema.columns
+            WHERE table_schema = current_schema() AND table_name = %(table_name)s
+            ORDER BY ordinal_position
+            """,
+            params={"table_name": table_name},
+        )
+        column_rows = (columns or {}).get("rows", [])
+        if not column_rows:
+            raise ValueError(f"Table '{table_name}' does not exist or has no columns.")
+
+        raw_schema = {
+            "columns": [
+                (row["column_name"], row["data_type"], row.get("is_nullable", "YES"))
+                for row in column_rows
+            ]
+        }
+        row_count = self._table_row_count(self.postgres, table_name)
+
+        data_source = NotebookDataSource(
+            id=str(uuid.uuid4()),
+            kind="upload",
+            table_name=table_name,
+            row_count=row_count,
+            column_count=len(column_rows),
+            label=label or table_name,
+        )
+        return self._add_data_source(
+            notebook_id, data_source, raw_schema, owner_user_id=owner_user_id
+        )
+
+    def create_table_dashboard_cell(
+        self,
+        notebook_id: str,
+        table_name: str,
+        title: Optional[str] = None,
+        limit: int = 100,
+        owner_user_id: Optional[str] = None,
+    ) -> NotebookCell:
+        """
+        Create a deterministic dashboard cell that previews a managed table.
+
+        Unlike ``run_cell(type='dashboard')`` this does not call an LLM: the
+        chart is a table preview of the ETL sink, which keeps materialisation
+        reproducible and cheap.
+        """
+        self.get_notebook(notebook_id, owner_user_id=owner_user_id)
+
+        source_result = self.postgres.query(
+            "SELECT id FROM sqrl_notebook_data_sources "
+            "WHERE notebook_id = %(notebook_id)s AND table_name = %(table_name)s LIMIT 1",
+            params={"notebook_id": notebook_id, "table_name": table_name},
+        )
+        source_rows = (source_result or {}).get("rows", [])
+        source_ids = [source_rows[0]["id"]] if source_rows else []
+
+        result = self.postgres.query(
+            f'SELECT * FROM "{table_name}" LIMIT %(limit)s',
+            params={"limit": max(1, min(500, int(limit)))},
+        )
+        rows = (result or {}).get("rows", [])
+        row_count = self._table_row_count(self.postgres, table_name)
+
+        chart = NotebookChart(
+            id=f"etl_{uuid.uuid4().hex[:12]}",
+            title=title or table_name,
+            question=f"ETL output: {table_name}",
+            plot_type="table",
+            sql=f'SELECT * FROM "{table_name}"',
+            data=rows,
+            observation=(
+                f"Materialised ETL table with {row_count} row(s)."
+                if row_count is not None else "Materialised ETL table."
+            ),
+            total_row_count=row_count,
+        )
+        cell = NotebookCell(
+            id=str(uuid.uuid4()),
+            notebook_id=notebook_id,
+            type="dashboard",
+            query=f"ETL output: {table_name}",
+            data_source_ids=source_ids,
+            status="complete",
+            reply=f"Materialised `{table_name}`.",
+            charts=[chart],
+        )
+        self._persist_cell(cell)
+        self.postgres.query(
+            "UPDATE sqrl_notebooks SET updated_at = now() WHERE id = %(notebook_id)s",
+            params={"notebook_id": notebook_id},
+        )
+        return cell
+
     def add_csv_data_source(
         self,
         notebook_id: str,

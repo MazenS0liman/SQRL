@@ -18,6 +18,27 @@ export type {
     ChatSessionData
 } from './chat';
 
+export type {
+    PipelineStatus,
+    PipelineRunStatus,
+    SourceSpec,
+    TransformSpec,
+    SinkSpec,
+    PipelineStep,
+    PipelineDefinition,
+    CreatePipelineRequest,
+    UpdatePipelineRequest,
+    ApprovePipelineRequest,
+    RunPipelineRequest,
+    MaterializePipelineRequest,
+    PlanPipelineRequest,
+    PipelineRead,
+    PipelineRunRead,
+    JobEventRead,
+    PipelinePlanRead,
+    EtlChatBody,
+} from './etl';
+
 // File types
 export type {
     UploadedFile

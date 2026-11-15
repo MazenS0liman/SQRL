@@ -163,7 +163,7 @@ export function Chat({
                             value={input}
                             onChange={handleInputChange}
                             onKeyDown={handleKeyDown}
-                            placeholder="Ask me to analyze or edit your data — type @ to reference a specific source"
+                            placeholder="Ask me to analyze your data or plan an ETL pipeline — type @ to reference a source"
                             className="min-h-[44px] max-h-32 resize-none"
                             rows={1}
                         />
