@@ -1,9 +1,12 @@
 import { authHeaders, notifyAuthExpired } from "@/lib/auth";
 import type {
   ApprovePipelineRequest,
+  BuildDashboardRequest,
   CreatePipelineRequest,
   JobEventRead,
   MaterializePipelineRequest,
+  MLModelRead,
+  PipelineDashboardRead,
   PipelinePlanRead,
   PipelineRead,
   PipelineRunRead,
@@ -14,7 +17,9 @@ import type {
   RunPipelineRequest,
   SourceSpec,
   SourceTableRead,
+  UpdateDashboardLayoutRequest,
   UpdatePipelineRequest,
+  UpdateScheduleRequest,
 } from "@/types";
 
 const API_BASE = (import.meta.env.VITE_BACKEND_API_BASE_URL || "/api").replace(/\/$/, "");
@@ -72,5 +77,20 @@ export const etlApi = {
   sourceTables: () => request<SourceTableRead[]>("/sources/tables"),
   resolveSource: (source: SourceSpec) =>
     request<ResolveSourceRead>("/sources/resolve", { method: "POST", body: JSON.stringify({ source }) }),
-  materialize: (id: string, payload: MaterializePipelineRequest) => request<Record<string, unknown>>(`/${encodeURIComponent(id)}/materialize`, json(payload)),
+  materialize: (id: string, payload: MaterializePipelineRequest) => request<PipelineDashboardRead>(`/${encodeURIComponent(id)}/materialize`, json(payload)),
+  getDashboard: (id: string) => request<PipelineDashboardRead>(`/${encodeURIComponent(id)}/dashboard`),
+  buildDashboard: (id: string, payload: BuildDashboardRequest = {}) =>
+    request<PipelineDashboardRead>(`/${encodeURIComponent(id)}/dashboard`, json(payload)),
+  saveDashboardLayout: (id: string, payload: UpdateDashboardLayoutRequest) =>
+    request<PipelineDashboardRead>(`/${encodeURIComponent(id)}/dashboard/layout`, {
+      method: "PUT",
+      body: JSON.stringify(payload),
+    }),
+  updateSchedule: (id: string, payload: UpdateScheduleRequest) =>
+    request<PipelineRead>(`/${encodeURIComponent(id)}/schedule`, {
+      method: "PUT",
+      body: JSON.stringify(payload),
+    }),
+  models: (pipelineId?: string) =>
+    request<MLModelRead[]>(`/models${pipelineId ? `?pipeline_id=${encodeURIComponent(pipelineId)}` : ""}`),
 };

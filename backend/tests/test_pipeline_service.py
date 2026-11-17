@@ -550,6 +550,9 @@ def test_materialize_pipeline_uses_latest_successful_postgres_run() -> None:
         "notebook_id": "notebook-1",
         "table": "etl_out",
         "dashboard_cell_id": "cell-1",
+        "charts": [],
+        "layout": None,
+        "reply": None,
     }
     assert notebook.sources[0][1] == "etl_out"
     assert notebook.sources[0][2] == "orders — etl_out"

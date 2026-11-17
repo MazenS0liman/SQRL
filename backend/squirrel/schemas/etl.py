@@ -26,6 +26,8 @@ from squirrel.constants.etl import (
     CastType,
     FilterOp,
     JoinHow,
+    MLMode,
+    ScheduleMode,
     SinkKind,
     SinkMode,
     SourceKind,
@@ -211,24 +213,50 @@ class PipelineStep(_StrictModel):
 
 
 class MaterializeSpec(_StrictModel):
-    """Optionally expose a Postgres sink as a notebook dashboard."""
+    """
+    Optionally expose a Postgres sink as a dashboard.
 
-    notebook_id: str = Field(..., min_length=1, max_length=200)
+    ``notebook_id`` is optional: when omitted the service provisions one
+    notebook per pipeline automatically, so the user never has to pick one.
+    """
+
+    notebook_id: Optional[str] = Field(default=None, max_length=200)
     create_dashboard_cell: bool = True
 
 
 class MLSpec(_StrictModel):
-    """Train one model on the sink table after a successful production run."""
+    """
+    Use a model on the sink table after a successful production run.
 
+    ``mode`` decides whether the run trains a fresh model, refits an existing
+    one, or only scores the new rows with an existing model.
+    """
+
+    mode: Literal["train", "retrain", "inference"] = MLMode.TRAIN
     task: Literal["classification", "regression", "clustering"]
     target: Optional[str] = Field(default=None, max_length=63)
     features: List[str] = Field(default_factory=list, max_length=200)
     algorithm: Literal["auto", "random_forest", "gradient_boosting", "linear"] = "auto"
     test_size: float = Field(default=0.2, gt=0.05, lt=0.5)
     n_clusters: int = Field(default=3, ge=2, le=20)
+    #: Registered model to refit (retrain) or score with (inference).
+    model_id: Optional[str] = Field(default=None, max_length=200)
+
+    @field_validator("mode")
+    @classmethod
+    def _known_mode(cls, value: str) -> str:
+        if value not in MLMode.ALL:
+            raise ValueError(f"Unknown ML mode: {value!r}")
+        return value
 
     @model_validator(mode="after")
     def _target_matches_task(self) -> "MLSpec":
+        if self.mode in (MLMode.RETRAIN, MLMode.INFERENCE) and not self.model_id:
+            raise ValueError(f"ML mode '{self.mode}' requires a registered model_id.")
+        if self.mode == MLMode.INFERENCE:
+            # The stored model already knows its features/target; the incoming
+            # rows only need to be scorable.
+            return self
         if self.task == "clustering" and self.target:
             raise ValueError("Clustering does not take a target column.")
         if self.task != "clustering" and not self.target:
@@ -241,6 +269,28 @@ class OutputsSpec(_StrictModel):
 
     dashboard: bool = False
     ml: Optional[MLSpec] = None
+
+
+class ScheduleSpec(_StrictModel):
+    """How often the platform should run a pipeline automatically."""
+
+    mode: Literal["manual", "daily", "monthly", "yearly", "continuous"] = ScheduleMode.MANUAL
+    enabled: bool = False
+    #: UTC time of day for daily/monthly/yearly schedules.
+    time: str = Field(default="02:00", pattern=r"^([01]\d|2[0-3]):[0-5]\d$")
+    #: Day of month (1-31) for monthly/yearly schedules.
+    day: int = Field(default=1, ge=1, le=31)
+    #: Month (1-12) for yearly schedules.
+    month: int = Field(default=1, ge=1, le=12)
+    #: Seconds between micro-batches for continuous schedules.
+    interval_seconds: int = Field(default=300, ge=30, le=86_400)
+
+    @field_validator("mode")
+    @classmethod
+    def _known_mode(cls, value: str) -> str:
+        if value not in ScheduleMode.ALL:
+            raise ValueError(f"Unknown schedule mode: {value!r}")
+        return value
 
 
 class PipelineDefinition(_StrictModel):
@@ -277,7 +327,30 @@ class RunPipelineRequest(_StrictModel):
 
 
 class MaterializePipelineRequest(_StrictModel):
-    notebook_id: str = Field(..., min_length=1, max_length=200)
+    """Build (or rebuild) the pipeline dashboard."""
+
+    #: Optional override. When omitted the pipeline's own dashboard notebook
+    #: is created/reused automatically.
+    notebook_id: Optional[str] = Field(default=None, max_length=200)
+    regenerate: bool = False
+
+
+class BuildDashboardRequest(_StrictModel):
+    """Rebuild the dashboard from the latest successful run."""
+
+    regenerate: bool = False
+
+
+class UpdateDashboardLayoutRequest(_StrictModel):
+    """Persisted dashboard customisations (order, hidden tiles, notes, ...)."""
+
+    layout: Dict[str, Any]
+
+
+class UpdateScheduleRequest(_StrictModel):
+    """Replace a pipeline's automatic schedule."""
+
+    schedule: ScheduleSpec
 
 
 class PlanConversationTurn(_StrictModel):
@@ -360,6 +433,18 @@ class PipelineRead(BaseModel):
     definition: PipelineDefinition
     approved_at: Optional[datetime] = None
     approved_by: Optional[str] = None
+    #: Automatic run schedule.
+    schedule_mode: str = ScheduleMode.MANUAL
+    schedule_enabled: bool = False
+    schedule_time: Optional[str] = None
+    schedule_day: Optional[int] = None
+    schedule_month: Optional[int] = None
+    schedule_interval_seconds: Optional[int] = None
+    next_run_at: Optional[datetime] = None
+    last_scheduled_at: Optional[datetime] = None
+    #: Notebook/cell provisioned for this pipeline's dashboard output.
+    dashboard_notebook_id: Optional[str] = None
+    dashboard_cell_id: Optional[str] = None
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
 
@@ -402,3 +487,36 @@ class PipelineStagePlanRead(BaseModel):
     validation: Dict[str, Any] = Field(default_factory=dict)
     #: Short conversational summary shown next to the graph.
     reply: Optional[str] = None
+
+
+class PipelineDashboardRead(BaseModel):
+    """The rendered dashboard attached to a pipeline's latest run."""
+
+    pipeline_id: str
+    notebook_id: str
+    cell_id: Optional[str] = None
+    table: Optional[str] = None
+    #: Notebook charts, shaped for the shared dashboard renderer.
+    charts: List[Dict[str, Any]] = Field(default_factory=list)
+    layout: Optional[Dict[str, Any]] = None
+    reply: Optional[str] = None
+    run_id: Optional[str] = None
+    updated_at: Optional[datetime] = None
+
+
+class MLModelRead(BaseModel):
+    """One registered ETL model that can be refit or used for inference."""
+
+    id: str
+    pipeline_id: str
+    owner_user_id: Optional[str] = None
+    name: str
+    task: str
+    algorithm: Optional[str] = None
+    target: Optional[str] = None
+    features: List[str] = Field(default_factory=list)
+    metrics: Optional[Dict[str, Any]] = None
+    model_key: str
+    file_url: Optional[str] = None
+    run_id: Optional[str] = None
+    created_at: Optional[datetime] = None

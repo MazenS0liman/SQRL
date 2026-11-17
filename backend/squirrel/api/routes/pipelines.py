@@ -31,8 +31,11 @@ from squirrel.modules.agents.etl.ETLPlannerAgent import ETLPlannerAgent
 from squirrel.schemas.auth import AuthUserRead
 from squirrel.schemas.etl import (
     ApprovePipelineRequest,
+    BuildDashboardRequest,
     CreatePipelineRequest,
     MaterializePipelineRequest,
+    MLModelRead,
+    PipelineDashboardRead,
     PipelinePlanRead,
     PipelineRead,
     PipelineRunRead,
@@ -44,7 +47,9 @@ from squirrel.schemas.etl import (
     RunPipelineRequest,
     SourceSpec,
     SourceTableRead,
+    UpdateDashboardLayoutRequest,
     UpdatePipelineRequest,
+    UpdateScheduleRequest,
 )
 from squirrel.schemas.jobs import JobEventRead
 from squirrel.services.jobs.JobService import JobNotFoundError, JobService
@@ -167,6 +172,20 @@ async def plan_pipeline(
             table_names=table_names,
             extra=payload.context,
         )
+        if "ml" in (payload.output_targets or []):
+            try:
+                context["available_models"] = [
+                    {
+                        "id": row.get("id"),
+                        "name": row.get("name"),
+                        "pipeline_id": row.get("pipeline_id"),
+                        "task": row.get("task"),
+                        "target": row.get("target"),
+                    }
+                    for row in svc.list_models(current_user.id)
+                ][:50]
+            except Exception:  # noqa: BLE001 - planning must still work
+                context["available_models"] = []
         result = ETLPlannerAgent().plan(
             payload.query,
             connector_id=payload.connector_id,
@@ -195,9 +214,14 @@ async def plan_pipeline(
             extras.append("a dashboard")
         if definition.outputs and definition.outputs.ml:
             ml = definition.outputs.ml
+            mode_label = {
+                "train": "train",
+                "retrain": "retrain",
+                "inference": "score rows with",
+            }.get(ml.mode, "train")
             extras.append(
-                f"a {ml.task} model"
-                + (f" predicting `{ml.target}`" if ml.target else "")
+                f"a {ml.task} model to {mode_label}"
+                + (f" `{ml.target}`" if ml.target else "")
             )
         outputs_note = f" After the run it also produces {' and '.join(extras)}." if extras else ""
         reply = (
@@ -400,6 +424,21 @@ async def list_run_events(
 
 
 @router.get(
+    "/models",
+    summary="List registered ETL models (retrain / inference candidates)",
+    response_model=List[MLModelRead],
+)
+async def list_models(
+    pipeline_id: Optional[str] = Query(default=None),
+    current_user: AuthUserRead = Depends(get_current_user),
+) -> List[MLModelRead]:
+    rows = await run_in_threadpool(
+        _svc().list_models, current_user.id, pipeline_id=pipeline_id
+    )
+    return [PipelineService.to_model_read(row) for row in rows]
+
+
+@router.get(
     "/{pipeline_id}",
     summary="Get one pipeline",
     response_model=PipelineRead,
@@ -541,23 +580,133 @@ async def list_runs(
 
 @router.post(
     "/{pipeline_id}/materialize",
-    summary="Expose the latest Postgres sink as a notebook dashboard",
+    summary="Build (or rebuild) the pipeline dashboard",
+    response_model=PipelineDashboardRead,
 )
 async def materialize_pipeline(
     pipeline_id: str,
-    payload: MaterializePipelineRequest,
+    payload: Optional[MaterializePipelineRequest] = None,
     current_user: AuthUserRead = Depends(get_current_user),
-) -> Dict[str, Any]:
+) -> PipelineDashboardRead:
     _ensure_enabled()
+    payload = payload or MaterializePipelineRequest()
     try:
-        result = await run_in_threadpool(
+        await run_in_threadpool(
             _svc().materialize_pipeline,
             pipeline_id,
             payload.notebook_id,
+            current_user.id,
+            regenerate=payload.regenerate,
+        )
+        return await run_in_threadpool(
+            _svc().get_dashboard, pipeline_id, current_user.id
+        )
+    except PipelineNotFoundError:
+        raise _not_found("Pipeline", pipeline_id)
+    except PipelineValidationError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))
+
+
+# ——————————————————————————————————————————————————————————————
+# Dashboard
+
+
+@router.get(
+    "/{pipeline_id}/dashboard",
+    summary="Get the pipeline's latest dashboard",
+    response_model=PipelineDashboardRead,
+)
+async def get_pipeline_dashboard(
+    pipeline_id: str,
+    current_user: AuthUserRead = Depends(get_current_user),
+) -> PipelineDashboardRead:
+    try:
+        return await run_in_threadpool(
+            _svc().get_dashboard, pipeline_id, current_user.id
+        )
+    except PipelineNotFoundError:
+        raise _not_found("Pipeline", pipeline_id)
+    except PipelineValidationError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc))
+
+
+@router.post(
+    "/{pipeline_id}/dashboard",
+    summary="Build (or rebuild) the pipeline's dashboard",
+    response_model=PipelineDashboardRead,
+)
+async def build_pipeline_dashboard(
+    pipeline_id: str,
+    payload: Optional[BuildDashboardRequest] = None,
+    current_user: AuthUserRead = Depends(get_current_user),
+) -> PipelineDashboardRead:
+    _ensure_enabled()
+    regenerate = bool(payload.regenerate) if payload else False
+    try:
+        await run_in_threadpool(
+            _svc().materialize_pipeline,
+            pipeline_id,
+            None,
+            current_user.id,
+            regenerate=regenerate,
+        )
+        return await run_in_threadpool(
+            _svc().get_dashboard, pipeline_id, current_user.id
+        )
+    except PipelineNotFoundError:
+        raise _not_found("Pipeline", pipeline_id)
+    except PipelineValidationError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))
+
+
+@router.put(
+    "/{pipeline_id}/dashboard/layout",
+    summary="Save dashboard customisations",
+    response_model=PipelineDashboardRead,
+)
+async def save_pipeline_dashboard_layout(
+    pipeline_id: str,
+    payload: UpdateDashboardLayoutRequest,
+    current_user: AuthUserRead = Depends(get_current_user),
+) -> PipelineDashboardRead:
+    _ensure_enabled()
+    try:
+        return await run_in_threadpool(
+            _svc().save_dashboard_layout,
+            pipeline_id,
+            payload.layout,
             current_user.id,
         )
     except PipelineNotFoundError:
         raise _not_found("Pipeline", pipeline_id)
     except PipelineValidationError as exc:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))
-    return result
+
+
+# ——————————————————————————————————————————————————————————————
+# Scheduling
+
+
+@router.put(
+    "/{pipeline_id}/schedule",
+    summary="Set a pipeline's automatic schedule",
+    response_model=PipelineRead,
+)
+async def update_pipeline_schedule(
+    pipeline_id: str,
+    payload: UpdateScheduleRequest,
+    current_user: AuthUserRead = Depends(get_current_user),
+) -> PipelineRead:
+    _ensure_enabled()
+    try:
+        row = await run_in_threadpool(
+            _svc().update_schedule,
+            pipeline_id,
+            current_user.id,
+            payload.schedule,
+        )
+    except PipelineNotFoundError:
+        raise _not_found("Pipeline", pipeline_id)
+    except PipelineValidationError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))
+    return PipelineService.to_pipeline_read(row)

@@ -40,10 +40,37 @@ export interface PipelineStep {
   sink?: SinkSpec | null;
 }
 
+export interface MLSpec {
+  mode: "train" | "retrain" | "inference";
+  task: "classification" | "regression" | "clustering";
+  target?: string | null;
+  features?: string[];
+  algorithm?: "auto" | "random_forest" | "gradient_boosting" | "linear";
+  test_size?: number;
+  n_clusters?: number;
+  model_id?: string | null;
+}
+
+export interface OutputsSpec {
+  dashboard?: boolean;
+  ml?: MLSpec | null;
+}
+
 export interface PipelineDefinition {
   steps: PipelineStep[];
-  materialize?: { notebook_id: string; create_dashboard_cell?: boolean } | null;
-  outputs?: { dashboard?: boolean; ml?: Record<string, unknown> | null } | null;
+  materialize?: { notebook_id?: string | null; create_dashboard_cell?: boolean } | null;
+  outputs?: OutputsSpec | null;
+}
+
+export type ScheduleMode = "manual" | "daily" | "monthly" | "yearly" | "continuous";
+
+export interface ScheduleSpec {
+  mode: ScheduleMode;
+  enabled: boolean;
+  time: string;
+  day: number;
+  month: number;
+  interval_seconds: number;
 }
 
 export interface CreatePipelineRequest {
@@ -67,7 +94,20 @@ export interface RunPipelineRequest {
 }
 
 export interface MaterializePipelineRequest {
-  notebook_id: string;
+  notebook_id?: string | null;
+  regenerate?: boolean;
+}
+
+export interface BuildDashboardRequest {
+  regenerate?: boolean;
+}
+
+export interface UpdateDashboardLayoutRequest {
+  layout: Record<string, unknown>;
+}
+
+export interface UpdateScheduleRequest {
+  schedule: ScheduleSpec;
 }
 
 export interface PlanConversationTurn {
@@ -99,8 +139,46 @@ export interface PipelineRead {
   definition: PipelineDefinition;
   approved_at?: string | null;
   approved_by?: string | null;
+  schedule_mode?: ScheduleMode;
+  schedule_enabled?: boolean;
+  schedule_time?: string | null;
+  schedule_day?: number | null;
+  schedule_month?: number | null;
+  schedule_interval_seconds?: number | null;
+  next_run_at?: string | null;
+  last_scheduled_at?: string | null;
+  dashboard_notebook_id?: string | null;
+  dashboard_cell_id?: string | null;
   created_at?: string | null;
   updated_at?: string | null;
+}
+
+export interface PipelineDashboardRead {
+  pipeline_id: string;
+  notebook_id: string;
+  cell_id?: string | null;
+  table?: string | null;
+  charts: Array<Record<string, unknown>>;
+  layout?: Record<string, unknown> | null;
+  reply?: string | null;
+  run_id?: string | null;
+  updated_at?: string | null;
+}
+
+export interface MLModelRead {
+  id: string;
+  pipeline_id: string;
+  owner_user_id?: string | null;
+  name: string;
+  task: string;
+  algorithm?: string | null;
+  target?: string | null;
+  features: string[];
+  metrics?: Record<string, unknown> | null;
+  model_key: string;
+  file_url?: string | null;
+  run_id?: string | null;
+  created_at?: string | null;
 }
 
 export interface PipelineRunRead {

@@ -140,14 +140,20 @@ export function buildLayout(
     });
   }
   if (output === "ml" || output === "both") {
+    const mode = (definition?.outputs?.ml as { mode?: string } | null | undefined)?.mode ?? "train";
+    const subtitle =
+      mode === "retrain" ? "Retrain registered model"
+      : mode === "inference" ? "Score rows with registered model"
+      : "Train ML model";
+    const label = mode === "retrain" ? "retrain_model" : mode === "inference" ? "score_model" : "train_model";
     raw.push({
       id: "__ml",
-      label: "train_model",
-      subtitle: "Train ML model",
+      label,
+      subtitle,
       kind: "ml",
       parents: [sinkId],
       planned: true,
-      config: { planned_output: "ml_model" },
+      config: { planned_output: "ml_model", mode },
     });
   }
 

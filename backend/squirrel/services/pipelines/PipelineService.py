@@ -24,11 +24,12 @@ parameterised SQL statement; sinks are restricted by configuration.
 
 from __future__ import annotations
 
+import calendar
 import io
 import json
 import tempfile
 import uuid
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Sequence, Tuple
 
@@ -42,6 +43,8 @@ from squirrel.core.config import settings
 from squirrel.constants.etl import (
     DASHBOARD_TASK_ID,
     ML_TASK_ID,
+    MLMode,
+    ScheduleMode,
     TaskState,
     PipelineRunStatus,
     PipelineStatus,
@@ -55,7 +58,17 @@ from squirrel.constants.etl import (
 from squirrel.constants.jobs import JobType
 
 # Schemas
-from squirrel.schemas.etl import PipelineDefinition, PipelineRead, PipelineRunRead, SourceSpec
+from squirrel.schemas.etl import (
+    MLModelRead,
+    MLSpec,
+    MaterializeSpec,
+    PipelineDashboardRead,
+    PipelineDefinition,
+    PipelineRead,
+    PipelineRunRead,
+    ScheduleSpec,
+    SourceSpec,
+)
 
 # Services
 from squirrel.services.data_connector.DataConnectorService import DataConnectorService
@@ -443,6 +456,309 @@ class PipelineService:
         return (result or {}).get("rows") or []
 
     # ------------------------------------------------------------------
+    # Scheduling
+
+    def update_schedule(
+        self,
+        pipeline_id: str,
+        owner_user_id: Optional[str],
+        schedule: ScheduleSpec,
+    ) -> Dict[str, Any]:
+        """Replace a pipeline's automatic schedule and compute its next run."""
+        pipeline = self.get_pipeline(pipeline_id, owner_user_id=owner_user_id)
+        enabled = bool(schedule.enabled) and schedule.mode != ScheduleMode.MANUAL
+        if enabled and pipeline.get("status") != PipelineStatus.APPROVED:
+            raise PipelineValidationError(
+                "Approve the pipeline before enabling an automatic schedule."
+            )
+
+        next_run = self.compute_next_run(schedule, enabled=enabled)
+        result = self._get_db().query(
+            """
+            UPDATE pipelines
+            SET schedule_mode           = %(mode)s,
+                schedule_enabled        = %(enabled)s,
+                schedule_time           = %(time)s,
+                schedule_day            = %(day)s,
+                schedule_month          = %(month)s,
+                schedule_interval_seconds = %(interval)s,
+                next_run_at             = %(next_run)s,
+                updated_at              = NOW()
+            WHERE id = %(id)s
+            RETURNING *
+            """,
+            params={
+                "id": pipeline_id,
+                "mode": schedule.mode,
+                "enabled": enabled,
+                "time": schedule.time,
+                "day": schedule.day,
+                "month": schedule.month,
+                "interval": schedule.interval_seconds,
+                "next_run": next_run,
+            },
+            fetch=True,
+        )
+        rows = (result or {}).get("rows") or []
+        if not rows:
+            raise PipelineNotFoundError(pipeline_id)
+        logger.info(
+            "Updated schedule for pipeline {} (mode={}, enabled={}, next_run={})",
+            pipeline_id, schedule.mode, enabled, next_run,
+        )
+        return rows[0]
+
+    @staticmethod
+    def compute_next_run(
+        schedule: ScheduleSpec,
+        *,
+        enabled: Optional[bool] = None,
+        now: Optional[datetime] = None,
+    ) -> Optional[datetime]:
+        """Return the next UTC run time for *schedule*, or ``None`` if manual."""
+        is_enabled = schedule.enabled if enabled is None else enabled
+        if not is_enabled or schedule.mode == ScheduleMode.MANUAL:
+            return None
+
+        now = now or datetime.now(timezone.utc)
+        if schedule.mode == ScheduleMode.CONTINUOUS:
+            return now + timedelta(seconds=int(schedule.interval_seconds))
+
+        try:
+            hour, minute = (int(part) for part in schedule.time.split(":"))
+        except (AttributeError, ValueError):
+            hour, minute = 2, 0
+
+        if schedule.mode == ScheduleMode.DAILY:
+            candidate = now.replace(hour=hour, minute=minute, second=0, microsecond=0)
+            if candidate <= now:
+                candidate += timedelta(days=1)
+            return candidate
+
+        if schedule.mode == ScheduleMode.MONTHLY:
+            year, month = now.year, now.month
+            for _ in range(24):
+                day = min(int(schedule.day), calendar.monthrange(year, month)[1])
+                candidate = datetime(year, month, day, hour, minute, tzinfo=timezone.utc)
+                if candidate > now:
+                    return candidate
+                month += 1
+                if month > 12:
+                    month, year = 1, year + 1
+            return None
+
+        # Yearly
+        month = max(1, min(12, int(schedule.month)))
+        for year in range(now.year, now.year + 5):
+            day = min(int(schedule.day), calendar.monthrange(year, month)[1])
+            candidate = datetime(year, month, day, hour, minute, tzinfo=timezone.utc)
+            if candidate > now:
+                return candidate
+        return None
+
+    def dispatch_due_pipelines(self, limit: int = 50) -> Dict[str, int]:
+        """
+        Queue every approved pipeline whose ``next_run_at`` has passed.
+
+        Called by the Celery beat task. Unapproved pipelines and pipelines that
+        already have a queued/running run are skipped, and their schedule is
+        advanced so they are not retried every dispatcher tick.
+        """
+        now = datetime.now(timezone.utc)
+        limit = max(1, min(200, int(limit)))
+        result = self._get_db().query(
+            """
+            SELECT * FROM pipelines
+            WHERE schedule_enabled
+              AND schedule_mode <> %(manual)s
+              AND next_run_at IS NOT NULL
+              AND next_run_at <= %(now)s
+            ORDER BY next_run_at ASC
+            LIMIT %(limit)s
+            """,
+            params={"manual": ScheduleMode.MANUAL, "now": now, "limit": limit},
+            fetch=True,
+        )
+
+        dispatched = skipped = failed = 0
+        for pipeline in (result or {}).get("rows") or []:
+            pipeline_id = pipeline.get("id")
+            try:
+                schedule = ScheduleSpec(
+                    mode=pipeline.get("schedule_mode") or ScheduleMode.MANUAL,
+                    enabled=True,
+                    time=pipeline.get("schedule_time") or "02:00",
+                    day=int(pipeline.get("schedule_day") or 1),
+                    month=int(pipeline.get("schedule_month") or 1),
+                    interval_seconds=int(pipeline.get("schedule_interval_seconds") or 300),
+                )
+                next_run = self.compute_next_run(schedule, enabled=True, now=now)
+
+                if pipeline.get("status") != PipelineStatus.APPROVED:
+                    skipped += 1
+                    self._set_next_run(pipeline_id, next_run)
+                    continue
+                if self._has_active_run(pipeline_id):
+                    skipped += 1
+                    self._set_next_run(pipeline_id, next_run)
+                    continue
+
+                self.create_run(
+                    pipeline_id,
+                    pipeline.get("owner_user_id"),
+                    dry_run=False,
+                    enqueue=True,
+                )
+                self._set_next_run(pipeline_id, next_run, ran=True)
+                dispatched += 1
+            except Exception:  # noqa: BLE001 - one bad pipeline must not stop the rest
+                failed += 1
+                logger.exception("Failed to dispatch scheduled pipeline {}", pipeline_id)
+
+        if dispatched or skipped or failed:
+            logger.info(
+                "Scheduled pipeline dispatch: dispatched={}, skipped={}, failed={}",
+                dispatched, skipped, failed,
+            )
+        return {"dispatched": dispatched, "skipped": skipped, "failed": failed}
+
+    def _has_active_run(self, pipeline_id: str) -> bool:
+        result = self._get_db().query(
+            """
+            SELECT 1 AS active FROM pipeline_runs
+            WHERE pipeline_id = %(pipeline_id)s
+              AND status IN (%(queued)s, %(running)s)
+            LIMIT 1
+            """,
+            params={
+                "pipeline_id": pipeline_id,
+                "queued": PipelineRunStatus.QUEUED,
+                "running": PipelineRunStatus.RUNNING,
+            },
+            fetch=True,
+        )
+        return bool((result or {}).get("rows"))
+
+    def _set_next_run(
+        self,
+        pipeline_id: str,
+        next_run: Optional[datetime],
+        *,
+        ran: bool = False,
+    ) -> None:
+        self._get_db().query(
+            """
+            UPDATE pipelines
+            SET next_run_at = %(next_run)s,
+                last_scheduled_at = CASE WHEN %(ran)s THEN NOW() ELSE last_scheduled_at END,
+                updated_at = NOW()
+            WHERE id = %(id)s
+            """,
+            params={"id": pipeline_id, "next_run": next_run, "ran": ran},
+            fetch=False,
+        )
+
+    # ------------------------------------------------------------------
+    # Model registry
+
+    def list_models(
+        self,
+        owner_user_id: Optional[str] = None,
+        pipeline_id: Optional[str] = None,
+    ) -> List[Dict[str, Any]]:
+        """Registered ETL models, newest first."""
+        clauses: List[str] = []
+        params: Dict[str, Any] = {}
+        if owner_user_id is not None:
+            clauses.append("owner_user_id = %(owner_user_id)s")
+            params["owner_user_id"] = owner_user_id
+        if pipeline_id:
+            clauses.append("pipeline_id = %(pipeline_id)s")
+            params["pipeline_id"] = pipeline_id
+        where = f"WHERE {' AND '.join(clauses)}" if clauses else ""
+        result = self._get_db().query(
+            f"SELECT * FROM etl_models {where} ORDER BY created_at DESC",
+            params=params,
+            fetch=True,
+        )
+        return (result or {}).get("rows") or []
+
+    def get_model(
+        self,
+        model_id: str,
+        owner_user_id: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        params: Dict[str, Any] = {"id": model_id}
+        owner_clause = ""
+        if owner_user_id is not None:
+            owner_clause = "AND owner_user_id = %(owner_user_id)s"
+            params["owner_user_id"] = owner_user_id
+        result = self._get_db().query(
+            f"SELECT * FROM etl_models WHERE id = %(id)s {owner_clause} LIMIT 1",
+            params=params,
+            fetch=True,
+        )
+        rows = (result or {}).get("rows") or []
+        if not rows:
+            raise PipelineValidationError(f"Model '{model_id}' not found.")
+        return rows[0]
+
+    def _resolve_ml_model(
+        self,
+        spec: MLSpec,
+        owner_user_id: Optional[str],
+    ) -> Optional[Dict[str, Any]]:
+        if spec.mode not in (MLMode.RETRAIN, MLMode.INFERENCE):
+            return None
+        if not spec.model_id:
+            raise ValueError(f"ML mode '{spec.mode}' requires a registered model.")
+        return self.get_model(spec.model_id, owner_user_id)
+
+    def _register_model(
+        self,
+        pipeline: Dict[str, Any],
+        spec: MLSpec,
+        outcome: Dict[str, Any],
+        run_id: str,
+        owner_user_id: Optional[str],
+    ) -> str:
+        model_id = str(uuid.uuid4())
+        name = f"{pipeline.get('name') or 'ETL'} · {spec.task}"
+        if spec.target:
+            name = f"{name} ({spec.target})"
+        result = self._get_db().query(
+            """
+            INSERT INTO etl_models
+                (id, pipeline_id, owner_user_id, name, task, algorithm,
+                 target, features, metrics, model_key, file_url, run_id)
+            VALUES
+                (%(id)s, %(pipeline_id)s, %(owner_user_id)s, %(name)s,
+                 %(task)s, %(algorithm)s, %(target)s, %(features)s::jsonb,
+                 %(metrics)s::jsonb, %(model_key)s, %(file_url)s, %(run_id)s)
+            RETURNING id
+            """,
+            params={
+                "id": model_id,
+                "pipeline_id": pipeline.get("id"),
+                "owner_user_id": owner_user_id,
+                "name": name[:200],
+                "task": outcome.get("task") or spec.task,
+                "algorithm": outcome.get("algorithm"),
+                "target": outcome.get("target"),
+                "features": json.dumps(outcome.get("features") or []),
+                "metrics": json.dumps(outcome.get("metrics") or {}, default=str),
+                "model_key": outcome.get("model_key"),
+                "file_url": outcome.get("file_url"),
+                "run_id": run_id,
+            },
+            fetch=True,
+        )
+        rows = (result or {}).get("rows") or []
+        registered_id = rows[0].get("id") if rows else model_id
+        logger.info("Registered model {} for pipeline {}", registered_id, pipeline.get("id"))
+        return registered_id
+
+    # ------------------------------------------------------------------
     # Execution
 
     def execute_run(
@@ -518,11 +834,14 @@ class PipelineService:
             }
 
             if outputs and outputs.dashboard:
-                if definition.materialize and compiled.sink.kind == SinkKind.POSTGRES:
+                if compiled.sink.kind == SinkKind.POSTGRES:
                     self._task(run_id, tasks, DASHBOARD_TASK_ID, TaskState.RUNNING)
                     try:
                         result["materialization"] = self._materialize_dashboard(
-                            definition.materialize, sink_result, owner_user_id
+                            definition.materialize or MaterializeSpec(),
+                            sink_result,
+                            owner_user_id,
+                            pipeline=pipeline,
                         )
                         self._task(run_id, tasks, DASHBOARD_TASK_ID, TaskState.SUCCESS)
                     except Exception as exc:  # noqa: BLE001
@@ -532,12 +851,15 @@ class PipelineService:
                 else:
                     self._task(
                         run_id, tasks, DASHBOARD_TASK_ID, TaskState.SKIPPED,
-                        detail="Pick a notebook in the Outputs tab to build the dashboard.",
+                        detail="Dashboards read the result from Postgres, so the sink must be a Postgres table.",
                     )
             elif definition.materialize and compiled.sink.kind == SinkKind.POSTGRES:
                 try:
                     result["materialization"] = self._materialize_dashboard(
-                        definition.materialize, sink_result, owner_user_id
+                        definition.materialize,
+                        sink_result,
+                        owner_user_id,
+                        pipeline=pipeline,
                     )
                 except Exception as exc:  # noqa: BLE001 - sink already succeeded
                     logger.exception("Dashboard materialisation failed for run {}", run_id)
@@ -547,12 +869,23 @@ class PipelineService:
                 self._task(run_id, tasks, ML_TASK_ID, TaskState.RUNNING)
                 try:
                     frame = self._read_table(sink_result["table"])
-                    result["ml"] = MLTrainer(self._get_minio()).train(
-                        frame, outputs.ml, run_id=run_id, pipeline_id=pipeline["id"]
+                    ml_spec = outputs.ml
+                    model_row = self._resolve_ml_model(ml_spec, owner_user_id)
+                    outcome = MLTrainer(self._get_minio()).execute(
+                        frame,
+                        ml_spec,
+                        run_id=run_id,
+                        pipeline_id=pipeline["id"],
+                        model_row=model_row,
                     )
+                    if ml_spec.mode in (MLMode.TRAIN, MLMode.RETRAIN):
+                        outcome["model_id"] = self._register_model(
+                            pipeline, ml_spec, outcome, run_id, owner_user_id
+                        )
+                    result["ml"] = outcome
                     self._task(run_id, tasks, ML_TASK_ID, TaskState.SUCCESS)
                 except Exception as exc:  # noqa: BLE001
-                    logger.exception("Model training failed for run {}", run_id)
+                    logger.exception("Model output failed for run {}", run_id)
                     result["ml_error"] = str(exc)
                     self._task(run_id, tasks, ML_TASK_ID, TaskState.FAILED, detail=str(exc))
 
@@ -958,14 +1291,100 @@ class PipelineService:
     def materialize_pipeline(
         self,
         pipeline_id: str,
-        notebook_id: str,
+        notebook_id: Optional[str] = None,
         owner_user_id: Optional[str] = None,
+        *,
+        regenerate: bool = False,
     ) -> Dict[str, Any]:
-        """Expose the latest successful Postgres sink as a notebook dashboard."""
+        """
+        Build (or rebuild) the dashboard for the latest successful Postgres run.
+
+        When ``notebook_id`` is omitted the pipeline's own dashboard notebook is
+        created/reused, so the caller never has to pick one.
+        """
         pipeline = self.get_pipeline(pipeline_id, owner_user_id=owner_user_id)
         definition = self._parse_definition(pipeline.get("definition"))
+        successful = self._latest_successful_postgres_run(pipeline_id, owner_user_id)
+        if successful is None:
+            raise PipelineValidationError(
+                "This pipeline has no successful Postgres run to materialise."
+            )
+        sink_result = successful["result"]["sink"]
+        target_notebook = notebook_id or pipeline.get("dashboard_notebook_id")
+        cell_id = pipeline.get("dashboard_cell_id")
+
+        if regenerate and target_notebook and cell_id:
+            notebook = self._get_notebook()
+            try:
+                cell = notebook.update_cell(
+                    target_notebook, cell_id, owner_user_id=owner_user_id
+                )
+                materialized = self._cell_summary(
+                    cell, target_notebook, sink_result.get("table")
+                )
+                self._store_dashboard_refs(
+                    pipeline_id, target_notebook, getattr(cell, "id", cell_id)
+                )
+            except Exception:  # noqa: BLE001 - fall back to a fresh cell
+                logger.exception("Dashboard regeneration failed; rebuilding from scratch.")
+                materialized = self._materialize_dashboard(
+                    definition.materialize or MaterializeSpec(),
+                    sink_result,
+                    owner_user_id,
+                    notebook_id=target_notebook,
+                    pipeline=pipeline,
+                )
+        else:
+            materialized = self._materialize_dashboard(
+                definition.materialize or MaterializeSpec(),
+                sink_result,
+                owner_user_id,
+                notebook_id=target_notebook,
+                pipeline=pipeline,
+            )
+
+        tasks = (successful.get("result") or {}).get("task_states")
+        if isinstance(tasks, dict) and DASHBOARD_TASK_ID in tasks:
+            self._task(successful["id"], tasks, DASHBOARD_TASK_ID, TaskState.SUCCESS)
+        return materialized
+
+    def get_dashboard(
+        self,
+        pipeline_id: str,
+        owner_user_id: Optional[str] = None,
+    ) -> PipelineDashboardRead:
+        """Return the stored dashboard for the pipeline's latest successful run."""
+        pipeline = self.get_pipeline(pipeline_id, owner_user_id=owner_user_id)
+        return self._dashboard_payload(pipeline, owner_user_id=owner_user_id)
+
+    def save_dashboard_layout(
+        self,
+        pipeline_id: str,
+        layout: Dict[str, Any],
+        owner_user_id: Optional[str] = None,
+    ) -> PipelineDashboardRead:
+        """Persist dashboard customisations made in the pipeline modal."""
+        pipeline = self.get_pipeline(pipeline_id, owner_user_id=owner_user_id)
+        notebook_id = pipeline.get("dashboard_notebook_id")
+        cell_id = pipeline.get("dashboard_cell_id")
+        if not notebook_id or not cell_id:
+            raise PipelineValidationError("This pipeline has no dashboard yet.")
+
+        from squirrel.schemas.notebook import DashboardLayout
+
+        self._get_notebook().save_dashboard_layout(
+            notebook_id,
+            cell_id,
+            DashboardLayout(**(layout or {})),
+            owner_user_id=owner_user_id,
+        )
+        return self._dashboard_payload(pipeline, owner_user_id=owner_user_id)
+
+    def _latest_successful_postgres_run(
+        self, pipeline_id: str, owner_user_id: Optional[str]
+    ) -> Optional[Dict[str, Any]]:
         runs = self.list_runs(pipeline_id, owner_user_id=owner_user_id, limit=50)
-        successful = next(
+        return next(
             (
                 run for run in runs
                 if run.get("status") == PipelineRunStatus.SUCCEEDED
@@ -974,23 +1393,132 @@ class PipelineService:
             ),
             None,
         )
-        if successful is None:
-            raise PipelineValidationError(
-                "This pipeline has no successful Postgres run to materialise."
-            )
-        sink_result = successful["result"]["sink"]
-        spec = definition.materialize
-        materialized = self._materialize_dashboard(
-            spec,
-            sink_result,
-            owner_user_id,
-            notebook_id=notebook_id,
-            pipeline_name=pipeline.get("name") or "ETL pipeline",
+
+    def _ensure_dashboard_notebook(
+        self, pipeline: Dict[str, Any], owner_user_id: Optional[str]
+    ) -> str:
+        """Reuse the pipeline's dashboard notebook, creating one if needed."""
+        notebook = self._get_notebook()
+        current = pipeline.get("dashboard_notebook_id")
+        if current:
+            try:
+                notebook.get_notebook(current, owner_user_id=owner_user_id)
+                return current
+            except Exception:  # noqa: BLE001 - deleted notebook: provision a new one
+                logger.warning("Dashboard notebook {} is gone; recreating it.", current)
+
+        created = notebook.create_notebook(
+            name=f"{pipeline.get('name') or 'ETL'} — dashboard"[:200],
+            description="Auto-created dashboard for an ETL pipeline output.",
+            owner_user_id=owner_user_id,
         )
-        tasks = (successful.get("result") or {}).get("task_states")
-        if isinstance(tasks, dict) and DASHBOARD_TASK_ID in tasks:
-            self._task(successful["id"], tasks, DASHBOARD_TASK_ID, TaskState.SUCCESS)
-        return materialized
+        notebook_id = created.id
+        self._get_db().query(
+            "UPDATE pipelines SET dashboard_notebook_id = %(notebook_id)s, "
+            "updated_at = NOW() WHERE id = %(id)s",
+            params={"notebook_id": notebook_id, "id": pipeline.get("id")},
+            fetch=False,
+        )
+        return notebook_id
+
+    def _store_dashboard_refs(
+        self,
+        pipeline_id: Optional[str],
+        notebook_id: str,
+        cell_id: Optional[str],
+    ) -> None:
+        if not pipeline_id:
+            return
+        try:
+            self._get_db().query(
+                """
+                UPDATE pipelines
+                SET dashboard_notebook_id = %(notebook_id)s,
+                    dashboard_cell_id = %(cell_id)s,
+                    updated_at = NOW()
+                WHERE id = %(id)s
+                """,
+                params={
+                    "id": pipeline_id,
+                    "notebook_id": notebook_id,
+                    "cell_id": cell_id,
+                },
+                fetch=False,
+            )
+        except Exception:  # noqa: BLE001 - the dashboard itself already exists
+            logger.exception("Failed to record dashboard refs for {}", pipeline_id)
+
+    def _dashboard_payload(
+        self,
+        pipeline: Dict[str, Any],
+        *,
+        owner_user_id: Optional[str] = None,
+    ) -> PipelineDashboardRead:
+        notebook_id = pipeline.get("dashboard_notebook_id")
+        if not notebook_id:
+            raise PipelineValidationError(
+                "No dashboard has been built for this pipeline yet."
+            )
+
+        notebook = self._get_notebook()
+        cells = notebook.list_cells(notebook_id, owner_user_id=owner_user_id)
+        dashboards = [cell for cell in cells if getattr(cell, "type", None) == "dashboard"]
+        wanted = pipeline.get("dashboard_cell_id")
+        cell = next(
+            (item for item in dashboards if getattr(item, "id", None) == wanted),
+            None,
+        )
+        if cell is None and dashboards:
+            cell = dashboards[-1]
+        if cell is None:
+            raise PipelineValidationError(
+                "This pipeline's dashboard notebook has no dashboard cell yet."
+            )
+
+        latest = self._latest_successful_postgres_run(
+            pipeline["id"], owner_user_id
+        )
+        table = (((latest or {}).get("result") or {}).get("sink") or {}).get("table")
+        layout = getattr(cell, "dashboard_layout", None)
+        if layout is not None and hasattr(layout, "model_dump"):
+            layout = layout.model_dump()
+
+        return PipelineDashboardRead(
+            pipeline_id=pipeline["id"],
+            notebook_id=notebook_id,
+            cell_id=getattr(cell, "id", None),
+            table=table,
+            charts=self._serialize_charts(cell),
+            layout=layout,
+            reply=getattr(cell, "reply", None),
+            run_id=(latest or {}).get("id"),
+            updated_at=getattr(cell, "created_at", None),
+        )
+
+    @staticmethod
+    def _serialize_charts(cell: Any) -> List[Dict[str, Any]]:
+        charts = []
+        for chart in getattr(cell, "charts", None) or []:
+            charts.append(chart.model_dump() if hasattr(chart, "model_dump") else chart)
+        return charts
+
+    def _cell_summary(
+        self,
+        cell: Any,
+        notebook_id: str,
+        table: Optional[str],
+    ) -> Dict[str, Any]:
+        layout = getattr(cell, "dashboard_layout", None) if cell is not None else None
+        if layout is not None and hasattr(layout, "model_dump"):
+            layout = layout.model_dump()
+        return {
+            "notebook_id": notebook_id,
+            "table": table,
+            "dashboard_cell_id": getattr(cell, "id", None),
+            "charts": self._serialize_charts(cell) if cell is not None else [],
+            "layout": layout,
+            "reply": getattr(cell, "reply", None) if cell is not None else None,
+        }
 
     def _materialize_dashboard(
         self,
@@ -999,21 +1527,25 @@ class PipelineService:
         owner_user_id: Optional[str],
         *,
         notebook_id: Optional[str] = None,
+        pipeline: Optional[Dict[str, Any]] = None,
         pipeline_name: Optional[str] = None,
     ) -> Dict[str, Any]:
         notebook_id = notebook_id or getattr(spec, "notebook_id", None)
+        if not notebook_id and pipeline is not None:
+            notebook_id = self._ensure_dashboard_notebook(pipeline, owner_user_id)
         if not notebook_id:
-            raise PipelineValidationError("No notebook_id was supplied for materialisation.")
+            raise PipelineValidationError("No notebook could be provisioned for the dashboard.")
 
         table = sink_result.get("table")
         if not table:
             raise PipelineValidationError("The run did not produce a Postgres table to materialise.")
 
+        pipeline_name = pipeline_name or (pipeline or {}).get("name") or "ETL"
         notebook = self._get_notebook()
         notebook_state = notebook.add_managed_table_data_source(
             notebook_id,
             table,
-            label=f"{pipeline_name or 'ETL'} — {table}",
+            label=f"{pipeline_name} — {table}",
             owner_user_id=owner_user_id,
         )
         source_ids = [
@@ -1037,14 +1569,14 @@ class PipelineService:
                 cell = notebook.create_table_dashboard_cell(
                     notebook_id,
                     table,
-                    title=f"{pipeline_name or 'ETL'} · {table}",
+                    title=f"{pipeline_name} · {table}",
                     owner_user_id=owner_user_id,
                 )
-        return {
-            "notebook_id": notebook_id,
-            "table": table,
-            "dashboard_cell_id": getattr(cell, "id", None),
-        }
+
+        self._store_dashboard_refs(
+            (pipeline or {}).get("id"), notebook_id, getattr(cell, "id", None)
+        )
+        return self._cell_summary(cell, notebook_id, table)
 
     # ------------------------------------------------------------------
     # Row helpers
@@ -1124,3 +1656,16 @@ class PipelineService:
         if isinstance(result, str):
             result = json.loads(result)
         return PipelineRunRead(**{**row, "result": result})
+
+    @staticmethod
+    def to_model_read(row: Dict[str, Any]) -> MLModelRead:
+        payload = dict(row)
+        for key in ("features", "metrics"):
+            value = payload.get(key)
+            if isinstance(value, str):
+                try:
+                    payload[key] = json.loads(value)
+                except json.JSONDecodeError:
+                    payload[key] = None if key == "metrics" else []
+        payload.setdefault("features", [])
+        return MLModelRead(**payload)

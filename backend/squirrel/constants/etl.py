@@ -59,6 +59,30 @@ class MLAlgorithm:
     ALL = {AUTO, RANDOM_FOREST, GRADIENT_BOOSTING, LINEAR}
 
 
+class MLMode:
+    """How an ML output uses a model."""
+
+    TRAIN = "train"
+    RETRAIN = "retrain"
+    INFERENCE = "inference"
+
+    ALL = {TRAIN, RETRAIN, INFERENCE}
+
+
+class ScheduleMode:
+    """How often a pipeline runs on its own."""
+
+    MANUAL = "manual"
+    DAILY = "daily"
+    MONTHLY = "monthly"
+    YEARLY = "yearly"
+    CONTINUOUS = "continuous"
+
+    ALL = {MANUAL, DAILY, MONTHLY, YEARLY, CONTINUOUS}
+    #: Modes that the dispatcher must pick up automatically.
+    RECURRING = {DAILY, MONTHLY, YEARLY, CONTINUOUS}
+
+
 class TaskState:
     """Per-step state reported in ``pipeline_runs.result['task_states']``."""
 
@@ -214,6 +238,7 @@ RESERVED_SINK_TABLES = frozenset(
         "notification_preferences",
         "pipelines",
         "pipeline_runs",
+        "etl_models",
         "users",
         "user_tokens",
         "file",

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { CheckCircle2, Loader2, Pencil, Play, Plus, Trash2, Workflow } from "lucide-react";
+import { CalendarClock, CheckCircle2, Loader2, Pencil, Play, Plus, Trash2, Workflow } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -162,6 +162,12 @@ export default function PipelinesPage(): JSX.Element {
                         <Badge variant={statusVariant(pipeline.status)}>
                           {pipeline.status.replaceAll("_", " ")}
                         </Badge>
+                        {pipeline.schedule_enabled && pipeline.schedule_mode !== "manual" && (
+                          <Badge variant="secondary" className="gap-1">
+                            <CalendarClock className="h-3 w-3" />
+                            {pipeline.schedule_mode}
+                          </Badge>
+                        )}
                         <span>
                           {pipeline.definition.steps.length} task
                           {pipeline.definition.steps.length === 1 ? "" : "s"}

@@ -143,19 +143,24 @@ class ETLPlannerPromptGenerator(IPromptGenerator):
             "and do not add operations the user did not ask for.\n\n"
 
             "# Materialisation (optional)\n"
-            "If a notebook id is supplied and the sink is Postgres, include:\n"
-            '  "materialize": {"notebook_id": "...", "create_dashboard_cell": true}\n'
-            "This exposes the output table as a notebook dashboard after a "
-            "successful run.\n\n"
+            "Dashboards are provisioned automatically, so `materialize` may be omitted. "
+            "If you include it, use:\n"
+            '  "materialize": {"create_dashboard_cell": true}\n'
+            "Only include `notebook_id` when the user explicitly supplies one.\n\n"
 
             "# Outputs (optional)\n"
             "Only when the user message lists `requested_outputs`, add to the definition:\n"
             '  "outputs": {"dashboard": true, "ml": {...}}\n'
             '  - "dashboard": true when "dashboard" is requested. Omit otherwise.\n'
-            '  - "ml": only when "ml" is requested. Shape: {"task": '
+            '  - "ml": only when "ml" is requested. Shape: {"mode": '
+            '"train"|"retrain"|"inference", "task": '
             '"classification"|"regression"|"clustering", "target": column, '
-            '"features": [columns], "algorithm": "auto", "n_clusters": 3}.\n'
-            "    * classification/regression REQUIRE a `target`; clustering must not have one.\n"
+            '"features": [columns], "algorithm": "auto", "n_clusters": 3, "model_id": "..."}.\n'
+            '    * "mode" defaults to "train" (fit a new model). Use "retrain" to refit an '
+            'existing model and "inference" to only score new rows.\n'
+            '    * "retrain" and "inference" REQUIRE a `model_id` from `available_models`.\n'
+            "    * classification/regression REQUIRE a `target` unless mode is "
+            '"inference" (the registered model already knows its target).\n'
             "    * `target` and `features` must be columns the pipeline's FINAL step produces "
             "(after renames, aggregates and joins). `features` may be [] for all other columns.\n"
             "    * Pick the task from the request (predict a category -> classification, "

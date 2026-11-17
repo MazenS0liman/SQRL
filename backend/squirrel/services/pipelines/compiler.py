@@ -232,6 +232,9 @@ class PipelineCompiler:
                 "sink must be a Postgres table.",
             )
         if outputs and outputs.ml:
+            # Inference mode may omit target/features: the registered model
+            # supplies them. Any column that *is* listed must be a safe
+            # identifier.
             for column in [*([outputs.ml.target] if outputs.ml.target else []), *outputs.ml.features]:
                 quote_identifier(column)
         self._validate_reachability(ids, sinks[0].id)

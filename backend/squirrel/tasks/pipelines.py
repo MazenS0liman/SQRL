@@ -18,6 +18,7 @@ from typing import Any, Dict, Optional
 from loguru import logger
 
 from squirrel.constants.jobs import JobType
+from squirrel.core.celery_app import celery_app
 from squirrel.services.pipelines.PipelineService import (
     PipelineService,
     PipelineValidationError,
@@ -41,3 +42,20 @@ def run_etl_pipeline(job: Dict[str, Any]) -> Optional[Dict[str, Any]]:
         payload.get("dry_run"),
     )
     return PipelineService().execute_run(run_id, job_id=job.get("id"))
+
+
+@celery_app.task(name="squirrel.tasks.pipelines.dispatch_due_pipelines")
+def dispatch_due_pipelines(limit: int = 50) -> Dict[str, int]:
+    """Queue every approved pipeline whose schedule is due.
+
+    Beat runs this every 30 seconds. Each pipeline's ``next_run_at`` is advanced
+    by the service so a slow worker cannot enqueue the same run twice.
+    """
+    try:
+        summary = PipelineService().dispatch_due_pipelines(limit=limit)
+        if any(summary.values()):
+            logger.info("dispatch_due_pipelines: {}", summary)
+        return summary
+    except Exception:  # noqa: BLE001 - beat must keep ticking
+        logger.exception("dispatch_due_pipelines failed")
+        return {"dispatched": 0, "skipped": 0, "failed": 1}

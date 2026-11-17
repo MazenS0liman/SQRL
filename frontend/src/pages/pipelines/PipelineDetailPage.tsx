@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { KeyboardEvent } from "react";
-import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import {
   AlertCircle,
   ArrowLeft,
   ArrowUp,
   Brain,
+  CalendarClock,
   CheckCircle2,
   Filter,
   GitMerge,
@@ -23,16 +24,12 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { DagCanvas } from "@/components/etl/DagCanvas";
 import { InsertStageDialog, type StageEdge } from "@/components/etl/InsertStageDialog";
+import { MLPropertiesPanel } from "@/components/etl/MLPropertiesPanel";
 import { NodePropertiesPanel } from "@/components/etl/NodePropertiesPanel";
+import { PipelineDashboardDialog } from "@/components/etl/PipelineDashboardDialog";
+import { ScheduleDialog } from "@/components/etl/ScheduleDialog";
 import { SourceToolbar } from "@/components/etl/SourceToolbar";
 import {
   buildLayout,
@@ -43,10 +40,11 @@ import {
   type OutputTarget,
 } from "@/components/etl/dagUtils";
 import { etlApi } from "@/api/etlApi";
-import { apiFetch, cn } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 import type {
   JobEventRead,
-  Notebook,
+  OutputsSpec,
+  PipelineDashboardRead,
   PipelineDefinition,
   PipelineRead,
   PipelineRunRead,
@@ -171,6 +169,26 @@ function asRecord(value: unknown): Record<string, unknown> | null {
   return value && typeof value === "object" && !Array.isArray(value) ? (value as Record<string, unknown>) : null;
 }
 
+/** Shape a finished run's materialisation into the dashboard dialog payload. */
+function dashboardFromRun(run: PipelineRunRead): PipelineDashboardRead | null {
+  const materialization = asRecord(asRecord(run.result)?.materialization);
+  if (!materialization) return null;
+  const charts = Array.isArray(materialization.charts)
+    ? (materialization.charts as Record<string, unknown>[])
+    : [];
+  return {
+    pipeline_id: run.pipeline_id,
+    notebook_id: typeof materialization.notebook_id === "string" ? materialization.notebook_id : "",
+    cell_id:
+      typeof materialization.dashboard_cell_id === "string" ? materialization.dashboard_cell_id : null,
+    table: typeof materialization.table === "string" ? materialization.table : null,
+    charts,
+    layout: asRecord(materialization.layout),
+    reply: typeof materialization.reply === "string" ? materialization.reply : null,
+    run_id: run.id,
+  };
+}
+
 type BottomTab = "logs" | "config" | "result" | "outputs";
 
 /* ---------- page ---------- */
@@ -189,13 +207,16 @@ export default function PipelineDetailPage(): JSX.Element {
 
   const [runs, setRuns] = useState<PipelineRunRead[]>([]);
   const [events, setEvents] = useState<JobEventRead[]>([]);
-  const [notebooks, setNotebooks] = useState<Notebook[]>([]);
-  const [notebookId, setNotebookId] = useState("");
   const [selectedRunId, setSelectedRunId] = useState<string | null>(null);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [propertiesNodeId, setPropertiesNodeId] = useState<string | null>(null);
   const [stageEdge, setStageEdge] = useState<StageEdge | null>(null);
   const [tab, setTab] = useState<BottomTab>("logs");
+  const [dashboardOpen, setDashboardOpen] = useState(false);
+  const [dashboardPayload, setDashboardPayload] = useState<PipelineDashboardRead | null>(null);
+  const [mlOpen, setMlOpen] = useState(false);
+  const [scheduleOpen, setScheduleOpen] = useState(false);
+  const previousRuns = useRef<PipelineRunRead[]>([]);
 
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
@@ -214,8 +235,29 @@ export default function PipelineDetailPage(): JSX.Element {
   const loadRuns = useCallback(async () => {
     if (!pipelineId) return [];
     const next = await etlApi.runs(pipelineId);
+    const before = previousRuns.current;
+    previousRuns.current = next;
     setRuns(next);
     setSelectedRunId((cur) => (cur && next.some((r) => r.id === cur) ? cur : next[0]?.id ?? null));
+
+    // A run that just finished may have produced a dashboard. Open it in the
+    // pipeline page rather than sending the user to the notebook.
+    const justFinished = next.find((run) => {
+      const prior = before.find((item) => item.id === run.id);
+      return (
+        prior &&
+        (prior.status === "queued" || prior.status === "running") &&
+        run.status === "succeeded" &&
+        !run.dry_run
+      );
+    });
+    if (justFinished) {
+      const payload = dashboardFromRun(justFinished);
+      if (payload) {
+        setDashboardPayload(payload);
+        setDashboardOpen(true);
+      }
+    }
     return next;
   }, [pipelineId]);
 
@@ -226,12 +268,12 @@ export default function PipelineDetailPage(): JSX.Element {
     setError(null);
     void (async () => {
       try {
-        const [current, nextRuns, nextNotebooks] = await Promise.all([
+        const [current, nextRuns] = await Promise.all([
           etlApi.get(pipelineId),
           etlApi.runs(pipelineId),
-          apiFetch<Notebook[]>("/notebook").catch(() => [] as Notebook[]),
         ]);
         if (cancelled) return;
+        previousRuns.current = nextRuns;
         setPipeline(current);
         setName(current.name);
         setDescription(current.description ?? "");
@@ -239,8 +281,6 @@ export default function PipelineDetailPage(): JSX.Element {
         setOutput(outputTarget(current.definition));
         setRuns(nextRuns);
         setSelectedRunId(nextRuns[0]?.id ?? null);
-        setNotebooks(nextNotebooks);
-        setNotebookId(nextNotebooks[0]?.id ?? "");
       } catch (err) {
         if (!cancelled) setError(err instanceof Error ? err.message : "Unable to load pipeline.");
       } finally {
@@ -450,16 +490,31 @@ export default function PipelineDetailPage(): JSX.Element {
     }
   };
 
-  const materialize = async () => {
-    if (!pipeline || !notebookId) return;
+  const openDashboard = async (rebuild = false) => {
+    if (!pipeline) return;
     setMaterializing(true);
     setError(null);
     try {
-      const result = await etlApi.materialize(pipeline.id, { notebook_id: notebookId });
-      const id = typeof result.notebook_id === "string" && result.notebook_id ? result.notebook_id : notebookId;
-      navigate(`/notebooks/${id}`);
+      const payload = rebuild
+        ? await etlApi.buildDashboard(pipeline.id, { regenerate: true })
+        : await etlApi.getDashboard(pipeline.id);
+      setDashboardPayload(payload);
+      setDashboardOpen(true);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Unable to build the dashboard.");
+      // No dashboard yet: build it from the latest successful run.
+      try {
+        const payload = await etlApi.buildDashboard(pipeline.id, { regenerate: false });
+        setDashboardPayload(payload);
+        setDashboardOpen(true);
+      } catch (buildErr) {
+        setError(
+          buildErr instanceof Error
+            ? buildErr.message
+            : err instanceof Error
+              ? err.message
+              : "Unable to build the dashboard."
+        );
+      }
     } finally {
       setMaterializing(false);
     }
@@ -467,9 +522,27 @@ export default function PipelineDetailPage(): JSX.Element {
 
   /* graph editing */
   const openProperties = (id: string) => {
-    if (!draft || id.startsWith("__")) return;
+    if (!draft) return;
     setSelectedNodeId(id);
+    if (id === "__ml") {
+      setMlOpen(true);
+      return;
+    }
+    if (id === "__dashboard") {
+      void openDashboard();
+      return;
+    }
+    if (id.startsWith("__")) return;
     setPropertiesNodeId(id);
+  };
+
+  const saveOutputs = (outputs: OutputsSpec | null) => {
+    setDraft((current) => {
+      if (!current) return current;
+      return { ...current, outputs };
+    });
+    setOutput(outputTarget({ steps: draft?.steps ?? [], outputs } as PipelineDefinition));
+    setNotice("Updated outputs. Save to persist the change.");
   };
 
   const addSource = (source: SourceSpec) => {
@@ -613,6 +686,12 @@ export default function PipelineDetailPage(): JSX.Element {
                 </>
               )}
               <span>{layout.nodes.filter((n) => !n.planned).length} tasks</span>
+              {!isDraft && pipeline!.schedule_enabled && pipeline!.schedule_mode !== "manual" && (
+                <Badge variant="secondary" className="gap-1">
+                  <CalendarClock className="h-3 w-3" />
+                  {pipeline!.schedule_mode}
+                </Badge>
+              )}
               {dirty && <Badge variant="outline">Unsaved changes</Badge>}
               <Input
                 value={description}
@@ -634,6 +713,9 @@ export default function PipelineDetailPage(): JSX.Element {
           )}
           {!isDraft && (
             <>
+              <Button size="sm" variant="outline" onClick={() => setScheduleOpen(true)}>
+                <CalendarClock /> Schedule
+              </Button>
               <Button size="sm" variant="outline" onClick={() => void startRun(true)} disabled={running !== null || definitionDirty}
                 title={definitionDirty ? "Save your DAG changes first." : undefined}>
                 {running === "dry" ? <Loader2 className="animate-spin" /> : <Play />} Dry run
@@ -803,40 +885,88 @@ export default function PipelineDetailPage(): JSX.Element {
                 <div className="space-y-3 text-sm">
                   <p className="text-xs text-muted-foreground">
                     Target: <span className="font-medium text-foreground">{OUTPUT_OPTIONS.find((o) => o.value === output)?.label}</span>.
-                    Change it in the chat panel; planned outputs appear as dashed nodes in the graph.
+                    Change it in the chat panel; planned outputs appear as dashed nodes. Double-click the{" "}
+                    <code className="font-mono">__ml</code> node to configure how it uses a model.
                   </p>
-                  {(output === "dashboard" || output === "both") && (
-                    <div className="space-y-2 rounded-lg border border-border p-3">
-                      <div className="flex items-center gap-2 text-xs font-medium"><LayoutDashboard className="h-4 w-4 text-primary" /> Dashboard</div>
-                      {isDraft ? (
-                        <p className="text-xs text-muted-foreground">Create the pipeline and complete a production run first.</p>
-                      ) : notebooks.length === 0 ? (
+
+                  <div className="space-y-2 rounded-lg border border-border p-3">
+                    <div className="flex items-center gap-2 text-xs font-medium">
+                      <LayoutDashboard className="h-4 w-4 text-primary" /> Dashboard
+                    </div>
+                    {isDraft ? (
+                      <p className="text-xs text-muted-foreground">
+                        Create the pipeline and complete a production run first.
+                      </p>
+                    ) : (
+                      <div className="flex flex-wrap gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => void openDashboard()}
+                          disabled={materializing || !canMaterialize}
+                          title={canMaterialize ? undefined : "A successful production run with a Postgres sink is required."}
+                        >
+                          {materializing ? <Loader2 className="animate-spin" /> : <LayoutDashboard />} Open dashboard
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => void openDashboard(true)}
+                          disabled={materializing || !canMaterialize}
+                        >
+                          <RefreshCw /> Rebuild
+                        </Button>
+                      </div>
+                    )}
+                    {!isDraft && !canMaterialize && (
+                      <p className="text-xs text-muted-foreground">
+                        The dashboard is built automatically after a successful production run.
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="space-y-2 rounded-lg border border-border p-3">
+                    <div className="flex items-center gap-2 text-xs font-medium">
+                      <Brain className="h-4 w-4 text-primary" /> ML model
+                    </div>
+                    {draft?.outputs?.ml ? (
+                      <>
                         <p className="text-xs text-muted-foreground">
-                          No notebooks available. <Link to="/notebooks" className="text-primary underline">Create one first</Link>.
+                          Mode{" "}
+                          <span className="font-medium text-foreground">{draft.outputs.ml.mode}</span> ·{" "}
+                          {draft.outputs.ml.task}
+                          {draft.outputs.ml.target ? ` · ${draft.outputs.ml.target}` : ""}
                         </p>
-                      ) : (
-                        <div className="flex flex-wrap gap-2">
-                          <Select value={notebookId} onValueChange={setNotebookId}>
-                            <SelectTrigger className="min-w-[220px] flex-1"><SelectValue placeholder="Select a notebook" /></SelectTrigger>
-                            <SelectContent>
-                              {notebooks.map((nb) => (<SelectItem key={nb.id} value={nb.id}>{nb.name}</SelectItem>))}
-                            </SelectContent>
-                          </Select>
-                          <Button variant="outline" onClick={() => void materialize()} disabled={materializing || !notebookId || !canMaterialize}
-                            title={canMaterialize ? undefined : "A successful production run with a Postgres sink is required."}>
-                            {materializing ? <Loader2 className="animate-spin" /> : <Sparkles />} Build dashboard
-                          </Button>
-                        </div>
-                      )}
+                        <Button variant="outline" size="sm" onClick={() => setMlOpen(true)}>
+                          <Brain /> Configure model
+                        </Button>
+                      </>
+                    ) : (
+                      <Button variant="outline" size="sm" onClick={() => setMlOpen(true)}>
+                        <Brain /> Add ML output
+                      </Button>
+                    )}
+                  </div>
+
+                  <div className="space-y-2 rounded-lg border border-border p-3">
+                    <div className="flex items-center gap-2 text-xs font-medium">
+                      <CalendarClock className="h-4 w-4 text-primary" /> Schedule
                     </div>
-                  )}
-                  {(output === "ml" || output === "both") && (
-                    <div className="rounded-lg border border-dashed border-border p-3 text-xs text-muted-foreground">
-                      <div className="mb-1 flex items-center gap-2 font-medium text-foreground"><Brain className="h-4 w-4 text-primary" /> ML model</div>
-                      Recorded as a planned task. Model training needs a backend training step before it can execute.
-                    </div>
-                  )}
-                  {output === "none" && <p className="text-xs text-muted-foreground">No dashboard or model requested.</p>}
+                    {isDraft ? (
+                      <p className="text-xs text-muted-foreground">Create the pipeline to schedule it.</p>
+                    ) : (
+                      <>
+                        <p className="text-xs text-muted-foreground">
+                          {pipeline!.schedule_enabled && pipeline!.schedule_mode !== "manual"
+                            ? `${pipeline!.schedule_mode} · next ${formatDate(pipeline!.next_run_at)}`
+                            : "Manual — no automatic runs."}
+                        </p>
+                        <Button variant="outline" size="sm" onClick={() => setScheduleOpen(true)}>
+                          <CalendarClock /> Edit schedule
+                        </Button>
+                      </>
+                    )}
+                  </div>
                 </div>
               )}
             </div>
@@ -951,6 +1081,38 @@ export default function PipelineDetailPage(): JSX.Element {
         }}
         onPlanned={handleStagePlanned}
       />
+
+      <MLPropertiesPanel
+        open={mlOpen}
+        definition={draft}
+        pipelineId={pipelineId}
+        onOpenChange={setMlOpen}
+        onSave={saveOutputs}
+      />
+
+      <ScheduleDialog
+        open={scheduleOpen}
+        pipeline={pipeline}
+        onOpenChange={setScheduleOpen}
+        onSaved={(next) => {
+          setPipeline(next);
+          setNotice(
+            next.schedule_enabled && next.schedule_mode !== "manual"
+              ? `Scheduled ${next.schedule_mode} · next ${formatDate(next.next_run_at)}.`
+              : "Automatic runs disabled."
+          );
+        }}
+      />
+
+      {!isDraft && (
+        <PipelineDashboardDialog
+          pipelineId={pipelineId!}
+          pipelineName={pipeline?.name}
+          open={dashboardOpen}
+          onOpenChange={setDashboardOpen}
+          initial={dashboardPayload}
+        />
+      )}
     </main>
   );
 }

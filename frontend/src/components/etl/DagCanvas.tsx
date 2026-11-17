@@ -199,7 +199,7 @@ export function DagCanvas({
                       </span>
                       <span className={cn("h-2.5 w-2.5 shrink-0 rounded-full", STATE_META[state].dot)} />
                     </button>
-                    {selectedId === node.id && onEditNode && !node.planned && (
+                    {selectedId === node.id && onEditNode && (!node.planned || node.id === "__ml") && (
                       <button
                         type="button"
                         title="Edit properties"

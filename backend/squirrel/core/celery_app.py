@@ -86,4 +86,8 @@ celery_app.conf.beat_schedule = {
         "task": "squirrel.tasks.notifications.send_pending_notification_emails",
         "schedule": 60.0,
     },
+    "dispatch-due-pipelines": {
+        "task": "squirrel.tasks.pipelines.dispatch_due_pipelines",
+        "schedule": 30.0,
+    },
 }
