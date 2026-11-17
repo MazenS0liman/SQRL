@@ -19,7 +19,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Any, Dict, List, Literal, Optional
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from squirrel.constants.etl import (
     AggregateFn,
@@ -97,10 +97,7 @@ class TransformSpec(_StrictModel):
     relationship so the DSL stays explicit and self-describing.
     """
 
-    op: Literal[
-        "select", "filter", "rename", "cast", "dedupe",
-        "limit", "aggregate", "join",
-    ]
+    op: Literal["select","filter","rename","cast","dedupe","limit","aggregate","join","fill_null"]
     # select
     columns: Optional[List[str]] = None
     # filter
@@ -113,6 +110,8 @@ class TransformSpec(_StrictModel):
     ] = None
     value: Optional[Any] = None
     values: Optional[List[Any]] = None
+    # fill_null
+    fill_values: Optional[Dict[str, Any]] = None
     # rename
     mapping: Optional[Dict[str, str]] = None
     # cast
@@ -218,11 +217,38 @@ class MaterializeSpec(_StrictModel):
     create_dashboard_cell: bool = True
 
 
+class MLSpec(_StrictModel):
+    """Train one model on the sink table after a successful production run."""
+
+    task: Literal["classification", "regression", "clustering"]
+    target: Optional[str] = Field(default=None, max_length=63)
+    features: List[str] = Field(default_factory=list, max_length=200)
+    algorithm: Literal["auto", "random_forest", "gradient_boosting", "linear"] = "auto"
+    test_size: float = Field(default=0.2, gt=0.05, lt=0.5)
+    n_clusters: int = Field(default=3, ge=2, le=20)
+
+    @model_validator(mode="after")
+    def _target_matches_task(self) -> "MLSpec":
+        if self.task == "clustering" and self.target:
+            raise ValueError("Clustering does not take a target column.")
+        if self.task != "clustering" and not self.target:
+            raise ValueError(f"A {self.task} model requires a target column.")
+        return self
+
+
+class OutputsSpec(_StrictModel):
+    """What the pipeline result feeds: a dashboard, a model, or both."""
+
+    dashboard: bool = False
+    ml: Optional[MLSpec] = None
+
+
 class PipelineDefinition(_StrictModel):
     """The complete, validated pipeline DAG."""
 
     steps: List[PipelineStep] = Field(..., min_length=1, max_length=100)
     materialize: Optional[MaterializeSpec] = None
+    outputs: Optional[OutputsSpec] = None
 
 
 # ——————————————————————————————————————————————————————————————
@@ -254,16 +280,69 @@ class MaterializePipelineRequest(_StrictModel):
     notebook_id: str = Field(..., min_length=1, max_length=200)
 
 
+class PlanConversationTurn(_StrictModel):
+    """One earlier message in a planner chat, oldest first."""
+
+    role: Literal["user", "assistant"]
+    content: str = Field(..., min_length=1, max_length=8_000)
+
+
 class PlanPipelineRequest(_StrictModel):
     """Natural-language request for the ETL planner agent."""
 
     query: str = Field(..., min_length=1, max_length=20_000)
     connector_id: Optional[str] = Field(default=None, max_length=200)
     table: Optional[str] = Field(default=None, max_length=200)
+    #: App-database tables the user explicitly mentioned (allow-list enforced).
+    table_names: List[str] = Field(default_factory=list, max_length=20)
     file_urls: List[str] = Field(default_factory=list, max_length=20)
     sink_table: Optional[str] = Field(default=None, max_length=63)
     notebook_id: Optional[str] = Field(default=None, max_length=200)
     context: Dict[str, Any] = Field(default_factory=dict)
+    #: Previous chat turns, oldest first. Used to resolve follow-up requests.
+    history: List[PlanConversationTurn] = Field(default_factory=list, max_length=20)
+    #: Latest proposal to modify when the user asks for a refinement.
+    previous_definition: Optional[PipelineDefinition] = None
+    #: Outputs the user wants from the pipeline result.
+    output_targets: List[Literal["dashboard", "ml"]] = Field(default_factory=list, max_length=2)
+
+
+class PlanStageRequest(_StrictModel):
+    """Natural-language request to insert a stage between two DAG steps."""
+
+    description: str = Field(..., min_length=1, max_length=4_000)
+    #: The definition currently shown in the editor.
+    definition: PipelineDefinition
+    #: Step whose output feeds the new stage.
+    insert_after: str = Field(..., pattern=_STEP_ID_PATTERN)
+    #: Step that currently consumes ``insert_after`` and should consume the stage.
+    insert_before: str = Field(..., pattern=_STEP_ID_PATTERN)
+
+
+class ResolveSourceRequest(_StrictModel):
+    """Resolve the columns a single source spec exposes."""
+
+    source: SourceSpec
+
+
+class SourceTableColumn(BaseModel):
+    """One column in an app-database source table."""
+
+    name: str
+    data_type: str = "text"
+
+
+class SourceTableRead(BaseModel):
+    """An app-database table the ETL source picker may offer."""
+
+    table_name: str
+    columns: List[SourceTableColumn] = Field(default_factory=list)
+
+
+class ResolveSourceRead(BaseModel):
+    """Columns resolved for one source spec."""
+
+    columns: List[str] = Field(default_factory=list)
 
 
 # ——————————————————————————————————————————————————————————————
@@ -310,3 +389,16 @@ class PipelinePlanRead(BaseModel):
     description: Optional[str] = None
     definition: PipelineDefinition
     validation: Dict[str, Any] = Field(default_factory=dict)
+    #: Short conversational summary shown in the builder chat.
+    reply: Optional[str] = None
+
+
+class PipelineStagePlanRead(BaseModel):
+    """A validated proposal with one or more stages inserted into a DAG."""
+
+    definition: PipelineDefinition
+    #: Only the newly inserted transform steps.
+    steps: List[PipelineStep] = Field(default_factory=list)
+    validation: Dict[str, Any] = Field(default_factory=dict)
+    #: Short conversational summary shown next to the graph.
+    reply: Optional[str] = None

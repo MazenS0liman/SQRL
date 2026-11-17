@@ -7,8 +7,13 @@ import type {
   PipelinePlanRead,
   PipelineRead,
   PipelineRunRead,
+  PipelineStagePlanRead,
   PlanPipelineRequest,
+  PlanStageRequest,
+  ResolveSourceRead,
   RunPipelineRequest,
+  SourceSpec,
+  SourceTableRead,
   UpdatePipelineRequest,
 } from "@/types";
 
@@ -62,5 +67,10 @@ export const etlApi = {
   getRun: (id: string) => request<PipelineRunRead>(`/runs/${encodeURIComponent(id)}`),
   events: (id: string) => request<JobEventRead[]>(`/runs/${encodeURIComponent(id)}/events`),
   plan: (payload: PlanPipelineRequest) => request<PipelinePlanRead>("/plan", { method: "POST", body: JSON.stringify(payload) }),
+  planStage: (payload: PlanStageRequest) =>
+    request<PipelineStagePlanRead>("/stages/plan", { method: "POST", body: JSON.stringify(payload) }),
+  sourceTables: () => request<SourceTableRead[]>("/sources/tables"),
+  resolveSource: (source: SourceSpec) =>
+    request<ResolveSourceRead>("/sources/resolve", { method: "POST", body: JSON.stringify({ source }) }),
   materialize: (id: string, payload: MaterializePipelineRequest) => request<Record<string, unknown>>(`/${encodeURIComponent(id)}/materialize`, json(payload)),
 };

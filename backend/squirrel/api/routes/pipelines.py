@@ -19,6 +19,7 @@ before it is stored or run.
 # ——————————————————————————————————————————————————————————————
 # Imports
 
+import re
 from typing import Any, Dict, List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -35,8 +36,14 @@ from squirrel.schemas.etl import (
     PipelinePlanRead,
     PipelineRead,
     PipelineRunRead,
+    PipelineStagePlanRead,
     PlanPipelineRequest,
+    PlanStageRequest,
+    ResolveSourceRead,
+    ResolveSourceRequest,
     RunPipelineRequest,
+    SourceSpec,
+    SourceTableRead,
     UpdatePipelineRequest,
 )
 from squirrel.schemas.jobs import JobEventRead
@@ -48,10 +55,9 @@ from squirrel.services.pipelines.PipelineService import (
     PipelineService,
 )
 from squirrel.services.pipelines.compiler import PipelineValidationError
-
+from squirrel.services.pipelines.PlannerContextBuilder import PlannerContextBuilder
 
 router = APIRouter()
-
 
 def _svc() -> PipelineService:
     return PipelineService()
@@ -79,6 +85,51 @@ def _not_found(entity: str, identifier: str) -> HTTPException:
 # ——————————————————————————————————————————————————————————————
 # Planning
 
+_TABLE_TOKEN_RE = re.compile(r"\b([a-z][a-z0-9_]{0,62})\b")
+
+
+def _mentioned_source_tables(
+    svc: PipelineService,
+    owner_user_id: str,
+    query: str,
+    explicit: List[str],
+    exclude: Optional[str] = None,
+) -> List[str]:
+    """
+    Best-effort list of *existing* app tables named in a chat message.
+
+    Explicitly declared tables are always returned so the planner can report
+    why they cannot be read. Auto-detected names are only kept when they resolve
+    to a real table, which stops destination names (often ``etl_*`` too) from
+    being reported as broken sources.
+    """
+    names: List[str] = []
+    seen = set()
+    prefixes = tuple(settings.etl_source_table_prefixes)
+    allowed = set(settings.etl_allowed_source_tables)
+
+    for name in explicit:
+        if name not in seen and name != exclude:
+            seen.add(name)
+            names.append(name)
+
+    for token in _TABLE_TOKEN_RE.findall((query or "").lower()):
+        if token in seen or token == exclude:
+            continue
+        if not (token in allowed or token.startswith(prefixes)):
+            continue
+        try:
+            svc.resolve_source_columns(
+                SourceSpec(kind="table", table_name=token), owner_user_id
+            )
+        except Exception:  # noqa: BLE001 - likely a destination or a typo
+            continue
+        seen.add(token)
+        names.append(token)
+        if len(names) >= 20:
+            break
+    return names
+
 
 @router.post(
     "/plan",
@@ -93,11 +144,29 @@ async def plan_pipeline(
     Ask the ETL planner for a validated proposal.
 
     The plan is not persisted and nothing is executed. The caller can review
-    it, then create the pipeline with ``POST /pipelines``.
+    it, then create the pipeline with ``POST /pipelines``. Sending the latest
+    proposal back as ``previous_definition`` turns the request into a
+    refinement, which is what the chat builder does.
     """
     _ensure_enabled()
 
     def _plan() -> PipelinePlanRead:
+        svc = _svc()
+        table_names = _mentioned_source_tables(
+            svc,
+            current_user.id,
+            payload.query,
+            payload.table_names,
+            exclude=payload.sink_table,
+        )
+        context = PlannerContextBuilder(svc).build(
+            current_user.id,
+            connector_id=payload.connector_id,
+            table=payload.table,
+            file_urls=payload.file_urls,
+            table_names=table_names,
+            extra=payload.context,
+        )
         result = ETLPlannerAgent().plan(
             payload.query,
             connector_id=payload.connector_id,
@@ -105,13 +174,130 @@ async def plan_pipeline(
             file_urls=payload.file_urls,
             sink_table=payload.sink_table,
             notebook_id=payload.notebook_id,
-            context=payload.context,
+            context=context,
+            source_resolver=lambda spec: svc.resolve_source_columns(spec, current_user.id),
+            previous_definition=payload.previous_definition,
+            history=[turn.model_dump() for turn in payload.history],
+            output_targets=payload.output_targets,
+        )
+
+        definition = result["definition"]
+        sink_step = next(step for step in definition.steps if step.type == "sink")
+        sink = sink_step.sink
+        destination = None
+        if sink is not None:
+            destination = sink.table if sink.kind == "postgres" else sink.object_key
+
+        step_count = len(definition.steps)
+        reply = result["description"] or f"I've drafted '{result['name']}'."
+        extras = []
+        if definition.outputs and definition.outputs.dashboard:
+            extras.append("a dashboard")
+        if definition.outputs and definition.outputs.ml:
+            ml = definition.outputs.ml
+            extras.append(
+                f"a {ml.task} model"
+                + (f" predicting `{ml.target}`" if ml.target else "")
+            )
+        outputs_note = f" After the run it also produces {' and '.join(extras)}." if extras else ""
+        reply = (
+            f"{reply} The plan has {step_count} step"
+            f"{'' if step_count == 1 else 's'} and writes to "
+            f"`{destination}`.{outputs_note} Refine it here, then create and approve it before "
+            "the first production run."
         )
         return PipelinePlanRead(
             name=result["name"],
             description=result["description"],
-            definition=result["definition"],
+            definition=definition,
             validation=result["validation"],
+            reply=reply,
+        )
+
+    try:
+        return await run_in_threadpool(_plan)
+    except PipelineValidationError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(exc),
+        )
+
+
+# ——————————————————————————————————————————————————————————————
+# Source catalog and stage planning
+
+
+@router.get(
+    "/sources/tables",
+    summary="List app tables that can be used as ETL sources",
+    response_model=List[SourceTableRead],
+)
+async def list_source_tables(
+    current_user: AuthUserRead = Depends(get_current_user),
+) -> List[SourceTableRead]:
+    """Tables the compiler will accept as ``source.kind = "table"``."""
+    _ensure_enabled()
+    rows = await run_in_threadpool(_svc().list_source_tables)
+    return [SourceTableRead(**row) for row in rows]
+
+
+@router.post(
+    "/sources/resolve",
+    summary="Resolve the columns exposed by one source",
+    response_model=ResolveSourceRead,
+)
+async def resolve_source(
+    payload: ResolveSourceRequest,
+    current_user: AuthUserRead = Depends(get_current_user),
+) -> ResolveSourceRead:
+    """Used by the source editor to offer real columns for selection."""
+    _ensure_enabled()
+    try:
+        columns = await run_in_threadpool(
+            _svc().resolve_source_columns, payload.source, current_user.id
+        )
+    except PipelineValidationError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))
+    except Exception as exc:  # noqa: BLE001 - connector/file infrastructure
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Could not read this source: {exc}",
+        ) from exc
+    return ResolveSourceRead(columns=columns)
+
+
+@router.post(
+    "/stages/plan",
+    summary="Insert a natural-language stage between two DAG steps",
+    response_model=PipelineStagePlanRead,
+)
+async def plan_stage(
+    payload: PlanStageRequest,
+    current_user: AuthUserRead = Depends(get_current_user),
+) -> PipelineStagePlanRead:
+    """
+    Convert a stage description into validated transform step(s).
+
+    The planner receives the current definition, the insertion edge, and the
+    real columns of every step. It returns a complete definition only after the
+    compiler accepts it; nothing is persisted or executed.
+    """
+    _ensure_enabled()
+
+    def _plan() -> PipelineStagePlanRead:
+        svc = _svc()
+        result = ETLPlannerAgent().plan_stage(
+            payload.description,
+            definition=payload.definition,
+            insert_after=payload.insert_after,
+            insert_before=payload.insert_before,
+            source_resolver=lambda spec: svc.resolve_source_columns(spec, current_user.id),
+        )
+        return PipelineStagePlanRead(
+            definition=result["definition"],
+            steps=result["steps"],
+            validation=result["validation"],
+            reply=result["reply"],
         )
 
     try:

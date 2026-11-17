@@ -160,6 +160,27 @@ def test_contains_uses_ilike_and_wraps_value() -> None:
     assert "ILIKE %(etl_f_0)s" in sql
 
 
+def test_fill_null_is_parameterised() -> None:
+    compiled = _compile(
+        [
+            _source(),
+            _transform(
+                "f",
+                "src",
+                op="fill_null",
+                fill_values={"name": "unknown", "amount": 0},
+            ),
+            _sink(input_id="f"),
+        ]
+    )
+
+    sql, params = compiled.render({"src": "staging_src"})
+
+    assert params == {"etl_f_0": "unknown", "etl_f_1": 0}
+    assert 'COALESCE("name", %(etl_f_0)s) AS "name"' in sql
+    assert 'COALESCE("amount", %(etl_f_1)s) AS "amount"' in sql
+
+
 def test_rename_chain_is_allowed() -> None:
     compiled = _compile(
         [

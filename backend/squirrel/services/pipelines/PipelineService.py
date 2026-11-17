@@ -40,6 +40,9 @@ from squirrel.core.config import settings
 
 # Constants
 from squirrel.constants.etl import (
+    DASHBOARD_TASK_ID,
+    ML_TASK_ID,
+    TaskState,
     PipelineRunStatus,
     PipelineStatus,
     RESERVED_SINK_TABLES,
@@ -52,7 +55,7 @@ from squirrel.constants.etl import (
 from squirrel.constants.jobs import JobType
 
 # Schemas
-from squirrel.schemas.etl import PipelineDefinition, PipelineRead, PipelineRunRead
+from squirrel.schemas.etl import PipelineDefinition, PipelineRead, PipelineRunRead, SourceSpec
 
 # Services
 from squirrel.services.data_connector.DataConnectorService import DataConnectorService
@@ -63,6 +66,7 @@ from squirrel.services.pipelines.compiler import (
     PipelineValidationError,
     quote_identifier,
 )
+from squirrel.services.pipelines.MLTrainer import MLTrainer
 from squirrel.services.pipelines.schema import PIPELINE_DDL_STATEMENTS
 from squirrel.services.storage.blob.MinIOService import MinIOService
 from squirrel.services.storage.database.PostgresService import PostgresService
@@ -450,17 +454,17 @@ class PipelineService:
         """
         Execute one run row. Called by the Celery job handler.
 
-        Dry runs resolve source metadata and compile the plan, but never write
-        to a sink. Production runs materialise sources, execute the compiled
-        statement, and persist the outcome on the run row.
+        Progress is written to ``result['task_states']`` for the DAG view.
         """
         run = self.get_run(run_id)
         pipeline = self.get_pipeline(run["pipeline_id"])
         definition = self._parse_definition(pipeline.get("definition"))
         owner_user_id = run.get("owner_user_id")
         dry_run = bool(run.get("dry_run"))
+        outputs = definition.outputs
 
-        self._set_run_status(run_id, PipelineRunStatus.RUNNING)
+        tasks = self._init_task_states(definition)
+        self._set_run_status(run_id, PipelineRunStatus.RUNNING, result={"task_states": tasks})
 
         staging: List[str] = []
         try:
@@ -468,21 +472,39 @@ class PipelineService:
             compiled = self._compiler.compile(definition, source_schemas)
 
             if dry_run:
+                for step in definition.steps:
+                    self._task(run_id, tasks, step.id, TaskState.SUCCESS, flush=False)
+                for pseudo in (DASHBOARD_TASK_ID, ML_TASK_ID):
+                    if pseudo in tasks:
+                        self._task(
+                            run_id, tasks, pseudo, TaskState.SKIPPED,
+                            flush=False, detail="Skipped in a dry run.",
+                        )
                 result = self._dry_run_result(compiled)
+                result["task_states"] = tasks
                 self._set_run_status(run_id, PipelineRunStatus.SUCCEEDED, result=result)
                 return result
 
             source_tables: Dict[str, str] = {}
             for step in compiled.sources:
+                self._task(run_id, tasks, step.id, TaskState.RUNNING)
                 table, is_staging = self._materialize_source(
                     step, run_id, owner_user_id
                 )
                 source_tables[step.id] = table
                 if is_staging:
                     staging.append(table)
+                self._task(run_id, tasks, step.id, TaskState.SUCCESS)
 
+            sql_ids = [s.id for s in compiled.transforms] + [compiled.sink_step.id]
+            for step_id in sql_ids:
+                self._task(run_id, tasks, step_id, TaskState.RUNNING, flush=False)
+            self._flush_tasks(run_id, tasks)
             sql, params = compiled.render(source_tables)
             sink_result = self._execute_sink(compiled, sql, params)
+            for step_id in sql_ids:
+                self._task(run_id, tasks, step_id, TaskState.SUCCESS, flush=False)
+            self._flush_tasks(run_id, tasks)
 
             result: Dict[str, Any] = {
                 "sink": sink_result,
@@ -492,9 +514,27 @@ class PipelineService:
                     for s in [*compiled.sources, *compiled.transforms]
                 ],
                 "row_count": sink_result.get("row_count"),
+                "task_states": tasks,
             }
 
-            if definition.materialize and compiled.sink.kind == SinkKind.POSTGRES:
+            if outputs and outputs.dashboard:
+                if definition.materialize and compiled.sink.kind == SinkKind.POSTGRES:
+                    self._task(run_id, tasks, DASHBOARD_TASK_ID, TaskState.RUNNING)
+                    try:
+                        result["materialization"] = self._materialize_dashboard(
+                            definition.materialize, sink_result, owner_user_id
+                        )
+                        self._task(run_id, tasks, DASHBOARD_TASK_ID, TaskState.SUCCESS)
+                    except Exception as exc:  # noqa: BLE001
+                        logger.exception("Dashboard materialisation failed for run {}", run_id)
+                        result["materialization_error"] = str(exc)
+                        self._task(run_id, tasks, DASHBOARD_TASK_ID, TaskState.FAILED, detail=str(exc))
+                else:
+                    self._task(
+                        run_id, tasks, DASHBOARD_TASK_ID, TaskState.SKIPPED,
+                        detail="Pick a notebook in the Outputs tab to build the dashboard.",
+                    )
+            elif definition.materialize and compiled.sink.kind == SinkKind.POSTGRES:
                 try:
                     result["materialization"] = self._materialize_dashboard(
                         definition.materialize, sink_result, owner_user_id
@@ -502,6 +542,19 @@ class PipelineService:
                 except Exception as exc:  # noqa: BLE001 - sink already succeeded
                     logger.exception("Dashboard materialisation failed for run {}", run_id)
                     result["materialization_error"] = str(exc)
+
+            if outputs and outputs.ml:
+                self._task(run_id, tasks, ML_TASK_ID, TaskState.RUNNING)
+                try:
+                    frame = self._read_table(sink_result["table"])
+                    result["ml"] = MLTrainer(self._get_minio()).train(
+                        frame, outputs.ml, run_id=run_id, pipeline_id=pipeline["id"]
+                    )
+                    self._task(run_id, tasks, ML_TASK_ID, TaskState.SUCCESS)
+                except Exception as exc:  # noqa: BLE001
+                    logger.exception("Model training failed for run {}", run_id)
+                    result["ml_error"] = str(exc)
+                    self._task(run_id, tasks, ML_TASK_ID, TaskState.FAILED, detail=str(exc))
 
             self._set_run_status(
                 run_id,
@@ -517,7 +570,15 @@ class PipelineService:
 
         except Exception as exc:
             logger.exception("ETL run {} failed", run_id)
-            self._set_run_status(run_id, PipelineRunStatus.FAILED, error=str(exc))
+            for step_id, info in tasks.items():
+                if info.get("state") == TaskState.RUNNING:
+                    self._task(run_id, tasks, step_id, TaskState.FAILED, flush=False, detail=str(exc))
+                elif info.get("state") == TaskState.QUEUED:
+                    self._task(run_id, tasks, step_id, TaskState.UPSTREAM_FAILED, flush=False)
+            self._set_run_status(
+                run_id, PipelineRunStatus.FAILED, error=str(exc),
+                result={"task_states": tasks},
+            )
             raise
         finally:
             self._drop_staging(staging)
@@ -525,70 +586,106 @@ class PipelineService:
     # ------------------------------------------------------------------
     # Source resolution / materialisation
 
-    def _resolve_source_schemas(
-        self,
-        definition: PipelineDefinition,
-        owner_user_id: Optional[str],
-    ) -> Dict[str, List[str]]:
-        """Resolve the columns available from every source step."""
-        schemas: Dict[str, List[str]] = {}
-        for step in definition.steps:
-            if step.type != StepType.SOURCE or step.source is None:
+    def list_source_tables(self) -> List[Dict[str, Any]]:
+        """
+        App-database tables that are valid ETL sources, with their columns.
+
+        Mirrors :meth:`_validate_source_table` so the source picker never offers
+        a table the compiler would reject.
+        """
+        result = self._get_db().query(
+            """
+            SELECT table_name, column_name, data_type
+            FROM information_schema.columns
+            WHERE table_schema = current_schema()
+            ORDER BY table_name, ordinal_position
+            """,
+            fetch=True,
+        )
+
+        allowed = set(settings.etl_allowed_source_tables)
+        prefixes = tuple(settings.etl_source_table_prefixes)
+        grouped: Dict[str, List[Dict[str, str]]] = {}
+
+        for row in (result or {}).get("rows", []):
+            table_name = str(row.get("table_name") or "")
+            if not table_name:
                 continue
-            source = step.source
+            if (
+                table_name in RESERVED_SINK_TABLES
+                or table_name.startswith(RESERVED_SOURCE_PREFIXES)
+            ):
+                continue
+            if allowed:
+                if table_name not in allowed:
+                    continue
+            elif not table_name.startswith(prefixes):
+                continue
+            grouped.setdefault(table_name, []).append(
+                {
+                    "name": str(row.get("column_name") or ""),
+                    "data_type": str(row.get("data_type") or "text"),
+                }
+            )
 
-            if source.kind == SourceKind.CONNECTOR:
-                connector = self._get_connector()
-                assert source.connector_id and source.table
-                query = connector.build_table_query(
-                    source.connector_id,
-                    source.table,
-                    columns=source.columns or None,
-                    owner_user_id=owner_user_id,
+        return [
+            {"table_name": table_name, "columns": columns}
+            for table_name, columns in grouped.items()
+        ]
+
+    def resolve_source_columns(
+        self,
+        source: SourceSpec,
+        owner_user_id: Optional[str]
+    ) -> List[str]:
+        """Columns exposed by one source spec (ownership + allow-list checked)."""
+        if source.kind == SourceKind.CONNECTOR:
+            connector = self._get_connector()
+            assert source.connector_id and source.table
+            query = connector.build_table_query(
+                source.connector_id, source.table,
+                columns=source.columns or None, owner_user_id=owner_user_id,
+            )
+            frame = connector.preview_dataframe(
+                source.connector_id, query, limit=1, owner_user_id=owner_user_id
+            )
+            return list(frame.columns)
+
+        if source.kind == SourceKind.FILE:
+            assert source.file_url
+            stored = self._get_minio().retrieve_file(source.file_url)
+            if stored is None or stored.fileByte is None:
+                raise PipelineValidationError(f"Could not read file source '{source.file_url}'.")
+            frame = pd.read_csv(io.BytesIO(stored.fileByte), nrows=0)
+            return self._normalize_columns(list(frame.columns))
+
+        if source.kind == SourceKind.TABLE:
+            assert source.table_name
+            self._validate_source_table(source.table_name)
+            result = self._get_db().query(
+                """
+                SELECT column_name FROM information_schema.columns
+                WHERE table_schema = current_schema() AND table_name = %(table_name)s
+                ORDER BY ordinal_position
+                """,
+                params={"table_name": source.table_name},
+                fetch=True,
+            )
+            columns = [r["column_name"] for r in (result or {}).get("rows", [])]
+            if not columns:
+                raise PipelineValidationError(
+                    f"Source table '{source.table_name}' does not exist or has no columns."
                 )
-                frame = connector.preview_dataframe(
-                    source.connector_id,
-                    query,
-                    limit=1,
-                    owner_user_id=owner_user_id,
-                )
-                schemas[step.id] = list(frame.columns)
+            return columns
 
-            elif source.kind == SourceKind.FILE:
-                assert source.file_url
-                stored = self._get_minio().retrieve_file(source.file_url)
-                if stored is None or stored.fileByte is None:
-                    raise PipelineValidationError(
-                        f"Could not read file source '{source.file_url}'."
-                    )
-                frame = pd.read_csv(io.BytesIO(stored.fileByte), nrows=0)
-                schemas[step.id] = self._normalize_columns(list(frame.columns))
+        raise PipelineValidationError(f"Unsupported source kind '{source.kind}'.")
 
-            elif source.kind == SourceKind.TABLE:
-                assert source.table_name
-                self._validate_source_table(source.table_name)
-                result = self._get_db().query(
-                    """
-                    SELECT column_name
-                    FROM information_schema.columns
-                    WHERE table_schema = current_schema()
-                      AND table_name = %(table_name)s
-                    ORDER BY ordinal_position
-                    """,
-                    params={"table_name": source.table_name},
-                    fetch=True,
-                )
-                columns = [
-                    row["column_name"]
-                    for row in (result or {}).get("rows", [])
-                ]
-                if not columns:
-                    raise PipelineValidationError(
-                        f"Source table '{source.table_name}' does not exist or has no columns."
-                    )
-                schemas[step.id] = columns
-
-        return schemas
+    def _resolve_source_schemas(self, definition, owner_user_id):
+        return {
+            step.id: self.resolve_source_columns(step.source, owner_user_id)
+            for step in definition.steps
+            if step.type == StepType.SOURCE and step.source is not None
+        }
 
     def _materialize_source(
         self,
@@ -723,6 +820,61 @@ class PipelineService:
             except Exception:  # noqa: BLE001 - best-effort cleanup
                 logger.exception("Failed to drop ETL staging table {}", table)
 
+    @staticmethod
+    def _init_task_states(definition: PipelineDefinition) -> Dict[str, Dict[str, Any]]:
+        tasks = {step.id: {"state": TaskState.QUEUED} for step in definition.steps}
+        outputs = definition.outputs
+        if outputs and outputs.dashboard:
+            tasks[DASHBOARD_TASK_ID] = {"state": TaskState.QUEUED}
+        if outputs and outputs.ml:
+            tasks[ML_TASK_ID] = {"state": TaskState.QUEUED}
+        return tasks
+
+    def _task(
+        self,
+        run_id: str,
+        tasks: Dict[str, Dict[str, Any]],
+        task_id: str,
+        state: str,
+        *,
+        flush: bool = True,
+        detail: Optional[str] = None,
+    ) -> None:
+        now = datetime.utcnow().isoformat() + "Z"
+        info = tasks.setdefault(task_id, {})
+        info["state"] = state
+        if state == TaskState.RUNNING:
+            info["started_at"] = now
+        elif state in (TaskState.SUCCESS, TaskState.FAILED):
+            info["finished_at"] = now
+        if detail:
+            info["detail"] = detail
+        if flush:
+            self._flush_tasks(run_id, tasks)
+
+    def _flush_tasks(self, run_id: str, tasks: Dict[str, Dict[str, Any]]) -> None:
+        try:
+            self._get_db().execute(
+                """
+                UPDATE pipeline_runs
+                SET result = COALESCE(result, '{}'::jsonb)
+                             || jsonb_build_object('task_states', %(tasks)s::jsonb),
+                    updated_at = NOW()
+                WHERE id = %(id)s
+                """,
+                params={"id": run_id, "tasks": json.dumps(tasks, default=str)},
+                fetch=False,
+            )
+        except Exception:  # noqa: BLE001
+            logger.exception("Failed to record task states for run {}", run_id)
+
+    def _read_table(self, table: str) -> pd.DataFrame:
+        limit = int(getattr(settings, "ETL_ML_MAX_ROWS", 200_000)) + 1
+        result = self._get_db().query(
+            f"SELECT * FROM {quote_identifier(table)} LIMIT {limit}", fetch=True
+        )
+        return pd.DataFrame((result or {}).get("rows") or [])
+
     # ------------------------------------------------------------------
     # Sinks
 
@@ -828,13 +980,17 @@ class PipelineService:
             )
         sink_result = successful["result"]["sink"]
         spec = definition.materialize
-        return self._materialize_dashboard(
+        materialized = self._materialize_dashboard(
             spec,
             sink_result,
             owner_user_id,
             notebook_id=notebook_id,
             pipeline_name=pipeline.get("name") or "ETL pipeline",
         )
+        tasks = (successful.get("result") or {}).get("task_states")
+        if isinstance(tasks, dict) and DASHBOARD_TASK_ID in tasks:
+            self._task(successful["id"], tasks, DASHBOARD_TASK_ID, TaskState.SUCCESS)
+        return materialized
 
     def _materialize_dashboard(
         self,
@@ -854,20 +1010,36 @@ class PipelineService:
             raise PipelineValidationError("The run did not produce a Postgres table to materialise.")
 
         notebook = self._get_notebook()
-        notebook.add_managed_table_data_source(
+        notebook_state = notebook.add_managed_table_data_source(
             notebook_id,
             table,
             label=f"{pipeline_name or 'ETL'} — {table}",
             owner_user_id=owner_user_id,
         )
+        source_ids = [
+            source.id
+            for source in getattr(notebook_state, "data_sources", [])
+            if getattr(source, "table_name", None) == table
+        ]
         cell = None
         if getattr(spec, "create_dashboard_cell", True):
-            cell = notebook.create_table_dashboard_cell(
-                notebook_id,
-                table,
-                title=f"{pipeline_name or 'ETL'} · {table}",
-                owner_user_id=owner_user_id,
-            )
+            if hasattr(notebook, "run_cell"):
+                cell = notebook.run_cell(
+                    notebook_id=notebook_id,
+                    cell_type="dashboard",
+                    query=f"Generate a dashboard for ETL output table `{table}`.",
+                    data_source_ids=source_ids or None,
+                    owner_user_id=owner_user_id,
+                )
+            else:
+                # Compatibility for lightweight notebook doubles and older
+                # service adapters; the real NotebookService uses the agent.
+                cell = notebook.create_table_dashboard_cell(
+                    notebook_id,
+                    table,
+                    title=f"{pipeline_name or 'ETL'} · {table}",
+                    owner_user_id=owner_user_id,
+                )
         return {
             "notebook_id": notebook_id,
             "table": table,

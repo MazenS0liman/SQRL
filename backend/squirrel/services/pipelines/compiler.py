@@ -224,6 +224,16 @@ class PipelineCompiler:
 
         self._topological_order(steps)  # raises on cycles
         self._validate_sink(sinks[0].sink)
+        outputs = definition.outputs
+        if outputs and (outputs.dashboard or outputs.ml):
+            _require(
+                sinks[0].sink is not None and sinks[0].sink.kind == SinkKind.POSTGRES,
+                "Dashboards and ML models read the result from Postgres, so the "
+                "sink must be a Postgres table.",
+            )
+        if outputs and outputs.ml:
+            for column in [*([outputs.ml.target] if outputs.ml.target else []), *outputs.ml.features]:
+                quote_identifier(column)
         self._validate_reachability(ids, sinks[0].id)
 
     def compile(
@@ -270,6 +280,19 @@ class PipelineCompiler:
 
         sink_step = next(s for s in definition.steps if s.type == StepType.SINK)
         sink_columns = schemas[sink_step.input or ""]
+        ml = definition.outputs.ml if definition.outputs else None
+        if ml:
+            referenced = ([ml.target] if ml.target else []) + list(ml.features)
+            missing = [c for c in referenced if c not in sink_columns]
+            _require(
+                not missing,
+                f"ML output references column(s) {missing} that the pipeline does not "
+                f"produce. Available: {sink_columns}",
+            )
+            _require(
+                not (ml.target and ml.target in ml.features),
+                "The ML target column must not also be listed as a feature.",
+            )
         return CompiledPipeline(
             definition=definition,
             sources=sources,
@@ -278,6 +301,43 @@ class PipelineCompiler:
             sink=sink_step.sink,  # type: ignore[arg-type]
             sink_columns=sink_columns,
         )
+
+    def schema_map(
+        self,
+        definition: PipelineDefinition,
+        source_schemas: Dict[str, Sequence[str]],
+    ) -> Dict[str, List[str]]:
+        """
+        Columns produced by every step, without requiring a sink/reachability.
+
+        The editor uses this while a DAG is still incomplete (for example, a
+        newly added source that has not been wired in yet). It applies the same
+        transform rules as :meth:`compile`, so the columns shown in the UI match
+        what a run will actually produce.
+        """
+        order = self._topological_order(definition.steps)
+        schemas: Dict[str, List[str]] = {}
+
+        for step in order:
+            if step.type == StepType.SOURCE:
+                schemas[step.id] = self._source_columns(step, source_schemas)
+                continue
+
+            if step.type == StepType.TRANSFORM:
+                _require(
+                    step.input in schemas,
+                    f"Step '{step.id}' has no compiled input.",
+                )
+                compiled = self._compile_transform(
+                    step, schemas[step.input], schemas
+                )
+                schemas[step.id] = compiled.columns
+                continue
+
+            if step.input in schemas:
+                schemas[step.id] = list(schemas[step.input])
+
+        return schemas
 
     # ── Structure ─────────────────────────────────────────────────────────
 
@@ -479,6 +539,26 @@ class PipelineCompiler:
 
         if op == TransformOp.FILTER:
             return self._compile_filter(step, input_columns)
+
+        if op == TransformOp.FILL_NULL:
+            fills = spec.fill_values or {}
+            _require(bool(fills), f"Fill_null step '{step.id}' requires fill_values.")
+            params: Dict[str, Any] = {}
+            names: Dict[str, str] = {}
+            for i, (column, value) in enumerate(fills.items()):
+                _require(column in input_columns,
+                         f"Fill_null step '{step.id}' references unknown column '{column}'.")
+                _require(value is not None and not isinstance(value, (dict, list)),
+                         f"Fill_null step '{step.id}' needs a scalar replacement for '{column}'.")
+                names[column] = _param(step.id, i)
+                params[names[column]] = value
+            projection = ", ".join(
+                f"COALESCE({quote_identifier(c)}, %({names[c]})s) AS {quote_identifier(c)}"
+                if c in fills else quote_identifier(c)
+                for c in input_columns
+            )
+            sql = f"SELECT {projection} FROM {quote_identifier(_cte_name(step.input or ''))}"
+            return CompiledStep(step.id, step.type, list(input_columns), sql=sql, params=params)
 
         if op == TransformOp.RENAME:
             mapping = spec.mapping or {}

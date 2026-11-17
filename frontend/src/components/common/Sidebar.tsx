@@ -40,8 +40,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, onTabChange }) => {
     { id: 'notebooks' as const, icon: NotebookText, label: 'Notebooks' },
     { id: 'files' as const, icon: Files, label: 'Files' },
     { id: 'models' as const, icon: Cpu, label: 'Models' },
-    { id: 'data connectors' as const, icon: Database, label: 'Data Connectors' },
     { id: 'pipelines' as const, icon: Workflow, label: 'Pipelines' },
+    { id: 'data connectors' as const, icon: Database, label: 'Data Connectors' },
   ];
 
   const activeIndex = navItems.findIndex((item) => item.id === activeTab);

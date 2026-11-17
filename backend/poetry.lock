@@ -9213,4 +9213,4 @@ deep-learning = ["tensorflow"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.10,<4.0.0"
-content-hash = "776f834af4cb58ef9185db8e1879acca2ee97a35cf0db13821a222a02af8ce73"
+content-hash = "e2804bd8ef2585e226d7b1e98c106c7a2d2e8c45b243e8698a81a7ce2055e4e1"

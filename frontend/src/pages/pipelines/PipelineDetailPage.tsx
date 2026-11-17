@@ -1,16 +1,23 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import type { KeyboardEvent } from "react";
+import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import {
   AlertCircle,
   ArrowLeft,
+  ArrowUp,
+  Brain,
   CheckCircle2,
-  Clock,
+  Filter,
+  GitMerge,
+  LayoutDashboard,
   Loader2,
   Play,
   RefreshCw,
   Save,
   Sparkles,
-  XCircle,
+  Upload,
+  User,
+  X,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -23,28 +30,110 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { PipelineStepList } from "@/components/etl/PipelineStepList";
+import { DagCanvas } from "@/components/etl/DagCanvas";
+import { InsertStageDialog, type StageEdge } from "@/components/etl/InsertStageDialog";
+import { NodePropertiesPanel } from "@/components/etl/NodePropertiesPanel";
+import { SourceToolbar } from "@/components/etl/SourceToolbar";
+import {
+  buildLayout,
+  deriveTaskStates,
+  eventStep,
+  runStateOf,
+  STATE_META,
+  type OutputTarget,
+} from "@/components/etl/dagUtils";
 import { etlApi } from "@/api/etlApi";
-import { apiFetch } from "@/lib/utils";
+import { apiFetch, cn } from "@/lib/utils";
 import type {
   JobEventRead,
   Notebook,
   PipelineDefinition,
   PipelineRead,
   PipelineRunRead,
+  PipelineStagePlanRead,
+  PipelineStep,
+  PlanConversationTurn,
+  SourceSpec,
 } from "@/types";
 
-function pipelineStatusVariant(status: string): "default" | "secondary" | "destructive" | "outline" {
-  if (status === "approved") return "default";
-  if (status === "archived") return "secondary";
-  return "outline";
+/* ---------- helpers ---------- */
+
+interface ChatMessage {
+  id: string;
+  role: "user" | "assistant";
+  content: string;
+  issues?: string[];
+  error?: boolean;
 }
 
-function runStatusVariant(status: string): "default" | "secondary" | "destructive" | "outline" {
-  if (status === "failed") return "destructive";
-  if (status === "succeeded") return "default";
-  if (status === "running") return "secondary";
-  return "outline";
+const STARTERS = [
+  {
+    title: "Filter + aggregate → dashboard",
+    prompt:
+      "Read etl_orders, keep only completed orders, aggregate total revenue by order_date into etl_daily_revenue, and show it on a dashboard.",
+    output: "dashboard" as OutputTarget,
+    icon: Filter,
+  },
+  {
+    title: "Join → train a model",
+    prompt:
+      "Join etl_orders with etl_customers on customer_id, keep active customers, write to etl_customer_orders and train a churn model on it.",
+    output: "ml" as OutputTarget,
+    icon: GitMerge,
+  },
+  {
+    title: "Clean + dashboard and model",
+    prompt:
+      "Read etl_events, drop null user_id, dedupe by event_id, cast created_at to timestamptz, then build a dashboard and train a model.",
+    output: "both" as OutputTarget,
+    icon: Upload,
+  },
+];
+
+const OUTPUT_OPTIONS: { value: OutputTarget; label: string }[] = [
+  { value: "none", label: "Data only" },
+  { value: "dashboard", label: "Dashboard" },
+  { value: "ml", label: "ML model" },
+  { value: "both", label: "Both" },
+];
+
+const OUTPUT_PROMPT: Record<OutputTarget, string> = {
+  none: "",
+  dashboard: "\n\nDesired output: a dashboard on the final result.",
+  ml: "\n\nDesired output: train an ML model on the final result.",
+  both: "\n\nDesired output: both a dashboard and a trained ML model on the final result.",
+};
+
+function outputTarget(definition: PipelineDefinition): OutputTarget {
+  const outputs = definition.outputs;
+  return outputs
+    ? outputs.dashboard && outputs.ml
+      ? "both"
+      : outputs.ml
+        ? "ml"
+        : outputs.dashboard
+          ? "dashboard"
+          : "none"
+    : "none";
+}
+
+const makeId = (prefix: string) => `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+
+function nextStepId(prefix: "source" | "transform" | "sink", definition: PipelineDefinition | null): string {
+  const used = new Set((definition?.steps ?? []).map((step) => step.id));
+  let index = 1;
+  while (used.has(`${prefix}_${index}`)) index += 1;
+  return `${prefix}_${index}`;
+}
+
+function defaultSinkTable(name: string): string {
+  const slug = name
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "")
+    .slice(0, 50);
+  return `etl_${slug || "output"}`.slice(0, 63);
 }
 
 function formatDate(value?: string | null): string {
@@ -53,155 +142,88 @@ function formatDate(value?: string | null): string {
   return Number.isNaN(date.getTime()) ? "—" : date.toLocaleString();
 }
 
-function formatDuration(run: PipelineRunRead): string {
-  if (!run.started_at) return "—";
+function durationSeconds(run: PipelineRunRead): number | null {
+  if (!run.started_at) return null;
   const start = new Date(run.started_at).getTime();
   const end = run.finished_at ? new Date(run.finished_at).getTime() : Date.now();
-  if (Number.isNaN(start) || Number.isNaN(end)) return "—";
-  const seconds = Math.max(0, Math.round((end - start) / 1000));
-  if (seconds < 60) return `${seconds}s`;
-  const minutes = Math.floor(seconds / 60);
-  return `${minutes}m ${seconds % 60}s`;
+  if (Number.isNaN(start) || Number.isNaN(end)) return null;
+  return Math.max(0, Math.round((end - start) / 1000));
 }
+
+function formatDuration(run: PipelineRunRead): string {
+  const s = durationSeconds(run);
+  if (s === null) return "—";
+  return s < 60 ? `${s}s` : `${Math.floor(s / 60)}m ${s % 60}s`;
+}
+
+function planIssues(plan: { validation: Record<string, unknown> }): string[] {
+  const validation = plan.validation as Record<string, unknown>;
+  const raw = validation?.errors ?? validation?.warnings;
+  if (Array.isArray(raw)) return raw.map((entry) => String(entry));
+  if (typeof raw === "string" && raw.trim()) return [raw];
+  return [];
+}
+
+const runStatusVariant = (status: string): "default" | "secondary" | "destructive" | "outline" =>
+  status === "failed" ? "destructive" : status === "succeeded" ? "default" : status === "running" ? "secondary" : "outline";
 
 function asRecord(value: unknown): Record<string, unknown> | null {
-  return value && typeof value === "object" && !Array.isArray(value)
-    ? (value as Record<string, unknown>)
-    : null;
+  return value && typeof value === "object" && !Array.isArray(value) ? (value as Record<string, unknown>) : null;
 }
 
-function asString(value: unknown): string | null {
-  return typeof value === "string" && value ? value : null;
-}
+type BottomTab = "logs" | "config" | "result" | "outputs";
 
-function asNumber(value: unknown): number | null {
-  return typeof value === "number" && Number.isFinite(value) ? value : null;
-}
-
-function isDefinitionDirty(text: string, definition: PipelineDefinition | undefined): boolean {
-  if (!definition) return false;
-  try {
-    return JSON.stringify(JSON.parse(text)) !== JSON.stringify(definition);
-  } catch {
-    return true;
-  }
-}
-
-function RunResult({ run }: { run: PipelineRunRead }): JSX.Element | null {
-  const result = asRecord(run.result);
-  if (!result) return null;
-
-  const sink = asRecord(result.sink);
-  const materialization = asRecord(result.materialization);
-  const columns = Array.isArray(result.columns)
-    ? result.columns.filter((column): column is string => typeof column === "string")
-    : [];
-
-  const rows: Array<{ label: string; value: string }> = [];
-  if (sink) {
-    const kind = asString(sink.kind);
-    if (kind) rows.push({ label: "Sink", value: kind });
-    const table = asString(sink.table);
-    if (table) rows.push({ label: "Table", value: table });
-    const objectKey = asString(sink.object_key);
-    if (objectKey) rows.push({ label: "Object key", value: objectKey });
-    const mode = asString(sink.mode);
-    if (mode) rows.push({ label: "Write mode", value: mode });
-    const sinkRows = asNumber(sink.row_count);
-    if (sinkRows !== null) rows.push({ label: "Rows written", value: String(sinkRows) });
-  }
-  if (run.row_count !== null && run.row_count !== undefined) {
-    rows.push({ label: "Run row count", value: String(run.row_count) });
-  }
-  if (materialization) {
-    const notebookId = asString(materialization.notebook_id);
-    if (notebookId) rows.push({ label: "Materialized notebook", value: notebookId });
-    const cellId = asString(materialization.dashboard_cell_id);
-    if (cellId) rows.push({ label: "Dashboard cell", value: cellId });
-  }
-  const materializationError = asString(result.materialization_error);
-  if (materializationError) {
-    rows.push({ label: "Materialization error", value: materializationError });
-  }
-
-  return (
-    <div className="mt-3 space-y-3 rounded-lg border border-border bg-background/60 p-3">
-      {result.dry_run === true && (
-        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-          <Sparkles className="h-3.5 w-3.5" /> Validated only — no destination was written.
-        </div>
-      )}
-      {rows.length > 0 && (
-        <dl className="grid gap-x-4 gap-y-2 text-xs sm:grid-cols-2">
-          {rows.map((row) => (
-            <div key={row.label} className="flex flex-col">
-              <dt className="text-muted-foreground">{row.label}</dt>
-              <dd className="break-words font-mono text-foreground">{row.value}</dd>
-            </div>
-          ))}
-        </dl>
-      )}
-      {columns.length > 0 && (
-        <div className="text-xs">
-          <div className="text-muted-foreground">Output columns</div>
-          <div className="mt-1 flex flex-wrap gap-1">
-            {columns.map((column) => (
-              <Badge key={column} variant="secondary" className="font-mono font-normal">
-                {column}
-              </Badge>
-            ))}
-          </div>
-        </div>
-      )}
-      <details className="text-xs text-muted-foreground">
-        <summary className="cursor-pointer select-none hover:text-foreground">Raw result</summary>
-        <pre className="mt-2 max-h-56 overflow-auto rounded-md bg-muted p-2 font-mono text-[11px] leading-5">
-          {JSON.stringify(run.result, null, 2)}
-        </pre>
-      </details>
-    </div>
-  );
-}
+/* ---------- page ---------- */
 
 export default function PipelineDetailPage(): JSX.Element {
-  const { pipelineId = "" } = useParams();
+  const { pipelineId } = useParams();
+  const isDraft = !pipelineId;
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
 
   const [pipeline, setPipeline] = useState<PipelineRead | null>(null);
+  const [draft, setDraft] = useState<PipelineDefinition | null>(null);
+  const [name, setName] = useState(searchParams.get("name") ?? "");
+  const [description, setDescription] = useState(searchParams.get("description") ?? "");
+  const [output, setOutput] = useState<OutputTarget>("none");
+
   const [runs, setRuns] = useState<PipelineRunRead[]>([]);
   const [events, setEvents] = useState<JobEventRead[]>([]);
   const [notebooks, setNotebooks] = useState<Notebook[]>([]);
-
-  const [name, setName] = useState("");
-  const [description, setDescription] = useState("");
-  const [definitionText, setDefinitionText] = useState("");
-  const [materializeNotebookId, setMaterializeNotebookId] = useState("");
-
+  const [notebookId, setNotebookId] = useState("");
   const [selectedRunId, setSelectedRunId] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [notice, setNotice] = useState<string | null>(null);
+  const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
+  const [propertiesNodeId, setPropertiesNodeId] = useState<string | null>(null);
+  const [stageEdge, setStageEdge] = useState<StageEdge | null>(null);
+  const [tab, setTab] = useState<BottomTab>("logs");
+
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [input, setInput] = useState("");
+  const [planning, setPlanning] = useState(false);
+
+  const [loading, setLoading] = useState(!isDraft);
   const [saving, setSaving] = useState(false);
   const [approving, setApproving] = useState(false);
   const [running, setRunning] = useState<"dry" | "prod" | null>(null);
   const [materializing, setMaterializing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
+  const bottomRef = useRef<HTMLDivElement | null>(null);
 
+  /* load existing pipeline */
   const loadRuns = useCallback(async () => {
-    const nextRuns = await etlApi.runs(pipelineId);
-    setRuns(nextRuns);
-    setSelectedRunId((current) =>
-      current && nextRuns.some((run) => run.id === current)
-        ? current
-        : nextRuns[0]?.id ?? null
-    );
-    return nextRuns;
+    if (!pipelineId) return [];
+    const next = await etlApi.runs(pipelineId);
+    setRuns(next);
+    setSelectedRunId((cur) => (cur && next.some((r) => r.id === cur) ? cur : next[0]?.id ?? null));
+    return next;
   }, [pipelineId]);
 
   useEffect(() => {
+    if (!pipelineId) return;
     let cancelled = false;
     setLoading(true);
     setError(null);
-
     void (async () => {
       try {
         const [current, nextRuns, nextNotebooks] = await Promise.all([
@@ -210,56 +232,36 @@ export default function PipelineDetailPage(): JSX.Element {
           apiFetch<Notebook[]>("/notebook").catch(() => [] as Notebook[]),
         ]);
         if (cancelled) return;
-
         setPipeline(current);
         setName(current.name);
         setDescription(current.description ?? "");
-        setDefinitionText(JSON.stringify(current.definition, null, 2));
+        setDraft(current.definition);
+        setOutput(outputTarget(current.definition));
         setRuns(nextRuns);
         setSelectedRunId(nextRuns[0]?.id ?? null);
         setNotebooks(nextNotebooks);
-        setMaterializeNotebookId(nextNotebooks[0]?.id ?? "");
+        setNotebookId(nextNotebooks[0]?.id ?? "");
       } catch (err) {
-        if (!cancelled) {
-          setError(err instanceof Error ? err.message : "Unable to load pipeline.");
-        }
+        if (!cancelled) setError(err instanceof Error ? err.message : "Unable to load pipeline.");
       } finally {
         if (!cancelled) setLoading(false);
       }
     })();
-
     return () => {
       cancelled = true;
     };
   }, [pipelineId]);
 
-  const hasActiveRun = runs.some(
-    (run) => run.status === "queued" || run.status === "running"
-  );
-
+  /* polling */
+  const hasActiveRun = runs.some((r) => r.status === "queued" || r.status === "running");
   useEffect(() => {
     if (!hasActiveRun) return;
-    const timer = window.setInterval(() => {
-      void loadRuns().catch(() => undefined);
-    }, 3000);
-    return () => window.clearInterval(timer);
+    const t = window.setInterval(() => void loadRuns().catch(() => undefined), 3000);
+    return () => window.clearInterval(t);
   }, [hasActiveRun, loadRuns]);
 
-  const selectedRun = useMemo(
-    () => runs.find((run) => run.id === selectedRunId) ?? null,
-    [runs, selectedRunId]
-  );
-
-  const canMaterialize = useMemo(
-    () =>
-      runs.some((run) => {
-        if (run.dry_run || run.status !== "succeeded") return false;
-        const result = asRecord(run.result);
-        const sink = result ? asRecord(result.sink) : null;
-        return asString(sink?.kind) === "postgres";
-      }),
-    [runs]
-  );
+  const selectedRun = useMemo(() => runs.find((r) => r.id === selectedRunId) ?? null, [runs, selectedRunId]);
+  const selectedRunActive = selectedRun?.status === "queued" || selectedRun?.status === "running";
 
   useEffect(() => {
     if (!selectedRunId) {
@@ -267,75 +269,146 @@ export default function PipelineDetailPage(): JSX.Element {
       return;
     }
     let cancelled = false;
-    void etlApi
-      .events(selectedRunId)
-      .then((nextEvents) => {
-        if (!cancelled) setEvents(nextEvents);
-      })
-      .catch((err) => {
-        if (!cancelled) {
-          setError(err instanceof Error ? err.message : "Unable to load run events.");
-        }
-      });
+    const fetchEvents = () =>
+      etlApi
+        .events(selectedRunId)
+        .then((e) => !cancelled && setEvents(e))
+        .catch(() => undefined);
+    void fetchEvents();
+    if (!selectedRunActive) return () => { cancelled = true; };
+    const t = window.setInterval(() => void fetchEvents(), 3000);
     return () => {
       cancelled = true;
+      window.clearInterval(t);
     };
-  }, [selectedRunId, selectedRun?.status]);
+  }, [selectedRunId, selectedRunActive, selectedRun?.status]);
 
-  const selectedRunActive =
-    selectedRun?.status === "queued" || selectedRun?.status === "running";
+  /* graph + monitoring state */
+  const layout = useMemo(() => buildLayout(draft, output), [draft, output]);
+  const states = useMemo(() => deriveTaskStates(layout, selectedRun, events), [layout, selectedRun, events]);
+  const realIds = useMemo(() => layout.nodes.filter((n) => !n.planned).map((n) => n.id), [layout]);
+  const selectedNode = layout.nodes.find((n) => n.id === selectedNodeId) ?? null;
+  const propertiesStep = useMemo(
+    () => draft?.steps.find((step) => step.id === propertiesNodeId) ?? null,
+    [draft, propertiesNodeId]
+  );
+
+  const visibleEvents = useMemo(
+    () => (selectedNodeId ? events.filter((e) => eventStep(e, realIds) === selectedNodeId) : events),
+    [events, selectedNodeId, realIds]
+  );
+
+  const definitionDirty = JSON.stringify(draft) !== JSON.stringify(pipeline?.definition ?? null);
+  const metaDirty = !!pipeline && (name !== pipeline.name || description !== (pipeline.description ?? ""));
+  const dirty = isDraft ? !!draft : definitionDirty || metaDirty;
+  const canRunProduction = pipeline?.status === "approved" && !definitionDirty;
+
+  const canMaterialize = runs.some((run) => {
+    if (run.dry_run || run.status !== "succeeded") return false;
+    return asRecord(asRecord(asRecord(run.result)?.sink))?.kind === "postgres" ||
+      asRecord(asRecord(run.result)?.sink)?.kind === "postgres";
+  });
 
   useEffect(() => {
-    if (!selectedRunActive || !selectedRunId) return;
-    const timer = window.setInterval(() => {
-      void etlApi
-        .events(selectedRunId)
-        .then(setEvents)
-        .catch(() => undefined);
-    }, 3000);
-    return () => window.clearInterval(timer);
-  }, [selectedRunActive, selectedRunId]);
+    bottomRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+  }, [messages, planning]);
 
-  const definitionDirty = isDefinitionDirty(definitionText, pipeline?.definition);
-  const formDirty =
-    !!pipeline &&
-    (name !== pipeline.name ||
-      description !== (pipeline.description ?? "") ||
-      definitionDirty);
+  /* chat */
+  const send = async (prompt?: string, forcedOutput?: OutputTarget) => {
+    const query = (prompt ?? input).trim();
+    if (!query || planning) return;
+    const target = forcedOutput ?? output;
+    if (forcedOutput) setOutput(forcedOutput);
 
-  const save = async () => {
-    if (!pipeline) return;
-    let parsed: PipelineDefinition;
+    const history: PlanConversationTurn[] = messages
+      .filter((m) => !m.error && m.content.trim())
+      .slice(-19)
+      .map((m) => ({ role: m.role, content: m.content }));
+
+    setMessages((cur) => [...cur, { id: makeId("u"), role: "user", content: query }]);
+    setInput("");
+    setError(null);
+    setPlanning(true);
     try {
-      parsed = JSON.parse(definitionText) as PipelineDefinition;
-    } catch {
-      setError("The pipeline definition must be valid JSON.");
-      return;
+      // `output_targets` is sent as a structured field AND appended to the prompt,
+      // so the planner sees the intent even before the backend schema supports it.
+      const request = {
+        query: query + OUTPUT_PROMPT[target],
+        history,
+        previous_definition: draft ?? undefined,
+        output_targets: target === "none" ? [] : target === "both" ? ["dashboard", "ml"] : [target],
+      } as unknown as Parameters<typeof etlApi.plan>[0];
+      const plan = await etlApi.plan(request);
+      setDraft(plan.definition);
+      setOutput(outputTarget(plan.definition));
+      setSelectedNodeId(null);
+      if (isDraft) {
+        if (!name.trim()) setName(plan.name);
+        if (!description.trim() && plan.description) setDescription(plan.description);
+      }
+      setMessages((cur) => [
+        ...cur,
+        {
+          id: makeId("a"),
+          role: "assistant",
+          content:
+            plan.reply ||
+            plan.description ||
+            `I updated the DAG: ${plan.definition.steps.length} tasks.`,
+          issues: planIssues(plan),
+        },
+      ]);
+    } catch (err) {
+      setMessages((cur) => [
+        ...cur,
+        {
+          id: makeId("e"),
+          role: "assistant",
+          error: true,
+          content:
+            err instanceof Error
+              ? err.message
+              : "I couldn't turn that into a DAG. Try naming the source table and columns.",
+        },
+      ]);
+    } finally {
+      setPlanning(false);
     }
-    if (!parsed || !Array.isArray(parsed.steps) || parsed.steps.length === 0) {
-      setError("The definition must contain a non-empty 'steps' array.");
-      return;
-    }
+  };
 
-    const definitionChanged = isDefinitionDirty(definitionText, pipeline.definition);
+  const onKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
+    if (event.key === "Enter" && !event.shiftKey) {
+      event.preventDefault();
+      void send();
+    }
+  };
+
+  /* actions */
+  const save = async () => {
+    if (!draft) return;
     setSaving(true);
     setError(null);
     setNotice(null);
     try {
-      const updated = await etlApi.update(pipeline.id, {
-        name: name.trim() || pipeline.name,
-        description: description.trim() || null,
-        ...(definitionChanged ? { definition: parsed } : {}),
-      });
-      setPipeline(updated);
-      setName(updated.name);
-      setDescription(updated.description ?? "");
-      setDefinitionText(JSON.stringify(updated.definition, null, 2));
-      setNotice(
-        definitionChanged
-          ? "Saved. The definition change reset approval and incremented the version."
-          : "Saved."
-      );
+      if (isDraft) {
+        const created = await etlApi.create({
+          name: name.trim() || "Untitled pipeline",
+          description: description.trim() || null,
+          definition: draft,
+        });
+        navigate(`/pipelines/${created.id}`, { replace: true });
+      } else if (pipeline) {
+        const updated = await etlApi.update(pipeline.id, {
+          name: name.trim() || pipeline.name,
+          description: description.trim() || null,
+          ...(definitionDirty ? { definition: draft } : {}),
+        });
+        setPipeline(updated);
+        setDraft(updated.definition);
+        setNotice(
+          definitionDirty ? "Saved. The DAG change reset approval and incremented the version." : "Saved."
+        );
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unable to save pipeline.");
     } finally {
@@ -345,19 +418,11 @@ export default function PipelineDetailPage(): JSX.Element {
 
   const approve = async () => {
     if (!pipeline) return;
-    if (
-      !window.confirm(
-        `Approve "${pipeline.name}" (version ${pipeline.version}) for production runs?`
-      )
-    ) {
-      return;
-    }
+    if (!window.confirm(`Approve "${pipeline.name}" (version ${pipeline.version}) for production runs?`)) return;
     setApproving(true);
     setError(null);
-    setNotice(null);
     try {
-      const updated = await etlApi.approve(pipeline.id);
-      setPipeline(updated);
+      setPipeline(await etlApi.approve(pipeline.id));
       setNotice("Pipeline approved for production runs.");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unable to approve pipeline.");
@@ -368,25 +433,15 @@ export default function PipelineDetailPage(): JSX.Element {
 
   const startRun = async (dryRun: boolean) => {
     if (!pipeline) return;
-    if (!dryRun && pipeline.status !== "approved") {
-      setError("Approve this pipeline before starting a production run.");
-      return;
-    }
-    if (
-      !dryRun &&
-      !window.confirm(
-        `Start a production run of "${pipeline.name}"? This writes to its configured destination.`
-      )
-    ) {
-      return;
-    }
+    if (!dryRun && !window.confirm(`Start a production run of "${pipeline.name}"? This writes to its destination.`)) return;
     setRunning(dryRun ? "dry" : "prod");
     setError(null);
     setNotice(null);
     try {
       const run = await etlApi.run(pipeline.id, { dry_run: dryRun });
-      setRuns((items) => [run, ...items.filter((item) => item.id !== run.id)]);
+      setRuns((items) => [run, ...items.filter((i) => i.id !== run.id)]);
       setSelectedRunId(run.id);
+      setTab("logs");
       setNotice(dryRun ? "Dry run queued." : "Production run queued.");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unable to queue a run.");
@@ -396,23 +451,122 @@ export default function PipelineDetailPage(): JSX.Element {
   };
 
   const materialize = async () => {
-    if (!pipeline || !materializeNotebookId) return;
+    if (!pipeline || !notebookId) return;
     setMaterializing(true);
     setError(null);
-    setNotice(null);
     try {
-      const result = await etlApi.materialize(pipeline.id, {
-        notebook_id: materializeNotebookId,
-      });
-      const notebookId = asString(result.notebook_id) ?? materializeNotebookId;
-      navigate(`/notebooks/${notebookId}`);
+      const result = await etlApi.materialize(pipeline.id, { notebook_id: notebookId });
+      const id = typeof result.notebook_id === "string" && result.notebook_id ? result.notebook_id : notebookId;
+      navigate(`/notebooks/${id}`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Unable to materialize pipeline.");
+      setError(err instanceof Error ? err.message : "Unable to build the dashboard.");
     } finally {
       setMaterializing(false);
     }
   };
 
+  /* graph editing */
+  const openProperties = (id: string) => {
+    if (!draft || id.startsWith("__")) return;
+    setSelectedNodeId(id);
+    setPropertiesNodeId(id);
+  };
+
+  const addSource = (source: SourceSpec) => {
+    const definition = draft ?? { steps: [] };
+    const id = nextStepId("source", definition);
+    const steps: PipelineStep[] = [
+      ...definition.steps,
+      { id, type: "source", source: { ...source, columns: source.columns ?? [] } },
+    ];
+
+    // A pipeline needs exactly one sink; give a brand-new DAG a valid end so the
+    // new source is immediately runnable, and let later sources be joined in.
+    const hasSink = definition.steps.some((step) => step.type === "sink");
+    if (!hasSink) {
+      steps.push({
+        id: nextStepId("sink", { ...definition, steps }),
+        type: "sink",
+        input: id,
+        sink: { kind: "postgres", table: defaultSinkTable(name), mode: "replace" },
+      });
+    }
+
+    setDraft({ ...definition, steps });
+    setError(null);
+    setNotice(
+      hasSink
+        ? `Added ${id}. Use the + on an edge to join it into the pipeline.`
+        : `Added ${id} and a Postgres sink. Pick the destination table, then save.`
+    );
+    setSelectedNodeId(id);
+    setPropertiesNodeId(id);
+  };
+
+  const updateStep = (next: PipelineStep) => {
+    setDraft((current) =>
+      current
+        ? { ...current, steps: current.steps.map((step) => (step.id === next.id ? next : step)) }
+        : current
+    );
+    setNotice(`Updated ${next.id}. Save to persist the change.`);
+  };
+
+  const deleteStep = (stepId: string) => {
+    if (!draft) return;
+    const target = draft.steps.find((step) => step.id === stepId);
+    if (!target) return;
+
+    const replacement = target.input ?? null;
+    const dependents = draft.steps.filter(
+      (step) => step.id !== stepId && (step.input === stepId || step.transform?.right === stepId)
+    );
+
+    if (dependents.length > 0 && !replacement) {
+      setError(
+        `${stepId} still feeds ${dependents.map((step) => step.id).join(", ")}. ` +
+          "Delete or reconnect those steps first."
+      );
+      return;
+    }
+
+    // Splice the removed step out: everything that read from it now reads its
+    // input, which keeps the DAG connected.
+    const steps = draft.steps
+      .filter((step) => step.id !== stepId)
+      .map((step) => {
+        let next = step;
+        if (step.input === stepId) next = { ...next, input: replacement };
+        if (step.transform?.right === stepId) {
+          next = { ...next, transform: { ...step.transform, right: replacement } };
+        }
+        return next;
+      });
+
+    setDraft({ ...draft, steps });
+    setSelectedNodeId((current) => (current === stepId ? null : current));
+    setPropertiesNodeId(null);
+    setNotice(`Removed ${stepId}. Save to persist the change.`);
+  };
+
+  const handleStagePlanned = (plan: PipelineStagePlanRead) => {
+    setDraft(plan.definition);
+    setOutput(outputTarget(plan.definition));
+    setStageEdge(null);
+    setSelectedNodeId(plan.steps[0]?.id ?? null);
+    setTab("config");
+    setNotice(plan.reply || `Inserted ${plan.steps.length} stage step(s). Save to persist.`);
+    setMessages((current) => [
+      ...current,
+      {
+        id: makeId("a"),
+        role: "assistant",
+        content: plan.reply || `Inserted ${plan.steps.length} stage step(s) into the DAG.`,
+      },
+    ]);
+  };
+
+  /* render */
   if (loading) {
     return (
       <main className="flex min-h-full items-center justify-center bg-background p-8 text-muted-foreground">
@@ -420,8 +574,7 @@ export default function PipelineDetailPage(): JSX.Element {
       </main>
     );
   }
-
-  if (!pipeline) {
+  if (!isDraft && !pipeline) {
     return (
       <main className="min-h-full bg-background px-6 py-10">
         <div className="mx-auto max-w-3xl rounded-xl border border-destructive/40 bg-destructive/10 p-4 text-sm text-destructive">
@@ -431,321 +584,373 @@ export default function PipelineDetailPage(): JSX.Element {
     );
   }
 
-  const canRunProduction = pipeline.status === "approved";
+  const bannerClass = "flex items-start justify-between gap-3 rounded-lg border p-2.5 text-sm";
 
   return (
-    <main className="min-h-full bg-background px-6 py-10">
-      <div className="mx-auto max-w-6xl">
-        <Link
-          to="/pipelines"
-          className="mb-6 inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
-        >
-          <ArrowLeft className="h-4 w-4" /> Pipelines
-        </Link>
-
-        <header className="mb-6 flex flex-wrap items-start justify-between gap-4">
-          <div className="min-w-0">
-            <h1 className="text-3xl font-semibold text-foreground">{pipeline.name}</h1>
-            <p className="mt-2 text-sm text-muted-foreground">
-              {pipeline.description || "No description"}
-            </p>
-            <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-              <Badge variant={pipelineStatusVariant(pipeline.status)}>
-                {pipeline.status.replaceAll("_", " ")}
-              </Badge>
-              <span>v{pipeline.version}</span>
-              <span>
-                {pipeline.definition.steps.length} step
-                {pipeline.definition.steps.length === 1 ? "" : "s"}
-              </span>
-              {pipeline.approved_at && <span>Approved {formatDate(pipeline.approved_at)}</span>}
-              {formDirty && <Badge variant="outline">Unsaved changes</Badge>}
-            </div>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            {!canRunProduction && (
-              <Button variant="outline" onClick={() => void approve()} disabled={approving}>
-                {approving ? <Loader2 className="animate-spin" /> : <CheckCircle2 />}
-                {approving ? "Approving..." : "Approve"}
-              </Button>
-            )}
-            <Button
-              variant="outline"
-              onClick={() => void startRun(true)}
-              disabled={running !== null}
-            >
-              {running === "dry" ? <Loader2 className="animate-spin" /> : <Play />}
-              Dry run
-            </Button>
-            <Button
-              onClick={() => void startRun(false)}
-              disabled={!canRunProduction || running !== null}
-              title={
-                canRunProduction
-                  ? undefined
-                  : "Approve this pipeline before starting a production run."
-              }
-            >
-              {running === "prod" ? <Loader2 className="animate-spin" /> : <Play />}
-              Production run
-            </Button>
-          </div>
-        </header>
-
-        {error && (
-          <div className="mb-4 flex items-start justify-between gap-3 rounded-lg border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">
-            <span className="flex items-start gap-2">
-              <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" /> {error}
-            </span>
-            <button type="button" className="text-xs underline" onClick={() => setError(null)}>
-              Dismiss
-            </button>
-          </div>
-        )}
-        {notice && (
-          <div className="mb-4 flex items-start justify-between gap-3 rounded-lg border border-emerald-500/40 bg-emerald-500/10 p-3 text-sm text-emerald-700 dark:text-emerald-300">
-            <span className="flex items-start gap-2">
-              <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" /> {notice}
-            </span>
-            <button type="button" className="text-xs underline" onClick={() => setNotice(null)}>
-              Dismiss
-            </button>
-          </div>
-        )}
-
-        <div className="grid gap-6 lg:grid-cols-[1.1fr_1fr]">
-          {/* Definition */}
-          <section className="space-y-4 rounded-xl border border-border bg-card p-5">
-            <div className="flex items-center justify-between gap-3">
-              <h2 className="font-semibold text-foreground">Definition</h2>
-              <Button size="sm" onClick={() => void save()} disabled={saving || !formDirty}>
-                {saving ? <Loader2 className="animate-spin" /> : <Save />}
-                {saving ? "Saving..." : "Save"}
-              </Button>
-            </div>
-
-            <div className="space-y-1.5">
-              <label htmlFor="detail-name" className="text-xs font-medium text-muted-foreground">
-                Name
-              </label>
-              <Input
-                id="detail-name"
-                value={name}
-                onChange={(event) => setName(event.target.value)}
-              />
-            </div>
-
-            <div className="space-y-1.5">
-              <label
-                htmlFor="detail-description"
-                className="text-xs font-medium text-muted-foreground"
-              >
-                Description
-              </label>
-              <Textarea
-                id="detail-description"
-                value={description}
-                onChange={(event) => setDescription(event.target.value)}
-                placeholder="Description"
-              />
-            </div>
-
-            <div>
-              <div className="mb-2 text-xs font-medium text-muted-foreground">DAG</div>
-              <PipelineStepList steps={pipeline.definition.steps} compact />
-            </div>
-
-            <details className="rounded-lg border border-border bg-background/60 p-3">
-              <summary className="cursor-pointer select-none text-xs font-medium text-muted-foreground hover:text-foreground">
-                Edit definition JSON
-              </summary>
-              <Textarea
-                value={definitionText}
-                onChange={(event) => setDefinitionText(event.target.value)}
-                className="mt-2 min-h-[260px] font-mono text-xs"
-                spellCheck={false}
-                aria-label="Pipeline definition JSON"
-              />
-              <p className="mt-2 text-xs text-muted-foreground">
-                Saving a definition change resets approval and increments the version. Sources
-                must be allow-listed or use the configured ETL source prefix; Postgres sinks must
-                use the configured sink prefix.
-              </p>
-            </details>
-
-            <div className="space-y-2 border-t border-border pt-4">
-              <div className="text-xs font-medium text-muted-foreground">
-                Materialize latest Postgres sink
-              </div>
-              {notebooks.length === 0 ? (
-                <p className="text-xs text-muted-foreground">
-                  No notebooks available.{" "}
-                  <Link to="/notebooks" className="text-primary underline">
-                    Create one first
-                  </Link>
-                  .
-                </p>
+    <main className="flex h-full min-h-0 flex-col bg-background">
+      {/* toolbar */}
+      <header className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-4 py-3">
+        <div className="flex min-w-0 flex-1 items-center gap-3">
+          <Button variant="ghost" size="icon" aria-label="Back to pipelines" onClick={() => navigate("/pipelines")}>
+            <ArrowLeft className="h-4 w-4" />
+          </Button>
+          <div className="min-w-0 flex-1 space-y-1">
+            <Input
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Pipeline name"
+              className="h-8 max-w-md border-transparent bg-transparent px-1 text-base font-semibold hover:border-border focus-visible:border-border"
+            />
+            <div className="flex flex-wrap items-center gap-2 px-1 text-xs text-muted-foreground">
+              {isDraft ? (
+                <Badge variant="outline">Draft · not saved</Badge>
               ) : (
-                <div className="flex flex-wrap gap-2">
-                  <Select
-                    value={materializeNotebookId}
-                    onValueChange={setMaterializeNotebookId}
-                  >
-                    <SelectTrigger className="min-w-[220px] flex-1">
-                      <SelectValue placeholder="Select a notebook" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {notebooks.map((notebook) => (
-                        <SelectItem key={notebook.id} value={notebook.id}>
-                          {notebook.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <Button
-                    variant="outline"
-                    onClick={() => void materialize()}
-                    disabled={materializing || !materializeNotebookId || !canMaterialize}
-                    title={
-                      canMaterialize
-                        ? undefined
-                        : "Run the pipeline successfully with a Postgres sink before materializing."
-                    }
-                  >
-                    {materializing ? <Loader2 className="animate-spin" /> : <Sparkles />}
-                    Materialize
-                  </Button>
-                </div>
+                <>
+                  <Badge variant={pipeline!.status === "approved" ? "default" : "outline"}>
+                    {pipeline!.status.replaceAll("_", " ")}
+                  </Badge>
+                  <span>v{pipeline!.version}</span>
+                </>
               )}
-              <p className="text-xs text-muted-foreground">
-                {canMaterialize
-                  ? "Adds the sink table as a managed data source and creates a dashboard preview cell in the selected notebook."
-                  : "A successful production run with a Postgres sink is required before the result can be materialized."}
-              </p>
+              <span>{layout.nodes.filter((n) => !n.planned).length} tasks</span>
+              {dirty && <Badge variant="outline">Unsaved changes</Badge>}
+              <Input
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="Description (optional)"
+                className="h-6 max-w-xs border-transparent bg-transparent px-1 text-xs hover:border-border"
+              />
             </div>
-          </section>
+          </div>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <Button size="sm" onClick={() => void save()} disabled={saving || !dirty || !draft}>
+            {saving ? <Loader2 className="animate-spin" /> : <Save />} {isDraft ? "Create pipeline" : "Save"}
+          </Button>
+          {!isDraft && pipeline!.status !== "approved" && (
+            <Button size="sm" variant="outline" onClick={() => void approve()} disabled={approving || definitionDirty}>
+              {approving ? <Loader2 className="animate-spin" /> : <CheckCircle2 />} Approve
+            </Button>
+          )}
+          {!isDraft && (
+            <>
+              <Button size="sm" variant="outline" onClick={() => void startRun(true)} disabled={running !== null || definitionDirty}
+                title={definitionDirty ? "Save your DAG changes first." : undefined}>
+                {running === "dry" ? <Loader2 className="animate-spin" /> : <Play />} Dry run
+              </Button>
+              <Button size="sm" onClick={() => void startRun(false)} disabled={!canRunProduction || running !== null}
+                title={canRunProduction ? undefined : "Save and approve the current DAG before a production run."}>
+                {running === "prod" ? <Loader2 className="animate-spin" /> : <Play />} Trigger DAG
+              </Button>
+            </>
+          )}
+        </div>
+      </header>
 
-          {/* Runs and logs */}
-          <section className="space-y-4">
-            <div className="rounded-xl border border-border bg-card p-5">
-              <div className="mb-4 flex items-center justify-between gap-3">
-                <h2 className="font-semibold text-foreground">Run history</h2>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={() => void loadRuns().catch(() => undefined)}
-                >
+      {(error || notice) && (
+        <div className="space-y-2 px-4 pt-3">
+          {error && (
+            <div className={cn(bannerClass, "border-destructive/40 bg-destructive/10 text-destructive")}>
+              <span className="flex items-start gap-2"><AlertCircle className="mt-0.5 h-4 w-4 shrink-0" /> {error}</span>
+              <button type="button" className="text-xs underline" onClick={() => setError(null)}>Dismiss</button>
+            </div>
+          )}
+          {notice && (
+            <div className={cn(bannerClass, "border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300")}>
+              <span className="flex items-start gap-2"><CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" /> {notice}</span>
+              <button type="button" className="text-xs underline" onClick={() => setNotice(null)}>Dismiss</button>
+            </div>
+          )}
+        </div>
+      )}
+
+      <div className="grid min-h-0 flex-1 grid-cols-1 gap-4 p-4 lg:grid-cols-[minmax(0,1fr)_380px]">
+        {/* DAG + monitoring */}
+        <section className="flex min-h-0 flex-col gap-4 overflow-y-auto pr-1">
+          {!isDraft && (
+            <div className="rounded-xl border border-border bg-card p-3">
+              <div className="mb-2 flex items-center justify-between">
+                <h2 className="text-xs font-semibold text-foreground">DAG runs</h2>
+                <Button size="sm" variant="ghost" onClick={() => void loadRuns().catch(() => undefined)}>
                   <RefreshCw /> Refresh
                 </Button>
               </div>
-
               {runs.length === 0 ? (
-                <p className="text-sm text-muted-foreground">
-                  No runs yet. Start with a dry run to validate the definition.
-                </p>
+                <p className="text-xs text-muted-foreground">No runs yet. Start with a dry run to validate the DAG.</p>
               ) : (
-                <div className="space-y-2">
-                  {runs.map((run) => {
-                    const isSelected = run.id === selectedRunId;
+                <div className="flex items-end gap-1 overflow-x-auto pb-1">
+                  {[...runs].slice(0, 30).reverse().map((run) => {
+                    const secs = durationSeconds(run) ?? 0;
+                    const max = Math.max(1, ...runs.slice(0, 30).map((r) => durationSeconds(r) ?? 0));
+                    const h = 14 + Math.round((secs / max) * 34);
                     return (
                       <button
                         key={run.id}
                         type="button"
                         onClick={() => setSelectedRunId(run.id)}
-                        className={`flex w-full flex-wrap items-center justify-between gap-2 rounded-lg border p-3 text-left text-sm transition-colors ${
-                          isSelected
-                            ? "border-primary/50 bg-primary/5"
-                            : "border-border hover:bg-secondary"
-                        }`}
-                      >
-                        <span className="flex items-center gap-2">
-                          {run.status === "succeeded" ? (
-                            <CheckCircle2 className="h-4 w-4 text-emerald-500" />
-                          ) : run.status === "failed" ? (
-                            <XCircle className="h-4 w-4 text-destructive" />
-                          ) : (
-                            <Clock className="h-4 w-4 text-muted-foreground" />
-                          )}
-                          <span className="font-medium">
-                            {run.dry_run ? "Dry run" : "Production"} · {run.id.slice(0, 8)}
-                          </span>
-                        </span>
-                        <span className="flex items-center gap-2 text-xs text-muted-foreground">
-                          {run.row_count !== null && run.row_count !== undefined && (
-                            <span>{run.row_count} rows</span>
-                          )}
-                          <span>{formatDate(run.created_at)}</span>
-                          <Badge variant={runStatusVariant(run.status)}>{run.status}</Badge>
-                        </span>
-                      </button>
+                        title={`${run.dry_run ? "Dry run" : "Production"} · ${run.status} · ${formatDate(run.created_at)} · ${formatDuration(run)}`}
+                        style={{ height: h }}
+                        className={cn(
+                          "w-4 shrink-0 rounded-sm transition",
+                          STATE_META[runStateOf(run.status)].dot,
+                          run.dry_run && "opacity-60",
+                          run.id === selectedRunId && "ring-2 ring-primary ring-offset-1 ring-offset-card"
+                        )}
+                      />
                     );
                   })}
                 </div>
               )}
             </div>
+          )}
 
-            <div className="rounded-xl border border-border bg-card p-5">
-              <h2 className="mb-4 font-semibold text-foreground">Run details</h2>
-              {!selectedRun ? (
-                <p className="text-sm text-muted-foreground">
-                  Select a run to inspect its result and events.
-                </p>
-              ) : (
-                <div className="space-y-3">
-                  <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                    <Badge variant={runStatusVariant(selectedRun.status)}>
-                      {selectedRun.status}
-                    </Badge>
+          <div className="flex min-h-[300px] flex-1 items-stretch gap-3">
+            <SourceToolbar onAdd={addSource} disabled={planning} />
+            <DagCanvas
+              layout={layout}
+              states={states}
+              selectedId={selectedNodeId}
+              onSelect={setSelectedNodeId}
+              onInsertStage={(from, to) => setStageEdge({ from, to })}
+              onEditNode={openProperties}
+              className="min-w-0 flex-1"
+            />
+          </div>
+
+          {/* bottom panel */}
+          <div className="rounded-xl border border-border bg-card">
+            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border px-3 py-2">
+              <div className="flex gap-1">
+                {([
+                  ["logs", "Logs"],
+                  ["config", "Task config"],
+                  ["result", "Run result"],
+                  ["outputs", "Outputs"],
+                ] as [BottomTab, string][]).map(([value, label]) => (
+                  <Button key={value} size="sm" variant={tab === value ? "secondary" : "ghost"} onClick={() => setTab(value)}>
+                    {label}
+                  </Button>
+                ))}
+              </div>
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                {selectedNode && (
+                  <Badge variant="outline" className="gap-1 font-mono">
+                    {selectedNode.label}
+                    <button type="button" aria-label="Clear task filter" onClick={() => setSelectedNodeId(null)}>
+                      <X className="h-3 w-3" />
+                    </button>
+                  </Badge>
+                )}
+                {selectedRun && (
+                  <>
+                    <Badge variant={runStatusVariant(selectedRun.status)}>{selectedRun.status}</Badge>
                     <span>{selectedRun.dry_run ? "Dry run" : "Production"}</span>
                     <span>Started {formatDate(selectedRun.started_at)}</span>
                     <span>Duration {formatDuration(selectedRun)}</span>
-                  </div>
+                  </>
+                )}
+              </div>
+            </div>
 
-                  {selectedRun.error && (
-                    <div className="rounded-lg border border-destructive/40 bg-destructive/10 p-3 text-xs text-destructive">
+            <div className="max-h-64 overflow-auto p-3">
+              {tab === "logs" && (
+                <>
+                  {selectedRun?.error && (
+                    <div className="mb-2 rounded-lg border border-destructive/40 bg-destructive/10 p-2 text-xs text-destructive">
                       {selectedRun.error}
                     </div>
                   )}
-
-                  <RunResult run={selectedRun} />
-
-                  <div>
-                    <div className="mb-2 text-xs font-medium text-muted-foreground">
-                      Logs and events
+                  {visibleEvents.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">
+                      {selectedRun ? "No events for this selection yet." : "Run the DAG to see task logs here."}
+                    </p>
+                  ) : (
+                    <div className="space-y-1.5 font-mono text-xs">
+                      {visibleEvents.map((event) => (
+                        <div key={event.id} className="flex gap-2">
+                          <span className="shrink-0 text-muted-foreground">
+                            {event.created_at ? new Date(event.created_at).toLocaleTimeString() : ""}
+                          </span>
+                          <span className={event.level === "error" ? "text-destructive" : event.level === "warning" ? "text-amber-600 dark:text-amber-400" : "text-foreground"}>
+                            {event.message}
+                          </span>
+                        </div>
+                      ))}
                     </div>
-                    {events.length === 0 ? (
-                      <p className="text-sm text-muted-foreground">No events recorded yet.</p>
-                    ) : (
-                      <div className="max-h-72 space-y-2 overflow-auto rounded-lg border border-border bg-background/60 p-3 font-mono text-xs">
-                        {events.map((event) => (
-                          <div key={event.id} className="flex gap-2">
-                            <span className="shrink-0 text-muted-foreground">
-                              {event.created_at
-                                ? new Date(event.created_at).toLocaleTimeString()
-                                : ""}
-                            </span>
-                            <span
-                              className={
-                                event.level === "error"
-                                  ? "text-destructive"
-                                  : event.level === "warning"
-                                    ? "text-amber-600 dark:text-amber-400"
-                                    : "text-foreground"
-                              }
-                            >
-                              {event.message}
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
+                  )}
+                </>
+              )}
+
+              {tab === "config" &&
+                (selectedNode ? (
+                  <pre className="rounded-md bg-muted p-2 font-mono text-[11px] leading-5">
+                    {JSON.stringify(selectedNode.config, null, 2)}
+                  </pre>
+                ) : (
+                  <p className="text-sm text-muted-foreground">Click a task in the graph to inspect its configuration.</p>
+                ))}
+
+              {tab === "result" &&
+                (selectedRun?.result ? (
+                  <pre className="rounded-md bg-muted p-2 font-mono text-[11px] leading-5">
+                    {JSON.stringify(selectedRun.result, null, 2)}
+                  </pre>
+                ) : (
+                  <p className="text-sm text-muted-foreground">Select a finished run to see its result.</p>
+                ))}
+
+              {tab === "outputs" && (
+                <div className="space-y-3 text-sm">
+                  <p className="text-xs text-muted-foreground">
+                    Target: <span className="font-medium text-foreground">{OUTPUT_OPTIONS.find((o) => o.value === output)?.label}</span>.
+                    Change it in the chat panel; planned outputs appear as dashed nodes in the graph.
+                  </p>
+                  {(output === "dashboard" || output === "both") && (
+                    <div className="space-y-2 rounded-lg border border-border p-3">
+                      <div className="flex items-center gap-2 text-xs font-medium"><LayoutDashboard className="h-4 w-4 text-primary" /> Dashboard</div>
+                      {isDraft ? (
+                        <p className="text-xs text-muted-foreground">Create the pipeline and complete a production run first.</p>
+                      ) : notebooks.length === 0 ? (
+                        <p className="text-xs text-muted-foreground">
+                          No notebooks available. <Link to="/notebooks" className="text-primary underline">Create one first</Link>.
+                        </p>
+                      ) : (
+                        <div className="flex flex-wrap gap-2">
+                          <Select value={notebookId} onValueChange={setNotebookId}>
+                            <SelectTrigger className="min-w-[220px] flex-1"><SelectValue placeholder="Select a notebook" /></SelectTrigger>
+                            <SelectContent>
+                              {notebooks.map((nb) => (<SelectItem key={nb.id} value={nb.id}>{nb.name}</SelectItem>))}
+                            </SelectContent>
+                          </Select>
+                          <Button variant="outline" onClick={() => void materialize()} disabled={materializing || !notebookId || !canMaterialize}
+                            title={canMaterialize ? undefined : "A successful production run with a Postgres sink is required."}>
+                            {materializing ? <Loader2 className="animate-spin" /> : <Sparkles />} Build dashboard
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  {(output === "ml" || output === "both") && (
+                    <div className="rounded-lg border border-dashed border-border p-3 text-xs text-muted-foreground">
+                      <div className="mb-1 flex items-center gap-2 font-medium text-foreground"><Brain className="h-4 w-4 text-primary" /> ML model</div>
+                      Recorded as a planned task. Model training needs a backend training step before it can execute.
+                    </div>
+                  )}
+                  {output === "none" && <p className="text-xs text-muted-foreground">No dashboard or model requested.</p>}
                 </div>
               )}
             </div>
-          </section>
-        </div>
+          </div>
+        </section>
+
+        {/* chat */}
+        <aside className="flex min-h-[420px] min-w-0 flex-col rounded-xl border border-border bg-card/40 lg:min-h-0">
+          <div className="flex items-center gap-2 border-b border-border px-4 py-3">
+            <Sparkles className="h-4 w-4 text-primary" />
+            <div>
+              <h2 className="text-sm font-semibold text-foreground">Describe your DAG</h2>
+              <p className="text-xs text-muted-foreground">Sources, transformations and the output you want.</p>
+            </div>
+          </div>
+
+          <div className="flex-1 space-y-4 overflow-y-auto px-4 py-4">
+            {messages.length === 0 && !planning && (
+              <div className="space-y-2">
+                <p className="text-xs text-muted-foreground">
+                  {isDraft
+                    ? "The canvas is empty. Tell me what the pipeline should do, or start from an example:"
+                    : "Ask for changes to this DAG, e.g. “add a dedupe step before the sink”."}
+                </p>
+                {isDraft &&
+                  STARTERS.map((s) => (
+                    <button key={s.title} type="button" onClick={() => void send(s.prompt, s.output)}
+                      className="w-full rounded-lg border border-border bg-card p-2.5 text-left transition-colors hover:border-primary/40 hover:bg-primary/5">
+                      <div className="flex items-center gap-2 text-xs font-medium text-foreground"><s.icon className="h-3.5 w-3.5 text-primary" />{s.title}</div>
+                      <p className="mt-1 line-clamp-2 text-[11px] text-muted-foreground">{s.prompt}</p>
+                    </button>
+                  ))}
+              </div>
+            )}
+
+            {messages.map((m) => (
+              <div key={m.id} className={cn("flex gap-2", m.role === "user" && "flex-row-reverse")}>
+                <div className={cn("flex h-7 w-7 shrink-0 items-center justify-center rounded-full", m.role === "user" ? "bg-secondary text-secondary-foreground" : "bg-primary-gradient text-primary-foreground")}>
+                  {m.role === "user" ? <User className="h-3.5 w-3.5" /> : <Sparkles className="h-3.5 w-3.5" />}
+                </div>
+                <div className={cn("min-w-0 max-w-[85%] rounded-2xl px-3 py-2 text-sm shadow-sm",
+                  m.role === "user" ? "rounded-tr-sm bg-primary text-primary-foreground"
+                    : m.error ? "rounded-tl-sm border border-destructive/40 bg-destructive/10 text-destructive"
+                    : "rounded-tl-sm border border-border bg-card text-foreground")}>
+                  <div className="whitespace-pre-wrap break-words">{m.content}</div>
+                  {m.issues && m.issues.length > 0 && (
+                    <ul className="mt-2 list-disc space-y-0.5 border-t border-border pt-2 pl-4 text-xs text-destructive">
+                      {m.issues.map((issue, i) => (<li key={i}>{issue}</li>))}
+                    </ul>
+                  )}
+                </div>
+              </div>
+            ))}
+
+            {planning && (
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <Loader2 className="h-3.5 w-3.5 animate-spin" /> Designing the DAG…
+              </div>
+            )}
+            <div ref={bottomRef} />
+          </div>
+
+          <div className="space-y-2 border-t border-border p-3">
+            <div className="flex flex-wrap items-center gap-1.5">
+              <span className="text-[11px] text-muted-foreground">Output:</span>
+              {OUTPUT_OPTIONS.map((o) => (
+                <button key={o.value} type="button" onClick={() => setOutput(o.value)}
+                  className={cn("rounded-full border px-2.5 py-0.5 text-[11px] transition-colors",
+                    output === o.value ? "border-primary bg-primary text-primary-foreground" : "border-border text-muted-foreground hover:bg-secondary")}>
+                  {o.label}
+                </button>
+              ))}
+            </div>
+            <div className="rounded-xl border border-border bg-card p-2 focus-within:border-primary/50">
+              <Textarea
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={onKeyDown}
+                rows={3}
+                disabled={planning}
+                placeholder={isDraft ? "e.g. Read etl_orders, keep completed, aggregate revenue by day…" : "Describe a change to this DAG…"}
+                className="min-h-[64px] resize-none border-0 bg-transparent text-sm shadow-none focus-visible:ring-0"
+              />
+              <div className="flex items-center justify-between px-1">
+                <span className="text-[11px] text-muted-foreground">Enter to send · Shift+Enter for new line</span>
+                <Button size="icon" onClick={() => void send()} disabled={!input.trim() || planning} aria-label="Send">
+                  {planning ? <Loader2 className="animate-spin" /> : <ArrowUp />}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </aside>
       </div>
+
+      <NodePropertiesPanel
+        open={propertiesNodeId !== null}
+        step={propertiesStep}
+        definition={draft}
+        onOpenChange={(open) => {
+          if (!open) setPropertiesNodeId(null);
+        }}
+        onSave={updateStep}
+        onDelete={deleteStep}
+      />
+
+      <InsertStageDialog
+        open={stageEdge !== null}
+        edge={stageEdge}
+        definition={draft}
+        onOpenChange={(open) => {
+          if (!open) setStageEdge(null);
+        }}
+        onPlanned={handleStagePlanned}
+      />
     </main>
   );
 }

@@ -89,7 +89,7 @@ from squirrel.services.storage.blob.MinIOService import MinIOService
 
 # Schemas
 from squirrel.schemas.api import AgentRequest, AgentResponse, LLMTokens
-from squirrel.schemas.etl import PipelinePlanRead
+from squirrel.schemas.etl import PipelineDefinition, PipelinePlanRead
 from squirrel.schemas.file import FileProcessingIssue
 from squirrel.services.pipelines.compiler import PipelineValidationError
 
@@ -333,6 +333,17 @@ class OrchestratorService:
         context = body.get("context") or {}
         if not isinstance(context, dict):
             context = {}
+        history = [
+            {"role": turn.role, "content": turn.content}
+            for turn in (request.conversationHistory or [])
+        ]
+        raw_previous = body.get("previousDefinition") or body.get("previous_definition")
+        previous_definition = None
+        if isinstance(raw_previous, dict):
+            try:
+                previous_definition = PipelineDefinition.model_validate(raw_previous)
+            except Exception:  # noqa: BLE001 - ignore an unusable refinement
+                previous_definition = None
 
         try:
             agent = ETLPlannerAgent()
@@ -344,6 +355,8 @@ class OrchestratorService:
                 sink_table=sink_table,
                 notebook_id=notebook_id,
                 context=context,
+                previous_definition=previous_definition,
+                history=history,
             )
 
             plan_read = PipelinePlanRead(

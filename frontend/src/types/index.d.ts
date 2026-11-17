@@ -31,11 +31,17 @@ export type {
     ApprovePipelineRequest,
     RunPipelineRequest,
     MaterializePipelineRequest,
+    PlanConversationTurn,
     PlanPipelineRequest,
+    PlanStageRequest,
     PipelineRead,
     PipelineRunRead,
+    PipelineStagePlanRead,
     JobEventRead,
     PipelinePlanRead,
+    SourceTableColumn,
+    SourceTableRead,
+    ResolveSourceRead,
     EtlChatBody,
 } from './etl';
 

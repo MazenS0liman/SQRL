@@ -42,6 +42,40 @@ class PipelineRunStatus:
     TERMINAL = {SUCCEEDED, FAILED, CANCELLED}
 
 
+class MLTask:
+    CLASSIFICATION = "classification"
+    REGRESSION = "regression"
+    CLUSTERING = "clustering"
+
+    ALL = {CLASSIFICATION, REGRESSION, CLUSTERING}
+
+
+class MLAlgorithm:
+    AUTO = "auto"
+    RANDOM_FOREST = "random_forest"
+    GRADIENT_BOOSTING = "gradient_boosting"
+    LINEAR = "linear"
+
+    ALL = {AUTO, RANDOM_FOREST, GRADIENT_BOOSTING, LINEAR}
+
+
+class TaskState:
+    """Per-step state reported in ``pipeline_runs.result['task_states']``."""
+
+    QUEUED = "queued"
+    RUNNING = "running"
+    SUCCESS = "success"
+    FAILED = "failed"
+    UPSTREAM_FAILED = "upstream_failed"
+    SKIPPED = "skipped"
+
+    ALL = {QUEUED, RUNNING, SUCCESS, FAILED, UPSTREAM_FAILED, SKIPPED}
+
+
+DASHBOARD_TASK_ID = "__dashboard"
+ML_TASK_ID = "__ml"
+
+
 # ——————————————————————————————————————————————————————————————
 # Step vocabulary
 
@@ -88,6 +122,7 @@ class TransformOp:
 
     SELECT    = "select"
     FILTER    = "filter"
+    FILL_NULL = "fill_null"
     RENAME    = "rename"
     CAST      = "cast"
     DEDUPE    = "dedupe"
@@ -95,8 +130,7 @@ class TransformOp:
     AGGREGATE = "aggregate"
     JOIN      = "join"
 
-    ALL = {SELECT, FILTER, RENAME, CAST, DEDUPE, LIMIT, AGGREGATE, JOIN}
-
+    ALL = {SELECT, FILTER, RENAME, CAST, DEDUPE, LIMIT, AGGREGATE, JOIN, FILL_NULL}
 
 class FilterOp:
     """Comparison operators accepted by the ``filter`` transform."""

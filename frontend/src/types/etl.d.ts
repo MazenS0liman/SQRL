@@ -43,6 +43,7 @@ export interface PipelineStep {
 export interface PipelineDefinition {
   steps: PipelineStep[];
   materialize?: { notebook_id: string; create_dashboard_cell?: boolean } | null;
+  outputs?: { dashboard?: boolean; ml?: Record<string, unknown> | null } | null;
 }
 
 export interface CreatePipelineRequest {
@@ -69,14 +70,23 @@ export interface MaterializePipelineRequest {
   notebook_id: string;
 }
 
+export interface PlanConversationTurn {
+  role: "user" | "assistant";
+  content: string;
+}
+
 export interface PlanPipelineRequest {
   query: string;
   connector_id?: string;
   table?: string;
+  table_names?: string[];
   file_urls?: string[];
   sink_table?: string;
   notebook_id?: string;
   context?: Record<string, unknown>;
+  history?: PlanConversationTurn[];
+  previous_definition?: PipelineDefinition;
+  output_targets?: Array<"dashboard" | "ml">;
 }
 
 export interface PipelineRead {
@@ -123,6 +133,35 @@ export interface PipelinePlanRead {
   description?: string | null;
   definition: PipelineDefinition;
   validation: Record<string, unknown>;
+  reply?: string | null;
+}
+
+export interface PlanStageRequest {
+  description: string;
+  definition: PipelineDefinition;
+  insert_after: string;
+  insert_before: string;
+}
+
+export interface PipelineStagePlanRead {
+  definition: PipelineDefinition;
+  steps: PipelineStep[];
+  validation: Record<string, unknown>;
+  reply?: string | null;
+}
+
+export interface SourceTableColumn {
+  name: string;
+  data_type: string;
+}
+
+export interface SourceTableRead {
+  table_name: string;
+  columns: SourceTableColumn[];
+}
+
+export interface ResolveSourceRead {
+  columns: string[];
 }
 
 export interface EtlChatBody {

@@ -451,7 +451,12 @@ class TabularDataExploratoryAgent(IAgent):
         reconciled: Dict = {}
 
         for table, meta in schema_metadata.items():
-            raw_columns = meta.get("columns", [])
+            meta = dict(meta or {})
+            raw_columns = [
+                self._normalize_column_metadata(column)
+                for column in (meta.get("columns", []) or [])
+            ]
+            meta["columns"] = raw_columns
             supplied = {
                 (c.get("name") or c.get("column_name")): c
                 for c in raw_columns
@@ -507,6 +512,22 @@ class TabularDataExploratoryAgent(IAgent):
             reconciled[table] = {**meta, "columns": fixed_columns}
 
         return reconciled
+
+    @staticmethod
+    def _normalize_column_metadata(column: Any) -> Dict[str, Any]:
+        """Normalize notebook tuple/list schemas to the agent's mapping shape."""
+        if isinstance(column, dict):
+            return column
+        if isinstance(column, (list, tuple)):
+            metadata: Dict[str, Any] = {}
+            if column:
+                metadata["name"] = column[0]
+            if len(column) > 1:
+                metadata["data_type"] = column[1]
+            if len(column) > 2:
+                metadata["is_nullable"] = column[2]
+            return metadata
+        return {"name": str(column)} if column is not None else {}
 
     # ──────────────────────────────────────────────────────────────────────────
     # Stage 0.5 — Column type repair
