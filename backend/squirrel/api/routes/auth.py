@@ -19,6 +19,7 @@ from squirrel.schemas.auth import (
     RegisterRequest,
 )
 from squirrel.services.auth.AuthService import auth_service
+from squirrel.services.usage.context import set_usage_user_id
 
 
 router = APIRouter()
@@ -42,6 +43,9 @@ async def get_current_user(
     user = auth_service.get_user_by_token(token)
     if user is None:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or expired token")
+    # Stamp the user onto the request context so every LLM call made while
+    # handling this request is attributed to them in the usage ledger.
+    set_usage_user_id(user.id)
     return _to_user_response(user)
 
 

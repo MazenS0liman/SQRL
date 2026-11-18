@@ -516,7 +516,10 @@ class MLModelRead(BaseModel):
     target: Optional[str] = None
     features: List[str] = Field(default_factory=list)
     metrics: Optional[Dict[str, Any]] = None
+    details: Optional[Dict[str, Any]] = None
     model_key: str
     file_url: Optional[str] = None
     run_id: Optional[str] = None
+    pipeline_name: Optional[str] = None
     created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None

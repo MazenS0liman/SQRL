@@ -28,6 +28,7 @@ from squirrel.api.routes import (
     jobs,
     notifications,
     pipelines,
+    usage,
 )
 
 api_router = APIRouter()
@@ -69,3 +70,6 @@ api_router.include_router(
 
 # Add ETL pipeline route
 api_router.include_router(pipelines.router, prefix="/pipelines", tags=["pipelines"])
+
+# Add LLM usage monitoring route
+api_router.include_router(usage.router, prefix="/usage", tags=["usage"])

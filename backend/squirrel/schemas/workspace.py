@@ -175,6 +175,7 @@ class BuildResponse(BaseModel):
     model_summary: Dict[str, Any]
     model_comparison: List[ModelMetric]
     best_model: Optional[str] = None
+    model_details: Optional[Dict[str, Any]] = None
     output_file_urls: List[str] = []
     model_files: List[ModelFileOut] = []
 
@@ -187,6 +188,7 @@ class ModelsResponse(BaseModel):
     model_summary: Optional[Dict[str, Any]] = None
     model_comparison: List[ModelMetric] = []
     best_model: Optional[str] = None
+    model_details: Optional[Dict[str, Any]] = None
     output_file_urls: List[str] = []
     model_files: List[ModelFileOut] = []
 

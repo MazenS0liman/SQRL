@@ -1,7 +1,7 @@
 """Agent boundary for training models from ETL sink data."""
 from __future__ import annotations
 
-from typing import Any, Dict
+from typing import Any, Dict, List
 
 import pandas as pd
 from sklearn.cluster import KMeans
@@ -28,6 +28,22 @@ class ETLModelTrainingAgent:
                     "agent": self.__class__.__name__,
                     "inertia": float(model.inertia_),
                     "n_clusters": spec.n_clusters,
+                },
+                "details": {
+                    "task_type": "clustering",
+                    "algorithm": "KMeans",
+                    "target": None,
+                    "input_schema": self._input_schema(frame, features),
+                    "preprocessing": [
+                        "Selected features coerced to numeric values.",
+                        "Rows with null or non-numeric features rejected.",
+                        f"Requested clusters: {spec.n_clusters}",
+                    ],
+                    "training_history": self._clustering_history(
+                        values, spec.n_clusters
+                    ),
+                    "n_features": len(features),
+                    "n_samples": int(len(values)),
                 },
             }
 
@@ -64,6 +80,23 @@ class ETLModelTrainingAgent:
             raise RuntimeError(
                 f"The model-building agent did not produce a best model: {summary}"
             )
+
+        details = dict(summary.get("model_details") or {})
+        details.setdefault("task_type", spec.task)
+        details.setdefault("algorithm", model_key)
+        details.setdefault("target", spec.target)
+        details.setdefault("input_schema", self._input_schema(frame, features))
+        details.setdefault(
+            "preprocessing",
+            [
+                "Selected features coerced to numeric values.",
+                "Rows with null or non-numeric features rejected.",
+                f"Target column: {spec.target}",
+            ],
+        )
+        details.setdefault("n_features", len(features))
+        details.setdefault("n_samples", int(len(frame)))
+
         return {
             "model": model,
             "features": features,
@@ -71,6 +104,56 @@ class ETLModelTrainingAgent:
                 "agent": "TabularDataModelBuilderAgent",
                 "summary": summary,
             },
+            "details": details,
+        }
+
+    @staticmethod
+    def _input_schema(frame: pd.DataFrame, features: List[str]) -> List[Dict[str, Any]]:
+        """Describe the feature columns the trained model expects at inference."""
+        schema: List[Dict[str, Any]] = []
+        for column in features:
+            series = frame[column]
+            example: Any = None
+            non_null = series.dropna()
+            if not non_null.empty:
+                value = non_null.iloc[0]
+                example = value.item() if hasattr(value, "item") else value
+                if not isinstance(example, (int, float, str, bool)):
+                    example = str(example)[:80]
+            schema.append(
+                {
+                    "name": str(column),
+                    "dtype": str(series.dtype),
+                    "required": True,
+                    "example": example,
+                }
+            )
+        return schema
+
+    @staticmethod
+    def _clustering_history(values: pd.DataFrame, requested: int) -> Dict[str, Any] | None:
+        """Elbow curve (inertia vs k) for the KMeans model card."""
+        rows = len(values)
+        if rows < 4:
+            return None
+        upper = min(8, rows - 1, max(requested + 3, 5))
+        if upper < 2:
+            return None
+        points: List[Dict[str, Any]] = []
+        for k in range(2, upper + 1):
+            try:
+                candidate = KMeans(n_clusters=k, random_state=42, n_init=10)
+                candidate.fit(values)
+                points.append({"x": k, "y": round(float(candidate.inertia_), 6)})
+            except Exception:
+                continue
+        if not points:
+            return None
+        return {
+            "kind": "elbow",
+            "x_label": "Clusters (k)",
+            "y_label": "Inertia",
+            "series": [{"name": "Inertia", "points": points}],
         }
 
     @staticmethod

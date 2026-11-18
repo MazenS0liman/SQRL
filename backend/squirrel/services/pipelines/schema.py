@@ -98,6 +98,7 @@ CREATE TABLE IF NOT EXISTS etl_models (
     target          TEXT,
     features        JSONB            NOT NULL DEFAULT '[]'::jsonb,
     metrics         JSONB,
+    details         JSONB,
     model_key       TEXT             NOT NULL,
     file_url        TEXT,
     run_id          TEXT,
@@ -111,9 +112,17 @@ CREATE INDEX IF NOT EXISTS idx_etl_models_owner_created
 """
 
 
+#: Idempotent upgrade for ``etl_models`` rows created before model cards
+#: (input schema / preprocessing / training history) were persisted.
+ETL_MODELS_ALTER_DDL = """
+ALTER TABLE etl_models ADD COLUMN IF NOT EXISTS details JSONB;
+"""
+
+
 PIPELINE_DDL_STATEMENTS = (
     PIPELINES_DDL,
     PIPELINE_ALTER_DDL,
     PIPELINE_RUNS_DDL,
     ETL_MODELS_DDL,
+    ETL_MODELS_ALTER_DDL,
 )

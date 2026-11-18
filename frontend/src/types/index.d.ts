@@ -95,6 +95,11 @@ export type {
     UploadResponse,
     ModelMetric,
     ModelSummary,
+    ModelInputField,
+    ModelHistoryPoint,
+    ModelHistorySeries,
+    ModelTrainingHistory,
+    ModelDetails,
     BuildResponse,
     ConnectorSummary,
     ModelFile,
@@ -103,3 +108,17 @@ export type {
     PredictResponse,
     TablePreviewEntry
 } from './workspace';
+
+// Usage monitoring types
+export type {
+    UsageTotals,
+    UsageProviderBreakdown,
+    UsageModelBreakdown,
+    UsageSourceBreakdown,
+    UsageDailyPoint,
+    UsageEventRead,
+    UsageOverviewResponse,
+    UsageEventListResponse,
+    UsagePricingEntry,
+    UsagePricingResponse
+} from './usage';

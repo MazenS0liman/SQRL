@@ -37,7 +37,14 @@ from loguru import logger
 from squirrel.core.logging import log_stage
 
 # scikit-learn
-from sklearn.model_selection import cross_validate, StratifiedKFold, KFold, train_test_split
+from sklearn.base import clone
+from sklearn.model_selection import (
+    cross_validate,
+    learning_curve,
+    StratifiedKFold,
+    KFold,
+    train_test_split,
+)
 from sklearn.metrics import (
     accuracy_score,
     f1_score,
@@ -430,7 +437,11 @@ class TabularDataModelBuilderAgent(IAgent):
 
         # Execute the plan and summarize the results.
         fitted_models, execution = self.execute(data, plan)
-        summary_dict = self._parse_summary(self.summarize(execution))
+        summary_dict = self._with_model_details(
+            self._parse_summary(self.summarize(execution)),
+            execution,
+            preprocessing_summary,
+        )
 
         best = (fitted_models, summary_dict)
         attempt = 0
@@ -444,7 +455,11 @@ class TabularDataModelBuilderAgent(IAgent):
                 objective=f"{objective}\n\n{feedback}".strip(),
             )
             candidate_models, execution = self.execute(data, plan)
-            candidate_summary = self._parse_summary(self.summarize(execution))
+            candidate_summary = self._with_model_details(
+                self._parse_summary(self.summarize(execution)),
+                execution,
+                preprocessing_summary,
+            )
 
             if self._is_better(candidate_summary, best[1]):
                 best = (candidate_models, candidate_summary)
@@ -642,6 +657,7 @@ class TabularDataModelBuilderAgent(IAgent):
             X = X.drop(columns=non_numeric_cols)
 
         fitted_models: dict[str, Any] = {}
+        selection_models: dict[str, Any] = {}
         executed_steps: list[dict[str, Any]] = []
         X_selection, y_selection = self._selection_data(X, y, task_type)
 
@@ -670,6 +686,7 @@ class TabularDataModelBuilderAgent(IAgent):
             if fitted_model is not None:
                 model_key = step.get("model_key", step.get("name", f"model_{len(fitted_models)}"))
                 fitted_models[model_key] = fitted_model
+                selection_models[model_key] = fitted_model
             logger.info(
                 "Model step finished: model={}, status={}, elapsed_seconds={:.2f}, errors={}",
                 step_result.get("model_key"),
@@ -694,16 +711,37 @@ class TabularDataModelBuilderAgent(IAgent):
                     len(X),
                 )
 
+        # For sequential plans the metric-based winner is unavailable; use the
+        # first completed candidate so the UI still has an algorithm + curve.
+        algorithm_key = winner_key or next(
+            (s.get("model_key") for s in executed_steps if s.get("status") == "completed"),
+            None,
+        )
+        winner_result = next(
+            (s for s in executed_steps if s.get("model_key") == algorithm_key),
+            None,
+        )
+        training_history = self._training_history(
+            estimator=selection_models.get(algorithm_key),
+            X=X_selection,
+            y=y_selection,
+            task_type=task_type,
+            step_result=winner_result,
+        )
+
         report = {
             "task":          "model_building",
             "status":        "completed" if all(s.get("status") != "failed" for s in executed_steps) else "completed_with_errors",
             "task_type":     task_type,
             "target_column": self.target_column,
+            "algorithm":     algorithm_key,
             "n_features":    int(X.shape[1]),
             "n_samples":     int(X.shape[0]),
             "n_selection_samples": int(X_selection.shape[0]),
             "dropped_non_numeric_columns": non_numeric_cols,
             "is_sequential": is_sequential,
+            "input_schema":  self._input_schema(X),
+            "training_history": training_history,
             "dataset_profile": self._dataset_profile(data),
             "steps":         executed_steps,
         }
@@ -823,6 +861,244 @@ class TabularDataModelBuilderAgent(IAgent):
         except Exception as exc:
             logger.exception("Failed to refit winning model {}: {}", model_key, exc)
             return None
+
+    def _with_model_details(
+        self,
+        summary: dict,
+        execution: str | dict,
+        preprocessing_summary: dict | None,
+    ) -> dict:
+        """Attach the deterministic model card (schema, preprocessing, curve)."""
+        if not isinstance(summary, dict):
+            return summary
+        try:
+            report = json.loads(execution) if isinstance(execution, str) else dict(execution)
+        except (TypeError, json.JSONDecodeError):
+            report = {}
+        algorithm = report.get("algorithm") or summary.get("best_model")
+        summary["model_details"] = {
+            "task_type": report.get("task_type") or summary.get("task_type"),
+            "algorithm": algorithm,
+            "target": report.get("target_column") or self.target_column,
+            "input_schema": report.get("input_schema") or [],
+            "preprocessing": self._preprocessing_steps(
+                preprocessing_summary or {}, report
+            ),
+            "training_history": report.get("training_history"),
+            "n_features": report.get("n_features"),
+            "n_samples": report.get("n_samples"),
+        }
+        return summary
+
+    @staticmethod
+    def _input_schema(X: pd.DataFrame) -> list[dict[str, Any]]:
+        """
+        Describe the numeric feature matrix the estimator expects.
+
+        ``example`` is included so a model card can show a realistic value
+        without shipping the training data itself.
+        """
+        schema: list[dict[str, Any]] = []
+        for column in X.columns:
+            series = X[column]
+            example: Any = None
+            non_null = series.dropna()
+            if not non_null.empty:
+                try:
+                    value = non_null.iloc[0]
+                    example = value.item() if hasattr(value, "item") else value
+                    if not isinstance(example, (int, float, str, bool)):
+                        example = str(example)[:80]
+                except Exception:
+                    example = None
+            schema.append(
+                {
+                    "name": str(column),
+                    "dtype": str(series.dtype),
+                    "required": True,
+                    "example": example,
+                }
+            )
+        return schema
+
+    @staticmethod
+    def _preprocessing_steps(
+        preprocessing_summary: dict,
+        report: dict,
+    ) -> list[str]:
+        """Turn the preprocessing summary into short, human-readable steps."""
+        steps: list[str] = []
+        for item in preprocessing_summary.get("quality_improvements") or []:
+            text = str(item).strip()
+            if text:
+                steps.append(text)
+
+        added = [str(c) for c in preprocessing_summary.get("columns_added") or []]
+        dropped = [str(c) for c in preprocessing_summary.get("columns_dropped") or []]
+        if added:
+            steps.append(f"Added columns: {', '.join(added[:12])}")
+        if dropped:
+            steps.append(f"Dropped columns: {', '.join(dropped[:12])}")
+
+        requested_task = preprocessing_summary.get("requested_task")
+        if requested_task:
+            steps.append(f"Task: {requested_task}")
+        requested_algorithm = preprocessing_summary.get("requested_algorithm")
+        if requested_algorithm:
+            steps.append(f"Preferred algorithm: {requested_algorithm}")
+        features = preprocessing_summary.get("features") or []
+        if features:
+            steps.append(f"Features used: {', '.join(str(f) for f in features[:12])}")
+
+        non_numeric = report.get("dropped_non_numeric_columns") or []
+        if non_numeric:
+            steps.append(
+                "Dropped non-numeric columns before fitting: "
+                + ", ".join(str(c) for c in non_numeric[:12])
+            )
+        if not steps:
+            steps.append("Numeric feature coercion; the target column is excluded.")
+        return steps
+
+    def _training_history(
+        self,
+        *,
+        estimator: Any,
+        X: pd.DataFrame,
+        y: pd.Series,
+        task_type: str,
+        step_result: dict | None,
+    ) -> dict[str, Any] | None:
+        """
+        Build a bounded curve for the winning model.
+
+        Sequential (Keras) models already expose epoch-level loss. Everything
+        else gets a small learning curve — four training-set sizes, three
+        folds — which is cheap because only the winner is measured.
+        """
+        # ── Keras / sequential: use the recorded epoch history ─────────────
+        validation = (step_result or {}).get("validation") or {}
+        keras_history = validation.get("history")
+        if keras_history:
+            return self._keras_history_payload(keras_history)
+
+        history_obj = getattr(estimator, "history", None)
+        if history_obj is not None:
+            payload = self._keras_history_payload(
+                getattr(history_obj, "history", history_obj)
+            )
+            if payload:
+                return payload
+
+        if estimator is None or len(X) < 12:
+            return None
+
+        try:
+            sample_X, sample_y = X, y
+            if len(X) > 4000:
+                try:
+                    sample_X, _, sample_y, _ = train_test_split(
+                        X,
+                        y,
+                        train_size=4000,
+                        random_state=42,
+                        stratify=y if task_type == "classification" else None,
+                    )
+                except ValueError:
+                    indices = X.sample(n=4000, random_state=42).index
+                    sample_X, sample_y = X.loc[indices], y.loc[indices]
+
+            cv = 3
+            if task_type == "classification":
+                smallest_class = int(sample_y.value_counts().min())
+                cv = min(cv, smallest_class)
+            if cv < 2:
+                return None
+
+            scoring = "accuracy" if task_type == "classification" else "neg_mean_squared_error"
+            sizes, train_scores, validation_scores = learning_curve(
+                clone(estimator),
+                sample_X,
+                sample_y,
+                cv=cv,
+                scoring=scoring,
+                train_sizes=np.linspace(0.3, 1.0, 4),
+                shuffle=True,
+                random_state=42,
+                n_jobs=1,
+            )
+
+            train_means = train_scores.mean(axis=1)
+            validation_means = validation_scores.mean(axis=1)
+            if task_type == "classification":
+                train_values = 1.0 - train_means
+                validation_values = 1.0 - validation_means
+                y_label = "Error (1 - accuracy)"
+            else:
+                train_values = -train_means
+                validation_values = -validation_means
+                y_label = "Mean squared error"
+
+            return {
+                "kind": "learning_curve",
+                "x_label": "Training examples",
+                "y_label": y_label,
+                "series": [
+                    {
+                        "name": "Training",
+                        "points": [
+                            {"x": int(size), "y": round(float(value), 6)}
+                            for size, value in zip(sizes, train_values)
+                        ],
+                    },
+                    {
+                        "name": "Validation",
+                        "points": [
+                            {"x": int(size), "y": round(float(value), 6)}
+                            for size, value in zip(sizes, validation_values)
+                        ],
+                    },
+                ],
+            }
+        except Exception as exc:  # pragma: no cover - model-specific
+            logger.warning("Could not build learning curve for model card: {}", exc)
+            return None
+
+    @staticmethod
+    def _keras_history_payload(history: Any) -> dict[str, Any] | None:
+        """Convert a Keras ``History.history`` mapping into chart series."""
+        if not isinstance(history, dict):
+            return None
+        loss = history.get("loss")
+        if not loss:
+            return None
+        epochs = list(range(1, len(loss) + 1))
+        series = [
+            {
+                "name": "Training loss",
+                "points": [
+                    {"x": epoch, "y": round(float(value), 6)}
+                    for epoch, value in zip(epochs, loss)
+                ],
+            }
+        ]
+        val_loss = history.get("val_loss")
+        if val_loss:
+            series.append(
+                {
+                    "name": "Validation loss",
+                    "points": [
+                        {"x": epoch, "y": round(float(value), 6)}
+                        for epoch, value in zip(epochs, val_loss)
+                    ],
+                }
+            )
+        return {
+            "kind": "epochs",
+            "x_label": "Epoch",
+            "y_label": "Loss (MSE)",
+            "series": series,
+        }
 
     def summarize(
         self,
@@ -1137,10 +1413,22 @@ class TabularDataModelBuilderAgent(IAgent):
             mse, mae = estimator.eval(X_test, y_test, base_test, target_test)
         else:
             mse, mae = estimator.eval(X_test, y_test)
+
+        history_obj = getattr(estimator, "history", None)
+        history = getattr(history_obj, "history", history_obj)
+        history_payload = None
+        if isinstance(history, dict):
+            history_payload = {
+                key: [float(value) for value in values]
+                for key, values in history.items()
+                if key in {"loss", "val_loss", "mae", "val_mae"} and values
+            }
+
         return {
             "validation_metrics": {"mse": float(mse), "mae": float(mae)},
             "n_train": int(len(X_train)),
             "n_validation": int(len(X_test)),
+            "history": history_payload,
         }
 
     # ── Actions ───────────────────────────────────────────────────────────────

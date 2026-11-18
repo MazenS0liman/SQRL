@@ -670,14 +670,20 @@ class PipelineService:
         clauses: List[str] = []
         params: Dict[str, Any] = {}
         if owner_user_id is not None:
-            clauses.append("owner_user_id = %(owner_user_id)s")
+            clauses.append("m.owner_user_id = %(owner_user_id)s")
             params["owner_user_id"] = owner_user_id
         if pipeline_id:
-            clauses.append("pipeline_id = %(pipeline_id)s")
+            clauses.append("m.pipeline_id = %(pipeline_id)s")
             params["pipeline_id"] = pipeline_id
         where = f"WHERE {' AND '.join(clauses)}" if clauses else ""
         result = self._get_db().query(
-            f"SELECT * FROM etl_models {where} ORDER BY created_at DESC",
+            f"""
+            SELECT m.*, p.name AS pipeline_name
+            FROM etl_models m
+            LEFT JOIN pipelines p ON p.id = m.pipeline_id
+            {where}
+            ORDER BY m.created_at DESC
+            """,
             params=params,
             fetch=True,
         )
@@ -730,11 +736,12 @@ class PipelineService:
             """
             INSERT INTO etl_models
                 (id, pipeline_id, owner_user_id, name, task, algorithm,
-                 target, features, metrics, model_key, file_url, run_id)
+                 target, features, metrics, details, model_key, file_url, run_id)
             VALUES
                 (%(id)s, %(pipeline_id)s, %(owner_user_id)s, %(name)s,
                  %(task)s, %(algorithm)s, %(target)s, %(features)s::jsonb,
-                 %(metrics)s::jsonb, %(model_key)s, %(file_url)s, %(run_id)s)
+                 %(metrics)s::jsonb, %(details)s::jsonb, %(model_key)s,
+                 %(file_url)s, %(run_id)s)
             RETURNING id
             """,
             params={
@@ -747,6 +754,7 @@ class PipelineService:
                 "target": outcome.get("target"),
                 "features": json.dumps(outcome.get("features") or []),
                 "metrics": json.dumps(outcome.get("metrics") or {}, default=str),
+                "details": json.dumps(outcome.get("details") or {}, default=str),
                 "model_key": outcome.get("model_key"),
                 "file_url": outcome.get("file_url"),
                 "run_id": run_id,
@@ -1660,12 +1668,12 @@ class PipelineService:
     @staticmethod
     def to_model_read(row: Dict[str, Any]) -> MLModelRead:
         payload = dict(row)
-        for key in ("features", "metrics"):
+        for key in ("features", "metrics", "details"):
             value = payload.get(key)
             if isinstance(value, str):
                 try:
                     payload[key] = json.loads(value)
                 except json.JSONDecodeError:
-                    payload[key] = None if key == "metrics" else []
+                    payload[key] = None if key in ("metrics", "details") else []
         payload.setdefault("features", [])
         return MLModelRead(**payload)

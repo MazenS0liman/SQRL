@@ -20,9 +20,11 @@ import {
   Wand2,
   Upload,
   Copy,
+  Activity,
 } from "lucide-react";
 import type {
   BuildResponse,
+  ModelDetails,
   ModelFile,
   ModelMetric,
   ModelsResponse,
@@ -43,6 +45,8 @@ import {
   formatSummaryLabel,
   formatSummaryValue,
 } from "./shared";
+import { ModelDetailsDialog } from "@/components/models/ModelDetailsDialog";
+import { TrainingLossChart } from "@/components/models/TrainingLossChart";
 import {
   API_BASE,
   apiFetch,
@@ -204,6 +208,8 @@ export default function WorkspaceDetailPage(): JSX.Element {
   const [modelSummary, setModelSummary] = useState<ModelSummary | null>(null);
   const [modelComparison, setModelComparison] = useState<ModelMetric[]>([]);
   const [bestModel, setBestModel] = useState<string | null>(null);
+  const [modelDetails, setModelDetails] = useState<ModelDetails | null>(null);
+  const [detailsOpen, setDetailsOpen] = useState(false);
   const [modelFiles, setModelFiles] = useState<ModelFile[]>([]);
   const [preprocessedData, setPreprocessedData] = useState<PreprocessedDataResponse | null>(null);
   const [preprocessedLoading, setPreprocessedLoading] = useState(false);
@@ -271,6 +277,7 @@ export default function WorkspaceDetailPage(): JSX.Element {
         setModelSummary(data.model_summary ?? null);
         setModelComparison(data.model_comparison);
         setBestModel(data.best_model ?? null);
+        setModelDetails(data.model_details ?? data.model_summary?.model_details ?? null);
         setModelFiles(data.model_files);
       }
     } catch (err) {
@@ -299,6 +306,7 @@ export default function WorkspaceDetailPage(): JSX.Element {
         setModelSummary(data.model_summary ?? null);
         setModelComparison(data.model_comparison);
         setBestModel(data.best_model ?? null);
+        setModelDetails(data.model_details ?? data.model_summary?.model_details ?? null);
         setModelFiles(data.model_files);
       }
     } catch {
@@ -447,6 +455,7 @@ export default function WorkspaceDetailPage(): JSX.Element {
       setModelComparison([]);
       setModelFiles([]);
       setBestModel(null);
+      setModelDetails(null);
       setPreprocessedData(null);
       setPreprocessedError(null);
       setConflictColumns(null);
@@ -1567,10 +1576,32 @@ export default function WorkspaceDetailPage(): JSX.Element {
 
           {modelComparison.length > 0 || modelSummary ? (
             <section className="rounded-xl border border-border bg-card p-4 shadow-sm">
-              <StepLabel n="04">Available models</StepLabel>
+              <div className="flex flex-wrap items-start justify-between gap-2">
+                <StepLabel n="04">Available models</StepLabel>
+                {modelDetails && (
+                  <button
+                    onClick={() => setDetailsOpen(true)}
+                    className="inline-flex items-center gap-1.5 rounded-md border border-border px-2.5 py-1 text-xs font-medium text-foreground transition-colors hover:bg-secondary"
+                  >
+                    <Activity className="h-3.5 w-3.5 text-primary" />
+                    Model card
+                  </button>
+                )}
+              </div>
 
               {modelSummary?.overall_assessment && (
                 <p className="mb-3 mt-3 text-sm text-muted-foreground">{modelSummary.overall_assessment}</p>
+              )}
+
+              {modelDetails?.training_history && modelDetails.training_history.series.length > 0 && (
+                <div className="mt-3 rounded-lg border border-border bg-card p-2">
+                  <div className="mb-1 flex items-center justify-between gap-2 px-1">
+                    <h4 className="text-[11px] font-medium uppercase tracking-[0.14em] text-muted-foreground">
+                      Training curve · {bestModel ?? modelDetails.algorithm ?? "best model"}
+                    </h4>
+                  </div>
+                  <TrainingLossChart history={modelDetails.training_history} height={200} />
+                </div>
               )}
 
               {modelComparison.length > 0 ? (
@@ -1581,6 +1612,7 @@ export default function WorkspaceDetailPage(): JSX.Element {
                         <th className="px-3 py-2 font-medium">Model</th>
                         <th className="px-3 py-2 font-medium">Metric</th>
                         <th className="px-3 py-2 text-right font-medium">Score</th>
+                        <th className="px-3 py-2 text-right font-medium">Card</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -1611,6 +1643,19 @@ export default function WorkspaceDetailPage(): JSX.Element {
                             <td className="px-3 py-2 text-right font-mono tabular-nums text-foreground">
                               {formatPercent(m.mean)}
                               {m.std != null && <span className="text-muted-foreground"> ± {formatPercent(m.std)}</span>}
+                            </td>
+                            <td className="px-3 py-2 text-right">
+                              {isBest && modelDetails ? (
+                                <button
+                                  onClick={() => setDetailsOpen(true)}
+                                  className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs font-medium text-foreground transition-colors hover:bg-secondary"
+                                >
+                                  <Activity className="h-3 w-3" />
+                                  Details
+                                </button>
+                              ) : (
+                                <span className="text-xs text-muted-foreground">—</span>
+                              )}
                             </td>
                           </tr>
                         );
@@ -1665,14 +1710,25 @@ export default function WorkspaceDetailPage(): JSX.Element {
                               </span>
                             )}
                           </span>
-                          <button
-                            onClick={() => handleDownload(mf.model_key, mf.file_url)}
-                            disabled={downloadingUrl === mf.file_url}
-                            className="flex shrink-0 items-center gap-1.5 rounded-md border border-border px-2.5 py-1 text-xs font-medium text-foreground transition-colors hover:bg-secondary disabled:opacity-40"
-                          >
-                            <Download className="h-3 w-3" />
-                            {downloadingUrl === mf.file_url ? "Downloading…" : "Download"}
-                          </button>
+                          <span className="flex items-center gap-2">
+                            {isBest && modelDetails && (
+                              <button
+                                onClick={() => setDetailsOpen(true)}
+                                className="inline-flex items-center gap-1 rounded-md border border-border px-2.5 py-1 text-xs font-medium text-foreground transition-colors hover:bg-secondary"
+                              >
+                                <Activity className="h-3 w-3" />
+                                Details
+                              </button>
+                            )}
+                            <button
+                              onClick={() => handleDownload(mf.model_key, mf.file_url)}
+                              disabled={downloadingUrl === mf.file_url}
+                              className="flex shrink-0 items-center gap-1.5 rounded-md border border-border px-2.5 py-1 text-xs font-medium text-foreground transition-colors hover:bg-secondary disabled:opacity-40"
+                            >
+                              <Download className="h-3 w-3" />
+                              {downloadingUrl === mf.file_url ? "Downloading…" : "Download"}
+                            </button>
+                          </span>
                         </li>
                       );
                     })}
@@ -1902,6 +1958,24 @@ export default function WorkspaceDetailPage(): JSX.Element {
           onSave={handleSaveUploadColumnEdit}
         />
       )}
+
+      <ModelDetailsDialog
+        open={detailsOpen}
+        onOpenChange={setDetailsOpen}
+        title={bestModel ?? workspace?.name ?? "Model"}
+        subtitle={
+          workspace
+            ? `${workspace.name}${workspace.target_column ? ` · target ${workspace.target_column}` : ""}`
+            : undefined
+        }
+        details={modelDetails}
+        metrics={modelComparison
+          .filter((m) => m.model_key === bestModel)
+          .map((m) => ({
+            label: m.metric_name,
+            value: `${formatPercent(m.mean)}${m.std != null ? ` ± ${formatPercent(m.std)}` : ""}`,
+          }))}
+      />
     </div>
   );
 }

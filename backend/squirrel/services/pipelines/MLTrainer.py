@@ -81,6 +81,7 @@ class MLTrainer:
             "target": spec.target,
             "features": features,
             "metrics": metrics,
+            "details": trained.get("details"),
             "model_key": object_key,
             "file_url": uploaded.fileUrl,
         }
@@ -128,6 +129,7 @@ class MLTrainer:
         object_key = f"etl/models/{pipeline_id}/{run_id}.joblib"
         uploaded = self._save_model(model, object_key)
 
+        details = self._refit_details(model_row, task, target, features, frame)
         return {
             "mode": MLMode.RETRAIN,
             "task": task,
@@ -135,6 +137,7 @@ class MLTrainer:
             "target": target,
             "features": features,
             "metrics": metrics,
+            "details": details,
             "model_key": object_key,
             "file_url": uploaded.fileUrl,
             "source_model_id": model_row.get("id"),
@@ -176,6 +179,7 @@ class MLTrainer:
                 "mode": MLMode.INFERENCE,
                 "rows": int(len(values)),
             },
+            "details": model_row.get("details"),
             "model_key": model_row["model_key"],
             "file_url": uploaded.fileUrl,
             "prediction_key": object_key,
@@ -186,6 +190,49 @@ class MLTrainer:
 
     # ------------------------------------------------------------------
     # Helpers
+
+    @staticmethod
+    def _refit_details(
+        model_row: Dict[str, Any],
+        task: str,
+        target: Any,
+        features: List[str],
+        frame: pd.DataFrame,
+    ) -> Dict[str, Any]:
+        """Carry the model card forward, refreshing sample counts and curves."""
+        base = model_row.get("details") or {}
+        if isinstance(base, str):
+            try:
+                import json
+
+                base = json.loads(base)
+            except Exception:
+                base = {}
+        details = dict(base) if isinstance(base, dict) else {}
+        details.setdefault("input_schema", [])
+        details.setdefault("preprocessing", [])
+        details["task_type"] = task
+        details["algorithm"] = model_row.get("algorithm")
+        details["target"] = target
+        details["n_features"] = len(features)
+        details["n_samples"] = int(len(frame))
+        details["refit"] = True
+        if task == "clustering":
+            from squirrel.modules.agents.etl.ETLModelTrainingAgent import (
+                ETLModelTrainingAgent,
+            )
+
+            details["training_history"] = ETLModelTrainingAgent._clustering_history(
+                ETLModelTrainingAgent._numeric_frame(frame, features),
+                int(model_row.get("metrics", {}).get("n_clusters") or 3)
+                if isinstance(model_row.get("metrics"), dict)
+                else 3,
+            )
+        else:
+            # A retrain has no held-out curve of its own; do not present the
+            # previous version's curve as if it belonged to this model.
+            details["training_history"] = None
+        return details
 
     @staticmethod
     def _guard_rows(frame: pd.DataFrame) -> None:

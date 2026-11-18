@@ -1,6 +1,8 @@
 export type PipelineStatus = "draft" | "pending_approval" | "approved" | "archived" | string;
 export type PipelineRunStatus = "queued" | "running" | "succeeded" | "failed" | "cancelled" | string;
 
+import type { ModelDetails } from "./workspace";
+
 export type SourceSpec =
   | { kind: "connector"; connector_id?: string | null; table?: string | null; columns?: string[] }
   | { kind: "file"; file_url?: string | null; columns?: string[] }
@@ -175,10 +177,13 @@ export interface MLModelRead {
   target?: string | null;
   features: string[];
   metrics?: Record<string, unknown> | null;
+  details?: ModelDetails | null;
   model_key: string;
   file_url?: string | null;
   run_id?: string | null;
+  pipeline_name?: string | null;
   created_at?: string | null;
+  updated_at?: string | null;
 }
 
 export interface PipelineRunRead {

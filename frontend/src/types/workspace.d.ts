@@ -57,6 +57,45 @@ export interface ModelMetric {
   std?: number | null;
 }
 
+/** One feature column a trained model expects at inference time. */
+export interface ModelInputField {
+  name: string;
+  dtype?: string | null;
+  required?: boolean;
+  example?: unknown;
+}
+
+export interface ModelHistoryPoint {
+  x: number;
+  y: number;
+}
+
+export interface ModelHistorySeries {
+  name: string;
+  points: ModelHistoryPoint[];
+}
+
+/** Loss / learning curve attached to a model card. */
+export interface ModelTrainingHistory {
+  kind?: string | null;
+  x_label?: string | null;
+  y_label?: string | null;
+  series: ModelHistorySeries[];
+}
+
+/** Everything the model details dialog renders. */
+export interface ModelDetails {
+  task_type?: string | null;
+  algorithm?: string | null;
+  target?: string | null;
+  input_schema?: ModelInputField[];
+  preprocessing?: string[];
+  training_history?: ModelTrainingHistory | null;
+  n_features?: number | null;
+  n_samples?: number | null;
+  refit?: boolean;
+}
+
 export interface ModelSummary {
   task_type?: string;
   overall_assessment?: string;
@@ -66,6 +105,7 @@ export interface ModelSummary {
   best_model_rationale?: string;
   recommendations?: string[];
   warnings?: string[];
+  model_details?: ModelDetails | null;
 }
 
 export interface ModelFile {
@@ -80,6 +120,7 @@ export interface BuildResponse {
   model_summary: ModelSummary;
   model_comparison: ModelMetric[];
   best_model: string | null;
+  model_details?: ModelDetails | null;
   output_file_urls: string[];
   model_files: ModelFile[];
 }
@@ -92,6 +133,7 @@ export interface ModelsResponse {
   model_summary?: ModelSummary;
   model_comparison: ModelMetric[];
   best_model?: string | null;
+  model_details?: ModelDetails | null;
   output_file_urls: string[];
   model_files: ModelFile[];
 }

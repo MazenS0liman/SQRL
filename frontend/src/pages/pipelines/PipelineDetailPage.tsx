@@ -31,6 +31,7 @@ import { NodePropertiesPanel } from "@/components/etl/NodePropertiesPanel";
 import { PipelineDashboardDialog } from "@/components/etl/PipelineDashboardDialog";
 import { ScheduleDialog } from "@/components/etl/ScheduleDialog";
 import { SourceToolbar } from "@/components/etl/SourceToolbar";
+import { ModelDetailsDialog } from "@/components/models/ModelDetailsDialog";
 import {
   buildLayout,
   deriveTaskStates,
@@ -43,6 +44,7 @@ import { etlApi } from "@/api/etlApi";
 import { cn } from "@/lib/utils";
 import type {
   JobEventRead,
+  MLModelRead,
   OutputsSpec,
   PipelineDashboardRead,
   PipelineDefinition,
@@ -216,6 +218,8 @@ export default function PipelineDetailPage(): JSX.Element {
   const [dashboardPayload, setDashboardPayload] = useState<PipelineDashboardRead | null>(null);
   const [mlOpen, setMlOpen] = useState(false);
   const [scheduleOpen, setScheduleOpen] = useState(false);
+  const [pipelineModels, setPipelineModels] = useState<MLModelRead[]>([]);
+  const [detailsModel, setDetailsModel] = useState<MLModelRead | null>(null);
   const previousRuns = useRef<PipelineRunRead[]>([]);
 
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -232,6 +236,15 @@ export default function PipelineDetailPage(): JSX.Element {
   const bottomRef = useRef<HTMLDivElement | null>(null);
 
   /* load existing pipeline */
+  const loadModels = useCallback(async () => {
+    if (!pipelineId) return;
+    try {
+      setPipelineModels(await etlApi.models(pipelineId));
+    } catch {
+      // A models failure should never block the pipeline page.
+    }
+  }, [pipelineId]);
+
   const loadRuns = useCallback(async () => {
     if (!pipelineId) return [];
     const next = await etlApi.runs(pipelineId);
@@ -257,9 +270,11 @@ export default function PipelineDetailPage(): JSX.Element {
         setDashboardPayload(payload);
         setDashboardOpen(true);
       }
+      // A production run may have registered a new model; refresh the cards.
+      void loadModels();
     }
     return next;
-  }, [pipelineId]);
+  }, [pipelineId, loadModels]);
 
   useEffect(() => {
     if (!pipelineId) return;
@@ -281,6 +296,7 @@ export default function PipelineDetailPage(): JSX.Element {
         setOutput(outputTarget(current.definition));
         setRuns(nextRuns);
         setSelectedRunId(nextRuns[0]?.id ?? null);
+        void loadModels();
       } catch (err) {
         if (!cancelled) setError(err instanceof Error ? err.message : "Unable to load pipeline.");
       } finally {
@@ -290,7 +306,7 @@ export default function PipelineDetailPage(): JSX.Element {
     return () => {
       cancelled = true;
     };
-  }, [pipelineId]);
+  }, [pipelineId, loadModels]);
 
   /* polling */
   const hasActiveRun = runs.some((r) => r.status === "queued" || r.status === "running");
@@ -949,6 +965,45 @@ export default function PipelineDetailPage(): JSX.Element {
                   </div>
 
                   <div className="space-y-2 rounded-lg border border-border p-3">
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2 text-xs font-medium">
+                        <Brain className="h-4 w-4 text-primary" /> Registered models
+                      </div>
+                      {!isDraft && (
+                        <Button variant="ghost" size="sm" onClick={() => void loadModels()}>
+                          <RefreshCw /> Refresh
+                        </Button>
+                      )}
+                    </div>
+                    {pipelineModels.length > 0 ? (
+                      <ul className="space-y-1.5">
+                        {pipelineModels.map((model) => (
+                          <li
+                            key={model.id}
+                            className="flex items-center justify-between gap-3 rounded-md border border-border px-3 py-2"
+                          >
+                            <div className="min-w-0">
+                              <p className="truncate text-sm font-medium text-foreground">{model.name}</p>
+                              <p className="truncate text-xs text-muted-foreground">
+                                {model.algorithm || model.task}
+                                {model.target ? ` · target ${model.target}` : ""}
+                                {model.created_at ? ` · ${new Date(model.created_at).toLocaleDateString()}` : ""}
+                              </p>
+                            </div>
+                            <Button variant="outline" size="sm" onClick={() => setDetailsModel(model)}>
+                              Model card
+                            </Button>
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p className="text-xs text-muted-foreground">
+                        Models trained by this pipeline will appear here after a successful production run.
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="space-y-2 rounded-lg border border-border p-3">
                     <div className="flex items-center gap-2 text-xs font-medium">
                       <CalendarClock className="h-4 w-4 text-primary" /> Schedule
                     </div>
@@ -1113,6 +1168,25 @@ export default function PipelineDetailPage(): JSX.Element {
           initial={dashboardPayload}
         />
       )}
+
+      <ModelDetailsDialog
+        open={detailsModel !== null}
+        onOpenChange={(open) => {
+          if (!open) setDetailsModel(null);
+        }}
+        title={detailsModel?.name ?? "Model"}
+        subtitle={pipeline?.name ? `Pipeline: ${pipeline.name}` : null}
+        details={detailsModel?.details ?? null}
+        metrics={
+          detailsModel
+            ? [
+                { label: "task", value: detailsModel.task },
+                ...(detailsModel.algorithm ? [{ label: "algorithm", value: detailsModel.algorithm }] : []),
+                ...(detailsModel.target ? [{ label: "target", value: detailsModel.target }] : []),
+              ]
+            : []
+        }
+      />
     </main>
   );
 }

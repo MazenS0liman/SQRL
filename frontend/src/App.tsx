@@ -29,6 +29,7 @@ import FilesPage from '@/pages/files/FilesPage';
 import UserProfilePage from '@/pages/user/UserProfilePage';
 import PipelinesPage from '@/pages/pipelines/PipelinesPage';
 import PipelineDetailPage from '@/pages/pipelines/PipelineDetailPage';
+import UsagePage from '@/pages/usage/UsagePage';
 
 const queryClient = new QueryClient();
 
@@ -195,6 +196,14 @@ const App = () => (
                 element={
                   <ProtectedLayout>
                     <PipelineDetailPage />
+                  </ProtectedLayout>
+                }
+              />
+              <Route
+                path="/usage"
+                element={
+                  <ProtectedLayout>
+                    <UsagePage />
                   </ProtectedLayout>
                 }
               />

@@ -959,22 +959,48 @@ class IAgent(ABC, Loggable):
                     # Add only usage produced by this call. The provider instance is
                     # cached and therefore reports cumulative usage.
                     usage_after: Dict[str, int] = self.model.get_total_usage()
-                    self.total_input_tokens_used += (
+                    prompt_delta = (
                         usage_after.get("input_tokens", 0)
                         - usage_before.get("input_tokens", 0)
                     )
-                    self.total_output_tokens_used += (
+                    completion_delta = (
                         usage_after.get("output_tokens", 0)
                         - usage_before.get("output_tokens", 0)
                     )
-                    self.total_tokens_used += (
+                    total_delta = (
                         usage_after.get("total_tokens", 0)
                         - usage_before.get("total_tokens", 0)
                     )
-                    self.total_request_count += (
+                    request_delta = (
                         usage_after.get("request_count", 0)
                         - usage_before.get("request_count", 0)
                     )
+                    self.total_input_tokens_used += prompt_delta
+                    self.total_output_tokens_used += completion_delta
+                    self.total_tokens_used += total_delta
+                    self.total_request_count += request_delta
+
+                    # Persist the per-call delta to the usage ledger. The
+                    # recorder resolves the user from the request context and
+                    # never raises, so monitoring cannot break a model call.
+                    try:
+                        from squirrel.services.usage.UsageService import (
+                            record_llm_usage,
+                        )
+
+                        record_llm_usage(
+                            provider=getattr(provider, "value", str(provider)),
+                            model=model_name,
+                            prompt_tokens=prompt_delta,
+                            completion_tokens=completion_delta,
+                            total_tokens=total_delta,
+                            request_count=request_delta,
+                            user_id=user_id or self._user_id,
+                        )
+                    except Exception as usage_exc:  # pragma: no cover - defensive
+                        self.logger.warning(
+                            f"Could not record usage for {provider}/{model_name}: {usage_exc}"
+                        )
 
                     # Check if the model returned an API error (like 429)
                     if isinstance(output, dict) and "error" in output:

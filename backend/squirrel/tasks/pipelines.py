@@ -23,6 +23,7 @@ from squirrel.services.pipelines.PipelineService import (
     PipelineService,
     PipelineValidationError,
 )
+from squirrel.services.usage.context import usage_context
 from squirrel.tasks.jobs import register_job_handler
 
 
@@ -41,7 +42,8 @@ def run_etl_pipeline(job: Dict[str, Any]) -> Optional[Dict[str, Any]]:
         payload.get("pipeline_id"),
         payload.get("dry_run"),
     )
-    return PipelineService().execute_run(run_id, job_id=job.get("id"))
+    with usage_context(user_id=job.get("owner_user_id"), source="pipeline"):
+        return PipelineService().execute_run(run_id, job_id=job.get("id"))
 
 
 @celery_app.task(name="squirrel.tasks.pipelines.dispatch_due_pipelines")

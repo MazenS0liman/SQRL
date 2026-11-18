@@ -191,6 +191,20 @@ def _not_found(workspace_id: str) -> HTTPException:
     )
 
 
+def _agent_token_usage(agent: Any) -> tuple[int, int, int]:
+    """
+    Return ``(prompt, completion, total)`` tokens consumed by an agent.
+
+    Agents accumulate these counters on every provider call, so the values are
+    read once a stage finishes and persisted with that stage's run row.
+    """
+    return (
+        int(getattr(agent, "total_input_tokens_used", 0) or 0),
+        int(getattr(agent, "total_output_tokens_used", 0) or 0),
+        int(getattr(agent, "total_tokens_used", 0) or 0),
+    )
+
+
 def _extract_model_comparison(model_summary: Dict[str, Any]) -> List[ModelMetric]:
     raw = model_summary.get("model_comparison") or []
     metrics: List[ModelMetric] = []
@@ -579,7 +593,9 @@ async def build_structured_models(
         await run_in_threadpool(inspector.inspect_multi, dataframes, request.query or "")
     )
     await run_in_threadpool(
-        workspace_svc.save_run, workspace_id, "inspection", input_file_urls, None, inspection_report, 0, 0, 0, 0, current_user.id,
+        workspace_svc.save_run,
+        workspace_id, "inspection", input_file_urls, None, inspection_report,
+        *_agent_token_usage(inspector), 0, current_user.id,
     )
     relationship = inspection_report.get("relationship") or {}
 
@@ -631,9 +647,7 @@ async def build_structured_models(
         input_file_urls,
         processed_df,
         preprocessing_summary,
-        0,
-        0,
-        0,
+        *_agent_token_usage(processor),
         0,
         current_user.id,
         preprocessing_plan,
@@ -668,9 +682,7 @@ async def build_structured_models(
         output_file_urls,
         fitted_models,
         model_summary,
-        0,
-        0,
-        0,
+        *_agent_token_usage(builder),
         0,
         current_user.id,
     )
@@ -693,6 +705,7 @@ async def build_structured_models(
         model_summary=model_summary,
         model_comparison=_extract_model_comparison(model_summary),
         best_model=model_summary.get("best_model"),
+        model_details=model_summary.get("model_details"),
         output_file_urls=output_file_urls,
         model_files=model_files
     )
@@ -757,6 +770,7 @@ async def get_models(
         model_summary=model_summary,
         model_comparison=_extract_model_comparison(model_summary),
         best_model=model_summary.get("best_model"),
+        model_details=model_summary.get("model_details"),
         output_file_urls=model_output_urls,
         model_files=[
             ModelFileOut(model_key=_model_key_from_url(url), file_url=url)
