@@ -216,6 +216,94 @@ def test_logout_revokes_the_token(client: TestClient, monkeypatch) -> None:
     assert revoked == ["abc.def"]
 
 
+def test_update_profile_returns_the_new_user(client: TestClient, monkeypatch) -> None:
+    updated = TEST_USER.model_copy(update={"full_name": "Mazen A."})
+    captured: dict = {}
+
+    def fake_update(user_id, **kwargs):
+        captured["user_id"] = user_id
+        captured.update(kwargs)
+        return SimpleNamespace(id=user_id)
+
+    monkeypatch.setattr(auth_route.auth_service, "update_profile", fake_update)
+    monkeypatch.setattr(auth_route.auth_service, "serialize_user", lambda user: updated)
+
+    response = client.patch("/api/auth/me", json={"full_name": "Mazen A."})
+
+    assert response.status_code == 200
+    assert response.json()["user"]["full_name"] == "Mazen A."
+    assert captured == {"user_id": TEST_USER.id, "full_name": "Mazen A.", "email": None}
+
+
+def test_update_profile_requires_at_least_one_field(client: TestClient) -> None:
+    assert client.patch("/api/auth/me", json={}).status_code == 400
+
+
+def test_update_profile_email_conflict_maps_to_409(client: TestClient, monkeypatch) -> None:
+    monkeypatch.setattr(
+        auth_route.auth_service,
+        "update_profile",
+        lambda user_id, **kwargs: (_ for _ in ()).throw(ValueError("Email already in use")),
+    )
+
+    response = client.patch("/api/auth/me", json={"email": "taken@example.com"})
+
+    assert response.status_code == 409
+
+
+def test_change_password_rotates_the_session_token(client: TestClient, monkeypatch) -> None:
+    revoked: list[str] = []
+    monkeypatch.setattr(
+        auth_route.auth_service,
+        "change_password",
+        lambda user_id, current, new: SimpleNamespace(id=user_id),
+    )
+    monkeypatch.setattr(
+        auth_route.auth_service, "revoke_all_tokens", lambda user_id: revoked.append(user_id)
+    )
+    monkeypatch.setattr(
+        auth_route.auth_service,
+        "issue_token",
+        lambda user_id: SimpleNamespace(token="fresh-token", expires_at=NOW),
+    )
+    monkeypatch.setattr(auth_route.auth_service, "serialize_user", lambda user: TEST_USER)
+
+    response = client.post(
+        "/api/auth/change-password",
+        json={"current_password": "oldpassword", "new_password": "newpassword"},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["access_token"] == "fresh-token"
+    assert revoked == [TEST_USER.id]
+
+
+def test_change_password_wrong_current_maps_to_400(client: TestClient, monkeypatch) -> None:
+    monkeypatch.setattr(
+        auth_route.auth_service,
+        "change_password",
+        lambda user_id, current, new: (_ for _ in ()).throw(
+            ValueError("Current password is incorrect")
+        ),
+    )
+
+    response = client.post(
+        "/api/auth/change-password",
+        json={"current_password": "oldpassword", "new_password": "newpassword"},
+    )
+
+    assert response.status_code == 400
+
+
+def test_change_password_rejects_short_passwords(client: TestClient) -> None:
+    response = client.post(
+        "/api/auth/change-password",
+        json={"current_password": "short", "new_password": "short"},
+    )
+
+    assert response.status_code == 422
+
+
 # ——————————————————————————————————————————————————————————————
 # Usage
 

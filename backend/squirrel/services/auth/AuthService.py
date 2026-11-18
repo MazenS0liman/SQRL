@@ -267,6 +267,131 @@ class AuthService:
             raise ValueError("Invalid credentials")
         return self._row_to_user(row)
 
+    def get_user(self, user_id: str) -> Optional[UserRecord]:
+        """Return one user by primary key, or ``None`` when it is missing."""
+        result = self._get_db().query(
+            f"""
+            SELECT id, username, email, password_hash, full_name, created_at
+            FROM {self._USERS_TABLE}
+            WHERE id = %(user_id)s
+            LIMIT 1
+            """,
+            params={"user_id": user_id},
+        )
+        rows = (result or {}).get("rows") or []
+        return self._row_to_user(rows[0]) if rows else None
+
+    def update_profile(
+        self,
+        user_id: str,
+        *,
+        full_name: Optional[str] = None,
+        email: Optional[str] = None,
+    ) -> UserRecord:
+        """Update the editable profile fields for one user.
+
+        ``None`` means "leave this field alone"; an empty ``full_name`` clears
+        the display name. Raises ``ValueError`` when the user is missing or the
+        new email is already taken by somebody else.
+        """
+        db = self._get_db()
+        params: dict = {
+            "user_id": user_id,
+            "updated_at": datetime.now(timezone.utc),
+        }
+        assignments = ["updated_at = %(updated_at)s"]
+
+        if full_name is not None:
+            params["full_name"] = full_name.strip() or None
+            assignments.append("full_name = %(full_name)s")
+
+        if email is not None:
+            email_key = self._normalize_identifier(email)
+            with self._lock:
+                existing = db.query(
+                    f"""
+                    SELECT id
+                    FROM {self._USERS_TABLE}
+                    WHERE lower(email) = %(email)s AND id <> %(user_id)s
+                    LIMIT 1
+                    """,
+                    params={"email": email_key, "user_id": user_id},
+                )
+            if (existing or {}).get("rows"):
+                raise ValueError("Email already in use")
+            params["email"] = email_key
+            assignments.append("email = %(email)s")
+
+        if len(assignments) == 1:
+            current = self.get_user(user_id)
+            if current is None:
+                raise ValueError("User not found")
+            return current
+
+        result = db.query(
+            f"""
+            UPDATE {self._USERS_TABLE}
+            SET {", ".join(assignments)}
+            WHERE id = %(user_id)s
+            RETURNING id, username, email, password_hash, full_name, created_at
+            """,
+            params=params,
+        )
+        rows = (result or {}).get("rows") or []
+        if not rows:
+            raise ValueError("User not found")
+        return self._row_to_user(rows[0])
+
+    def change_password(
+        self, user_id: str, current_password: str, new_password: str
+    ) -> UserRecord:
+        """Replace a user's password after verifying the current one."""
+        db = self._get_db()
+        result = db.query(
+            f"""
+            SELECT id, username, email, password_hash, full_name, created_at
+            FROM {self._USERS_TABLE}
+            WHERE id = %(user_id)s
+            LIMIT 1
+            """,
+            params={"user_id": user_id},
+        )
+        rows = (result or {}).get("rows") or []
+        if not rows:
+            raise ValueError("User not found")
+
+        row = rows[0]
+        if not self._verify_password(current_password, row["password_hash"]):
+            raise ValueError("Current password is incorrect")
+        if self._verify_password(new_password, row["password_hash"]):
+            raise ValueError("New password must be different from the current password")
+
+        updated = db.query(
+            f"""
+            UPDATE {self._USERS_TABLE}
+            SET password_hash = %(password_hash)s, updated_at = %(updated_at)s
+            WHERE id = %(user_id)s
+            RETURNING id, username, email, password_hash, full_name, created_at
+            """,
+            params={
+                "password_hash": self._hash_password(new_password),
+                "updated_at": datetime.now(timezone.utc),
+                "user_id": user_id,
+            },
+        )
+        updated_rows = (updated or {}).get("rows") or []
+        if not updated_rows:
+            raise ValueError("User not found")
+        return self._row_to_user(updated_rows[0])
+
+    def revoke_all_tokens(self, user_id: str) -> bool:
+        """Revoke every session token issued to a user."""
+        result = self._get_db().query(
+            f"DELETE FROM {self._TOKENS_TABLE} WHERE user_id = %(user_id)s",
+            params={"user_id": user_id},
+        )
+        return bool(result and result.get("success"))
+
     def issue_token(self, user_id: str, expires_in_hours: int = 24) -> TokenRecord:
         token = secrets.token_urlsafe(32)
         expires_at = datetime.now(timezone.utc) + timedelta(hours=expires_in_hours)

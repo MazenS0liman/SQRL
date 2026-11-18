@@ -247,6 +247,117 @@ def test_serialize_user_returns_api_model() -> None:
 
 
 # ——————————————————————————————————————————————————————————————
+# AuthService — profile and password management
+
+
+def test_get_user_returns_record() -> None:
+    db = FakeDB(results=[{"rows": [_user_row()]}])
+
+    user = AuthService(db=db).get_user("user-1")
+
+    assert user is not None
+    assert user.id == "user-1"
+    assert db.queries[0].params == {"user_id": "user-1"}
+
+
+def test_get_user_returns_none_when_missing() -> None:
+    assert AuthService(db=FakeDB(results=[{"rows": []}])).get_user("ghost") is None
+
+
+def test_update_profile_writes_name_and_email() -> None:
+    updated = _user_row(email="new@example.com", full_name="Alice B.")
+    db = FakeDB(results=[{"rows": []}, {"rows": [updated]}])
+
+    user = AuthService(db=db).update_profile(
+        "user-1", full_name="  Alice B.  ", email="New@Example.com"
+    )
+
+    assert user.email == "new@example.com"
+    assert user.full_name == "Alice B."
+    update = db.queries[1]
+    assert "UPDATE auth_users" in update.sql
+    assert update.params["full_name"] == "Alice B."
+    assert update.params["email"] == "new@example.com"
+    assert update.params["user_id"] == "user-1"
+
+
+def test_update_profile_rejects_an_email_taken_by_another_user() -> None:
+    db = FakeDB(results=[{"rows": [{"id": "someone-else"}]}])
+
+    with pytest.raises(ValueError, match="already in use"):
+        AuthService(db=db).update_profile("user-1", email="taken@example.com")
+
+    # The availability check ran, but no UPDATE was attempted.
+    assert len(db.queries) == 1
+
+
+def test_update_profile_without_fields_returns_the_current_user() -> None:
+    db = FakeDB(results=[{"rows": [_user_row()]}])
+
+    user = AuthService(db=db).update_profile("user-1")
+
+    assert user.id == "user-1"
+    assert len(db.queries) == 1
+
+
+def test_update_profile_missing_user_raises() -> None:
+    with pytest.raises(ValueError, match="not found"):
+        AuthService(db=FakeDB(results=[{"rows": []}])).update_profile(
+            "ghost", full_name="Nobody"
+        )
+
+
+def test_change_password_rewrites_the_hash() -> None:
+    new_hash = AuthService._hash_password("a much better password")
+    db = FakeDB(results=[{"rows": [_user_row()]}, {"rows": [_user_row(password_hash=new_hash)]}])
+
+    user = AuthService(db=db).change_password(
+        "user-1", "correct horse", "a much better password"
+    )
+
+    assert AuthService._verify_password("a much better password", user.password_hash)
+    assert db.queries[1].params["user_id"] == "user-1"
+
+
+def test_change_password_rejects_a_wrong_current_password() -> None:
+    db = FakeDB(results=[{"rows": [_user_row()]}])
+
+    with pytest.raises(ValueError, match="Current password"):
+        AuthService(db=db).change_password("user-1", "wrong password", "a much better password")
+
+    assert len(db.queries) == 1
+
+
+def test_change_password_rejects_reusing_the_current_password() -> None:
+    db = FakeDB(results=[{"rows": [_user_row()]}])
+
+    with pytest.raises(ValueError, match="different"):
+        AuthService(db=db).change_password("user-1", "correct horse", "correct horse")
+
+
+def test_change_password_missing_user_raises() -> None:
+    with pytest.raises(ValueError, match="not found"):
+        AuthService(db=FakeDB(results=[{"rows": []}])).change_password(
+            "ghost", "correct horse", "a much better password"
+        )
+
+
+def test_change_password_raises_when_update_returns_nothing() -> None:
+    db = FakeDB(results=[{"rows": [_user_row()]}, {"rows": []}])
+
+    with pytest.raises(ValueError, match="not found"):
+        AuthService(db=db).change_password("user-1", "correct horse", "a much better password")
+
+
+def test_revoke_all_tokens_scopes_to_the_user() -> None:
+    db = FakeDB(results=[{"success": True}])
+
+    assert AuthService(db=db).revoke_all_tokens("user-1") is True
+    assert "DELETE FROM auth_tokens" in db.queries[0].sql
+    assert db.queries[0].params == {"user_id": "user-1"}
+
+
+# ——————————————————————————————————————————————————————————————
 # TokenService
 
 
