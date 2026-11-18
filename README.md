@@ -7,6 +7,11 @@
   ![FastAPI](https://img.shields.io/badge/FastAPI-009688?logo=fastapi&logoColor=white)
   ![Vite](https://img.shields.io/badge/Vite-646CFF?logo=vite&logoColor=white)
   ![Docker](https://img.shields.io/badge/Docker-1D63ED?logo=docker&logoColor=white)
+
+  [![CI](https://github.com/MazenS0liman/SQRL/actions/workflows/ci.yml/badge.svg?branch=dev)](https://github.com/MazenS0liman/SQRL/actions/workflows/ci.yml)
+  [![Coverage](https://codecov.io/gh/MazenS0liman/SQRL/branch/dev/graph/badge.svg)](https://codecov.io/gh/MazenS0liman/SQRL)
+  [![Docker Image Version](https://img.shields.io/docker/v/mazens0liman/sqrl?label=docker%20hub&logo=docker&logoColor=white)](https://hub.docker.com/r/mazens0liman/sqrl)
+  [![Docker Pulls](https://img.shields.io/docker/pulls/mazens0liman/sqrl?label=pulls)](https://hub.docker.com/r/mazens0liman/sqrl)
 </div>
 
 Squirrel is a full-stack application for analyzing, preparing, building machine learning models, and serving predictions. It also lets you compose, schedule, and monitor multi-step ETL pipelines, build dashboards, and track LLM token usage per provider, feature, and user.
@@ -211,6 +216,23 @@ docker compose down -v
 
 The last command permanently removes local PostgreSQL and MinIO data.
 
+### Published image
+
+Every push to `main` (and every `v*.*.*` tag) publishes the combined image to [Docker Hub](https://hub.docker.com/r/mazens0liman/sqrl):
+
+```powershell
+docker pull mazens0liman/sqrl:latest
+```
+
+To run the published image instead of building from source, replace the `build:` block in the shared `x-app` anchor of `docker-compose.yml` with a pinned tag, for example:
+
+```yaml
+x-app: &app
+  image: mazens0liman/sqrl:latest
+```
+
+Also drop the `./backend/squirrel:/app/squirrel` bind mount when using the published image, otherwise your local source shadows the code inside the container.
+
 ## Environment Configuration
 
 The backend reads settings from `.env` through Docker Compose. Start with `.env.example` and configure at least the provider keys required by the agents you plan to use.
@@ -395,15 +417,35 @@ The suite covers:
 > provider to test deterministically and are intentionally not counted as
 > "covered" by the import smoke test.
 
-## Build Status
+## Build Status and Automation
 
 | Component | Status |
 | --- | --- |
-| Backend (`pytest`) | Passing |
+| Backend (`pytest`, 1,152 tests) | Passing |
 | Backend coverage gate | 70% (informational) |
 | Frontend (`tsc`) | Passing |
 | Frontend (`vite build`) | Passing |
-| Docker Compose | Multi-stage image builds the SPA and serves it from FastAPI |
+| Docker image | Published to `mazens0liman/sqrl` |
+
+Workflows live in `.github/workflows`:
+
+| Workflow | Trigger | What it does |
+| --- | --- | --- |
+| `ci.yml` | Push to `dev` or `main`, pull requests, manual | Byte-compiles the backend, runs the pytest suite with coverage, uploads `coverage.xml` to Codecov, then type-checks and builds the frontend |
+| `docker-publish.yml` | Push to `dev` or `main`, `v*.*.*` tags, manual | Builds the multi-stage image and pushes it to Docker Hub with branch, semver, and `sha-` tags |
+| `docs.yml` | Push to `main`, manual | Generates the API documentation and deploys it to GitHub Pages |
+
+CI runs the same coverage command documented above and adds `--cov-report=xml` so Codecov can read the report that feeds the coverage badge.
+
+### Badge setup
+
+The badges at the top of this file come from three services:
+
+1. **CI** — the GitHub Actions badge for `ci.yml` on the `dev` branch. No setup required.
+2. **Coverage** — Codecov. Link the repository once at <https://codecov.io/gh/MazenS0liman/SQRL> and add a `CODECOV_TOKEN` repository secret under *Settings → Secrets and variables → Actions*. Public repositories can upload without a token, but the token keeps uploads reliable.
+3. **Docker Hub** — `mazens0liman/sqrl`. Add `DOCKERHUB_USERNAME` and `DOCKERHUB_TOKEN` secrets, where the token is a Docker Hub access token with read/write scope.
+
+Coverage upload is skipped for pull requests opened from forks, because repository secrets are not available to those runs.
 
 Known non-blocking issues: the repository ESLint config is currently broken,
 Vite warns about a chunk larger than 500 kB, and the pipeline editor's

@@ -71,5 +71,7 @@ package-lock.json
 # Test/coverage artifacts
 backend/.coverage
 backend/.coverage_report.txt
+backend/coverage.xml
+coverage.xml
 htmlcov/
 .pytest_cache/

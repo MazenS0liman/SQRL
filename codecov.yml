@@ -1,0 +1,17 @@
+# Codecov configuration for the SQRL repository.
+# Coverage is reported for visibility, not enforced as a merge gate.
+coverage:
+  precision: 1
+  status:
+    project:
+      default:
+        target: auto
+        threshold: 1%
+        informational: true
+    patch:
+      default:
+        informational: true
+
+comment:
+  layout: "reach, diff, files"
+  require_changes: false
