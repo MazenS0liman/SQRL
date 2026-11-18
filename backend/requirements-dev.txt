@@ -2,3 +2,4 @@
 # test environment matches what the application image runs.
 -r requirements.txt
 pytest==8.4.2
+pytest-cov==7.1.0

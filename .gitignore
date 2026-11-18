@@ -67,3 +67,9 @@ Thumbs.db
 # Node JS
 node_modules
 package-lock.json
+
+# Test/coverage artifacts
+backend/.coverage
+backend/.coverage_report.txt
+htmlcov/
+.pytest_cache/

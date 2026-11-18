@@ -53,12 +53,26 @@ packages = [{ include = "squirrel" }]
 [dependency-groups]
 dev = [
     "ipykernel (>=7.2.0,<8.0.0)",
-    "pytest (>=8.4.2,<9.0.0)"
+    "pytest (>=8.4.2,<9.0.0)",
+    "pytest-cov (>=7.1.0,<8.0.0)"
 ]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["."]
+
+[tool.coverage.run]
+source = ["squirrel"]
+branch = false
+
+[tool.coverage.report]
+skip_empty = true
+exclude_lines = [
+    "pragma: no cover",
+    "if TYPE_CHECKING:",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+]
 
 [project.optional-dependencies]
 deep-learning = ["tensorflow>=2.21.0,<3.0.0"]
