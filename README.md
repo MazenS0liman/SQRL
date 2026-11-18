@@ -367,7 +367,7 @@ Coverage highlights:
 | Workspace service | 93% |
 | Notebook service | 94% |
 | Core config and logging | 93–94% |
-| API routes (varies by router) | 35–95% |
+| API routes (varies by router) | 35–100% |
 | Pipeline tasks | 69% |
 
 The remaining gaps are the LLM-driven agents (`exploratory`, `builder`,
