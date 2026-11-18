@@ -135,11 +135,36 @@ from squirrel.schemas.file import UploadedSourceOut
 # Exception
 from squirrel.schemas.error import WorkspaceNotFoundError, SourceNotFoundError, DuplicateColumnError
 
+# Notifications
+from squirrel.constants.jobs import NotificationType
+from squirrel.services.notifications.NotificationService import NotificationService
+
 # Logging
 from loguru import logger
 
 # API Router
 router = APIRouter()
+
+
+def _notify_task(
+    user_id: str,
+    *,
+    notification_type: str,
+    title: str,
+    body: str,
+    link: str,
+) -> None:
+    """Emit a task notification without letting it mask the real response."""
+    try:
+        NotificationService().emit(
+            user_id,
+            title,
+            notification_type=notification_type,
+            body=body,
+            link=link,
+        )
+    except Exception:  # noqa: BLE001 - notifications are best-effort
+        logger.exception("Failed to emit workspace notification for {}", link)
 
 # ——————————————————————————————————————————————————————————————
 # Upload parsers — one entry per supported file extension.
@@ -548,6 +573,27 @@ async def build_structured_models(
             ),
         )
 
+    workspace_name = workspace.get("name") or "Workspace"
+    workspace_link = f"/workspace/{workspace_id}"
+
+    def notify_build(succeeded: bool, error: Optional[str] = None) -> None:
+        if succeeded:
+            _notify_task(
+                current_user.id,
+                notification_type=NotificationType.WORKSPACE_BUILD,
+                title=f"{workspace_name} finished building",
+                body="Preprocessing and model training completed successfully.",
+                link=workspace_link,
+            )
+        else:
+            _notify_task(
+                current_user.id,
+                notification_type=NotificationType.JOB_FAILED,
+                title=f"{workspace_name} build failed",
+                body=error or "The workspace build did not finish.",
+                link=workspace_link,
+            )
+
     sources = workspace.get("input_sources") or []
     if not sources:
         raise HTTPException(
@@ -568,6 +614,9 @@ async def build_structured_models(
         logger.exception("Failed to load source data for workspace={}", workspace_id)
         await run_in_threadpool(
             workspace_svc.set_status, workspace_id, WorkspaceStatus.FAILED, None, str(exc), current_user.id
+        )
+        await run_in_threadpool(
+            notify_build, False, "Failed to load one or more input sources."
         )
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -635,6 +684,7 @@ async def build_structured_models(
         await run_in_threadpool(
             workspace_svc.set_status, workspace_id, WorkspaceStatus.FAILED, None, str(exc), current_user.id
         )
+        await run_in_threadpool(notify_build, False, "Preprocessing failed.")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Preprocessing failed.",
@@ -670,6 +720,7 @@ async def build_structured_models(
         await run_in_threadpool(
             workspace_svc.set_status, workspace_id, WorkspaceStatus.FAILED, request.target_column, str(exc), current_user.id
         )
+        await run_in_threadpool(notify_build, False, "Model building failed.")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Model building failed.",
@@ -697,6 +748,7 @@ async def build_structured_models(
     await run_in_threadpool(
         workspace_svc.set_status, workspace_id, WorkspaceStatus.COMPLETED, request.target_column, None, current_user.id
     )
+    await run_in_threadpool(notify_build, True)
 
     return BuildResponse(
         workspace_id=workspace_id,

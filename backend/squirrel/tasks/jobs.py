@@ -22,6 +22,7 @@ them.
 # Imports
 
 # Standard Libraries
+import json
 from typing import Any, Callable, Dict, Optional
 
 # Logging
@@ -31,7 +32,7 @@ from loguru import logger
 from squirrel.core.celery_app import celery_app
 
 # Constants
-from squirrel.constants.jobs import NotificationType
+from squirrel.constants.jobs import JobType, NotificationType
 
 # Services
 from squirrel.services.jobs.JobService import JobService, JobNotFoundError
@@ -56,6 +57,17 @@ def get_job_handler(job_type: str) -> Optional[JobHandler]:
     return _JOB_HANDLERS.get(job_type)
 
 
+def _job_payload(job: Dict[str, Any]) -> Dict[str, Any]:
+    """Return a job's payload as a dict, tolerating jsonb text and bad data."""
+    payload = job.get("payload") or {}
+    if isinstance(payload, str):
+        try:
+            payload = json.loads(payload)
+        except (TypeError, ValueError):
+            return {}
+    return payload if isinstance(payload, dict) else {}
+
+
 def _notify_outcome(
     job: Dict[str, Any],
     *,
@@ -66,23 +78,42 @@ def _notify_outcome(
     owner_user_id = job.get("owner_user_id")
     if not owner_user_id:
         return
-    try:
+
+    job_type = job.get("type", JobType.GENERIC)
+    payload = _job_payload(job)
+
+    if job_type == JobType.ETL_PIPELINE:
+        pipeline_id = payload.get("pipeline_id")
+        pipeline_name = str(payload.get("pipeline_name") or "").strip()
+        label = pipeline_name or "Pipeline"
+        link = f"/pipelines/{pipeline_id}" if pipeline_id else None
         if succeeded:
-            NotificationService().emit(
-                owner_user_id,
-                f"{job.get('type', 'Job')} completed",
-                notification_type=NotificationType.JOB_SUCCEEDED,
-                body=f"Job {job['id']} finished successfully.",
-                link=f"/jobs/{job['id']}",
-            )
+            title = f"{label} run succeeded"
+            body = "The latest run finished successfully."
+            notification_type = NotificationType.PIPELINE_RUN
         else:
-            NotificationService().emit(
-                owner_user_id,
-                f"{job.get('type', 'Job')} failed",
-                notification_type=NotificationType.JOB_FAILED,
-                body=f"Job {job['id']} failed: {error or 'unknown error'}",
-                link=f"/jobs/{job['id']}",
-            )
+            title = f"{label} run failed"
+            body = f"The latest run failed: {error or 'unknown error'}"
+            notification_type = NotificationType.JOB_FAILED
+    else:
+        link = f"/jobs/{job['id']}"
+        if succeeded:
+            title = f"{job_type} completed"
+            body = f"Job {job['id']} finished successfully."
+            notification_type = NotificationType.JOB_SUCCEEDED
+        else:
+            title = f"{job_type} failed"
+            body = f"Job {job['id']} failed: {error or 'unknown error'}"
+            notification_type = NotificationType.JOB_FAILED
+
+    try:
+        NotificationService().emit(
+            owner_user_id,
+            title,
+            notification_type=notification_type,
+            body=body,
+            link=link,
+        )
     except Exception:  # noqa: BLE001 - notification failure must not mask the job result
         logger.exception("Failed to emit completion notification for job {}", job.get("id"))
 

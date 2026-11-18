@@ -122,3 +122,13 @@ export type {
     UsagePricingEntry,
     UsagePricingResponse
 } from './usage';
+
+// Notification types
+export type {
+    NotificationType,
+    NotificationItem,
+    NotificationListResponse,
+    UnreadCountResponse,
+    MarkAllReadResponse,
+    NotificationPreferences
+} from './notification';

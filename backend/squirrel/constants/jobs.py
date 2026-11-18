@@ -45,13 +45,25 @@ class JobType:
 class NotificationType:
     """Known notification categories."""
 
-    JOB_SUCCEEDED = "job_succeeded"
-    JOB_FAILED    = "job_failed"
-    RETRAIN       = "retrain"
-    STREAM        = "stream"
-    SYSTEM        = "system"
+    JOB_SUCCEEDED    = "job_succeeded"
+    JOB_FAILED       = "job_failed"
+    PIPELINE_RUN     = "pipeline_run"
+    WORKSPACE_BUILD  = "workspace_build"
+    NOTEBOOK_RUN     = "notebook_run"
+    RETRAIN          = "retrain"
+    STREAM           = "stream"
+    SYSTEM           = "system"
 
-    ALL = {JOB_SUCCEEDED, JOB_FAILED, RETRAIN, STREAM, SYSTEM}
+    ALL = {
+        JOB_SUCCEEDED,
+        JOB_FAILED,
+        PIPELINE_RUN,
+        WORKSPACE_BUILD,
+        NOTEBOOK_RUN,
+        RETRAIN,
+        STREAM,
+        SYSTEM,
+    }
 
 
 class NotificationChannel:

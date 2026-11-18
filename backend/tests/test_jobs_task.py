@@ -204,6 +204,60 @@ def test_run_job_skips_notification_without_owner(
     assert notifications.emitted == []
 
 
+def test_run_job_emits_pipeline_notification_with_pipeline_link(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    service, notifications = _install(
+        monkeypatch,
+        job={
+            "id": "job-1",
+            "type": JobType.ETL_PIPELINE,
+            "owner_user_id": "user-1",
+            "payload": {"pipeline_id": "pl-1", "pipeline_name": "Daily revenue"},
+        },
+    )
+    jobs_task.register_job_handler(JobType.ETL_PIPELINE)(lambda job: {"rows": 5})
+
+    result = jobs_task.run_job("job-1")
+
+    assert result["status"] == "succeeded"
+    assert notifications.emitted == [
+        {
+            "user_id": "user-1",
+            "title": "Daily revenue run succeeded",
+            "notification_type": NotificationType.PIPELINE_RUN,
+            "body": "The latest run finished successfully.",
+            "link": "/pipelines/pl-1",
+        }
+    ]
+
+
+def test_run_job_emits_pipeline_failure_notification(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _, notifications = _install(
+        monkeypatch,
+        job={
+            "id": "job-1",
+            "type": JobType.ETL_PIPELINE,
+            "owner_user_id": "user-1",
+            "payload": '{"pipeline_id": "pl-1", "pipeline_name": "Daily revenue"}',
+        },
+    )
+
+    def boom(job: dict) -> dict:
+        raise RuntimeError("sink unavailable")
+
+    jobs_task.register_job_handler(JobType.ETL_PIPELINE)(boom)
+
+    jobs_task.run_job("job-1")
+
+    assert notifications.emitted[0]["notification_type"] == NotificationType.JOB_FAILED
+    assert notifications.emitted[0]["title"] == "Daily revenue run failed"
+    assert "sink unavailable" in notifications.emitted[0]["body"]
+    assert notifications.emitted[0]["link"] == "/pipelines/pl-1"
+
+
 def test_run_job_succeeds_even_when_notification_fails(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

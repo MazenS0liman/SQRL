@@ -376,6 +376,7 @@ class PipelineService:
             payload={
                 "run_id": run_id,
                 "pipeline_id": pipeline_id,
+                "pipeline_name": pipeline.get("name"),
                 "dry_run": dry_run,
             },
         )

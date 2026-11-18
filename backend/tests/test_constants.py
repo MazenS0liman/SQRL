@@ -123,7 +123,16 @@ def test_job_and_notification_vocabulary() -> None:
     assert JobStatus.TERMINAL == {"succeeded", "failed", "cancelled"}
     assert JobStatus.ALL == {"queued", "running", "succeeded", "failed", "cancelled"}
     assert JobType.ALL == {"generic", "etl_pipeline", "model_retrain", "stream", "notification"}
-    assert NotificationType.ALL == {"job_succeeded", "job_failed", "retrain", "stream", "system"}
+    assert NotificationType.ALL == {
+        "job_succeeded",
+        "job_failed",
+        "pipeline_run",
+        "workspace_build",
+        "notebook_run",
+        "retrain",
+        "stream",
+        "system",
+    }
     assert NotificationChannel.ALL == {"in_app", "email"}
 
 

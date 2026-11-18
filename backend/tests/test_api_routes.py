@@ -78,6 +78,19 @@ def _fake(**attributes):
     return SimpleNamespace(**attributes)
 
 
+@pytest.fixture(autouse=True)
+def notification_calls(monkeypatch):
+    """Capture task notifications instead of touching the notification store."""
+    calls: list[dict] = []
+
+    def record(user_id, **kwargs):
+        calls.append({"user_id": user_id, **kwargs})
+
+    monkeypatch.setattr(workspace_route, "_notify_task", record, raising=False)
+    monkeypatch.setattr(notebook_route, "_notify_task", record, raising=False)
+    return calls
+
+
 # ——————————————————————————————————————————————————————————————
 # Health / OpenAPI
 
@@ -1793,6 +1806,53 @@ def test_run_cell_not_ready(client: TestClient, monkeypatch) -> None:
     response = client.post("/api/notebook/nb_1/cells", json={"type": "eda"})
 
     assert response.status_code == 409
+
+
+def test_run_cell_emits_completion_notification(
+    client: TestClient,
+    monkeypatch,
+    notification_calls,
+) -> None:
+    monkeypatch.setattr(
+        notebook_route,
+        "_svc",
+        lambda: _fake(
+            run_cell=lambda **kwargs: _cell(),
+            get_notebook=lambda *a, **k: _notebook(name="Churn notebook"),
+        ),
+    )
+
+    response = client.post("/api/notebook/nb_1/cells", json={"type": "question"})
+
+    assert response.status_code == 201
+    assert notification_calls == [
+        {
+            "user_id": TEST_USER.id,
+            "notification_type": "notebook_run",
+            "title": "Churn notebook run finished",
+            "body": "The question cell completed successfully.",
+            "link": "/notebooks/nb_1",
+        }
+    ]
+
+
+def test_run_cell_emits_failure_notification(
+    client: TestClient,
+    monkeypatch,
+    notification_calls,
+) -> None:
+    def boom(**kwargs):
+        raise RuntimeError("model exploded")
+
+    monkeypatch.setattr(notebook_route, "_svc", lambda: _fake(run_cell=boom))
+
+    response = client.post("/api/notebook/nb_1/cells", json={"type": "eda"})
+
+    assert response.status_code == 500
+    assert notification_calls[0]["notification_type"] == "job_failed"
+    assert notification_calls[0]["title"] == "Notebook run failed"
+    assert "model exploded" in notification_calls[0]["body"]
+    assert notification_calls[0]["link"] == "/notebooks/nb_1"
 
 
 def test_update_cell_missing(client: TestClient, monkeypatch) -> None:

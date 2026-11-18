@@ -270,6 +270,7 @@ def test_create_dry_run_is_allowed_before_approval() -> None:
     assert run["dry_run"] is True
     assert jobs.created[0]["job_type"] == "etl_pipeline"
     assert jobs.created[0]["payload"]["pipeline_id"] == "pipeline-1"
+    assert jobs.created[0]["payload"]["pipeline_name"] == "nightly_orders"
     assert jobs.created[0]["payload"]["dry_run"] is True
     insert = db.last_query
     assert "INSERT INTO pipeline_runs" in insert.sql
