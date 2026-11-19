@@ -19,7 +19,7 @@ import { toast } from "sonner";
 
 import { notificationsApi } from "@/api/notificationsApi";
 import type { NotificationItem } from "@/types";
-import { cn } from "@/lib/utils";
+import { apiFetch, cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
@@ -76,6 +76,35 @@ function relativeTime(iso?: string | null): string {
 
 function isUnread(item: NotificationItem): boolean {
   return !item.read_at;
+}
+
+interface JobSummary {
+  payload?: {
+    pipeline_id?: string;
+    workspace_id?: string;
+    notebook_id?: string;
+  } | null;
+}
+
+/**
+ * Older notifications link to ``/jobs/{id}``, which is not a page. Resolve the
+ * job's payload to the feature it belongs to so the click still lands on the
+ * workspace, notebook, or pipeline that produced it.
+ */
+async function resolveNotificationTarget(link: string): Promise<string | null> {
+  const legacyJob = link.match(/^\/jobs\/([^/?#]+)/);
+  if (!legacyJob) return link;
+
+  try {
+    const job = await apiFetch<JobSummary>(`/jobs/${encodeURIComponent(legacyJob[1])}`);
+    const payload = job.payload ?? {};
+    if (payload.pipeline_id) return `/pipelines/${payload.pipeline_id}`;
+    if (payload.workspace_id) return `/workspace/${payload.workspace_id}`;
+    if (payload.notebook_id) return `/notebooks/${payload.notebook_id}`;
+  } catch {
+    // The job may have been pruned; fall through to the unavailable message.
+  }
+  return null;
 }
 
 // ——————————————————————————————————————————————————————————————
@@ -156,9 +185,14 @@ export function NotificationPanel() {
       }
     }
 
-    if (item.link) {
-      setOpen(false);
-      navigate(item.link);
+    if (!item.link) return;
+
+    setOpen(false);
+    const target = await resolveNotificationTarget(item.link);
+    if (target) {
+      navigate(target);
+    } else {
+      toast.error("That task is no longer available.");
     }
   };
 

@@ -84,9 +84,14 @@ def _notify_outcome(
 
     if job_type == JobType.ETL_PIPELINE:
         pipeline_id = payload.get("pipeline_id")
+        run_id = payload.get("run_id")
         pipeline_name = str(payload.get("pipeline_name") or "").strip()
         label = pipeline_name or "Pipeline"
-        link = f"/pipelines/{pipeline_id}" if pipeline_id else None
+        link = None
+        if pipeline_id:
+            link = f"/pipelines/{pipeline_id}"
+            if run_id:
+                link = f"{link}?run={run_id}"
         if succeeded:
             title = f"{label} run succeeded"
             body = "The latest run finished successfully."

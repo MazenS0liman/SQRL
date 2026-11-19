@@ -213,7 +213,11 @@ def test_run_job_emits_pipeline_notification_with_pipeline_link(
             "id": "job-1",
             "type": JobType.ETL_PIPELINE,
             "owner_user_id": "user-1",
-            "payload": {"pipeline_id": "pl-1", "pipeline_name": "Daily revenue"},
+            "payload": {
+                "pipeline_id": "pl-1",
+                "pipeline_name": "Daily revenue",
+                "run_id": "run-9",
+            },
         },
     )
     jobs_task.register_job_handler(JobType.ETL_PIPELINE)(lambda job: {"rows": 5})
@@ -227,7 +231,7 @@ def test_run_job_emits_pipeline_notification_with_pipeline_link(
             "title": "Daily revenue run succeeded",
             "notification_type": NotificationType.PIPELINE_RUN,
             "body": "The latest run finished successfully.",
-            "link": "/pipelines/pl-1",
+            "link": "/pipelines/pl-1?run=run-9",
         }
     ]
 

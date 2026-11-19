@@ -200,6 +200,7 @@ export default function PipelineDetailPage(): JSX.Element {
   const isDraft = !pipelineId;
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const requestedRunId = searchParams.get("run");
 
   const [pipeline, setPipeline] = useState<PipelineRead | null>(null);
   const [draft, setDraft] = useState<PipelineDefinition | null>(null);
@@ -295,7 +296,11 @@ export default function PipelineDetailPage(): JSX.Element {
         setDraft(current.definition);
         setOutput(outputTarget(current.definition));
         setRuns(nextRuns);
-        setSelectedRunId(nextRuns[0]?.id ?? null);
+        setSelectedRunId(
+          requestedRunId && nextRuns.some((run) => run.id === requestedRunId)
+            ? requestedRunId
+            : nextRuns[0]?.id ?? null,
+        );
         void loadModels();
       } catch (err) {
         if (!cancelled) setError(err instanceof Error ? err.message : "Unable to load pipeline.");
@@ -306,7 +311,7 @@ export default function PipelineDetailPage(): JSX.Element {
     return () => {
       cancelled = true;
     };
-  }, [pipelineId, loadModels]);
+  }, [pipelineId, loadModels, requestedRunId]);
 
   /* polling */
   const hasActiveRun = runs.some((r) => r.status === "queued" || r.status === "running");
