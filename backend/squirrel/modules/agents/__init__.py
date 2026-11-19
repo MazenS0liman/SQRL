@@ -3,6 +3,7 @@ This module provides an implementation of the GroqProvider, which is responsible
 """
 from .abstract.IAgent import IAgent
 from .orchestrator.OrchestratorAgent import OrchestratorAgent
+from .etl.ETLPlannerAgent import ETLPlannerAgent
 from .exploratory.TabularDataExploratoryAgent import TabularDataExploratoryAgent
 from .inspector.TabularDataInsepctorAgent import TabularDataInspectorAgent
 from .preprocessor.TabularDataProcessorAgent import TabularDataProcessorAgent
@@ -11,6 +12,7 @@ from .builder.TabularDataModelBuilderAgent import TabularDataModelBuilderAgent
 __all__ = [
     IAgent.__name__,
     OrchestratorAgent.__name__,
+    ETLPlannerAgent.__name__,
     TabularDataExploratoryAgent.__name__,
     TabularDataInspectorAgent.__name__,
     TabularDataProcessorAgent.__name__,

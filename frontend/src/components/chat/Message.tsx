@@ -1,6 +1,12 @@
+import { useState } from "react";
 import { Archive, FileText } from "lucide-react";
 import type { ChatMessage, UploadedFile } from "@/types";
 import AnalyticsCard from "@/components/visual/AnalyticsCard";
+import { Button } from "@/components/ui/button";
+import { PipelinePlanCard } from "@/components/etl/PipelinePlanCard";
+import { etlApi } from "@/api/etlApi";
+import { useNavigate } from "react-router-dom";
+import type { PipelinePlanRead } from "@/types";
 
 export const Message = ({
     message,
@@ -8,6 +14,10 @@ export const Message = ({
     message: ChatMessage;
     onUpdateData: (data: unknown) => void;
 }) => {
+    const navigate = useNavigate();
+    const [creating, setCreating] = useState(false);
+    const [createError, setCreateError] = useState<string | null>(null);
+    const [createdPipelineId, setCreatedPipelineId] = useState<string | null>(null);
     const attachedFiles = (() => {
         const files = (message.data as { files?: UploadedFile[] } | null)?.files;
         return Array.isArray(files) ? files : [];
@@ -18,6 +28,45 @@ export const Message = ({
     const analysisBody = message.role === "assistant"
         ? (message.data as { body?: Record<string, unknown> } | null)?.body ?? null
         : null;
+    const plan = (analysisBody as { plan?: PipelinePlanRead } | null)?.plan;
+
+    const analytics = analysisBody as {
+        charts?: unknown[];
+        summary?: {
+            dataset_description?: string;
+            key_findings?: unknown[];
+            recommended_next_steps?: unknown[];
+        };
+    } | null;
+    const hasAnalytics = Boolean(
+        analytics &&
+        ((Array.isArray(analytics.charts) && analytics.charts.length > 0) ||
+            (analytics.summary &&
+                (Boolean(analytics.summary.dataset_description) ||
+                    (analytics.summary.key_findings?.length ?? 0) > 0 ||
+                    (analytics.summary.recommended_next_steps?.length ?? 0) > 0)))
+    );
+
+    const createPipeline = async () => {
+        if (!plan || creating) return;
+        setCreating(true);
+        setCreateError(null);
+        try {
+            const pipeline = await etlApi.create({
+                name: plan.name,
+                description: plan.description,
+                definition: plan.definition,
+            });
+            setCreatedPipelineId(pipeline.id);
+            navigate(`/pipelines/${pipeline.id}`);
+        } catch (error) {
+            setCreateError(
+                error instanceof Error ? error.message : "Unable to create pipeline."
+            );
+        } finally {
+            setCreating(false);
+        }
+    };
 
     const renderFileContent = (file?: UploadedFile) => {
         const fileName = file?.fileName || message.content || "Uploaded file";
@@ -67,7 +116,26 @@ export const Message = ({
                                 {message.content}
                             </div>
                         )}
-                        {analysisBody && <AnalyticsCard body={analysisBody} />}
+                        {hasAnalytics && <AnalyticsCard body={analysisBody} />}
+                        {plan && (
+                            <PipelinePlanCard
+                                className="mt-4"
+                                plan={plan}
+                                onCreate={createdPipelineId ? undefined : () => void createPipeline()}
+                                creating={creating}
+                                error={createError}
+                            />
+                        )}
+                        {plan && createdPipelineId && (
+                            <Button
+                                className="mt-3"
+                                size="sm"
+                                variant="outline"
+                                onClick={() => navigate(`/pipelines/${createdPipelineId}`)}
+                            >
+                                Open pipeline
+                            </Button>
+                        )}
                     </div>
                 );
         }

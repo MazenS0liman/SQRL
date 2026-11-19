@@ -80,6 +80,7 @@ export const ChatPage: React.FC<ChatPageProps> = ({ session }: ChatPageProps) =>
 				headers: authHeaders({ 'Content-Type': 'application/json' }),
 				body: JSON.stringify({
 					query: message.content,
+					projectId: conversationId,
 					conversationId,
 					fileUrls,
 					conversationHistory,

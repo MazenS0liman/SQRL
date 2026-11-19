@@ -5,17 +5,17 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>squirrel.schemas.file &mdash; squirrel  documentation</title>
+  <title>squirrel.schemas.file &mdash; SQRL Documentation</title>
       <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="../../../_static/copybutton.css?v=76b2166b" />
-      <link rel="stylesheet" type="text/css" href="../../../_static/css/custom.css?v=adc7883a" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/custom.css?v=35931533" />
 
   
     <link rel="shortcut icon" href="../../../_static/sqrl.png"/>
       <script src="../../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../../../_static/documentation_options.js?v=01f34227"></script>
       <script src="../../../_static/doctools.js?v=9bcbadda"></script>
       <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
       <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -33,8 +33,8 @@
 
           
           
-          <a href="../../../index.html" class="icon icon-home">
-            squirrel
+          <a href="../../../index.html">
+            
               <img src="../../../_static/sqrl.png" class="logo" alt="Logo"/>
           </a>
 <div role="search">
@@ -45,9 +45,29 @@
   </form>
 </div>
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
-              <p class="caption" role="heading"><span class="caption-text">Python API Reference:</span></p>
+              <p class="caption" role="heading"><span class="caption-text">Learn and build</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="../../../api.html">Python API Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../getting-started.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../workflow.html">Product workflow</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../architecture.html">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../deployment.html">Deployment and operations</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../api.html">Backend API Reference</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../generated/api_reference.html">HTTP API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../generated/schemas_reference.html">Data Schemas</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../generated/services_reference.html">Services</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../generated/agents_reference.html">Agents</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../generated/prompts_reference.html">Prompt Components</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../generated/providers_reference.html">Model Providers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../generated/inspectors_reference.html">Data Inspectors</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../generated/preprocessors_reference.html">Preprocessors</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../generated/core_reference.html">Core Infrastructure</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../generated/models_reference.html">Machine Learning Models</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../generated/constants_reference.html">Constants</a></li>
+</ul>
+</li>
 </ul>
 
         </div>
@@ -103,7 +123,7 @@
 
 <span class="c1"># --- File Type Model ---</span>
 <div class="viewcode-block" id="FileType">
-<a class="viewcode-back" href="../../../generated/squirrel_schemas_file.html#squirrel.schemas.file.FileType">[docs]</a>
+<a class="viewcode-back" href="../../../generated/schemas_reference.html#squirrel.schemas.file.FileType">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">FileType</span><span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="n">Enum</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">"""</span>
 <span class="sd">    File Type Enumeration</span>
@@ -137,7 +157,7 @@
 <span class="c1"># ——————————————————————————————————————————————————————————————</span>
 <span class="c1"># File Models</span>
 <div class="viewcode-block" id="File">
-<a class="viewcode-back" href="../../../generated/squirrel_schemas_file.html#squirrel.schemas.file.File">[docs]</a>
+<a class="viewcode-back" href="../../../generated/schemas_reference.html#squirrel.schemas.file.File">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">File</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">"""</span>
 <span class="sd">    Represents a single file reference including optional metadata.</span>
@@ -167,7 +187,7 @@
 
 
 <div class="viewcode-block" id="UploadedSourceOut">
-<a class="viewcode-back" href="../../../generated/squirrel_schemas_file.html#squirrel.schemas.file.UploadedSourceOut">[docs]</a>
+<a class="viewcode-back" href="../../../generated/schemas_reference.html#squirrel.schemas.file.UploadedSourceOut">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">UploadedSourceOut</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">"""</span>
 <span class="sd">    Generic response describing a single uploaded input source, regardless</span>
@@ -192,14 +212,14 @@
 <span class="c1"># ——————————————————————————————————————————————————————————————</span>
 <span class="c1"># File API Request Model</span>
 <div class="viewcode-block" id="FileRequest">
-<a class="viewcode-back" href="../../../generated/squirrel_schemas_file.html#squirrel.schemas.file.FileRequest">[docs]</a>
+<a class="viewcode-back" href="../../../generated/schemas_reference.html#squirrel.schemas.file.FileRequest">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">FileRequest</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">"""Represents a request to process a list of files, including the file references."""</span>
     <span class="n">file</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">File</span><span class="p">]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="o">...</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">"The file reference to be processed"</span><span class="p">)</span></div>
 
 
 <div class="viewcode-block" id="RenameFileRequest">
-<a class="viewcode-back" href="../../../generated/squirrel_schemas_file.html#squirrel.schemas.file.RenameFileRequest">[docs]</a>
+<a class="viewcode-back" href="../../../generated/schemas_reference.html#squirrel.schemas.file.RenameFileRequest">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">RenameFileRequest</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
     <span class="n">fileName</span><span class="p">:</span> <span class="nb">str</span></div>
 
@@ -207,7 +227,7 @@
 <span class="c1"># ——————————————————————————————————————————————————————————————</span>
 <span class="c1"># File API Response Model</span>
 <div class="viewcode-block" id="FileResponse">
-<a class="viewcode-back" href="../../../generated/squirrel_schemas_file.html#squirrel.schemas.file.FileResponse">[docs]</a>
+<a class="viewcode-back" href="../../../generated/schemas_reference.html#squirrel.schemas.file.FileResponse">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">FileResponse</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">"""Represents the response after processing a file, including status and any output references."""</span>
     <span class="n">success</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="o">...</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">"Indicates whether the file was processed successfully"</span><span class="p">)</span>
@@ -215,7 +235,7 @@
 
 
 <div class="viewcode-block" id="FilesResponse">
-<a class="viewcode-back" href="../../../generated/squirrel_schemas_file.html#squirrel.schemas.file.FilesResponse">[docs]</a>
+<a class="viewcode-back" href="../../../generated/schemas_reference.html#squirrel.schemas.file.FilesResponse">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">FilesResponse</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
     <span class="n">success</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="o">...</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">"Indicates whether the file was processed successfully"</span><span class="p">)</span>
     <span class="n">files</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">File</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span></div>
@@ -224,7 +244,7 @@
 <span class="c1"># ——————————————————————————————————————————————————————————————</span>
 <span class="c1"># File Processing Issue Model</span>
 <div class="viewcode-block" id="FileProcessingIssue">
-<a class="viewcode-back" href="../../../generated/squirrel_schemas_file.html#squirrel.schemas.file.FileProcessingIssue">[docs]</a>
+<a class="viewcode-back" href="../../../generated/schemas_reference.html#squirrel.schemas.file.FileProcessingIssue">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">FileProcessingIssue</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">"""</span>
 <span class="sd">    File Processing Issue Model</span>
@@ -250,14 +270,14 @@
 <span class="c1"># Exceptions</span>
 
 <div class="viewcode-block" id="FileRecordNotFound">
-<a class="viewcode-back" href="../../../generated/squirrel_schemas_file.html#squirrel.schemas.file.FileRecordNotFound">[docs]</a>
+<a class="viewcode-back" href="../../../generated/schemas_reference.html#squirrel.schemas.file.FileRecordNotFound">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">FileRecordNotFound</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">"""Raised when a file_url has no row owned by the given user."""</span></div>
 
 
 
 <div class="viewcode-block" id="FileInUseError">
-<a class="viewcode-back" href="../../../generated/squirrel_schemas_file.html#squirrel.schemas.file.FileInUseError">[docs]</a>
+<a class="viewcode-back" href="../../../generated/schemas_reference.html#squirrel.schemas.file.FileInUseError">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">FileInUseError</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">"""Raised when trying to delete a file that's attached to a workspace/notebook."""</span></div>
 
@@ -276,7 +296,9 @@
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   
+  
+  <span class="version">Squirrel version 0.1.0</span>
+
 
 </footer>
         </div>

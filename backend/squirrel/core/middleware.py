@@ -32,6 +32,9 @@ from loguru import logger
 # Request Context
 from squirrel.core.request_context import set_request_id
 
+# Usage Context
+from squirrel.services.usage.context import set_usage_source, source_for_path
+
 # Middleware Classes
 class RequestLoggingMiddleware(BaseHTTPMiddleware):
     """
@@ -83,6 +86,10 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
 
         # Also set in context variable for easier access
         set_request_id(request_id)
+
+        # Attribute any LLM calls made while handling this request to the
+        # feature that triggered them (chat, workspace, notebook, pipeline...).
+        set_usage_source(source_for_path(request.url.path))
 
         start_time = time.time()
 

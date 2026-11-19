@@ -159,7 +159,7 @@ class AgentResponse(BaseModel):
     reply: str = Field(..., description="The assistant's reply to the user's query")
     
     #: The action taken by the agent
-    action: Literal["chat", "explore", "build"] = Field(..., description="The action taken by the orchestator agent.")
+    action: Literal["chat", "explore", "build", "etl"] = Field(..., description="The action taken by the orchestator agent.")
 
     #: Unqiue project identifier
     projectId: str = Field(..., description="Unique identifier for the project")

@@ -5,17 +5,17 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>squirrel.schemas.error &mdash; squirrel  documentation</title>
+  <title>squirrel.schemas.error &mdash; SQRL Documentation</title>
       <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="../../../_static/copybutton.css?v=76b2166b" />
-      <link rel="stylesheet" type="text/css" href="../../../_static/css/custom.css?v=adc7883a" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/custom.css?v=35931533" />
 
   
     <link rel="shortcut icon" href="../../../_static/sqrl.png"/>
       <script src="../../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../../../_static/documentation_options.js?v=01f34227"></script>
       <script src="../../../_static/doctools.js?v=9bcbadda"></script>
       <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
       <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -33,8 +33,8 @@
 
           
           
-          <a href="../../../index.html" class="icon icon-home">
-            squirrel
+          <a href="../../../index.html">
+            
               <img src="../../../_static/sqrl.png" class="logo" alt="Logo"/>
           </a>
 <div role="search">
@@ -45,9 +45,29 @@
   </form>
 </div>
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
-              <p class="caption" role="heading"><span class="caption-text">Python API Reference:</span></p>
+              <p class="caption" role="heading"><span class="caption-text">Learn and build</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="../../../api.html">Python API Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../getting-started.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../workflow.html">Product workflow</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../architecture.html">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../deployment.html">Deployment and operations</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../api.html">Backend API Reference</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../generated/api_reference.html">HTTP API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../generated/schemas_reference.html">Data Schemas</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../generated/services_reference.html">Services</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../generated/agents_reference.html">Agents</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../generated/prompts_reference.html">Prompt Components</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../generated/providers_reference.html">Model Providers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../generated/inspectors_reference.html">Data Inspectors</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../generated/preprocessors_reference.html">Preprocessors</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../generated/core_reference.html">Core Infrastructure</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../generated/models_reference.html">Machine Learning Models</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../generated/constants_reference.html">Constants</a></li>
+</ul>
+</li>
 </ul>
 
         </div>
@@ -82,19 +102,21 @@
 <span class="c1"># Workspace Exceptions</span>
 
 <div class="viewcode-block" id="WorkspaceNotFoundError">
-<a class="viewcode-back" href="../../../generated/squirrel_schemas_error.html#squirrel.schemas.error.WorkspaceNotFoundError">[docs]</a>
+<a class="viewcode-back" href="../../../generated/schemas_reference.html#squirrel.schemas.error.WorkspaceNotFoundError">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">WorkspaceNotFoundError</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">"""Raised when a project_id does not resolve to a workspace row."""</span></div>
 
 
 
 <div class="viewcode-block" id="SourceNotFoundError">
-<a class="viewcode-back" href="../../../generated/squirrel_schemas_error.html#squirrel.schemas.error.SourceNotFoundError">[docs]</a>
+<a class="viewcode-back" href="../../../generated/schemas_reference.html#squirrel.schemas.error.SourceNotFoundError">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">SourceNotFoundError</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">"""Raised when a source_id does not resolve to an input source on a workspace."""</span></div>
 
 
 
+<div class="viewcode-block" id="DuplicateColumnError">
+<a class="viewcode-back" href="../../../generated/schemas_reference.html#squirrel.schemas.error.DuplicateColumnError">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">DuplicateColumnError</span><span class="p">(</span><span class="ne">ValueError</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">"""</span>
 <span class="sd">    Raised when two or more input sources share a non-key column name, making</span>
@@ -109,31 +131,15 @@
             <span class="o">+</span> <span class="s2">", "</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="sa">f</span><span class="s2">"'</span><span class="si">{</span><span class="n">c</span><span class="si">}</span><span class="s2">'"</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">columns</span><span class="p">)</span>
             <span class="o">+</span> <span class="s2">" appear in more than one data source. Rename the column in one "</span>
               <span class="s2">"of the sources (or remove the duplicate) before building models."</span>
-        <span class="p">)</span>
-
-
-<div class="viewcode-block" id="DuplicateColumnError">
-<a class="viewcode-back" href="../../../generated/squirrel_schemas_error.html#squirrel.schemas.error.DuplicateColumnError">[docs]</a>
-<span class="k">class</span><span class="w"> </span><span class="nc">DuplicateColumnError</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">"""</span>
-<span class="sd">    Raised when two or more input sources share a non-target column name in</span>
-<span class="sd">    a way that can't be resolved into an unambiguous merge (see</span>
-<span class="sd">    ``TabularDataProcessorAgent.merge_sources``).</span>
-<span class="sd">    """</span>
-
-    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">columns</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]):</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">columns</span> <span class="o">=</span> <span class="n">columns</span>
-        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
-            <span class="sa">f</span><span class="s2">"Columns </span><span class="si">{</span><span class="n">columns</span><span class="si">}</span><span class="s2"> appear in more than one input source and "</span>
-            <span class="s2">"can't be merged unambiguously."</span>
         <span class="p">)</span></div>
+
 
 
 <span class="c1"># ——————————————————————————————————————————————————————————————</span>
 <span class="c1"># Notebook Errors</span>
 
 <div class="viewcode-block" id="NotebookNotFoundError">
-<a class="viewcode-back" href="../../../generated/squirrel_schemas_error.html#squirrel.schemas.error.NotebookNotFoundError">[docs]</a>
+<a class="viewcode-back" href="../../../generated/schemas_reference.html#squirrel.schemas.error.NotebookNotFoundError">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">NotebookNotFoundError</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">"""</span>
 <span class="sd">    Raised when a notebook id doesn't exist.</span>
@@ -141,7 +147,7 @@
 
 
 <div class="viewcode-block" id="NotebookNotReadyError">
-<a class="viewcode-back" href="../../../generated/squirrel_schemas_error.html#squirrel.schemas.error.NotebookNotReadyError">[docs]</a>
+<a class="viewcode-back" href="../../../generated/schemas_reference.html#squirrel.schemas.error.NotebookNotReadyError">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">NotebookNotReadyError</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">"""</span>
 <span class="sd">    Raised when a cell is requested before a data source is bound.</span>
@@ -149,7 +155,7 @@
 
 
 <div class="viewcode-block" id="CellNotFoundError">
-<a class="viewcode-back" href="../../../generated/squirrel_schemas_error.html#squirrel.schemas.error.CellNotFoundError">[docs]</a>
+<a class="viewcode-back" href="../../../generated/schemas_reference.html#squirrel.schemas.error.CellNotFoundError">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">CellNotFoundError</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">"""</span>
 <span class="sd">    Raised when a cell id doesn't exist on the given notebook.</span>
@@ -157,7 +163,7 @@
 
 
 <div class="viewcode-block" id="CellNotReadyError">
-<a class="viewcode-back" href="../../../generated/squirrel_schemas_error.html#squirrel.schemas.error.CellNotReadyError">[docs]</a>
+<a class="viewcode-back" href="../../../generated/schemas_reference.html#squirrel.schemas.error.CellNotReadyError">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">CellNotReadyError</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">"""</span>
 <span class="sd">    Raised when a cell is requested before it has finished running.</span>
@@ -165,7 +171,7 @@
 
     
 <div class="viewcode-block" id="CellRunError">
-<a class="viewcode-back" href="../../../generated/squirrel_schemas_error.html#squirrel.schemas.error.CellRunError">[docs]</a>
+<a class="viewcode-back" href="../../../generated/schemas_reference.html#squirrel.schemas.error.CellRunError">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">CellRunError</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">"""</span>
 <span class="sd">    Raised when a cell run fails.</span>
@@ -173,7 +179,7 @@
 
     
 <div class="viewcode-block" id="LastDataSourceError">
-<a class="viewcode-back" href="../../../generated/squirrel_schemas_error.html#squirrel.schemas.error.LastDataSourceError">[docs]</a>
+<a class="viewcode-back" href="../../../generated/schemas_reference.html#squirrel.schemas.error.LastDataSourceError">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">LastDataSourceError</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">"""</span>
 <span class="sd">    Raised when a user attempts to remove the last data source from a notebook.</span>
@@ -181,7 +187,7 @@
 
 
 <div class="viewcode-block" id="DataSourceNotFoundError">
-<a class="viewcode-back" href="../../../generated/squirrel_schemas_error.html#squirrel.schemas.error.DataSourceNotFoundError">[docs]</a>
+<a class="viewcode-back" href="../../../generated/schemas_reference.html#squirrel.schemas.error.DataSourceNotFoundError">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">DataSourceNotFoundError</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">"""</span>
 <span class="sd">    Raised when a data source id doesn't exist on the given notebook.</span>
@@ -202,7 +208,9 @@
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   
+  
+  <span class="version">Squirrel version 0.1.0</span>
+
 
 </footer>
         </div>

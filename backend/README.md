@@ -26,6 +26,19 @@ database, connector encryption, and provider credentials needed by your
 workflow. Common settings include `DATABASE_URL`, `MINIO_ENDPOINT`,
 `MINIO_BUCKET`, and `SQUIRREL_CONNECTOR_SECRET_KEY`.
 
+### Databricks and Airflow pipelines
+
+Set `DATABRICKS_SERVER_HOSTNAME`, `DATABRICKS_HTTP_PATH`, and
+`DATABRICKS_TOKEN` to enable the authenticated `/api/warehouse/query`
+endpoint. The `/api/warehouse/dags` endpoint generates an Airflow DAG with
+extract, transform, and load tasks. Set `AIRFLOW_DAGS_DIR` to a directory
+mounted into the Airflow scheduler; Airflow must have the Databricks SQL
+connector installed and the same three Databricks variables available.
+
+The generated pipeline uses read-only SQL for extraction and requires the
+transform query to reference `source_data`. It writes a staging table, a
+transformed table, and finally replaces the requested target table.
+
 ## API documentation
 
 When running outside production, interactive OpenAPI documentation is available

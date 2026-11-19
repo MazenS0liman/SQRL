@@ -13,9 +13,10 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
   const location = useLocation();
   const hideTopNav1 = /^\/notebooks\/[^/]+$/.test(location.pathname);
   const hideTopNav2 = /^\/workspace\/[^/]+$/.test(location.pathname);
+  const hideTopNav3 = /^\/pipelines\/[^/]+$/.test(location.pathname);
 
   // Determine active tab based on current route
-  const getActiveTab = (): 'home' | 'workspace' | 'notebooks' | 'files' | 'models' | 'data connectors' => {
+  const getActiveTab = (): 'home' | 'workspace' | 'notebooks' | 'files' | 'models' | 'data connectors' | 'pipelines' | 'usage' => {
     const path = location.pathname;
 
     if (path.startsWith('/workspace')) return 'workspace';
@@ -23,11 +24,13 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
     if (path.startsWith('/files')) return 'files';
     if (path.startsWith('/models')) return 'models';
     if (path.startsWith('/data-connectors')) return 'data connectors';
+    if (path.startsWith('/pipelines')) return 'pipelines';
+    if (path.startsWith('/usage')) return 'usage';
 
     return 'home';
   };
 
-  const handleTabChange = (tab: 'home' | 'workspace' | 'notebooks' | 'files' | 'models' | 'data connectors') => {
+  const handleTabChange = (tab: 'home' | 'workspace' | 'notebooks' | 'files' | 'models' | 'data connectors' | 'pipelines' | 'usage') => {
     if (tab === 'home') {
       navigate('/');
     } else if (tab === 'workspace') {
@@ -40,6 +43,10 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
       navigate('/models');
     } else if (tab === 'data connectors') {
       navigate('/data-connectors');
+    } else if (tab === 'pipelines') {
+      navigate('/pipelines');
+    } else if (tab === 'usage') {
+      navigate('/usage');
     }
   };
 
@@ -52,7 +59,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
         onTabChange={handleTabChange}
       />
       <div className="relative flex-1 flex flex-col min-w-0">
-        {!hideTopNav1 && !hideTopNav2 && <TopNavBar isAuth={true} />}
+        {!hideTopNav1 && !hideTopNav2 && !hideTopNav3 && <TopNavBar isAuth={true} />}
         <div className="h-full overflow-y-auto">
           {children}
         </div>

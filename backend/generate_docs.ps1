@@ -31,13 +31,13 @@ if (-not (Get-Command sphinx-build -ErrorAction SilentlyContinue)) {
 # Build docs
 if (Test-Path "docs\make.bat") {
     Write-Host "Cleaning docs..." -ForegroundColor Green
-    cmd /c "docs\make.bat clean"
+    cmd /c 'docs\make.bat clean 2>&1'
     if ($LASTEXITCODE -ne 0) {
         throw "Sphinx documentation cleanup failed. Install the documentation dependencies first."
     }
 
     Write-Host "Building HTML docs..." -ForegroundColor Green
-    cmd /c "docs\make.bat html"
+    cmd /c 'docs\make.bat html 2>&1'
     if ($LASTEXITCODE -ne 0) {
         throw "Sphinx documentation build failed. Install the documentation dependencies first."
     }

@@ -1,0 +1,195 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Product workflow &mdash; SQRL Documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" type="text/css" href="_static/css/custom.css?v=35931533" />
+
+  
+    <link rel="shortcut icon" href="_static/sqrl.png"/>
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=01f34227"></script>
+      <script src="_static/doctools.js?v=9bcbadda"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script src="_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="_static/copybutton.js?v=a46eff05"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Architecture" href="architecture.html" />
+    <link rel="prev" title="Getting started" href="getting-started.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html">
+            
+              <img src="_static/sqrl.png" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Learn and build</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="getting-started.html">Getting started</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Product workflow</a></li>
+<li class="toctree-l1"><a class="reference internal" href="architecture.html">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="deployment.html">Deployment and operations</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="api.html">Backend API Reference</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="generated/api_reference.html">HTTP API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="generated/schemas_reference.html">Data Schemas</a></li>
+<li class="toctree-l2"><a class="reference internal" href="generated/services_reference.html">Services</a></li>
+<li class="toctree-l2"><a class="reference internal" href="generated/agents_reference.html">Agents</a></li>
+<li class="toctree-l2"><a class="reference internal" href="generated/prompts_reference.html">Prompt Components</a></li>
+<li class="toctree-l2"><a class="reference internal" href="generated/providers_reference.html">Model Providers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="generated/inspectors_reference.html">Data Inspectors</a></li>
+<li class="toctree-l2"><a class="reference internal" href="generated/preprocessors_reference.html">Preprocessors</a></li>
+<li class="toctree-l2"><a class="reference internal" href="generated/core_reference.html">Core Infrastructure</a></li>
+<li class="toctree-l2"><a class="reference internal" href="generated/models_reference.html">Machine Learning Models</a></li>
+<li class="toctree-l2"><a class="reference internal" href="generated/constants_reference.html">Constants</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">squirrel</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Product workflow</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/workflow.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="product-workflow">
+<h1>Product workflow<a class="headerlink" href="#product-workflow" title="Link to this heading"></a></h1>
+<p>SQRL organizes machine-learning work around a workspace. A workspace keeps
+the source data, derived files, preprocessing decisions, model metrics, and
+prediction configuration together.</p>
+<section id="authenticate">
+<h2>1. Authenticate<a class="headerlink" href="#authenticate" title="Link to this heading"></a></h2>
+<p>Create an account or sign in. The API returns a bearer token; send it with
+protected requests:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>Authorization: Bearer &lt;access-token&gt;
+</pre></div>
+</div>
+</section>
+<section id="create-a-workspace">
+<h2>2. Create a workspace<a class="headerlink" href="#create-a-workspace" title="Link to this heading"></a></h2>
+<p>Use a workspace as the boundary for a project. It provides a stable identifier
+for files, connectors, notebooks, training runs, and prediction requests.</p>
+</section>
+<section id="connect-data">
+<h2>3. Connect data<a class="headerlink" href="#connect-data" title="Link to this heading"></a></h2>
+<p>Upload CSV files for a self-contained dataset or configure a PostgreSQL
+connection for reusable external data. Connector secrets are encrypted when
+the corresponding encryption key is configured.</p>
+</section>
+<section id="inspect-and-prepare">
+<h2>4. Inspect and prepare<a class="headerlink" href="#inspect-and-prepare" title="Link to this heading"></a></h2>
+<p>The assisted workflow examines the dataset, reports useful characteristics,
+and recommends preprocessing operations. The resulting transformed data and
+pipeline artifacts are retained with the workspace so training and prediction
+use the same transformations.</p>
+</section>
+<section id="train-and-compare-models">
+<h2>5. Train and compare models<a class="headerlink" href="#train-and-compare-models" title="Link to this heading"></a></h2>
+<p>Training evaluates multiple candidate estimators and records their metrics.
+The workspace can identify a recommended model while still allowing a caller
+to select a specific model key when the API supports it.</p>
+</section>
+<section id="predict">
+<h2>6. Predict<a class="headerlink" href="#predict" title="Link to this heading"></a></h2>
+<p>Prediction requests contain rows using the original feature names. SQRL
+replays the fitted preprocessing pipeline before invoking the selected model:</p>
+<div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+<span class="w">  </span><span class="nt">"rows"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">    </span><span class="p">{</span><span class="nt">"age"</span><span class="p">:</span><span class="w"> </span><span class="mi">42</span><span class="p">,</span><span class="w"> </span><span class="nt">"income"</span><span class="p">:</span><span class="w"> </span><span class="mi">72000</span><span class="p">,</span><span class="w"> </span><span class="nt">"region"</span><span class="p">:</span><span class="w"> </span><span class="s2">"north"</span><span class="p">}</span>
+<span class="w">  </span><span class="p">],</span>
+<span class="w">  </span><span class="nt">"model_key"</span><span class="p">:</span><span class="w"> </span><span class="s2">"random_forest"</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>The external prediction route is
+<code class="docutils literal notranslate"><span class="pre">POST</span> <span class="pre">/api/workspace/{workspace_id}/api/predict</span></code>. Omit <code class="docutils literal notranslate"><span class="pre">model_key</span></code> to use
+the workspace recommendation when one is available.</p>
+</section>
+<section id="operational-boundaries">
+<h2>Operational boundaries<a class="headerlink" href="#operational-boundaries" title="Link to this heading"></a></h2>
+<p>PostgreSQL stores application metadata and relationships. MinIO stores
+uploaded files, processed datasets, fitted pipelines, and model artifacts.
+Keeping these responsibilities separate allows large objects to be managed
+without putting them in relational records.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="getting-started.html" class="btn btn-neutral float-left" title="Getting started" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="architecture.html" class="btn btn-neutral float-right" title="Architecture" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, Mazen Soliman.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+  
+  <span class="version">Squirrel version 0.1.0</span>
+
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

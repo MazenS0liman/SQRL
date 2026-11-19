@@ -5,17 +5,17 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>squirrel.modules.preprocessors.transformers.tabular &mdash; squirrel  documentation</title>
+  <title>squirrel.modules.preprocessors.transformers.tabular &mdash; SQRL Documentation</title>
       <link rel="stylesheet" type="text/css" href="../../../../../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../../../../../_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="../../../../../_static/copybutton.css?v=76b2166b" />
-      <link rel="stylesheet" type="text/css" href="../../../../../_static/css/custom.css?v=adc7883a" />
+      <link rel="stylesheet" type="text/css" href="../../../../../_static/css/custom.css?v=35931533" />
 
   
     <link rel="shortcut icon" href="../../../../../_static/sqrl.png"/>
       <script src="../../../../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../../../../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../../../../../_static/documentation_options.js?v=01f34227"></script>
       <script src="../../../../../_static/doctools.js?v=9bcbadda"></script>
       <script src="../../../../../_static/sphinx_highlight.js?v=dc90522c"></script>
       <script src="../../../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -33,8 +33,8 @@
 
           
           
-          <a href="../../../../../index.html" class="icon icon-home">
-            squirrel
+          <a href="../../../../../index.html">
+            
               <img src="../../../../../_static/sqrl.png" class="logo" alt="Logo"/>
           </a>
 <div role="search">
@@ -45,9 +45,29 @@
   </form>
 </div>
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
-              <p class="caption" role="heading"><span class="caption-text">Python API Reference:</span></p>
+              <p class="caption" role="heading"><span class="caption-text">Learn and build</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="../../../../../api.html">Python API Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../getting-started.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../workflow.html">Product workflow</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../architecture.html">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../deployment.html">Deployment and operations</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../api.html">Backend API Reference</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../generated/api_reference.html">HTTP API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../generated/schemas_reference.html">Data Schemas</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../generated/services_reference.html">Services</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../generated/agents_reference.html">Agents</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../generated/prompts_reference.html">Prompt Components</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../generated/providers_reference.html">Model Providers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../generated/inspectors_reference.html">Data Inspectors</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../generated/preprocessors_reference.html">Preprocessors</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../generated/core_reference.html">Core Infrastructure</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../generated/models_reference.html">Machine Learning Models</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../generated/constants_reference.html">Constants</a></li>
+</ul>
+</li>
 </ul>
 
         </div>
@@ -129,7 +149,7 @@
 
 <span class="c1"># ——— Base Class ———————————————————————————————————————————————————————————————</span>
 <div class="viewcode-block" id="DataTransformStrategy">
-<a class="viewcode-back" href="../../../../../generated/squirrel_modules_preprocessors_transformers_tabular.html#squirrel.modules.preprocessors.transformers.tabular.DataTransformStrategy">[docs]</a>
+<a class="viewcode-back" href="../../../../../generated/preprocessors_reference.html#squirrel.modules.preprocessors.transformers.tabular.DataTransformStrategy">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">DataTransformStrategy</span><span class="p">(</span><span class="n">ABC</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">"""</span>
 <span class="sd">    Abstract base class for tabular data transformation strategies.</span>
@@ -140,7 +160,7 @@
     <span class="n">argument_specs</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">ArgumentSpec</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
 
 <div class="viewcode-block" id="DataTransformStrategy.transform">
-<a class="viewcode-back" href="../../../../../generated/squirrel_modules_preprocessors_transformers_tabular.html#squirrel.modules.preprocessors.transformers.tabular.DataTransformStrategy.transform">[docs]</a>
+<a class="viewcode-back" href="../../../../../generated/preprocessors_reference.html#squirrel.modules.preprocessors.transformers.tabular.DataTransformStrategy.transform">[docs]</a>
     <span class="nd">@abstractmethod</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">transform</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
@@ -274,7 +294,7 @@
 <span class="c1"># ══════════════════════════════════════════════════════════════════════════════</span>
 
 <div class="viewcode-block" id="BinNumericTransformStrategy">
-<a class="viewcode-back" href="../../../../../generated/squirrel_modules_preprocessors_transformers_tabular.html#squirrel.modules.preprocessors.transformers.tabular.BinNumericTransformStrategy">[docs]</a>
+<a class="viewcode-back" href="../../../../../generated/preprocessors_reference.html#squirrel.modules.preprocessors.transformers.tabular.BinNumericTransformStrategy">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">BinNumericTransformStrategy</span><span class="p">(</span><span class="n">DataTransformStrategy</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">"""</span>
 <span class="sd">    Discretises one or more numeric columns into labelled bins using either</span>
@@ -378,7 +398,7 @@
         <span class="p">}</span>
 
 <div class="viewcode-block" id="BinNumericTransformStrategy.transform">
-<a class="viewcode-back" href="../../../../../generated/squirrel_modules_preprocessors_transformers_tabular.html#squirrel.modules.preprocessors.transformers.tabular.BinNumericTransformStrategy.transform">[docs]</a>
+<a class="viewcode-back" href="../../../../../generated/preprocessors_reference.html#squirrel.modules.preprocessors.transformers.tabular.BinNumericTransformStrategy.transform">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">transform</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">data</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span>
@@ -451,7 +471,7 @@
 
 <span class="c1"># ——————————————————————————————————————————————————————————————</span>
 <div class="viewcode-block" id="DatetimePartsTransformStrategy">
-<a class="viewcode-back" href="../../../../../generated/squirrel_modules_preprocessors_transformers_tabular.html#squirrel.modules.preprocessors.transformers.tabular.DatetimePartsTransformStrategy">[docs]</a>
+<a class="viewcode-back" href="../../../../../generated/preprocessors_reference.html#squirrel.modules.preprocessors.transformers.tabular.DatetimePartsTransformStrategy">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">DatetimePartsTransformStrategy</span><span class="p">(</span><span class="n">DataTransformStrategy</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">"""</span>
 <span class="sd">    Extracts calendar and time components from one or more datetime columns,</span>
@@ -534,7 +554,7 @@
         <span class="p">}</span>
 
 <div class="viewcode-block" id="DatetimePartsTransformStrategy.transform">
-<a class="viewcode-back" href="../../../../../generated/squirrel_modules_preprocessors_transformers_tabular.html#squirrel.modules.preprocessors.transformers.tabular.DatetimePartsTransformStrategy.transform">[docs]</a>
+<a class="viewcode-back" href="../../../../../generated/preprocessors_reference.html#squirrel.modules.preprocessors.transformers.tabular.DatetimePartsTransformStrategy.transform">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">transform</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">data</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span>
@@ -587,7 +607,7 @@
 
 <span class="c1"># ——————————————————————————————————————————————————————————————</span>
 <div class="viewcode-block" id="InteractionTermsTransformStrategy">
-<a class="viewcode-back" href="../../../../../generated/squirrel_modules_preprocessors_transformers_tabular.html#squirrel.modules.preprocessors.transformers.tabular.InteractionTermsTransformStrategy">[docs]</a>
+<a class="viewcode-back" href="../../../../../generated/preprocessors_reference.html#squirrel.modules.preprocessors.transformers.tabular.InteractionTermsTransformStrategy">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">InteractionTermsTransformStrategy</span><span class="p">(</span><span class="n">DataTransformStrategy</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">"""</span>
 <span class="sd">    Creates pairwise interaction features between specified numeric column pairs</span>
@@ -656,7 +676,7 @@
         <span class="p">}</span>
 
 <div class="viewcode-block" id="InteractionTermsTransformStrategy.transform">
-<a class="viewcode-back" href="../../../../../generated/squirrel_modules_preprocessors_transformers_tabular.html#squirrel.modules.preprocessors.transformers.tabular.InteractionTermsTransformStrategy.transform">[docs]</a>
+<a class="viewcode-back" href="../../../../../generated/preprocessors_reference.html#squirrel.modules.preprocessors.transformers.tabular.InteractionTermsTransformStrategy.transform">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">transform</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">data</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span>
@@ -722,7 +742,7 @@
 
 <span class="c1"># ——————————————————————————————————————————————————————————————</span>
 <div class="viewcode-block" id="PolynomialFeaturesTransformStrategy">
-<a class="viewcode-back" href="../../../../../generated/squirrel_modules_preprocessors_transformers_tabular.html#squirrel.modules.preprocessors.transformers.tabular.PolynomialFeaturesTransformStrategy">[docs]</a>
+<a class="viewcode-back" href="../../../../../generated/preprocessors_reference.html#squirrel.modules.preprocessors.transformers.tabular.PolynomialFeaturesTransformStrategy">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">PolynomialFeaturesTransformStrategy</span><span class="p">(</span><span class="n">DataTransformStrategy</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">"""</span>
 <span class="sd">    Generates polynomial and optional interaction features up to a specified</span>
@@ -799,7 +819,7 @@
         <span class="p">}</span>
 
 <div class="viewcode-block" id="PolynomialFeaturesTransformStrategy.transform">
-<a class="viewcode-back" href="../../../../../generated/squirrel_modules_preprocessors_transformers_tabular.html#squirrel.modules.preprocessors.transformers.tabular.PolynomialFeaturesTransformStrategy.transform">[docs]</a>
+<a class="viewcode-back" href="../../../../../generated/preprocessors_reference.html#squirrel.modules.preprocessors.transformers.tabular.PolynomialFeaturesTransformStrategy.transform">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">transform</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">data</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span>
@@ -863,7 +883,7 @@
 
 <span class="c1"># ——————————————————————————————————————————————————————————————</span>
 <div class="viewcode-block" id="AggregationFeaturesTransformStrategy">
-<a class="viewcode-back" href="../../../../../generated/squirrel_modules_preprocessors_transformers_tabular.html#squirrel.modules.preprocessors.transformers.tabular.AggregationFeaturesTransformStrategy">[docs]</a>
+<a class="viewcode-back" href="../../../../../generated/preprocessors_reference.html#squirrel.modules.preprocessors.transformers.tabular.AggregationFeaturesTransformStrategy">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">AggregationFeaturesTransformStrategy</span><span class="p">(</span><span class="n">DataTransformStrategy</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">"""</span>
 <span class="sd">    Computes group-level aggregations (mean, std, min, max, count, median)</span>
@@ -941,7 +961,7 @@
         <span class="p">}</span>
 
 <div class="viewcode-block" id="AggregationFeaturesTransformStrategy.transform">
-<a class="viewcode-back" href="../../../../../generated/squirrel_modules_preprocessors_transformers_tabular.html#squirrel.modules.preprocessors.transformers.tabular.AggregationFeaturesTransformStrategy.transform">[docs]</a>
+<a class="viewcode-back" href="../../../../../generated/preprocessors_reference.html#squirrel.modules.preprocessors.transformers.tabular.AggregationFeaturesTransformStrategy.transform">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">transform</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">data</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span>
@@ -1008,7 +1028,7 @@
 
 <span class="c1"># ——————————————————————————————————————————————————————————————</span>
 <div class="viewcode-block" id="RatioFeaturesTransformStrategy">
-<a class="viewcode-back" href="../../../../../generated/squirrel_modules_preprocessors_transformers_tabular.html#squirrel.modules.preprocessors.transformers.tabular.RatioFeaturesTransformStrategy">[docs]</a>
+<a class="viewcode-back" href="../../../../../generated/preprocessors_reference.html#squirrel.modules.preprocessors.transformers.tabular.RatioFeaturesTransformStrategy">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">RatioFeaturesTransformStrategy</span><span class="p">(</span><span class="n">DataTransformStrategy</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">"""</span>
 <span class="sd">    Computes ratio features between a list of numerator columns and a single</span>
@@ -1088,7 +1108,7 @@
         <span class="p">}</span>
 
 <div class="viewcode-block" id="RatioFeaturesTransformStrategy.transform">
-<a class="viewcode-back" href="../../../../../generated/squirrel_modules_preprocessors_transformers_tabular.html#squirrel.modules.preprocessors.transformers.tabular.RatioFeaturesTransformStrategy.transform">[docs]</a>
+<a class="viewcode-back" href="../../../../../generated/preprocessors_reference.html#squirrel.modules.preprocessors.transformers.tabular.RatioFeaturesTransformStrategy.transform">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">transform</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">data</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span>
@@ -1142,7 +1162,7 @@
 <span class="c1"># ══════════════════════════════════════════════════════════════════════════════</span>
 
 <div class="viewcode-block" id="OneHotEncodeTransformStrategy">
-<a class="viewcode-back" href="../../../../../generated/squirrel_modules_preprocessors_transformers_tabular.html#squirrel.modules.preprocessors.transformers.tabular.OneHotEncodeTransformStrategy">[docs]</a>
+<a class="viewcode-back" href="../../../../../generated/preprocessors_reference.html#squirrel.modules.preprocessors.transformers.tabular.OneHotEncodeTransformStrategy">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">OneHotEncodeTransformStrategy</span><span class="p">(</span><span class="n">DataTransformStrategy</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">"""</span>
 <span class="sd">    Applies one-hot encoding to one or more categorical columns, optionally</span>
@@ -1234,7 +1254,7 @@
         <span class="p">}</span>
 
 <div class="viewcode-block" id="OneHotEncodeTransformStrategy.transform">
-<a class="viewcode-back" href="../../../../../generated/squirrel_modules_preprocessors_transformers_tabular.html#squirrel.modules.preprocessors.transformers.tabular.OneHotEncodeTransformStrategy.transform">[docs]</a>
+<a class="viewcode-back" href="../../../../../generated/preprocessors_reference.html#squirrel.modules.preprocessors.transformers.tabular.OneHotEncodeTransformStrategy.transform">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">transform</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">data</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span>
@@ -1324,7 +1344,7 @@
 
 <span class="c1"># ——————————————————————————————————————————————————————————————</span>
 <div class="viewcode-block" id="OrdinalEncodeTransformStrategy">
-<a class="viewcode-back" href="../../../../../generated/squirrel_modules_preprocessors_transformers_tabular.html#squirrel.modules.preprocessors.transformers.tabular.OrdinalEncodeTransformStrategy">[docs]</a>
+<a class="viewcode-back" href="../../../../../generated/preprocessors_reference.html#squirrel.modules.preprocessors.transformers.tabular.OrdinalEncodeTransformStrategy">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">OrdinalEncodeTransformStrategy</span><span class="p">(</span><span class="n">DataTransformStrategy</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">"""</span>
 <span class="sd">    Encodes one or more ordinal categorical columns as integers according to</span>
@@ -1420,7 +1440,7 @@
         <span class="p">}</span>
 
 <div class="viewcode-block" id="OrdinalEncodeTransformStrategy.transform">
-<a class="viewcode-back" href="../../../../../generated/squirrel_modules_preprocessors_transformers_tabular.html#squirrel.modules.preprocessors.transformers.tabular.OrdinalEncodeTransformStrategy.transform">[docs]</a>
+<a class="viewcode-back" href="../../../../../generated/preprocessors_reference.html#squirrel.modules.preprocessors.transformers.tabular.OrdinalEncodeTransformStrategy.transform">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">transform</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">data</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span>
@@ -1480,7 +1500,7 @@
 
 <span class="c1"># ——————————————————————————————————————————————————————————————</span>
 <div class="viewcode-block" id="TargetEncodeTransformStrategy">
-<a class="viewcode-back" href="../../../../../generated/squirrel_modules_preprocessors_transformers_tabular.html#squirrel.modules.preprocessors.transformers.tabular.TargetEncodeTransformStrategy">[docs]</a>
+<a class="viewcode-back" href="../../../../../generated/preprocessors_reference.html#squirrel.modules.preprocessors.transformers.tabular.TargetEncodeTransformStrategy">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">TargetEncodeTransformStrategy</span><span class="p">(</span><span class="n">DataTransformStrategy</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">"""</span>
 <span class="sd">    Replaces each category value with the mean of the target column within that</span>
@@ -1573,7 +1593,7 @@
         <span class="p">}</span>
 
 <div class="viewcode-block" id="TargetEncodeTransformStrategy.transform">
-<a class="viewcode-back" href="../../../../../generated/squirrel_modules_preprocessors_transformers_tabular.html#squirrel.modules.preprocessors.transformers.tabular.TargetEncodeTransformStrategy.transform">[docs]</a>
+<a class="viewcode-back" href="../../../../../generated/preprocessors_reference.html#squirrel.modules.preprocessors.transformers.tabular.TargetEncodeTransformStrategy.transform">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">transform</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">data</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span>
@@ -1662,7 +1682,7 @@
 
 <span class="c1"># ——————————————————————————————————————————————————————————————</span>
 <div class="viewcode-block" id="FrequencyEncodeTransformStrategy">
-<a class="viewcode-back" href="../../../../../generated/squirrel_modules_preprocessors_transformers_tabular.html#squirrel.modules.preprocessors.transformers.tabular.FrequencyEncodeTransformStrategy">[docs]</a>
+<a class="viewcode-back" href="../../../../../generated/preprocessors_reference.html#squirrel.modules.preprocessors.transformers.tabular.FrequencyEncodeTransformStrategy">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">FrequencyEncodeTransformStrategy</span><span class="p">(</span><span class="n">DataTransformStrategy</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">"""</span>
 <span class="sd">    Replaces each category value with its relative frequency (proportion)</span>
@@ -1731,7 +1751,7 @@
         <span class="p">}</span>
 
 <div class="viewcode-block" id="FrequencyEncodeTransformStrategy.transform">
-<a class="viewcode-back" href="../../../../../generated/squirrel_modules_preprocessors_transformers_tabular.html#squirrel.modules.preprocessors.transformers.tabular.FrequencyEncodeTransformStrategy.transform">[docs]</a>
+<a class="viewcode-back" href="../../../../../generated/preprocessors_reference.html#squirrel.modules.preprocessors.transformers.tabular.FrequencyEncodeTransformStrategy.transform">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">transform</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">data</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span>
@@ -1788,7 +1808,7 @@
 
 <span class="c1"># ——————————————————————————————————————————————————————————————</span>
 <div class="viewcode-block" id="BinaryEncodeTransformStrategy">
-<a class="viewcode-back" href="../../../../../generated/squirrel_modules_preprocessors_transformers_tabular.html#squirrel.modules.preprocessors.transformers.tabular.BinaryEncodeTransformStrategy">[docs]</a>
+<a class="viewcode-back" href="../../../../../generated/preprocessors_reference.html#squirrel.modules.preprocessors.transformers.tabular.BinaryEncodeTransformStrategy">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">BinaryEncodeTransformStrategy</span><span class="p">(</span><span class="n">DataTransformStrategy</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">"""</span>
 <span class="sd">    Encodes each categorical column into binary digits: ordinal integer codes</span>
@@ -1848,7 +1868,7 @@
         <span class="p">}</span>
 
 <div class="viewcode-block" id="BinaryEncodeTransformStrategy.transform">
-<a class="viewcode-back" href="../../../../../generated/squirrel_modules_preprocessors_transformers_tabular.html#squirrel.modules.preprocessors.transformers.tabular.BinaryEncodeTransformStrategy.transform">[docs]</a>
+<a class="viewcode-back" href="../../../../../generated/preprocessors_reference.html#squirrel.modules.preprocessors.transformers.tabular.BinaryEncodeTransformStrategy.transform">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">transform</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">data</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span>
@@ -1923,7 +1943,7 @@
 <span class="c1"># ══════════════════════════════════════════════════════════════════════════════</span>
 
 <div class="viewcode-block" id="StandardScaleTransformStrategy">
-<a class="viewcode-back" href="../../../../../generated/squirrel_modules_preprocessors_transformers_tabular.html#squirrel.modules.preprocessors.transformers.tabular.StandardScaleTransformStrategy">[docs]</a>
+<a class="viewcode-back" href="../../../../../generated/preprocessors_reference.html#squirrel.modules.preprocessors.transformers.tabular.StandardScaleTransformStrategy">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">StandardScaleTransformStrategy</span><span class="p">(</span><span class="n">DataTransformStrategy</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">"""</span>
 <span class="sd">    Applies Z-score standardisation to numeric columns: (x - mean) / std,</span>
@@ -1990,7 +2010,7 @@
         <span class="p">}</span>
 
 <div class="viewcode-block" id="StandardScaleTransformStrategy.transform">
-<a class="viewcode-back" href="../../../../../generated/squirrel_modules_preprocessors_transformers_tabular.html#squirrel.modules.preprocessors.transformers.tabular.StandardScaleTransformStrategy.transform">[docs]</a>
+<a class="viewcode-back" href="../../../../../generated/preprocessors_reference.html#squirrel.modules.preprocessors.transformers.tabular.StandardScaleTransformStrategy.transform">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">transform</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">data</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span>
@@ -2045,7 +2065,7 @@
 
 <span class="c1"># ——————————————————————————————————————————————————————————————</span>
 <div class="viewcode-block" id="MinMaxScaleTransformStrategy">
-<a class="viewcode-back" href="../../../../../generated/squirrel_modules_preprocessors_transformers_tabular.html#squirrel.modules.preprocessors.transformers.tabular.MinMaxScaleTransformStrategy">[docs]</a>
+<a class="viewcode-back" href="../../../../../generated/preprocessors_reference.html#squirrel.modules.preprocessors.transformers.tabular.MinMaxScaleTransformStrategy">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">MinMaxScaleTransformStrategy</span><span class="p">(</span><span class="n">DataTransformStrategy</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">"""</span>
 <span class="sd">    Scales numeric columns to a [feature_min, feature_max] range (default [0, 1])</span>
@@ -2114,7 +2134,7 @@
         <span class="p">}</span>
 
 <div class="viewcode-block" id="MinMaxScaleTransformStrategy.transform">
-<a class="viewcode-back" href="../../../../../generated/squirrel_modules_preprocessors_transformers_tabular.html#squirrel.modules.preprocessors.transformers.tabular.MinMaxScaleTransformStrategy.transform">[docs]</a>
+<a class="viewcode-back" href="../../../../../generated/preprocessors_reference.html#squirrel.modules.preprocessors.transformers.tabular.MinMaxScaleTransformStrategy.transform">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">transform</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">data</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span>
@@ -2175,7 +2195,7 @@
 
 <span class="c1"># ——————————————————————————————————————————————————————————————</span>
 <div class="viewcode-block" id="RobustScaleTransformStrategy">
-<a class="viewcode-back" href="../../../../../generated/squirrel_modules_preprocessors_transformers_tabular.html#squirrel.modules.preprocessors.transformers.tabular.RobustScaleTransformStrategy">[docs]</a>
+<a class="viewcode-back" href="../../../../../generated/preprocessors_reference.html#squirrel.modules.preprocessors.transformers.tabular.RobustScaleTransformStrategy">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">RobustScaleTransformStrategy</span><span class="p">(</span><span class="n">DataTransformStrategy</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">"""</span>
 <span class="sd">    Scales numeric columns using statistics robust to outliers: centres on the</span>
@@ -2233,7 +2253,7 @@
         <span class="p">}</span>
 
 <div class="viewcode-block" id="RobustScaleTransformStrategy.transform">
-<a class="viewcode-back" href="../../../../../generated/squirrel_modules_preprocessors_transformers_tabular.html#squirrel.modules.preprocessors.transformers.tabular.RobustScaleTransformStrategy.transform">[docs]</a>
+<a class="viewcode-back" href="../../../../../generated/preprocessors_reference.html#squirrel.modules.preprocessors.transformers.tabular.RobustScaleTransformStrategy.transform">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">transform</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">data</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span>
@@ -2293,7 +2313,7 @@
 
 <span class="c1"># ——————————————————————————————————————————————————————————————</span>
 <div class="viewcode-block" id="LogTransformTransformStrategy">
-<a class="viewcode-back" href="../../../../../generated/squirrel_modules_preprocessors_transformers_tabular.html#squirrel.modules.preprocessors.transformers.tabular.LogTransformTransformStrategy">[docs]</a>
+<a class="viewcode-back" href="../../../../../generated/preprocessors_reference.html#squirrel.modules.preprocessors.transformers.tabular.LogTransformTransformStrategy">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">LogTransformTransformStrategy</span><span class="p">(</span><span class="n">DataTransformStrategy</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">"""</span>
 <span class="sd">    Applies a logarithmic transformation to numeric columns to reduce right</span>
@@ -2370,7 +2390,7 @@
         <span class="p">}</span>
 
 <div class="viewcode-block" id="LogTransformTransformStrategy.transform">
-<a class="viewcode-back" href="../../../../../generated/squirrel_modules_preprocessors_transformers_tabular.html#squirrel.modules.preprocessors.transformers.tabular.LogTransformTransformStrategy.transform">[docs]</a>
+<a class="viewcode-back" href="../../../../../generated/preprocessors_reference.html#squirrel.modules.preprocessors.transformers.tabular.LogTransformTransformStrategy.transform">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">transform</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">data</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span>
@@ -2429,7 +2449,7 @@
 
 <span class="c1"># ——————————————————————————————————————————————————————————————</span>
 <div class="viewcode-block" id="PowerTransformTransformStrategy">
-<a class="viewcode-back" href="../../../../../generated/squirrel_modules_preprocessors_transformers_tabular.html#squirrel.modules.preprocessors.transformers.tabular.PowerTransformTransformStrategy">[docs]</a>
+<a class="viewcode-back" href="../../../../../generated/preprocessors_reference.html#squirrel.modules.preprocessors.transformers.tabular.PowerTransformTransformStrategy">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">PowerTransformTransformStrategy</span><span class="p">(</span><span class="n">DataTransformStrategy</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">"""</span>
 <span class="sd">    Applies a Box-Cox (λ) or Yeo-Johnson power transformation to numeric columns</span>
@@ -2516,7 +2536,7 @@
         <span class="p">}</span>
 
 <div class="viewcode-block" id="PowerTransformTransformStrategy.transform">
-<a class="viewcode-back" href="../../../../../generated/squirrel_modules_preprocessors_transformers_tabular.html#squirrel.modules.preprocessors.transformers.tabular.PowerTransformTransformStrategy.transform">[docs]</a>
+<a class="viewcode-back" href="../../../../../generated/preprocessors_reference.html#squirrel.modules.preprocessors.transformers.tabular.PowerTransformTransformStrategy.transform">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">transform</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">data</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span>
@@ -2609,7 +2629,7 @@
 <span class="c1"># ══════════════════════════════════════════════════════════════════════════════</span>
 
 <div class="viewcode-block" id="TabularDataTransformer">
-<a class="viewcode-back" href="../../../../../generated/squirrel_modules_preprocessors_transformers_tabular.html#squirrel.modules.preprocessors.transformers.tabular.TabularDataTransformer">[docs]</a>
+<a class="viewcode-back" href="../../../../../generated/preprocessors_reference.html#squirrel.modules.preprocessors.transformers.tabular.TabularDataTransformer">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">TabularDataTransformer</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""</span>
 <span class="sd">    Applies a sequence of ``DataTransformStrategy`` instances to a DataFrame,</span>
@@ -2657,14 +2677,14 @@
         <span class="p">)</span>
 
 <div class="viewcode-block" id="TabularDataTransformer.set_strategy">
-<a class="viewcode-back" href="../../../../../generated/squirrel_modules_preprocessors_transformers_tabular.html#squirrel.modules.preprocessors.transformers.tabular.TabularDataTransformer.set_strategy">[docs]</a>
+<a class="viewcode-back" href="../../../../../generated/preprocessors_reference.html#squirrel.modules.preprocessors.transformers.tabular.TabularDataTransformer.set_strategy">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">set_strategy</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">strategy</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">DataTransformStrategy</span><span class="p">,</span> <span class="nb">str</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">"""Replace the current strategy."""</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">strategy</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_resolve</span><span class="p">(</span><span class="n">strategy</span><span class="p">)</span></div>
 
 
 <div class="viewcode-block" id="TabularDataTransformer.execute_strategy">
-<a class="viewcode-back" href="../../../../../generated/squirrel_modules_preprocessors_transformers_tabular.html#squirrel.modules.preprocessors.transformers.tabular.TabularDataTransformer.execute_strategy">[docs]</a>
+<a class="viewcode-back" href="../../../../../generated/preprocessors_reference.html#squirrel.modules.preprocessors.transformers.tabular.TabularDataTransformer.execute_strategy">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">execute_strategy</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">data</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span>
@@ -2685,7 +2705,7 @@
 
 
 <div class="viewcode-block" id="TabularDataTransformer.run_pipeline">
-<a class="viewcode-back" href="../../../../../generated/squirrel_modules_preprocessors_transformers_tabular.html#squirrel.modules.preprocessors.transformers.tabular.TabularDataTransformer.run_pipeline">[docs]</a>
+<a class="viewcode-back" href="../../../../../generated/preprocessors_reference.html#squirrel.modules.preprocessors.transformers.tabular.TabularDataTransformer.run_pipeline">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">run_pipeline</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">data</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span>
@@ -2753,7 +2773,9 @@
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   
+  
+  <span class="version">Squirrel version 0.1.0</span>
+
 
 </footer>
         </div>

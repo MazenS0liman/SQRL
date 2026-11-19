@@ -1,4 +1,4 @@
-import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { getStoredAuthToken, notifyAuthExpired, onAuthExpired, setStoredAuthToken } from '@/lib/auth';
 import type { AuthContextValue, AuthTokenResponse, AuthUserResponse, CurrentUserResponse, UserProfile } from '@/types';
 
@@ -7,7 +7,10 @@ const USER_STORAGE_KEY = 'sqrl-user-profile';
 const API_BASE = (import.meta.env.VITE_BACKEND_API_BASE_URL || "/api").replace(/\/$/, '');
 
 function buildAvatarSeed(name: string): string {
-  return `${name.trim().split(' ')[0].charAt(0) || 'S'}${name.trim().split(' ')[1].charAt(0) || 'Q'}`.toUpperCase();
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  const first = parts[0]?.charAt(0) ?? 'S';
+  const second = parts[1]?.charAt(0) ?? parts[0]?.charAt(1) ?? 'Q';
+  return `${first}${second}`.toUpperCase();
 }
 
 function normalizeUser(input: Partial<UserProfile> | null): UserProfile | null {
@@ -24,7 +27,7 @@ function normalizeUser(input: Partial<UserProfile> | null): UserProfile | null {
   };
 }
 
-function mapAuthUser(user: AuthUserResponse): UserProfile {
+function mapAuthUser(user: AuthUserResponse, previous?: UserProfile | null): UserProfile {
   const displayName = user.full_name?.trim() || user.username;
   return {
     id: user.id,
@@ -33,7 +36,9 @@ function mapAuthUser(user: AuthUserResponse): UserProfile {
     email: user.email,
     role: user.username === 'admin' ? 'Administrator' : 'Workspace member',
     joinedAt: user.created_at,
-    lastLoginAt: new Date().toISOString(),
+    // A profile edit should not look like a fresh sign-in, so keep the
+    // timestamp we already have when one is available.
+    lastLoginAt: previous?.lastLoginAt ?? new Date().toISOString(),
     avatarSeed: buildAvatarSeed(displayName),
   };
 }
@@ -89,6 +94,11 @@ function getInitialUser(): UserProfile | null {
 
 export function AuthProvider({ children }: { children: React.ReactNode }): JSX.Element {
   const [user, setUser] = useState<UserProfile | null>(getInitialUser);
+  const userRef = useRef<UserProfile | null>(user);
+
+  useEffect(() => {
+    userRef.current = user;
+  }, [user]);
 
   useEffect(() => onAuthExpired(() => {
     setStoredAuthToken(null);
@@ -102,7 +112,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }): JSX.E
 
     void authRequest<CurrentUserResponse>('/auth/me')
       .then((response) => {
-        const nextUser = mapAuthUser(response.user);
+        const nextUser = mapAuthUser(response.user, userRef.current);
         setUser(nextUser);
         writeUser(nextUser);
       })
@@ -150,6 +160,42 @@ export function AuthProvider({ children }: { children: React.ReactNode }): JSX.E
     return nextUser;
   }, []);
 
+  const updateProfile = useCallback(async ({ name, email }: { name?: string; email?: string }) => {
+    const body: Record<string, string> = {};
+    if (name !== undefined) body.full_name = name.trim();
+    if (email !== undefined) body.email = email.trim();
+
+    const response = await authRequest<CurrentUserResponse>('/auth/me', {
+      method: 'PATCH',
+      body: JSON.stringify(body),
+    });
+
+    const nextUser = mapAuthUser(response.user, userRef.current);
+    setUser(nextUser);
+    writeUser(nextUser);
+    return nextUser;
+  }, []);
+
+  const changePassword = useCallback(
+    async ({ currentPassword, newPassword }: { currentPassword: string; newPassword: string }) => {
+      const response = await authRequest<AuthTokenResponse>('/auth/change-password', {
+        method: 'POST',
+        body: JSON.stringify({
+          current_password: currentPassword,
+          new_password: newPassword,
+        }),
+      });
+
+      // Every session was revoked server-side, so adopt the replacement token
+      // before the next request or this client would be signed out.
+      setStoredAuthToken(response.access_token);
+      const nextUser = mapAuthUser(response.user, userRef.current);
+      setUser(nextUser);
+      writeUser(nextUser);
+    },
+    [],
+  );
+
   const logout = useCallback(async () => {
     try {
       const token = getStoredAuthToken();
@@ -164,8 +210,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }): JSX.E
   }, []);
 
   const value = useMemo(
-    () => ({ user, isAuthenticated: user !== null, login, signup, logout }),
-    [user, login, signup, logout]
+    () => ({ user, isAuthenticated: user !== null, login, signup, updateProfile, changePassword, logout }),
+    [user, login, signup, updateProfile, changePassword, logout]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

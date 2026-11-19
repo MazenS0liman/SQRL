@@ -1203,6 +1203,7 @@ class WorkspaceService:
         owner_user_id:      Optional[str] = None,
         plan:               Optional[Any] = None,
         execution_report:   Optional[Any] = None,
+        extra_output_file_urls: Optional[List[str]] = None,
     ) -> Dict:
         """
         Persist one pipeline run's output artifacts + summary.
@@ -1247,6 +1248,9 @@ class WorkspaceService:
             dummy-column sets, ...) that :meth:`predict` needs. When
             omitted, no pipeline artifact is saved and this workspace's
             data won't be predictable on until a run supplies one.
+        :param extra_output_file_urls: Previously produced artifact URLs to
+            record on this run in addition to newly uploaded ones. Retraining
+            uses this to keep the other models from the prior build visible.
         :return: ``{"record_id", "output_file_urls"}``.
         :rtype: Dict
         """
@@ -1306,6 +1310,10 @@ class WorkspaceService:
 
         else:
             pass
+
+        # Retrains carry the untouched artifacts from the previous build so
+        # GET /models can show one coherent, up-to-date model list.
+        output_urls.extend(str(u) for u in (extra_output_file_urls or []))
 
         input_file_urls = [str(u) for u in (input_file_urls or [])]
         output_urls = [str(u) for u in output_urls]

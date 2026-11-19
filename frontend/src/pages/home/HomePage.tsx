@@ -1,11 +1,34 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Plus, FolderPlus, Database, Cpu, ArrowUpRight, AlertCircle } from 'lucide-react';
+import {
+  FolderPlus,
+  Cpu,
+  ArrowUpRight,
+  AlertCircle,
+  CalendarClock,
+  ChevronRight,
+  Gauge,
+  Loader2,
+  NotebookText,
+  RefreshCw,
+  Workflow,
+} from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import type { Notebook, ConnectorSummary } from '@/types';
+import type {
+  ConnectorSummary,
+  MLModelRead,
+  Notebook,
+  PipelineRead,
+  UsageOverviewResponse,
+  Workspace,
+} from '@/types';
+import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
+import { usageApi } from '@/api/usageApi';
+import { etlApi } from '@/api/etlApi';
 import { apiFetch, connectorsApi, timeAgo, getConnectorStatus } from './shared';
 import { statusMeta } from '@/pages/notebooks/shared';
+import { Badge } from '@/components/ui/badge';
 import LineWaves from '@/components/background/LineWaves';
 import { FolderCard } from '@/components/common/FolderCard';
 
@@ -13,14 +36,21 @@ import { FolderCard } from '@/components/common/FolderCard';
 type DisplayStatus = 'ready' | 'running' | 'draft';
 type SourceStatus = 'connected' | 'syncing' | 'error';
 
-interface QuickAction {
-  label: string;
-  sub: string;
-  icon: LucideIcon;
-  rotate: string;
-  span: string;
-  href?: string;
+interface HomeData {
+  notebooks: Notebook[];
+  connectors: ConnectorSummary[];
+  workspaces: Workspace[];
+  pipelines: PipelineRead[];
+  models: MLModelRead[];
 }
+
+const EMPTY_DATA: HomeData = {
+  notebooks: [],
+  connectors: [],
+  workspaces: [],
+  pipelines: [],
+  models: [],
+};
 
 const STATUS_DOT: Record<DisplayStatus | SourceStatus, string> = {
   ready: 'bg-emerald-400',
@@ -31,67 +61,117 @@ const STATUS_DOT: Record<DisplayStatus | SourceStatus, string> = {
   error: 'bg-red-500',
 };
 
-const QUICK_ACTIONS: QuickAction[] = [
-  { label: 'New notebook', sub: 'Start from a blank canvas', icon: Plus, rotate: '-rotate-1', span: 'md:col-span-2', href: '/notebooks' },
-  { label: 'New workspace', sub: 'Build your model', icon: FolderPlus, rotate: 'rotate-1', span: '', href: '/workspace' },
-  { label: 'Connect a source', sub: 'Connect to your data sources', icon: Database, rotate: '-rotate-2', span: '', href: '/data-connectors' },
-  { label: 'Browse models', sub: 'See what\u2019s available', icon: Cpu, rotate: 'rotate-2', span: '', href: '/models' },
-];
+function statusVariant(status: string): 'default' | 'secondary' | 'destructive' | 'outline' {
+  if (status === 'approved') return 'default';
+  if (status === 'archived') return 'secondary';
+  return 'outline';
+}
+
+function byRecent<T extends { updated_at?: string | null; created_at?: string | null }>(a: T, b: T) {
+  return (
+    new Date(b.updated_at || b.created_at || 0).getTime() -
+    new Date(a.updated_at || a.created_at || 0).getTime()
+  );
+}
 
 export function HomePage() {
   const navigate = useNavigate();
   const { theme } = useTheme();
+  const { user } = useAuth();
   const [now] = useState<Date>(() => new Date());
-  const [notebooks, setNotebooks] = useState<Notebook[]>([]);
-  const [connectors, setConnectors] = useState<ConnectorSummary[]>([]);
+  const [data, setData] = useState<HomeData>(EMPTY_DATA);
+  const [usage, setUsage] = useState<UsageOverviewResponse | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [failed, setFailed] = useState<string[]>([]);
+  const [reloadKey, setReloadKey] = useState(0);
   const isDark = theme === 'dark';
+
+  const firstName = user?.name?.trim().split(/\s+/)[0] ?? '';
 
   const greeting = useMemo(() => {
     const hour = now.getHours();
     if (hour < 5) return { part: 'LATE NIGHT LOG', line: 'Still up?' };
-    if (hour < 12) return { part: 'MORNING LOG', line: 'Good morning.' };
-    if (hour < 18) return { part: 'AFTERNOON LOG', line: 'Good afternoon.' };
-    return { part: 'EVENING LOG', line: 'Good evening.' };
+    if (hour < 12) return { part: 'MORNING LOG', line: 'Good morning' };
+    if (hour < 18) return { part: 'AFTERNOON LOG', line: 'Good afternoon' };
+    return { part: 'EVENING LOG', line: 'Good evening' };
   }, [now]);
-  
+
   const today = useMemo(
     () => now.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }).toUpperCase(),
     [now]
   );
 
   useEffect(() => {
-    const fetchData = async () => {
+    let cancelled = false;
+
+    async function load() {
       setLoading(true);
-      setError(null);
-      try {
-        const [notebookData, connectorData] = await Promise.all([
+      setFailed([]);
+
+      // Each section loads independently: one failing integration should not
+      // blank out the rest of the page.
+      const [notebooks, connectors, workspaces, pipelines, models, overview] =
+        await Promise.allSettled([
           apiFetch<Notebook[]>('/notebook'),
           connectorsApi.list(),
+          apiFetch<Workspace[]>('/workspace'),
+          etlApi.list(),
+          etlApi.models(),
+          usageApi.overview(30),
         ]);
-        
-        // Sort notebooks by creation date (most recent first)
-        const sortedNotebooks = notebookData.sort((a, b) => 
-          new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime()
-        );
-        
-        setNotebooks(sortedNotebooks.slice(0, 8));
-        setConnectors(connectorData);
-      } catch (err) {
-        const message = err instanceof Error ? err.message : 'Failed to load data';
-        setError(message);
-        console.error('Failed to load home page data:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
 
-    fetchData();
-  }, []);
+      if (cancelled) return;
+
+      const failures: string[] = [];
+      const valueOr = <T,>(result: PromiseSettledResult<T>, label: string, fallback: T): T => {
+        if (result.status === 'fulfilled') return result.value;
+        console.error(`Failed to load ${label}:`, result.reason);
+        failures.push(label);
+        return fallback;
+      };
+
+      setData({
+        notebooks: valueOr(notebooks, 'notebooks', []),
+        connectors: valueOr(connectors, 'data sources', []),
+        workspaces: valueOr(workspaces, 'workspaces', []),
+        pipelines: valueOr(pipelines, 'pipelines', []),
+        models: valueOr(models, 'models', []),
+      });
+
+      if (overview.status === 'fulfilled') {
+        setUsage(overview.value);
+      } else {
+        console.error('Failed to load usage:', overview.reason);
+        setUsage(null);
+        failures.push('usage');
+      }
+
+      setFailed(failures);
+      setLoading(false);
+    }
+
+    void load();
+    return () => {
+      cancelled = true;
+    };
+  }, [reloadKey]);
+
+  const recentNotebooks = useMemo(
+    () => [...data.notebooks].sort(byRecent).slice(0, 8),
+    [data.notebooks]
+  );
+  const recentPipelines = useMemo(
+    () => [...data.pipelines].sort(byRecent).slice(0, 4),
+    [data.pipelines]
+  );
+
+  const readyNotebooks = data.notebooks.filter((n) => n.status === 'ready').length;
+  const completedWorkspaces = data.workspaces.filter((w) => w.status === 'completed').length;
+  const approvedPipelines = data.pipelines.filter((p) => p.status === 'approved').length;
+  const totals = usage?.totals;
 
   return (
-    <div className="flex h-[720px] w-full rounded-xl font-sans">
+    <div className="flex h-full min-h-0 w-full overflow-y-auto rounded-xl font-sans">
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
         .font-display { font-family: 'Fraunces', serif; }
@@ -105,19 +185,19 @@ export function HomePage() {
         <section className="relative h-[400px] w-full overflow-hidden">
           <div className="absolute h-full w-[200%] -translate-x-1/4 overflow-hidden">
             <LineWaves
-                speed={0.3}
-                innerLineCount={32}
-                outerLineCount={36}
-                warpIntensity={1}
-                rotation={-45}
-                edgeFadeWidth={0}
-                colorCycleSpeed={1}
-                brightness={isDark ? 0.2 : 0.12}
-                color1={isDark ? '#F97316' : '#FB923C'}
-                color2={isDark ? '#F97316' : '#F59E0B'}
-                color3={isDark ? '#ffffff' : '#FFF7ED'}
-                enableMouseInteraction
-                mouseInfluence={2}
+              speed={0.3}
+              innerLineCount={32}
+              outerLineCount={36}
+              warpIntensity={1}
+              rotation={-45}
+              edgeFadeWidth={0}
+              colorCycleSpeed={1}
+              brightness={isDark ? 0.2 : 0.12}
+              color1={isDark ? '#F97316' : '#FB923C'}
+              color2={isDark ? '#F97316' : '#F59E0B'}
+              color3={isDark ? '#ffffff' : '#FFF7ED'}
+              enableMouseInteraction
+              mouseInfluence={2}
             />
           </div>
           <div
@@ -131,35 +211,76 @@ export function HomePage() {
             </span>
             <h1 className="mt-3 font-display text-5xl font-medium leading-[1.05] text-foreground">
               {greeting.line}
+              {firstName ? `, ${firstName}` : ''}.
             </h1>
             <p className="mt-2 max-w-md font-body text-sm text-muted-foreground">
-              {loading ? 'Loading your notebooks...' : `${notebooks.length} notebooks ready. Everything's exactly where you left it.`}
+              {loading
+                ? 'Loading your workspace...'
+                : `${data.notebooks.length} notebooks ready. Everything's exactly where you left it.`}
             </p>
           </div>
         </section>
 
-        {/* Quick action cluster */}
-        <section className="relative z-20 -mt-8 grid grid-cols-2 gap-4 px-10 md:grid-cols-4">
-          {QUICK_ACTIONS.map(({ label, sub, icon: Icon, rotate, span, href }) => (
-            <button
-              key={label}
-              onClick={() => href && navigate(href)}
-              className={`group ${span} ${rotate} rounded-2xl border border-border bg-card/95 p-5 text-left shadow-lg shadow-black/10 transition-transform duration-200 hover:rotate-0 hover:scale-[1.02]`}
-            >
-              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-orange-500/15 text-orange-400">
-                <Icon className="h-4 w-4" />
-              </div>
-              <div className="mt-3 font-display text-base font-medium text-foreground">{label}</div>
-              <div className="mt-0.5 font-body text-xs text-muted-foreground">{sub}</div>
-            </button>
-          ))}
+        {/* Partial-failure banner */}
+        {failed.length > 0 && (
+          <section className="mt-8 px-10">
+            <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-700 dark:text-amber-300">
+              <span className="flex items-center gap-2">
+                <AlertCircle className="h-4 w-4 shrink-0" />
+                Some sections could not load: {failed.join(', ')}.
+              </span>
+              <button
+                onClick={() => setReloadKey((key) => key + 1)}
+                className="flex items-center gap-1.5 rounded-md border border-amber-500/40 px-3 py-1 font-data text-xs transition-colors hover:bg-amber-500/10"
+              >
+                <RefreshCw className="h-3 w-3" />
+                Retry
+              </button>
+            </div>
+          </section>
+        )}
+
+        {/* At a glance */}
+        <section className="mt-10 grid grid-cols-2 gap-4 px-10 lg:grid-cols-4">
+          <StatCard
+            icon={NotebookText}
+            label="Notebooks"
+            value={formatNumber(data.notebooks.length)}
+            hint={`${readyNotebooks} ready`}
+            loading={loading}
+            onClick={() => navigate('/notebooks')}
+          />
+          <StatCard
+            icon={FolderPlus}
+            label="Workspaces"
+            value={formatNumber(data.workspaces.length)}
+            hint={`${completedWorkspaces} completed`}
+            loading={loading}
+            onClick={() => navigate('/workspace')}
+          />
+          <StatCard
+            icon={Workflow}
+            label="Pipelines"
+            value={formatNumber(data.pipelines.length)}
+            hint={`${approvedPipelines} approved`}
+            loading={loading}
+            onClick={() => navigate('/pipelines')}
+          />
+          <StatCard
+            icon={Cpu}
+            label="Models"
+            value={formatNumber(data.models.length)}
+            hint="Trained by pipelines"
+            loading={loading}
+            onClick={() => navigate('/models')}
+          />
         </section>
 
         {/* Recent notebooks rail */}
         <section className="mt-12 px-10">
           <div className="flex items-baseline justify-between">
             <h2 className="font-display text-xl font-medium text-foreground">Recent notebooks</h2>
-            <button 
+            <button
               onClick={() => navigate('/notebooks')}
               className="flex items-center gap-1 font-data text-xs text-orange-500 transition-colors hover:text-orange-400"
             >
@@ -169,15 +290,10 @@ export function HomePage() {
           <div className="mt-4 flex gap-4 overflow-x-auto pb-2 pl-3">
             {loading ? (
               <div className="w-full py-8 text-center text-muted-foreground">Loading notebooks...</div>
-            ) : error ? (
-              <div className="flex items-center gap-2 py-8 text-red-500">
-                <AlertCircle className="h-4 w-4" />
-                <span className="text-sm">{error}</span>
-              </div>
-            ) : notebooks.length === 0 ? (
+            ) : recentNotebooks.length === 0 ? (
               <div className="w-full py-8 text-center text-muted-foreground">
                 <p className="text-sm">No notebooks yet.</p>
-                <button 
+                <button
                   onClick={() => navigate('/notebooks')}
                   className="mt-2 text-orange-500 text-sm transition-colors hover:text-orange-400"
                 >
@@ -185,16 +301,18 @@ export function HomePage() {
                 </button>
               </div>
             ) : (
-              notebooks.map((nb) => {
+              recentNotebooks.map((nb) => {
                 const meta = statusMeta(nb.status);
                 return (
                   <FolderCard
                     key={nb.id}
                     title={nb.name}
                     statusDotClass={meta.tabClass}
-                    footerText={timeAgo(nb.created_at || new Date().toISOString())}
+                    footerText={`${nb.cell_count} cell${nb.cell_count === 1 ? '' : 's'} · ${timeAgo(
+                      nb.updated_at || nb.created_at || new Date().toISOString()
+                    )}`}
                     onOpen={() => navigate(`/notebooks/${nb.id}`)}
-                    className="w-[220px]"
+                    className="w-[220px] shrink-0"
                   />
                 );
               })
@@ -202,14 +320,150 @@ export function HomePage() {
           </div>
         </section>
 
+        {/* Pipelines + usage */}
+        <section className="mt-12 grid grid-cols-1 gap-8 px-10 lg:grid-cols-3">
+          {/* Recent pipelines */}
+          <div className="lg:col-span-2">
+            <div className="flex items-baseline justify-between">
+              <h2 className="font-display text-xl font-medium text-foreground">Recent pipelines</h2>
+              <button
+                onClick={() => navigate('/pipelines')}
+                className="flex items-center gap-1 font-data text-xs text-orange-500 transition-colors hover:text-orange-400"
+              >
+                View all <ArrowUpRight className="h-3 w-3" />
+              </button>
+            </div>
+            <div className="mt-4 overflow-hidden rounded-2xl border border-border bg-card">
+              {loading ? (
+                <div className="space-y-3 p-4">
+                  {[0, 1, 2].map((key) => (
+                    <div key={key} className="h-12 animate-pulse rounded-lg bg-secondary/40" />
+                  ))}
+                </div>
+              ) : recentPipelines.length === 0 ? (
+                <div className="py-8 text-center text-muted-foreground">
+                  <p className="text-sm">No pipelines yet.</p>
+                  <button
+                    onClick={() => navigate('/pipelines')}
+                    className="mt-2 text-orange-500 text-sm transition-colors hover:text-orange-400"
+                  >
+                    Create a pipeline
+                  </button>
+                </div>
+              ) : (
+                <ul className="divide-y divide-border">
+                  {recentPipelines.map((pipeline) => {
+                    const taskCount = pipeline.definition.steps.length;
+                    const updated = pipeline.updated_at || pipeline.created_at;
+                    return (
+                      <li key={pipeline.id}>
+                        <button
+                          type="button"
+                          onClick={() => navigate(`/pipelines/${pipeline.id}`)}
+                          className="group flex w-full flex-wrap items-center gap-3 px-5 py-3 text-left transition-colors hover:bg-secondary/30 focus:outline-none focus-visible:bg-secondary/30"
+                        >
+                          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-orange-500/15 text-orange-400">
+                            <Workflow className="h-4 w-4" />
+                          </span>
+                          <span className="min-w-0 flex-1">
+                            <span className="flex flex-wrap items-center gap-2">
+                              <span className="truncate font-body text-sm font-medium text-foreground">
+                                {pipeline.name}
+                              </span>
+                              <Badge variant={statusVariant(pipeline.status)}>
+                                {pipeline.status.replaceAll('_', ' ')}
+                              </Badge>
+                              {pipeline.schedule_enabled && pipeline.schedule_mode !== 'manual' && (
+                                <Badge variant="secondary" className="gap-1">
+                                  <CalendarClock className="h-3 w-3" />
+                                  {pipeline.schedule_mode}
+                                </Badge>
+                              )}
+                            </span>
+                            <span className="mt-0.5 block truncate font-data text-xs text-muted-foreground">
+                              {taskCount} task{taskCount === 1 ? '' : 's'} · v{pipeline.version}
+                              {updated ? ` · Updated ${timeAgo(updated)}` : ''}
+                            </span>
+                          </span>
+                          <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
+                        </button>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+            </div>
+          </div>
+
+          {/* Usage */}
+          <div>
+            <div className="flex items-baseline justify-between">
+              <h2 className="font-display text-xl font-medium text-foreground">Usage · 30 days</h2>
+              <button
+                onClick={() => navigate('/usage')}
+                className="flex items-center gap-1 font-data text-xs text-orange-500 transition-colors hover:text-orange-400"
+              >
+                Details <ArrowUpRight className="h-3 w-3" />
+              </button>
+            </div>
+            <div className="mt-4 rounded-2xl border border-border bg-card p-5">
+              {loading ? (
+                <div className="space-y-3">
+                  <div className="h-6 w-24 animate-pulse rounded bg-secondary/40" />
+                  <div className="h-16 animate-pulse rounded-lg bg-secondary/40" />
+                </div>
+              ) : !usage || !totals ? (
+                <div className="text-muted-foreground">
+                  <p className="text-sm">No LLM usage recorded in the last 30 days.</p>
+                  <button
+                    onClick={() => navigate('/usage')}
+                    className="mt-2 flex items-center gap-1.5 text-orange-500 text-sm transition-colors hover:text-orange-400"
+                  >
+                    <Gauge className="h-3.5 w-3.5" />
+                    Open usage
+                  </button>
+                </div>
+              ) : (
+                <>
+                  <div className="flex items-baseline justify-between gap-3">
+                    <span className="font-display text-3xl font-medium tabular-nums text-foreground">
+                      {formatNumber(totals.total_tokens)}
+                    </span>
+                    <span className="font-data text-xs text-muted-foreground">tokens</span>
+                  </div>
+                  <UsageSparkline daily={usage.daily} />
+                  <dl className="mt-4 grid grid-cols-2 gap-3 border-t border-border pt-3">
+                    <div>
+                      <dt className="font-data text-[11px] uppercase tracking-[0.12em] text-muted-foreground">
+                        Requests
+                      </dt>
+                      <dd className="mt-0.5 font-data text-sm tabular-nums text-foreground">
+                        {formatNumber(totals.requests)}
+                      </dd>
+                    </div>
+                    <div>
+                      <dt className="font-data text-[11px] uppercase tracking-[0.12em] text-muted-foreground">
+                        Est. spend
+                      </dt>
+                      <dd className="mt-0.5 font-data text-sm tabular-nums text-foreground">
+                        {formatCost(totals.estimated_cost_usd)}
+                      </dd>
+                    </div>
+                  </dl>
+                </>
+              )}
+            </div>
+          </div>
+        </section>
+
         {/* Data connectors */}
-        <section className="mt-10 px-10 pb-10">
+        <section className="mt-12 px-10 pb-10">
           <h2 className="font-display text-xl font-medium text-foreground">Connected sources</h2>
           <div className="mt-4 flex flex-wrap gap-3">
-            {connectors.length === 0 ? (
+            {data.connectors.length === 0 ? (
               <p className="text-sm text-muted-foreground">
                 No connectors configured yet.{' '}
-                <button 
+                <button
                   onClick={() => navigate('/data-connectors')}
                   className="text-orange-500 transition-colors hover:text-orange-400"
                 >
@@ -217,7 +471,7 @@ export function HomePage() {
                 </button>
               </p>
             ) : (
-              connectors.map((src) => (
+              data.connectors.map((src) => (
                 <button
                   key={src.connector_id}
                   onClick={() => navigate('/data-connectors')}
@@ -234,4 +488,92 @@ export function HomePage() {
       </div>
     </div>
   );
+}
+
+// ---------- Pieces ----------
+
+function StatCard({
+  icon: Icon,
+  label,
+  value,
+  hint,
+  loading,
+  onClick,
+}: {
+  icon: LucideIcon;
+  label: string;
+  value: string;
+  hint: string;
+  loading: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="group rounded-2xl border border-border bg-card p-5 text-left transition-colors hover:border-primary/40 hover:bg-secondary/30 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+    >
+      <div className="flex items-center justify-between gap-2">
+        <span className="flex min-w-0 items-center gap-2 font-data text-[11px] uppercase tracking-[0.15em] text-muted-foreground">
+          <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-orange-500/15 text-orange-400">
+            <Icon className="h-3.5 w-3.5" />
+          </span>
+          <span className="truncate">{label}</span>
+        </span>
+        <ArrowUpRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
+      </div>
+      <div className="mt-3 font-display text-3xl font-medium tabular-nums text-foreground">
+        {loading ? <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /> : value}
+      </div>
+      <p className="mt-0.5 font-body text-xs text-muted-foreground">{hint}</p>
+    </button>
+  );
+}
+
+function UsageSparkline({ daily }: { daily: UsageOverviewResponse['daily'] }) {
+  const points = useMemo(() => {
+    const byDay = new Map<string, number>();
+    for (const point of daily) {
+      byDay.set(point.day, (byDay.get(point.day) ?? 0) + point.total_tokens);
+    }
+    return [...byDay.entries()]
+      .sort(([left], [right]) => left.localeCompare(right))
+      .slice(-14)
+      .map(([day, tokens]) => ({ day, tokens }));
+  }, [daily]);
+
+  if (points.length === 0) {
+    return <p className="mt-4 text-xs text-muted-foreground">No daily activity yet.</p>;
+  }
+
+  const peak = Math.max(...points.map((point) => point.tokens), 1);
+
+  return (
+    <div className="mt-4 flex h-16 items-end gap-1" aria-hidden="true">
+      {points.map((point) => (
+        <div
+          key={point.day}
+          className="flex-1 rounded-sm bg-orange-500/70 transition-colors hover:bg-orange-500"
+          style={{ height: `${Math.max(6, Math.round((point.tokens / peak) * 100))}%` }}
+          title={`${point.day}: ${formatNumber(point.tokens)} tokens`}
+        />
+      ))}
+    </div>
+  );
+}
+
+// ---------- Formatting ----------
+
+function formatNumber(value: number | null | undefined): string {
+  return new Intl.NumberFormat(undefined, { maximumFractionDigits: 0 }).format(value ?? 0);
+}
+
+function formatCost(value: number | null | undefined): string {
+  const amount = value ?? 0;
+  if (amount > 0 && amount < 0.01) return '<$0.01';
+  return new Intl.NumberFormat(undefined, {
+    style: 'currency',
+    currency: 'USD',
+    maximumFractionDigits: 2,
+  }).format(amount);
 }

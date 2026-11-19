@@ -18,6 +18,42 @@ export type {
     ChatSessionData
 } from './chat';
 
+export type {
+    PipelineStatus,
+    PipelineRunStatus,
+    SourceSpec,
+    TransformSpec,
+    SinkSpec,
+    PipelineStep,
+    PipelineDefinition,
+    MLSpec,
+    OutputsSpec,
+    ScheduleMode,
+    ScheduleSpec,
+    CreatePipelineRequest,
+    UpdatePipelineRequest,
+    ApprovePipelineRequest,
+    RunPipelineRequest,
+    MaterializePipelineRequest,
+    BuildDashboardRequest,
+    UpdateDashboardLayoutRequest,
+    UpdateScheduleRequest,
+    PlanConversationTurn,
+    PlanPipelineRequest,
+    PlanStageRequest,
+    PipelineRead,
+    PipelineRunRead,
+    PipelineStagePlanRead,
+    PipelineDashboardRead,
+    MLModelRead,
+    JobEventRead,
+    PipelinePlanRead,
+    SourceTableColumn,
+    SourceTableRead,
+    ResolveSourceRead,
+    EtlChatBody,
+} from './etl';
+
 // File types
 export type {
     UploadedFile
@@ -59,6 +95,16 @@ export type {
     UploadResponse,
     ModelMetric,
     ModelSummary,
+    ModelInputField,
+    ModelHistoryPoint,
+    ModelHistorySeries,
+    ModelTrainingHistory,
+    ModelDetails,
+    HyperparameterSpec,
+    ModelCatalogEntry,
+    ModelCatalogResponse,
+    BuildRequest,
+    RetrainModelRequest,
     BuildResponse,
     ConnectorSummary,
     ModelFile,
@@ -67,3 +113,27 @@ export type {
     PredictResponse,
     TablePreviewEntry
 } from './workspace';
+
+// Usage monitoring types
+export type {
+    UsageTotals,
+    UsageProviderBreakdown,
+    UsageModelBreakdown,
+    UsageSourceBreakdown,
+    UsageDailyPoint,
+    UsageEventRead,
+    UsageOverviewResponse,
+    UsageEventListResponse,
+    UsagePricingEntry,
+    UsagePricingResponse
+} from './usage';
+
+// Notification types
+export type {
+    NotificationType,
+    NotificationItem,
+    NotificationListResponse,
+    UnreadCountResponse,
+    MarkAllReadResponse,
+    NotificationPreferences
+} from './notification';

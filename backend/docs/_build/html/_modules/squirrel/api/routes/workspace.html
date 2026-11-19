@@ -1,0 +1,1200 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>squirrel.api.routes.workspace &mdash; SQRL Documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../../../_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" type="text/css" href="../../../../_static/css/custom.css?v=35931533" />
+
+  
+    <link rel="shortcut icon" href="../../../../_static/sqrl.png"/>
+      <script src="../../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../../_static/documentation_options.js?v=01f34227"></script>
+      <script src="../../../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script src="../../../../_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="../../../../_static/copybutton.js?v=a46eff05"></script>
+    <script src="../../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../../index.html">
+            
+              <img src="../../../../_static/sqrl.png" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Learn and build</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../getting-started.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../workflow.html">Product workflow</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../architecture.html">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../deployment.html">Deployment and operations</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../api.html">Backend API Reference</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../generated/api_reference.html">HTTP API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../generated/schemas_reference.html">Data Schemas</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../generated/services_reference.html">Services</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../generated/agents_reference.html">Agents</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../generated/prompts_reference.html">Prompt Components</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../generated/providers_reference.html">Model Providers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../generated/inspectors_reference.html">Data Inspectors</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../generated/preprocessors_reference.html">Preprocessors</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../generated/core_reference.html">Core Infrastructure</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../generated/models_reference.html">Machine Learning Models</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../generated/constants_reference.html">Constants</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../index.html">squirrel</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">squirrel.api.routes.workspace</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for squirrel.api.routes.workspace</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/python</span>
+<span class="sd">"""</span>
+<span class="sd">Workspace Route</span>
+<span class="sd">===============</span>
+
+<span class="sd">Overview</span>
+<span class="sd">--------</span>
+
+<span class="sd">Every workspace is identified by its ``workspace_id`` — that's the primary</span>
+<span class="sd">key throughout, both in :class:`WorkspaceService` and in every URL below.</span>
+
+<span class="sd">Pipeline per workspace</span>
+<span class="sd">----------------------</span>
+
+<span class="sd">1. ``POST /workspace``</span>
+<span class="sd">   Create an empty workspace (name + data type). Returns its</span>
+<span class="sd">   ``workspace_id``, which every later call for this workspace is keyed on.</span>
+
+<span class="sd">2. ``POST /workspace/{workspace_id}/upload``</span>
+<span class="sd">   Upload one or more files as input sources. Each file is stored in MinIO</span>
+<span class="sd">   as its own input source. Only CSV uploads are actually parsed today</span>
+<span class="sd">   (their column names come back so the frontend can populate the</span>
+<span class="sd">   "predict this column" dropdown) — the upload path itself is generic,</span>
+<span class="sd">   so adding a new file type (plain text, a zip of files, ...) is a matter</span>
+<span class="sd">   of registering a parser (see ``_SOURCE_PARSERS`` below) and a loader on</span>
+<span class="sd">   ``WorkspaceService``, not rewriting this endpoint.</span>
+
+<span class="sd">3. ``POST /workspace/{workspace_id}/sources/connector``</span>
+<span class="sd">   Attach an existing data connector (see the Data Connectors page) as an</span>
+<span class="sd">   additional input source, instead of / alongside uploaded files.</span>
+
+<span class="sd">4. ``DELETE /workspace/{workspace_id}/sources/{source_id}``</span>
+<span class="sd">   Remove a single input source from a workspace.</span>
+
+<span class="sd">5. ``POST /workspace/{workspace_id}/build``</span>
+<span class="sd">   Given the ``target_column`` chosen in the dropdown and, optionally, a</span>
+<span class="sd">   free-text ``query`` describing how sources relate or what the model should</span>
+<span class="sd">   optimize for, the route loads the input sources, merges their data,</span>
+<span class="sd">   preprocesses the merged frame, builds and persists fitted models, and</span>
+<span class="sd">   returns model summaries with accuracy metrics for the frontend.</span>
+
+<span class="sd">6. ``GET /workspace`` / ``GET /library/workspaces/{workspace_id}``</span>
+<span class="sd">   List workspaces / fetch one workspace, for the Library page.</span>
+
+<span class="sd">7. ``PATCH /workspace/{workspace_id}``</span>
+<span class="sd">   Rename a workspace and/or change its declared data type.</span>
+
+<span class="sd">8. ``DELETE /workspace/{workspace_id}``</span>
+<span class="sd">   Permanently delete a workspace, its run history, and its stored</span>
+<span class="sd">   artifacts. The frontend is expected to confirm this with the user</span>
+<span class="sd">   before calling it.</span>
+
+<span class="sd">9. ``GET /workspace/{workspace_id}/models``</span>
+<span class="sd">   Convenience endpoint returning just the latest model-building summary</span>
+<span class="sd">   (model list + accuracy metrics + recommended model) for the workspace.</span>
+
+<span class="sd">10. ``POST /workspace/{workspace_id}/predict``</span>
+<span class="sd">    Given new, raw rows shaped like the workspace's original input</span>
+<span class="sd">    source(s), replays the workspace's saved fitted preprocessing pipeline</span>
+<span class="sd">    on them (reusing training-time fitted parameters — means, bounds,</span>
+<span class="sd">    encoding maps, etc. — rather than re-fitting from the new rows) and</span>
+<span class="sd">    runs the chosen (or best) fitted model to produce predictions.</span>
+
+<span class="sd">.. note::</span>
+<span class="sd">    Data-type values other than ``"structured"`` (image / text / audio /</span>
+<span class="sd">    other) are recorded on the workspace so the frontend can route to a</span>
+<span class="sd">    dedicated pipeline later, but only ``"structured"`` currently drives</span>
+<span class="sd">    the preprocessing/model-building pipeline below; attempting to</span>
+<span class="sd">    ``/build`` a non-structured workspace returns 400.</span>
+
+<span class="sd">"""</span>
+<span class="c1"># ——————————————————————————————————————————————————————————————</span>
+<span class="c1"># Imports</span>
+
+<span class="c1"># Standard Libraries</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">io</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">re</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">tempfile</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">Any</span>
+
+<span class="c1"># Third-Party Libraries</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fastapi</span><span class="w"> </span><span class="kn">import</span> <span class="n">APIRouter</span><span class="p">,</span> <span class="n">Body</span><span class="p">,</span> <span class="n">Depends</span><span class="p">,</span> <span class="n">File</span><span class="p">,</span> <span class="n">HTTPException</span><span class="p">,</span> <span class="n">UploadFile</span><span class="p">,</span> <span class="n">status</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fastapi.concurrency</span><span class="w"> </span><span class="kn">import</span> <span class="n">run_in_threadpool</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fastapi.responses</span><span class="w"> </span><span class="kn">import</span> <span class="n">Response</span>
+
+<span class="c1"># Services</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">squirrel.services.workspace.WorkspaceService</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">WorkspaceService</span><span class="p">,</span>
+    <span class="n">WorkspaceStatus</span><span class="p">,</span>
+    <span class="n">DataType</span><span class="p">,</span>
+    <span class="n">SourceKind</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="c1"># Schema</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">squirrel.services.data_connector.DataConnectorService</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">ConnectorNotFoundError</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">squirrel.schemas.connector</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">ConnectorSourcesRequest</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">squirrel.schemas.workspace</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">SourceColumnsRequest</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">squirrel.api.routes.auth</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_current_user</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">squirrel.schemas.auth</span><span class="w"> </span><span class="kn">import</span> <span class="n">AuthUserRead</span>
+
+<span class="c1"># Agents</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">squirrel.modules.agents</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">TabularDataInspectorAgent</span><span class="p">,</span>
+    <span class="n">TabularDataProcessorAgent</span><span class="p">,</span>
+    <span class="n">TabularDataModelBuilderAgent</span>
+<span class="p">)</span>
+
+<span class="c1"># Schema</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">squirrel.schemas.workspace</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">WorkspaceRecord</span><span class="p">,</span>
+    <span class="n">DataSource</span><span class="p">,</span>
+    <span class="n">WorkspaceCreateRequest</span><span class="p">,</span>
+    <span class="n">WorkspaceUpdateRequest</span><span class="p">,</span>
+    <span class="n">UploadResponse</span><span class="p">,</span>
+    <span class="n">BuildRequest</span><span class="p">,</span>
+    <span class="n">BuildResponse</span><span class="p">,</span>
+    <span class="n">ModelsResponse</span><span class="p">,</span>
+    <span class="n">PreprocessedDataResponse</span><span class="p">,</span>
+    <span class="n">ModelMetric</span><span class="p">,</span>
+    <span class="n">ModelFileOut</span><span class="p">,</span>
+    <span class="n">PredictRequest</span><span class="p">,</span>
+    <span class="n">PredictResponse</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">squirrel.schemas.file</span><span class="w"> </span><span class="kn">import</span> <span class="n">UploadedSourceOut</span>
+
+<span class="c1"># Exception</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">squirrel.schemas.error</span><span class="w"> </span><span class="kn">import</span> <span class="n">WorkspaceNotFoundError</span><span class="p">,</span> <span class="n">SourceNotFoundError</span><span class="p">,</span> <span class="n">DuplicateColumnError</span>
+
+<span class="c1"># Logging</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">loguru</span><span class="w"> </span><span class="kn">import</span> <span class="n">logger</span>
+
+<span class="c1"># API Router</span>
+<span class="n">router</span> <span class="o">=</span> <span class="n">APIRouter</span><span class="p">()</span>
+
+<span class="c1"># ——————————————————————————————————————————————————————————————</span>
+<span class="c1"># Upload parsers — one entry per supported file extension.</span>
+<span class="c1">#</span>
+<span class="c1"># Extension point: to accept a new input-source file type, add a parser</span>
+<span class="c1"># here that returns {"columns", "row_count", "preview"} (tabular) or</span>
+<span class="c1"># {"metadata": {...}} (non-tabular), and a matching loader in</span>
+<span class="c1"># ``WorkspaceService._upload_loaders``. Nothing else in this route needs</span>
+<span class="c1"># to change — only ``csv`` is wired up today, everything else 501s.</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_parse_csv</span><span class="p">(</span><span class="n">tmp_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">file_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="n">tmp_path</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span>
+            <span class="n">status_code</span><span class="o">=</span><span class="n">status</span><span class="o">.</span><span class="n">HTTP_400_BAD_REQUEST</span><span class="p">,</span>
+            <span class="n">detail</span><span class="o">=</span><span class="sa">f</span><span class="s2">"Could not parse '</span><span class="si">{</span><span class="n">file_name</span><span class="si">}</span><span class="s2">': </span><span class="si">{</span><span class="n">exc</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
+        <span class="p">)</span>
+    <span class="n">preview</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">head</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">notnull</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">head</span><span class="p">(</span><span class="mi">10</span><span class="p">)),</span> <span class="kc">None</span><span class="p">)</span><span class="o">.</span><span class="n">to_dict</span><span class="p">(</span><span class="n">orient</span><span class="o">=</span><span class="s2">"records"</span><span class="p">)</span>
+    <span class="k">return</span> <span class="p">{</span><span class="s2">"columns"</span><span class="p">:</span> <span class="nb">list</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">columns</span><span class="p">),</span> <span class="s2">"row_count"</span><span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span> <span class="s2">"preview"</span><span class="p">:</span> <span class="n">preview</span><span class="p">}</span>
+
+
+<span class="n">_SOURCE_PARSERS</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">"csv"</span><span class="p">:</span> <span class="n">_parse_csv</span><span class="p">,</span>
+    <span class="c1"># "txt": _parse_text,     # not yet implemented — add a parser + loader to enable</span>
+    <span class="c1"># "zip": _parse_archive,  # not yet implemented — add a parser + loader to enable</span>
+<span class="p">}</span>
+
+<span class="c1"># Which upload extensions are acceptable for a given workspace data_type.</span>
+<span class="c1"># ``None`` (data types not listed) means "no restriction" — useful for</span>
+<span class="c1"># data types whose upload pipeline isn't defined yet.</span>
+<span class="n">_ALLOWED_EXTENSIONS_BY_DATA_TYPE</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">set</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="n">DataType</span><span class="o">.</span><span class="n">STRUCTURED</span><span class="p">:</span> <span class="p">{</span><span class="s2">".csv"</span><span class="p">},</span>
+<span class="p">}</span>
+
+
+<span class="c1"># ——————————————————————————————————————————————————————————————</span>
+<span class="c1"># Helpers</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_workspace_service</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">WorkspaceService</span><span class="p">:</span>
+    <span class="k">return</span> <span class="n">WorkspaceService</span><span class="p">()</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_not_found</span><span class="p">(</span><span class="n">workspace_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">HTTPException</span><span class="p">:</span>
+    <span class="k">return</span> <span class="n">HTTPException</span><span class="p">(</span>
+        <span class="n">status_code</span><span class="o">=</span><span class="n">status</span><span class="o">.</span><span class="n">HTTP_404_NOT_FOUND</span><span class="p">,</span>
+        <span class="n">detail</span><span class="o">=</span><span class="sa">f</span><span class="s2">"Workspace '</span><span class="si">{</span><span class="n">workspace_id</span><span class="si">}</span><span class="s2">' not found."</span><span class="p">,</span>
+    <span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_extract_model_comparison</span><span class="p">(</span><span class="n">model_summary</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">ModelMetric</span><span class="p">]:</span>
+    <span class="n">raw</span> <span class="o">=</span> <span class="n">model_summary</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"model_comparison"</span><span class="p">)</span> <span class="ow">or</span> <span class="p">[]</span>
+    <span class="n">metrics</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">ModelMetric</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">entry</span> <span class="ow">in</span> <span class="n">raw</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">metrics</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                <span class="n">ModelMetric</span><span class="p">(</span>
+                    <span class="n">model_key</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">entry</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"model_key"</span><span class="p">,</span> <span class="s2">""</span><span class="p">)),</span>
+                    <span class="n">metric_name</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">entry</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"metric_name"</span><span class="p">,</span> <span class="s2">""</span><span class="p">)),</span>
+                    <span class="n">mean</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">entry</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"mean"</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">)),</span>
+                    <span class="n">std</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">entry</span><span class="p">[</span><span class="s2">"std"</span><span class="p">])</span> <span class="k">if</span> <span class="n">entry</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"std"</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+                <span class="p">)</span>
+            <span class="p">)</span>
+        <span class="k">except</span> <span class="p">(</span><span class="ne">TypeError</span><span class="p">,</span> <span class="ne">ValueError</span><span class="p">):</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">"Skipping malformed model_comparison entry: </span><span class="si">{}</span><span class="s2">"</span><span class="p">,</span> <span class="n">entry</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">metrics</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_model_key_from_url</span><span class="p">(</span><span class="n">file_url</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Recover the ``model_key`` from a stored model artifact URL.</span>
+
+<span class="sd">    :class:`WorkspaceService._upload_model` names uploaded objects</span>
+<span class="sd">    ``{workspace_id}/models/{model_key}_{timestamp}.joblib``. This reverses</span>
+<span class="sd">    that naming convention so the API can expose a proper model_key -&gt;</span>
+<span class="sd">    file_url mapping without requiring a database schema change (the</span>
+<span class="sd">    ``output_file_urls`` column stores plain strings).</span>
+
+<span class="sd">    Falls back to the bare filename stem if the timestamp suffix isn't</span>
+<span class="sd">    found, so this degrades gracefully for any unexpected naming.</span>
+<span class="sd">    """</span>
+    <span class="n">filename</span> <span class="o">=</span> <span class="n">file_url</span><span class="o">.</span><span class="n">rsplit</span><span class="p">(</span><span class="s2">"/"</span><span class="p">,</span> <span class="mi">1</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+    <span class="n">stem</span> <span class="o">=</span> <span class="n">filename</span><span class="p">[:</span> <span class="o">-</span><span class="nb">len</span><span class="p">(</span><span class="s2">".joblib"</span><span class="p">)]</span> <span class="k">if</span> <span class="n">filename</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s2">".joblib"</span><span class="p">)</span> <span class="k">else</span> <span class="n">filename</span>
+    <span class="n">match</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="sa">r</span><span class="s2">"^(.*)_\d</span><span class="si">{8}</span><span class="s2">T\d</span><span class="si">{6}</span><span class="s2">$"</span><span class="p">,</span> <span class="n">stem</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">match</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span> <span class="k">if</span> <span class="n">match</span> <span class="k">else</span> <span class="n">stem</span>
+
+
+<span class="c1"># ——————————————————————————————————————————————————————————————</span>
+<span class="c1"># Endpoints — workspace CRUD</span>
+
+
+<div class="viewcode-block" id="create_workspace">
+<a class="viewcode-back" href="../../../../generated/api_reference.html#squirrel.api.routes.workspace.create_workspace">[docs]</a>
+<span class="nd">@router</span><span class="o">.</span><span class="n">post</span><span class="p">(</span>
+    <span class="s2">""</span><span class="p">,</span>
+    <span class="n">summary</span><span class="o">=</span><span class="s2">"Create a new workspace"</span><span class="p">,</span>
+    <span class="n">status_code</span><span class="o">=</span><span class="n">status</span><span class="o">.</span><span class="n">HTTP_201_CREATED</span><span class="p">,</span>
+    <span class="n">response_model</span><span class="o">=</span><span class="n">WorkspaceRecord</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">create_workspace</span><span class="p">(</span>
+    <span class="n">request</span><span class="p">:</span> <span class="n">WorkspaceCreateRequest</span> <span class="o">=</span> <span class="n">Body</span><span class="p">(</span><span class="o">...</span><span class="p">),</span>
+    <span class="n">current_user</span><span class="p">:</span> <span class="n">AuthUserRead</span> <span class="o">=</span> <span class="n">Depends</span><span class="p">(</span><span class="n">get_current_user</span><span class="p">),</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">WorkspaceRecord</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Create an empty workspace that one or more data sources can later be</span>
+<span class="sd">    added to.</span>
+<span class="sd">    """</span>
+    <span class="k">if</span> <span class="n">request</span><span class="o">.</span><span class="n">data_type</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">DataType</span><span class="o">.</span><span class="n">ALL</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span>
+            <span class="n">status_code</span><span class="o">=</span><span class="n">status</span><span class="o">.</span><span class="n">HTTP_400_BAD_REQUEST</span><span class="p">,</span>
+            <span class="n">detail</span><span class="o">=</span><span class="sa">f</span><span class="s2">"Unknown data_type '</span><span class="si">{</span><span class="n">request</span><span class="o">.</span><span class="n">data_type</span><span class="si">}</span><span class="s2">'."</span><span class="p">,</span>
+        <span class="p">)</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">row</span> <span class="o">=</span> <span class="k">await</span> <span class="n">run_in_threadpool</span><span class="p">(</span>
+            <span class="n">_workspace_service</span><span class="p">()</span><span class="o">.</span><span class="n">create_workspace</span><span class="p">,</span> <span class="n">request</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">request</span><span class="o">.</span><span class="n">data_type</span><span class="p">,</span> <span class="n">current_user</span><span class="o">.</span><span class="n">id</span>
+        <span class="p">)</span>
+    <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">exception</span><span class="p">(</span><span class="s2">"Failed to create workspace '</span><span class="si">{}</span><span class="s2">'"</span><span class="p">,</span> <span class="n">request</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span>
+            <span class="n">status_code</span><span class="o">=</span><span class="n">status</span><span class="o">.</span><span class="n">HTTP_500_INTERNAL_SERVER_ERROR</span><span class="p">,</span>
+            <span class="n">detail</span><span class="o">=</span><span class="s2">"Failed to create workspace."</span><span class="p">,</span>
+        <span class="p">)</span>
+    <span class="k">return</span> <span class="n">WorkspaceRecord</span><span class="p">(</span><span class="o">**</span><span class="n">row</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="list_workspaces">
+<a class="viewcode-back" href="../../../../generated/api_reference.html#squirrel.api.routes.workspace.list_workspaces">[docs]</a>
+<span class="nd">@router</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+    <span class="s2">""</span><span class="p">,</span>
+    <span class="n">summary</span><span class="o">=</span><span class="s2">"List all workspaces"</span><span class="p">,</span>
+    <span class="n">response_model</span><span class="o">=</span><span class="n">List</span><span class="p">[</span><span class="n">WorkspaceRecord</span><span class="p">],</span>
+<span class="p">)</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">list_workspaces</span><span class="p">(</span>
+    <span class="n">current_user</span><span class="p">:</span> <span class="n">AuthUserRead</span> <span class="o">=</span> <span class="n">Depends</span><span class="p">(</span><span class="n">get_current_user</span><span class="p">),</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">WorkspaceRecord</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    List every workspace, newest first, for the Library page.</span>
+<span class="sd">    """</span>
+    <span class="n">rows</span> <span class="o">=</span> <span class="k">await</span> <span class="n">run_in_threadpool</span><span class="p">(</span><span class="n">_workspace_service</span><span class="p">()</span><span class="o">.</span><span class="n">list_workspaces</span><span class="p">,</span> <span class="mi">200</span><span class="p">,</span> <span class="n">current_user</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
+    <span class="k">return</span> <span class="p">[</span><span class="n">WorkspaceRecord</span><span class="p">(</span><span class="o">**</span><span class="n">row</span><span class="p">)</span> <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">rows</span><span class="p">]</span></div>
+
+
+
+<span class="nd">@router</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+    <span class="s2">"/</span><span class="si">{workspace_id}</span><span class="s2">"</span><span class="p">,</span>
+    <span class="n">summary</span><span class="o">=</span><span class="s2">"Get a single workspace"</span><span class="p">,</span>
+    <span class="n">response_model</span><span class="o">=</span><span class="n">WorkspaceRecord</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">get_workspace</span><span class="p">(</span>
+    <span class="n">workspace_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">current_user</span><span class="p">:</span> <span class="n">AuthUserRead</span> <span class="o">=</span> <span class="n">Depends</span><span class="p">(</span><span class="n">get_current_user</span><span class="p">),</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">WorkspaceRecord</span><span class="p">:</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">row</span> <span class="o">=</span> <span class="k">await</span> <span class="n">run_in_threadpool</span><span class="p">(</span><span class="n">_workspace_service</span><span class="p">()</span><span class="o">.</span><span class="n">get_workspace</span><span class="p">,</span> <span class="n">workspace_id</span><span class="p">,</span> <span class="n">current_user</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
+    <span class="k">except</span> <span class="n">WorkspaceNotFoundError</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">_not_found</span><span class="p">(</span><span class="n">workspace_id</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">WorkspaceRecord</span><span class="p">(</span><span class="o">**</span><span class="n">row</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="update_workspace">
+<a class="viewcode-back" href="../../../../generated/api_reference.html#squirrel.api.routes.workspace.update_workspace">[docs]</a>
+<span class="nd">@router</span><span class="o">.</span><span class="n">patch</span><span class="p">(</span>
+    <span class="s2">"/</span><span class="si">{workspace_id}</span><span class="s2">"</span><span class="p">,</span>
+    <span class="n">summary</span><span class="o">=</span><span class="s2">"Rename a workspace"</span><span class="p">,</span>
+    <span class="n">response_model</span><span class="o">=</span><span class="n">WorkspaceRecord</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">update_workspace</span><span class="p">(</span>
+    <span class="n">workspace_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">request</span><span class="p">:</span> <span class="n">WorkspaceUpdateRequest</span> <span class="o">=</span> <span class="n">Body</span><span class="p">(</span><span class="o">...</span><span class="p">),</span>
+    <span class="n">current_user</span><span class="p">:</span> <span class="n">AuthUserRead</span> <span class="o">=</span> <span class="n">Depends</span><span class="p">(</span><span class="n">get_current_user</span><span class="p">),</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">WorkspaceRecord</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Edit a workspace's display name.</span>
+<span class="sd">    """</span>
+    <span class="n">workspace_svc</span> <span class="o">=</span> <span class="n">_workspace_service</span><span class="p">()</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">await</span> <span class="n">run_in_threadpool</span><span class="p">(</span><span class="n">workspace_svc</span><span class="o">.</span><span class="n">get_workspace</span><span class="p">,</span> <span class="n">workspace_id</span><span class="p">,</span> <span class="n">current_user</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
+    <span class="k">except</span> <span class="n">WorkspaceNotFoundError</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">_not_found</span><span class="p">(</span><span class="n">workspace_id</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">request</span><span class="o">.</span><span class="n">name</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span>
+            <span class="n">status_code</span><span class="o">=</span><span class="n">status</span><span class="o">.</span><span class="n">HTTP_400_BAD_REQUEST</span><span class="p">,</span>
+            <span class="n">detail</span><span class="o">=</span><span class="s2">"Provide a new 'name' to update."</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">row</span> <span class="o">=</span> <span class="k">await</span> <span class="n">run_in_threadpool</span><span class="p">(</span><span class="n">workspace_svc</span><span class="o">.</span><span class="n">rename_workspace</span><span class="p">,</span> <span class="n">workspace_id</span><span class="p">,</span> <span class="n">request</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">current_user</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">ValueError</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span><span class="n">status_code</span><span class="o">=</span><span class="n">status</span><span class="o">.</span><span class="n">HTTP_400_BAD_REQUEST</span><span class="p">,</span> <span class="n">detail</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">exc</span><span class="p">))</span>
+
+    <span class="k">return</span> <span class="n">WorkspaceRecord</span><span class="p">(</span><span class="o">**</span><span class="n">row</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="delete_workspace">
+<a class="viewcode-back" href="../../../../generated/api_reference.html#squirrel.api.routes.workspace.delete_workspace">[docs]</a>
+<span class="nd">@router</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span>
+    <span class="s2">"/</span><span class="si">{workspace_id}</span><span class="s2">"</span><span class="p">,</span>
+    <span class="n">summary</span><span class="o">=</span><span class="s2">"Permanently delete a workspace"</span><span class="p">,</span>
+    <span class="n">status_code</span><span class="o">=</span><span class="n">status</span><span class="o">.</span><span class="n">HTTP_204_NO_CONTENT</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">delete_workspace</span><span class="p">(</span>
+    <span class="n">workspace_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">current_user</span><span class="p">:</span> <span class="n">AuthUserRead</span> <span class="o">=</span> <span class="n">Depends</span><span class="p">(</span><span class="n">get_current_user</span><span class="p">),</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Response</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Permanently delete a workspace: its run history, stored artifacts, and</span>
+<span class="sd">    the workspace row itself. This cannot be undone.</span>
+<span class="sd">    """</span>
+    <span class="n">workspace_svc</span> <span class="o">=</span> <span class="n">_workspace_service</span><span class="p">()</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">await</span> <span class="n">run_in_threadpool</span><span class="p">(</span><span class="n">workspace_svc</span><span class="o">.</span><span class="n">delete_workspace</span><span class="p">,</span> <span class="n">workspace_id</span><span class="p">,</span> <span class="kc">True</span><span class="p">,</span> <span class="n">current_user</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
+    <span class="k">except</span> <span class="n">WorkspaceNotFoundError</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">_not_found</span><span class="p">(</span><span class="n">workspace_id</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">exception</span><span class="p">(</span><span class="s2">"Failed to delete workspace workspace_id=</span><span class="si">{}</span><span class="s2">"</span><span class="p">,</span> <span class="n">workspace_id</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span>
+            <span class="n">status_code</span><span class="o">=</span><span class="n">status</span><span class="o">.</span><span class="n">HTTP_500_INTERNAL_SERVER_ERROR</span><span class="p">,</span>
+            <span class="n">detail</span><span class="o">=</span><span class="s2">"Failed to delete workspace."</span><span class="p">,</span>
+        <span class="p">)</span>
+    <span class="k">return</span> <span class="n">Response</span><span class="p">(</span><span class="n">status_code</span><span class="o">=</span><span class="n">status</span><span class="o">.</span><span class="n">HTTP_204_NO_CONTENT</span><span class="p">)</span></div>
+
+
+
+<span class="c1"># ——————————————————————————————————————————————————————————————</span>
+<span class="c1"># Endpoints — input sources</span>
+
+
+<div class="viewcode-block" id="upload_files">
+<a class="viewcode-back" href="../../../../generated/api_reference.html#squirrel.api.routes.workspace.upload_files">[docs]</a>
+<span class="nd">@router</span><span class="o">.</span><span class="n">post</span><span class="p">(</span>
+    <span class="s2">"/</span><span class="si">{workspace_id}</span><span class="s2">/upload"</span><span class="p">,</span>
+    <span class="n">summary</span><span class="o">=</span><span class="s2">"Upload one or more files into a workspace as input sources"</span><span class="p">,</span>
+    <span class="n">response_model</span><span class="o">=</span><span class="n">UploadResponse</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">upload_files</span><span class="p">(</span>
+    <span class="n">workspace_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">files</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">UploadFile</span><span class="p">]</span> <span class="o">=</span> <span class="n">File</span><span class="p">(</span><span class="o">...</span><span class="p">),</span>
+    <span class="n">current_user</span><span class="p">:</span> <span class="n">AuthUserRead</span> <span class="o">=</span> <span class="n">Depends</span><span class="p">(</span><span class="n">get_current_user</span><span class="p">),</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">UploadResponse</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Upload one or more files into a workspace, each becoming its own input</span>
+<span class="sd">    source. Stores every file in MinIO regardless of type; only file types</span>
+<span class="sd">    with a registered parser (currently just CSV) are actually inspected</span>
+<span class="sd">    for columns/row-count/preview — anything else 501s until a parser is</span>
+<span class="sd">    added, rather than silently mis-handling it.</span>
+<span class="sd">    """</span>
+    <span class="n">workspace_svc</span> <span class="o">=</span> <span class="n">_workspace_service</span><span class="p">()</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">workspace</span> <span class="o">=</span> <span class="k">await</span> <span class="n">run_in_threadpool</span><span class="p">(</span><span class="n">workspace_svc</span><span class="o">.</span><span class="n">get_workspace</span><span class="p">,</span> <span class="n">workspace_id</span><span class="p">,</span> <span class="n">current_user</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
+    <span class="k">except</span> <span class="n">WorkspaceNotFoundError</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">_not_found</span><span class="p">(</span><span class="n">workspace_id</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">files</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span><span class="n">status_code</span><span class="o">=</span><span class="n">status</span><span class="o">.</span><span class="n">HTTP_400_BAD_REQUEST</span><span class="p">,</span> <span class="n">detail</span><span class="o">=</span><span class="s2">"No files provided."</span><span class="p">)</span>
+
+    <span class="n">allowed_extensions</span> <span class="o">=</span> <span class="n">_ALLOWED_EXTENSIONS_BY_DATA_TYPE</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">workspace</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"data_type"</span><span class="p">))</span>
+    <span class="k">if</span> <span class="n">allowed_extensions</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">file</span> <span class="ow">in</span> <span class="n">files</span><span class="p">:</span>
+            <span class="n">suffix</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">file</span><span class="o">.</span><span class="n">filename</span> <span class="ow">or</span> <span class="s2">""</span><span class="p">)</span><span class="o">.</span><span class="n">suffix</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">suffix</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">allowed_extensions</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span>
+                    <span class="n">status_code</span><span class="o">=</span><span class="n">status</span><span class="o">.</span><span class="n">HTTP_400_BAD_REQUEST</span><span class="p">,</span>
+                    <span class="n">detail</span><span class="o">=</span><span class="p">(</span>
+                        <span class="sa">f</span><span class="s2">"'</span><span class="si">{</span><span class="n">file</span><span class="o">.</span><span class="n">filename</span><span class="si">}</span><span class="s2">' has an unsupported extension for a "</span>
+                        <span class="sa">f</span><span class="s2">"'</span><span class="si">{</span><span class="n">workspace</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">'data_type'</span><span class="p">)</span><span class="si">}</span><span class="s2">' workspace. Allowed: "</span>
+                        <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="s1">', '</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">sorted</span><span class="p">(</span><span class="n">allowed_extensions</span><span class="p">))</span><span class="si">}</span><span class="s2">."</span>
+                    <span class="p">),</span>
+                <span class="p">)</span>
+
+    <span class="n">uploaded_out</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">UploadedSourceOut</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="k">for</span> <span class="n">file</span> <span class="ow">in</span> <span class="n">files</span><span class="p">:</span>
+        <span class="n">suffix</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">file</span><span class="o">.</span><span class="n">filename</span> <span class="ow">or</span> <span class="s2">""</span><span class="p">)</span><span class="o">.</span><span class="n">suffix</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span><span class="o">.</span><span class="n">lstrip</span><span class="p">(</span><span class="s2">"."</span><span class="p">)</span>
+        <span class="n">parser</span> <span class="o">=</span> <span class="n">_SOURCE_PARSERS</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">suffix</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">parser</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span>
+                <span class="n">status_code</span><span class="o">=</span><span class="n">status</span><span class="o">.</span><span class="n">HTTP_501_NOT_IMPLEMENTED</span><span class="p">,</span>
+                <span class="n">detail</span><span class="o">=</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">"Uploads of type '.</span><span class="si">{</span><span class="n">suffix</span><span class="si">}</span><span class="s2">' aren't supported yet. "</span>
+                    <span class="sa">f</span><span class="s2">"Currently supported: </span><span class="si">{</span><span class="s1">', '</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">sorted</span><span class="p">(</span><span class="n">_SOURCE_PARSERS</span><span class="p">))</span><span class="w"> </span><span class="ow">or</span><span class="w"> </span><span class="s1">'none'</span><span class="si">}</span><span class="s2">."</span>
+                <span class="p">),</span>
+            <span class="p">)</span>
+
+        <span class="n">contents</span> <span class="o">=</span> <span class="k">await</span> <span class="n">file</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+        <span class="k">with</span> <span class="n">tempfile</span><span class="o">.</span><span class="n">NamedTemporaryFile</span><span class="p">(</span><span class="n">suffix</span><span class="o">=</span><span class="sa">f</span><span class="s2">".</span><span class="si">{</span><span class="n">suffix</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span> <span class="n">delete</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span> <span class="k">as</span> <span class="n">tmp</span><span class="p">:</span>
+            <span class="n">tmp</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">contents</span><span class="p">)</span>
+            <span class="n">tmp_path</span> <span class="o">=</span> <span class="n">tmp</span><span class="o">.</span><span class="n">name</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">parsed</span> <span class="o">=</span> <span class="n">parser</span><span class="p">(</span><span class="n">tmp_path</span><span class="p">,</span> <span class="n">file</span><span class="o">.</span><span class="n">filename</span><span class="p">)</span>
+
+            <span class="n">source</span> <span class="o">=</span> <span class="k">await</span> <span class="n">run_in_threadpool</span><span class="p">(</span>
+                <span class="n">workspace_svc</span><span class="o">.</span><span class="n">add_file_source</span><span class="p">,</span>
+                <span class="n">workspace_id</span><span class="p">,</span>
+                <span class="n">tmp_path</span><span class="p">,</span>
+                <span class="n">file</span><span class="o">.</span><span class="n">filename</span><span class="p">,</span>
+                <span class="n">suffix</span><span class="p">,</span>
+                <span class="n">parsed</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"columns"</span><span class="p">),</span>
+                <span class="n">parsed</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"row_count"</span><span class="p">),</span>
+                <span class="n">current_user</span><span class="o">.</span><span class="n">id</span><span class="p">,</span>
+            <span class="p">)</span>
+
+            <span class="n">uploaded_out</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                <span class="n">UploadedSourceOut</span><span class="p">(</span>
+                    <span class="n">source_id</span><span class="o">=</span><span class="n">source</span><span class="p">[</span><span class="s2">"source_id"</span><span class="p">],</span>
+                    <span class="n">file_name</span><span class="o">=</span><span class="n">file</span><span class="o">.</span><span class="n">filename</span><span class="p">,</span>
+                    <span class="n">file_type</span><span class="o">=</span><span class="n">suffix</span><span class="p">,</span>
+                    <span class="n">columns</span><span class="o">=</span><span class="n">parsed</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"columns"</span><span class="p">),</span>
+                    <span class="n">row_count</span><span class="o">=</span><span class="n">parsed</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"row_count"</span><span class="p">),</span>
+                    <span class="n">preview</span><span class="o">=</span><span class="n">parsed</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"preview"</span><span class="p">),</span>
+                    <span class="n">metadata</span><span class="o">=</span><span class="n">parsed</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"metadata"</span><span class="p">),</span>
+                <span class="p">)</span>
+            <span class="p">)</span>
+        <span class="k">finally</span><span class="p">:</span>
+            <span class="n">Path</span><span class="p">(</span><span class="n">tmp_path</span><span class="p">)</span><span class="o">.</span><span class="n">unlink</span><span class="p">(</span><span class="n">missing_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="n">refreshed</span> <span class="o">=</span> <span class="k">await</span> <span class="n">run_in_threadpool</span><span class="p">(</span><span class="n">workspace_svc</span><span class="o">.</span><span class="n">get_workspace</span><span class="p">,</span> <span class="n">workspace_id</span><span class="p">,</span> <span class="n">current_user</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">UploadResponse</span><span class="p">(</span>
+        <span class="n">workspace_id</span><span class="o">=</span><span class="n">workspace_id</span><span class="p">,</span>
+        <span class="n">uploaded</span><span class="o">=</span><span class="n">uploaded_out</span><span class="p">,</span>
+        <span class="n">sources</span><span class="o">=</span><span class="p">[</span><span class="n">DataSource</span><span class="p">(</span><span class="o">**</span><span class="n">s</span><span class="p">)</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="p">(</span><span class="n">refreshed</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"input_sources"</span><span class="p">)</span> <span class="ow">or</span> <span class="p">[])],</span>
+    <span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="remove_source">
+<a class="viewcode-back" href="../../../../generated/api_reference.html#squirrel.api.routes.workspace.remove_source">[docs]</a>
+<span class="nd">@router</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span>
+    <span class="s2">"/</span><span class="si">{workspace_id}</span><span class="s2">/sources/</span><span class="si">{source_id}</span><span class="s2">"</span><span class="p">,</span>
+    <span class="n">summary</span><span class="o">=</span><span class="s2">"Remove an input source from a workspace"</span><span class="p">,</span>
+    <span class="n">response_model</span><span class="o">=</span><span class="n">List</span><span class="p">[</span><span class="n">DataSource</span><span class="p">],</span>
+<span class="p">)</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">remove_source</span><span class="p">(</span>
+    <span class="n">workspace_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> 
+    <span class="n">source_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">current_user</span><span class="p">:</span> <span class="n">AuthUserRead</span> <span class="o">=</span> <span class="n">Depends</span><span class="p">(</span><span class="n">get_current_user</span><span class="p">),</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">DataSource</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Remove a single input source (upload or connector) from a workspace.</span>
+<span class="sd">    """</span>
+    <span class="n">workspace_svc</span> <span class="o">=</span> <span class="n">_workspace_service</span><span class="p">()</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">await</span> <span class="n">run_in_threadpool</span><span class="p">(</span><span class="n">workspace_svc</span><span class="o">.</span><span class="n">get_workspace</span><span class="p">,</span> <span class="n">workspace_id</span><span class="p">,</span> <span class="n">current_user</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
+    <span class="k">except</span> <span class="n">WorkspaceNotFoundError</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">_not_found</span><span class="p">(</span><span class="n">workspace_id</span><span class="p">)</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">await</span> <span class="n">run_in_threadpool</span><span class="p">(</span><span class="n">workspace_svc</span><span class="o">.</span><span class="n">remove_source</span><span class="p">,</span> <span class="n">workspace_id</span><span class="p">,</span> <span class="n">source_id</span><span class="p">,</span> <span class="n">current_user</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
+    <span class="k">except</span> <span class="n">SourceNotFoundError</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span>
+            <span class="n">status_code</span><span class="o">=</span><span class="n">status</span><span class="o">.</span><span class="n">HTTP_404_NOT_FOUND</span><span class="p">,</span>
+            <span class="n">detail</span><span class="o">=</span><span class="sa">f</span><span class="s2">"Source '</span><span class="si">{</span><span class="n">source_id</span><span class="si">}</span><span class="s2">' not found on this workspace."</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="n">refreshed</span> <span class="o">=</span> <span class="k">await</span> <span class="n">run_in_threadpool</span><span class="p">(</span><span class="n">workspace_svc</span><span class="o">.</span><span class="n">get_workspace</span><span class="p">,</span> <span class="n">workspace_id</span><span class="p">,</span> <span class="n">current_user</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
+    <span class="k">return</span> <span class="p">[</span><span class="n">DataSource</span><span class="p">(</span><span class="o">**</span><span class="n">s</span><span class="p">)</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="p">(</span><span class="n">refreshed</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"input_sources"</span><span class="p">)</span> <span class="ow">or</span> <span class="p">[])]</span></div>
+
+
+
+<span class="c1"># ——————————————————————————————————————————————————————————————</span>
+<span class="c1"># Endpoints — build</span>
+
+
+<div class="viewcode-block" id="build_structured_models">
+<a class="viewcode-back" href="../../../../generated/api_reference.html#squirrel.api.routes.workspace.build_structured_models">[docs]</a>
+<span class="nd">@router</span><span class="o">.</span><span class="n">post</span><span class="p">(</span>
+    <span class="s2">"/</span><span class="si">{workspace_id}</span><span class="s2">/build/structured"</span><span class="p">,</span>
+    <span class="n">summary</span><span class="o">=</span><span class="s2">"Preprocess every input source and build models against a target column for structured data."</span><span class="p">,</span>
+    <span class="n">response_model</span><span class="o">=</span><span class="n">BuildResponse</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">build_structured_models</span><span class="p">(</span>                                                                                                                                                                             
+    <span class="n">workspace_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> 
+    <span class="n">request</span><span class="p">:</span> <span class="n">BuildRequest</span> <span class="o">=</span> <span class="n">Body</span><span class="p">(</span><span class="o">...</span><span class="p">),</span>
+    <span class="n">current_user</span><span class="p">:</span> <span class="n">AuthUserRead</span> <span class="o">=</span> <span class="n">Depends</span><span class="p">(</span><span class="n">get_current_user</span><span class="p">),</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">BuildResponse</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Run the full pipeline for a workspace: load every input source, merge</span>
+<span class="sd">    them into one training frame (deterministically when possible, via the</span>
+<span class="sd">    preprocessing agent's LLM-grounded relationship-finding otherwise),</span>
+<span class="sd">    preprocess it, then fit and compare models against ``target_column``.</span>
+
+<span class="sd">    ``request.query`` — if given — is passed through to both the</span>
+<span class="sd">    preprocessing and model-building agents as free-text context: it's</span>
+<span class="sd">    most useful when the sources don't share an identical or obviously</span>
+<span class="sd">    disjoint schema and the agent has to infer how they relate (e.g. "join</span>
+<span class="sd">    the two sources on customer_id") or what the model should prioritize.</span>
+
+<span class="sd">    Both stages are persisted through :class:`WorkspaceService`, so this</span>
+<span class="sd">    workspace's run history is queryable the same way a chat-driven run</span>
+<span class="sd">    would be. The preprocessing stage additionally persists the fitted</span>
+<span class="sd">    plan + execution report as a standalone "pipeline artifact" — see</span>
+<span class="sd">    :meth:`WorkspaceService.save_pipeline_artifact` — so that</span>
+<span class="sd">    ``POST /{workspace_id}/predict`` can later replay the exact same</span>
+<span class="sd">    preprocessing against new rows.</span>
+<span class="sd">    """</span>
+    <span class="n">workspace_svc</span> <span class="o">=</span> <span class="n">_workspace_service</span><span class="p">()</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">workspace</span> <span class="o">=</span> <span class="k">await</span> <span class="n">run_in_threadpool</span><span class="p">(</span><span class="n">workspace_svc</span><span class="o">.</span><span class="n">get_workspace</span><span class="p">,</span> <span class="n">workspace_id</span><span class="p">,</span> <span class="n">current_user</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
+    <span class="k">except</span> <span class="n">WorkspaceNotFoundError</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">_not_found</span><span class="p">(</span><span class="n">workspace_id</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">workspace</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"data_type"</span><span class="p">)</span> <span class="o">!=</span> <span class="n">DataType</span><span class="o">.</span><span class="n">STRUCTURED</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span>
+            <span class="n">status_code</span><span class="o">=</span><span class="n">status</span><span class="o">.</span><span class="n">HTTP_400_BAD_REQUEST</span><span class="p">,</span>
+            <span class="n">detail</span><span class="o">=</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"Workspace data_type is '</span><span class="si">{</span><span class="n">workspace</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">'data_type'</span><span class="p">)</span><span class="si">}</span><span class="s2">'; the tabular "</span>
+                <span class="s2">"model-building pipeline only supports 'structured' workspaces today."</span>
+            <span class="p">),</span>
+        <span class="p">)</span>
+
+    <span class="n">sources</span> <span class="o">=</span> <span class="n">workspace</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"input_sources"</span><span class="p">)</span> <span class="ow">or</span> <span class="p">[]</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">sources</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span>
+            <span class="n">status_code</span><span class="o">=</span><span class="n">status</span><span class="o">.</span><span class="n">HTTP_400_BAD_REQUEST</span><span class="p">,</span>
+            <span class="n">detail</span><span class="o">=</span><span class="s2">"Add at least one CSV upload or connected data source before building models."</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="c1"># ------------------------------------------------------------------ #</span>
+    <span class="c1"># Step 1 — Load every source back into memory</span>
+    <span class="c1"># ------------------------------------------------------------------ #</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">dataframes</span> <span class="o">=</span> <span class="k">await</span> <span class="n">run_in_threadpool</span><span class="p">(</span>
+            <span class="n">workspace_svc</span><span class="o">.</span><span class="n">load_source_dataframes</span><span class="p">,</span> <span class="n">sources</span><span class="p">,</span> <span class="n">current_user</span><span class="o">.</span><span class="n">id</span>
+        <span class="p">)</span>
+    <span class="k">except</span> <span class="ne">NotImplementedError</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span><span class="n">status_code</span><span class="o">=</span><span class="n">status</span><span class="o">.</span><span class="n">HTTP_501_NOT_IMPLEMENTED</span><span class="p">,</span> <span class="n">detail</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">exc</span><span class="p">))</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">exception</span><span class="p">(</span><span class="s2">"Failed to load source data for workspace=</span><span class="si">{}</span><span class="s2">"</span><span class="p">,</span> <span class="n">workspace_id</span><span class="p">)</span>
+        <span class="k">await</span> <span class="n">run_in_threadpool</span><span class="p">(</span>
+            <span class="n">workspace_svc</span><span class="o">.</span><span class="n">set_status</span><span class="p">,</span> <span class="n">workspace_id</span><span class="p">,</span> <span class="n">WorkspaceStatus</span><span class="o">.</span><span class="n">FAILED</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">exc</span><span class="p">),</span> <span class="n">current_user</span><span class="o">.</span><span class="n">id</span>
+        <span class="p">)</span>
+        <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span>
+            <span class="n">status_code</span><span class="o">=</span><span class="n">status</span><span class="o">.</span><span class="n">HTTP_500_INTERNAL_SERVER_ERROR</span><span class="p">,</span>
+            <span class="n">detail</span><span class="o">=</span><span class="s2">"Failed to load one or more input sources."</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">any</span><span class="p">(</span><span class="n">request</span><span class="o">.</span><span class="n">target_column</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">columns</span> <span class="k">for</span> <span class="n">df</span> <span class="ow">in</span> <span class="n">dataframes</span><span class="o">.</span><span class="n">values</span><span class="p">()):</span>
+        <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span>
+            <span class="n">status_code</span><span class="o">=</span><span class="n">status</span><span class="o">.</span><span class="n">HTTP_400_BAD_REQUEST</span><span class="p">,</span>
+            <span class="n">detail</span><span class="o">=</span><span class="sa">f</span><span class="s2">"Column '</span><span class="si">{</span><span class="n">request</span><span class="o">.</span><span class="n">target_column</span><span class="si">}</span><span class="s2">' was not found in any input source."</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="n">input_file_urls</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="n">s</span><span class="p">[</span><span class="s2">"file_url"</span><span class="p">]</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">sources</span> <span class="k">if</span> <span class="n">s</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"kind"</span><span class="p">)</span> <span class="o">==</span> <span class="n">SourceKind</span><span class="o">.</span><span class="n">UPLOAD</span> <span class="ow">and</span> <span class="n">s</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"file_url"</span><span class="p">)</span>
+    <span class="p">]</span>
+
+    <span class="k">await</span> <span class="n">run_in_threadpool</span><span class="p">(</span>
+        <span class="n">workspace_svc</span><span class="o">.</span><span class="n">set_status</span><span class="p">,</span> <span class="n">workspace_id</span><span class="p">,</span> <span class="n">WorkspaceStatus</span><span class="o">.</span><span class="n">PREPROCESSING</span><span class="p">,</span> <span class="n">request</span><span class="o">.</span><span class="n">target_column</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="n">current_user</span><span class="o">.</span><span class="n">id</span>
+    <span class="p">)</span>
+
+    <span class="n">inspector</span> <span class="o">=</span> <span class="n">TabularDataInspectorAgent</span><span class="p">()</span>
+    <span class="n">inspection_report</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span>
+        <span class="k">await</span> <span class="n">run_in_threadpool</span><span class="p">(</span><span class="n">inspector</span><span class="o">.</span><span class="n">inspect_multi</span><span class="p">,</span> <span class="n">dataframes</span><span class="p">,</span> <span class="n">request</span><span class="o">.</span><span class="n">query</span> <span class="ow">or</span> <span class="s2">""</span><span class="p">)</span>
+    <span class="p">)</span>
+    <span class="k">await</span> <span class="n">run_in_threadpool</span><span class="p">(</span>
+        <span class="n">workspace_svc</span><span class="o">.</span><span class="n">save_run</span><span class="p">,</span> <span class="n">workspace_id</span><span class="p">,</span> <span class="s2">"inspection"</span><span class="p">,</span> <span class="n">input_file_urls</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="n">inspection_report</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">current_user</span><span class="o">.</span><span class="n">id</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">relationship</span> <span class="o">=</span> <span class="n">inspection_report</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"relationship"</span><span class="p">)</span> <span class="ow">or</span> <span class="p">{}</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">processor</span> <span class="o">=</span> <span class="n">TabularDataProcessorAgent</span><span class="p">()</span>
+        <span class="n">processed_df</span><span class="p">,</span> <span class="n">preprocessing_summary</span><span class="p">,</span> <span class="n">preprocessing_plan</span><span class="p">,</span> <span class="n">preprocessing_execution_report</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="k">await</span> <span class="n">run_in_threadpool</span><span class="p">(</span>
+                <span class="n">processor</span><span class="o">.</span><span class="n">run_multi</span><span class="p">,</span>
+                <span class="n">dataframes</span><span class="p">,</span>
+                <span class="n">request</span><span class="o">.</span><span class="n">target_column</span><span class="p">,</span>
+                <span class="n">inspection_report</span><span class="p">,</span>          <span class="c1"># eda_summary — full multi-source findings</span>
+                <span class="n">request</span><span class="o">.</span><span class="n">query</span> <span class="ow">or</span> <span class="s2">""</span><span class="p">,</span>
+                <span class="n">relationship</span><span class="p">,</span>               <span class="c1"># merge_recommendation</span>
+                <span class="mi">2</span><span class="p">,</span>                          <span class="c1"># max_refinements</span>
+            <span class="p">)</span>
+        <span class="p">)</span>
+    <span class="k">except</span> <span class="n">DuplicateColumnError</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span>
+            <span class="n">status_code</span><span class="o">=</span><span class="n">status</span><span class="o">.</span><span class="n">HTTP_409_CONFLICT</span><span class="p">,</span>
+            <span class="n">detail</span><span class="o">=</span><span class="p">{</span>
+                <span class="s2">"message"</span><span class="p">:</span> <span class="p">(</span>
+                    <span class="s2">"These columns appear in more than one data source, so the "</span>
+                    <span class="s2">"sources can't be merged unambiguously. Rename or remove the "</span>
+                    <span class="s2">"duplicate column(s), or describe how the sources relate in "</span>
+                    <span class="s2">"'query', then try again."</span>
+                <span class="p">),</span>
+                <span class="s2">"conflicting_columns"</span><span class="p">:</span> <span class="n">exc</span><span class="o">.</span><span class="n">columns</span><span class="p">,</span>
+            <span class="p">},</span>
+        <span class="p">)</span>
+    <span class="k">except</span> <span class="ne">ValueError</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span>
+            <span class="n">status_code</span><span class="o">=</span><span class="n">status</span><span class="o">.</span><span class="n">HTTP_409_CONFLICT</span><span class="p">,</span>
+            <span class="n">detail</span><span class="o">=</span><span class="p">{</span><span class="s2">"message"</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">exc</span><span class="p">)},</span>
+        <span class="p">)</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">exception</span><span class="p">(</span><span class="s2">"Preprocessing failed for workspace=</span><span class="si">{}</span><span class="s2">"</span><span class="p">,</span> <span class="n">workspace_id</span><span class="p">)</span>
+        <span class="k">await</span> <span class="n">run_in_threadpool</span><span class="p">(</span>
+            <span class="n">workspace_svc</span><span class="o">.</span><span class="n">set_status</span><span class="p">,</span> <span class="n">workspace_id</span><span class="p">,</span> <span class="n">WorkspaceStatus</span><span class="o">.</span><span class="n">FAILED</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">exc</span><span class="p">),</span> <span class="n">current_user</span><span class="o">.</span><span class="n">id</span>
+        <span class="p">)</span>
+        <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span>
+            <span class="n">status_code</span><span class="o">=</span><span class="n">status</span><span class="o">.</span><span class="n">HTTP_500_INTERNAL_SERVER_ERROR</span><span class="p">,</span>
+            <span class="n">detail</span><span class="o">=</span><span class="s2">"Preprocessing failed."</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="n">preprocess_save</span> <span class="o">=</span> <span class="k">await</span> <span class="n">run_in_threadpool</span><span class="p">(</span>
+        <span class="n">workspace_svc</span><span class="o">.</span><span class="n">save_run</span><span class="p">,</span>
+        <span class="n">workspace_id</span><span class="p">,</span>
+        <span class="s2">"preprocessing"</span><span class="p">,</span>
+        <span class="n">input_file_urls</span><span class="p">,</span>
+        <span class="n">processed_df</span><span class="p">,</span>
+        <span class="n">preprocessing_summary</span><span class="p">,</span>
+        <span class="mi">0</span><span class="p">,</span>
+        <span class="mi">0</span><span class="p">,</span>
+        <span class="mi">0</span><span class="p">,</span>
+        <span class="mi">0</span><span class="p">,</span>
+        <span class="n">current_user</span><span class="o">.</span><span class="n">id</span><span class="p">,</span>
+        <span class="n">preprocessing_plan</span><span class="p">,</span>
+        <span class="n">preprocessing_execution_report</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">output_file_urls</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">preprocess_save</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"output_file_urls"</span><span class="p">,</span> <span class="p">[]))</span>
+
+    <span class="c1"># ------------------------------------------------------------------ #</span>
+    <span class="c1"># Step 3 — Build &amp; compare models</span>
+    <span class="c1"># ------------------------------------------------------------------ #</span>
+    <span class="k">await</span> <span class="n">run_in_threadpool</span><span class="p">(</span><span class="n">workspace_svc</span><span class="o">.</span><span class="n">set_status</span><span class="p">,</span> <span class="n">workspace_id</span><span class="p">,</span> <span class="n">WorkspaceStatus</span><span class="o">.</span><span class="n">MODELING</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="n">current_user</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">builder</span> <span class="o">=</span> <span class="n">TabularDataModelBuilderAgent</span><span class="p">(</span><span class="n">target_column</span><span class="o">=</span><span class="n">request</span><span class="o">.</span><span class="n">target_column</span><span class="p">)</span>
+        <span class="n">fitted_models</span><span class="p">,</span> <span class="n">model_summary</span> <span class="o">=</span> <span class="k">await</span> <span class="n">run_in_threadpool</span><span class="p">(</span>
+            <span class="n">builder</span><span class="o">.</span><span class="n">run</span><span class="p">,</span> <span class="n">processed_df</span><span class="p">,</span> <span class="n">preprocessing_summary</span><span class="p">,</span> <span class="n">request</span><span class="o">.</span><span class="n">query</span> <span class="ow">or</span> <span class="s2">""</span>
+        <span class="p">)</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">exception</span><span class="p">(</span><span class="s2">"Model building failed for workspace=</span><span class="si">{}</span><span class="s2">"</span><span class="p">,</span> <span class="n">workspace_id</span><span class="p">)</span>
+        <span class="k">await</span> <span class="n">run_in_threadpool</span><span class="p">(</span>
+            <span class="n">workspace_svc</span><span class="o">.</span><span class="n">set_status</span><span class="p">,</span> <span class="n">workspace_id</span><span class="p">,</span> <span class="n">WorkspaceStatus</span><span class="o">.</span><span class="n">FAILED</span><span class="p">,</span> <span class="n">request</span><span class="o">.</span><span class="n">target_column</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">exc</span><span class="p">),</span> <span class="n">current_user</span><span class="o">.</span><span class="n">id</span>
+        <span class="p">)</span>
+        <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span>
+            <span class="n">status_code</span><span class="o">=</span><span class="n">status</span><span class="o">.</span><span class="n">HTTP_500_INTERNAL_SERVER_ERROR</span><span class="p">,</span>
+            <span class="n">detail</span><span class="o">=</span><span class="s2">"Model building failed."</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="n">model_save</span> <span class="o">=</span> <span class="k">await</span> <span class="n">run_in_threadpool</span><span class="p">(</span>
+        <span class="n">workspace_svc</span><span class="o">.</span><span class="n">save_run</span><span class="p">,</span>
+        <span class="n">workspace_id</span><span class="p">,</span>
+        <span class="s2">"model_building"</span><span class="p">,</span>
+        <span class="n">output_file_urls</span><span class="p">,</span>
+        <span class="n">fitted_models</span><span class="p">,</span>
+        <span class="n">model_summary</span><span class="p">,</span>
+        <span class="mi">0</span><span class="p">,</span>
+        <span class="mi">0</span><span class="p">,</span>
+        <span class="mi">0</span><span class="p">,</span>
+        <span class="mi">0</span><span class="p">,</span>
+        <span class="n">current_user</span><span class="o">.</span><span class="n">id</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">model_output_urls</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">model_save</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"output_file_urls"</span><span class="p">,</span> <span class="p">[]))</span>
+    <span class="n">output_file_urls</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">model_output_urls</span><span class="p">)</span>
+
+    <span class="n">model_files</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="n">ModelFileOut</span><span class="p">(</span><span class="n">model_key</span><span class="o">=</span><span class="n">_model_key_from_url</span><span class="p">(</span><span class="n">url</span><span class="p">),</span> <span class="n">file_url</span><span class="o">=</span><span class="n">url</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">url</span> <span class="ow">in</span> <span class="n">model_output_urls</span>
+    <span class="p">]</span>
+
+    <span class="k">await</span> <span class="n">run_in_threadpool</span><span class="p">(</span>
+        <span class="n">workspace_svc</span><span class="o">.</span><span class="n">set_status</span><span class="p">,</span> <span class="n">workspace_id</span><span class="p">,</span> <span class="n">WorkspaceStatus</span><span class="o">.</span><span class="n">COMPLETED</span><span class="p">,</span> <span class="n">request</span><span class="o">.</span><span class="n">target_column</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="n">current_user</span><span class="o">.</span><span class="n">id</span>
+    <span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">BuildResponse</span><span class="p">(</span>
+        <span class="n">workspace_id</span><span class="o">=</span><span class="n">workspace_id</span><span class="p">,</span>
+        <span class="n">status</span><span class="o">=</span><span class="n">WorkspaceStatus</span><span class="o">.</span><span class="n">COMPLETED</span><span class="p">,</span>
+        <span class="n">preprocessing_summary</span><span class="o">=</span><span class="n">preprocessing_summary</span><span class="p">,</span>
+        <span class="n">model_summary</span><span class="o">=</span><span class="n">model_summary</span><span class="p">,</span>
+        <span class="n">model_comparison</span><span class="o">=</span><span class="n">_extract_model_comparison</span><span class="p">(</span><span class="n">model_summary</span><span class="p">),</span>
+        <span class="n">best_model</span><span class="o">=</span><span class="n">model_summary</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"best_model"</span><span class="p">),</span>
+        <span class="n">output_file_urls</span><span class="o">=</span><span class="n">output_file_urls</span><span class="p">,</span>
+        <span class="n">model_files</span><span class="o">=</span><span class="n">model_files</span>
+    <span class="p">)</span></div>
+
+
+
+<span class="c1"># ——————————————————————————————————————————————————————————————</span>
+<span class="c1"># Endpoints — models / results</span>
+
+
+<div class="viewcode-block" id="get_models">
+<a class="viewcode-back" href="../../../../generated/api_reference.html#squirrel.api.routes.workspace.get_models">[docs]</a>
+<span class="nd">@router</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+    <span class="s2">"/</span><span class="si">{workspace_id}</span><span class="s2">/models"</span><span class="p">,</span>
+    <span class="n">summary</span><span class="o">=</span><span class="s2">"Get the latest model comparison + accuracy for a workspace"</span><span class="p">,</span>
+    <span class="n">response_model</span><span class="o">=</span><span class="n">ModelsResponse</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">get_models</span><span class="p">(</span>
+    <span class="n">workspace_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">current_user</span><span class="p">:</span> <span class="n">AuthUserRead</span> <span class="o">=</span> <span class="n">Depends</span><span class="p">(</span><span class="n">get_current_user</span><span class="p">),</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ModelsResponse</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Return the most recent model-building summary for a workspace, for the results panel."""</span>
+    <span class="n">workspace_svc</span> <span class="o">=</span> <span class="n">_workspace_service</span><span class="p">()</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">workspace</span> <span class="o">=</span> <span class="k">await</span> <span class="n">run_in_threadpool</span><span class="p">(</span><span class="n">workspace_svc</span><span class="o">.</span><span class="n">get_workspace</span><span class="p">,</span> <span class="n">workspace_id</span><span class="p">,</span> <span class="n">current_user</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
+    <span class="k">except</span> <span class="n">WorkspaceNotFoundError</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">_not_found</span><span class="p">(</span><span class="n">workspace_id</span><span class="p">)</span>
+
+    <span class="n">records</span> <span class="o">=</span> <span class="k">await</span> <span class="n">run_in_threadpool</span><span class="p">(</span>
+        <span class="n">workspace_svc</span><span class="o">.</span><span class="n">get_records_by_workspace_id</span><span class="p">,</span>
+        <span class="n">workspace_id</span><span class="p">,</span>
+        <span class="s2">"model_building"</span><span class="p">,</span>
+        <span class="mi">1</span><span class="p">,</span>
+        <span class="n">current_user</span><span class="o">.</span><span class="n">id</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">records</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">ModelsResponse</span><span class="p">(</span>
+            <span class="n">workspace_id</span><span class="o">=</span><span class="n">workspace_id</span><span class="p">,</span>
+            <span class="n">status</span><span class="o">=</span><span class="n">workspace</span><span class="p">[</span><span class="s2">"status"</span><span class="p">],</span>
+            <span class="n">target_column</span><span class="o">=</span><span class="n">workspace</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"target_column"</span><span class="p">),</span>
+        <span class="p">)</span>
+
+    <span class="n">latest</span> <span class="o">=</span> <span class="n">records</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">model_summary</span> <span class="o">=</span> <span class="n">latest</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"agent_summary"</span><span class="p">)</span> <span class="ow">or</span> <span class="p">{}</span>
+    <span class="n">model_output_urls</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">latest</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"output_file_urls"</span><span class="p">,</span> <span class="p">[])</span> <span class="ow">or</span> <span class="p">[])</span>
+    <span class="n">preprocessing_records</span> <span class="o">=</span> <span class="k">await</span> <span class="n">run_in_threadpool</span><span class="p">(</span>
+        <span class="n">workspace_svc</span><span class="o">.</span><span class="n">get_records_by_workspace_id</span><span class="p">,</span>
+        <span class="n">workspace_id</span><span class="p">,</span>
+        <span class="s2">"preprocessing"</span><span class="p">,</span>
+        <span class="mi">1</span><span class="p">,</span>
+        <span class="n">current_user</span><span class="o">.</span><span class="n">id</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">preprocessing_summary</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="p">(</span><span class="n">preprocessing_records</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"agent_summary"</span><span class="p">)</span> <span class="ow">or</span> <span class="p">{})</span>
+        <span class="k">if</span> <span class="n">preprocessing_records</span>
+        <span class="k">else</span> <span class="kc">None</span>
+    <span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">ModelsResponse</span><span class="p">(</span>
+        <span class="n">workspace_id</span><span class="o">=</span><span class="n">workspace_id</span><span class="p">,</span>
+        <span class="n">status</span><span class="o">=</span><span class="n">workspace</span><span class="p">[</span><span class="s2">"status"</span><span class="p">],</span>
+        <span class="n">target_column</span><span class="o">=</span><span class="n">workspace</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"target_column"</span><span class="p">),</span>
+        <span class="n">preprocessing_summary</span><span class="o">=</span><span class="n">preprocessing_summary</span><span class="p">,</span>
+        <span class="n">model_summary</span><span class="o">=</span><span class="n">model_summary</span><span class="p">,</span>
+        <span class="n">model_comparison</span><span class="o">=</span><span class="n">_extract_model_comparison</span><span class="p">(</span><span class="n">model_summary</span><span class="p">),</span>
+        <span class="n">best_model</span><span class="o">=</span><span class="n">model_summary</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"best_model"</span><span class="p">),</span>
+        <span class="n">output_file_urls</span><span class="o">=</span><span class="n">model_output_urls</span><span class="p">,</span>
+        <span class="n">model_files</span><span class="o">=</span><span class="p">[</span>
+            <span class="n">ModelFileOut</span><span class="p">(</span><span class="n">model_key</span><span class="o">=</span><span class="n">_model_key_from_url</span><span class="p">(</span><span class="n">url</span><span class="p">),</span> <span class="n">file_url</span><span class="o">=</span><span class="n">url</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">url</span> <span class="ow">in</span> <span class="n">model_output_urls</span>
+        <span class="p">]</span>
+    <span class="p">)</span></div>
+
+
+
+<span class="nd">@router</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+    <span class="s2">"/</span><span class="si">{workspace_id}</span><span class="s2">/preprocessed"</span><span class="p">,</span>
+    <span class="n">summary</span><span class="o">=</span><span class="s2">"Preview the latest data after the training preprocessing pipeline"</span><span class="p">,</span>
+    <span class="n">response_model</span><span class="o">=</span><span class="n">PreprocessedDataResponse</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">get_preprocessed_data</span><span class="p">(</span>
+    <span class="n">workspace_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">limit</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">100</span><span class="p">,</span>
+    <span class="n">current_user</span><span class="p">:</span> <span class="n">AuthUserRead</span> <span class="o">=</span> <span class="n">Depends</span><span class="p">(</span><span class="n">get_current_user</span><span class="p">),</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PreprocessedDataResponse</span><span class="p">:</span>
+    <span class="k">if</span> <span class="n">limit</span> <span class="o">&lt;</span> <span class="mi">1</span> <span class="ow">or</span> <span class="n">limit</span> <span class="o">&gt;</span> <span class="mi">500</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span><span class="n">status_code</span><span class="o">=</span><span class="n">status</span><span class="o">.</span><span class="n">HTTP_400_BAD_REQUEST</span><span class="p">,</span> <span class="n">detail</span><span class="o">=</span><span class="s2">"limit must be between 1 and 500."</span><span class="p">)</span>
+
+    <span class="n">workspace_svc</span> <span class="o">=</span> <span class="n">_workspace_service</span><span class="p">()</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">workspace</span> <span class="o">=</span> <span class="k">await</span> <span class="n">run_in_threadpool</span><span class="p">(</span><span class="n">workspace_svc</span><span class="o">.</span><span class="n">get_workspace</span><span class="p">,</span> <span class="n">workspace_id</span><span class="p">,</span> <span class="n">current_user</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
+    <span class="k">except</span> <span class="n">WorkspaceNotFoundError</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">_not_found</span><span class="p">(</span><span class="n">workspace_id</span><span class="p">)</span>
+
+    <span class="n">records</span> <span class="o">=</span> <span class="k">await</span> <span class="n">run_in_threadpool</span><span class="p">(</span>
+        <span class="n">workspace_svc</span><span class="o">.</span><span class="n">get_records_by_workspace_id</span><span class="p">,</span>
+        <span class="n">workspace_id</span><span class="p">,</span>
+        <span class="s2">"preprocessing"</span><span class="p">,</span>
+        <span class="mi">1</span><span class="p">,</span>
+        <span class="n">current_user</span><span class="o">.</span><span class="n">id</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">records</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span><span class="n">status_code</span><span class="o">=</span><span class="n">status</span><span class="o">.</span><span class="n">HTTP_404_NOT_FOUND</span><span class="p">,</span> <span class="n">detail</span><span class="o">=</span><span class="s2">"No preprocessing run found for this workspace."</span><span class="p">)</span>
+
+    <span class="n">urls</span> <span class="o">=</span> <span class="n">records</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"output_file_urls"</span><span class="p">)</span> <span class="ow">or</span> <span class="p">[]</span>
+    <span class="n">csv_url</span> <span class="o">=</span> <span class="nb">next</span><span class="p">((</span><span class="n">url</span> <span class="k">for</span> <span class="n">url</span> <span class="ow">in</span> <span class="n">urls</span> <span class="k">if</span> <span class="nb">str</span><span class="p">(</span><span class="n">url</span><span class="p">)</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s2">".csv"</span><span class="p">)),</span> <span class="kc">None</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">csv_url</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span><span class="n">status_code</span><span class="o">=</span><span class="n">status</span><span class="o">.</span><span class="n">HTTP_404_NOT_FOUND</span><span class="p">,</span> <span class="n">detail</span><span class="o">=</span><span class="s2">"No preprocessed data artifact found."</span><span class="p">)</span>
+
+    <span class="n">raw</span> <span class="o">=</span> <span class="k">await</span> <span class="n">run_in_threadpool</span><span class="p">(</span><span class="n">workspace_svc</span><span class="o">.</span><span class="n">download_output_file</span><span class="p">,</span> <span class="n">csv_url</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">raw</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span><span class="n">status_code</span><span class="o">=</span><span class="n">status</span><span class="o">.</span><span class="n">HTTP_502_BAD_GATEWAY</span><span class="p">,</span> <span class="n">detail</span><span class="o">=</span><span class="s2">"Could not retrieve preprocessed data."</span><span class="p">)</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="n">io</span><span class="o">.</span><span class="n">BytesIO</span><span class="p">(</span><span class="n">raw</span><span class="p">))</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">exception</span><span class="p">(</span><span class="s2">"Could not parse preprocessed artifact for workspace=</span><span class="si">{}</span><span class="s2">"</span><span class="p">,</span> <span class="n">workspace_id</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span><span class="n">status_code</span><span class="o">=</span><span class="n">status</span><span class="o">.</span><span class="n">HTTP_500_INTERNAL_SERVER_ERROR</span><span class="p">,</span> <span class="n">detail</span><span class="o">=</span><span class="s2">"Could not parse preprocessed data."</span><span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">exc</span>
+
+    <span class="n">preview_df</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">head</span><span class="p">(</span><span class="n">limit</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">object</span><span class="p">)</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">notnull</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">head</span><span class="p">(</span><span class="n">limit</span><span class="p">)),</span> <span class="kc">None</span><span class="p">)</span>
+    <span class="n">rows</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="p">{</span><span class="n">key</span><span class="p">:</span> <span class="p">(</span><span class="n">value</span><span class="o">.</span><span class="n">item</span><span class="p">()</span> <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="s2">"item"</span><span class="p">)</span> <span class="k">else</span> <span class="n">value</span><span class="p">)</span> <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">row</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
+        <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">preview_df</span><span class="o">.</span><span class="n">to_dict</span><span class="p">(</span><span class="n">orient</span><span class="o">=</span><span class="s2">"records"</span><span class="p">)</span>
+    <span class="p">]</span>
+    <span class="k">return</span> <span class="n">PreprocessedDataResponse</span><span class="p">(</span>
+        <span class="n">workspace_id</span><span class="o">=</span><span class="n">workspace_id</span><span class="p">,</span>
+        <span class="n">target_column</span><span class="o">=</span><span class="n">workspace</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"target_column"</span><span class="p">),</span>
+        <span class="n">columns</span><span class="o">=</span><span class="p">[</span><span class="nb">str</span><span class="p">(</span><span class="n">column</span><span class="p">)</span> <span class="k">for</span> <span class="n">column</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">columns</span><span class="p">],</span>
+        <span class="n">rows</span><span class="o">=</span><span class="n">rows</span><span class="p">,</span>
+        <span class="n">row_count</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">df</span><span class="p">)),</span>
+        <span class="n">file_url</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">csv_url</span><span class="p">),</span>
+    <span class="p">)</span>
+
+
+<span class="c1"># ——————————————————————————————————————————————————————————————</span>
+<span class="c1"># Endpoints — predict</span>
+
+
+<div class="viewcode-block" id="predict">
+<a class="viewcode-back" href="../../../../generated/api_reference.html#squirrel.api.routes.workspace.predict">[docs]</a>
+<span class="nd">@router</span><span class="o">.</span><span class="n">post</span><span class="p">(</span>
+    <span class="s2">"/</span><span class="si">{workspace_id}</span><span class="s2">/api/predict"</span><span class="p">,</span>
+    <span class="n">summary</span><span class="o">=</span><span class="s2">"External model API: predict on raw rows with a workspace model"</span><span class="p">,</span>
+    <span class="n">response_model</span><span class="o">=</span><span class="n">PredictResponse</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="nd">@router</span><span class="o">.</span><span class="n">post</span><span class="p">(</span>
+    <span class="s2">"/</span><span class="si">{workspace_id}</span><span class="s2">/predict"</span><span class="p">,</span>
+    <span class="n">summary</span><span class="o">=</span><span class="s2">"Predict on new rows using this workspace's saved fitted pipeline + model"</span><span class="p">,</span>
+    <span class="n">response_model</span><span class="o">=</span><span class="n">PredictResponse</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">predict</span><span class="p">(</span>
+    <span class="n">workspace_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">request</span><span class="p">:</span> <span class="n">PredictRequest</span> <span class="o">=</span> <span class="n">Body</span><span class="p">(</span><span class="o">...</span><span class="p">),</span>
+    <span class="n">current_user</span><span class="p">:</span> <span class="n">AuthUserRead</span> <span class="o">=</span> <span class="n">Depends</span><span class="p">(</span><span class="n">get_current_user</span><span class="p">),</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PredictResponse</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Replay the workspace's saved preprocessing pipeline (persisted during</span>
+<span class="sd">    the most recent ``/build/structured`` call — see</span>
+<span class="sd">    :meth:`WorkspaceService.save_pipeline_artifact`) against</span>
+<span class="sd">    ``request.rows``, reusing every strategy's training-time fitted</span>
+<span class="sd">    parameters instead of re-fitting scalers/encoders from the new rows,</span>
+<span class="sd">    then runs the requested (or workspace-recommended) fitted model.</span>
+
+<span class="sd">    ``request.rows`` should be shaped like the workspace's original raw</span>
+<span class="sd">    input — i.e. exactly what you'd upload as a CSV/connector source —</span>
+<span class="sd">    not already preprocessed.</span>
+
+<span class="sd">    :raises 404: workspace not found.</span>
+<span class="sd">    :raises 400: no rows provided.</span>
+<span class="sd">    :raises 409: no saved pipeline / fitted model yet (run ``/build``</span>
+<span class="sd">        first), or ``model_key`` doesn't match any fitted model.</span>
+<span class="sd">    """</span>
+    <span class="n">workspace_svc</span> <span class="o">=</span> <span class="n">_workspace_service</span><span class="p">()</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">await</span> <span class="n">run_in_threadpool</span><span class="p">(</span><span class="n">workspace_svc</span><span class="o">.</span><span class="n">get_workspace</span><span class="p">,</span> <span class="n">workspace_id</span><span class="p">,</span> <span class="n">current_user</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
+    <span class="k">except</span> <span class="n">WorkspaceNotFoundError</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">_not_found</span><span class="p">(</span><span class="n">workspace_id</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">request</span><span class="o">.</span><span class="n">rows</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span>
+            <span class="n">status_code</span><span class="o">=</span><span class="n">status</span><span class="o">.</span><span class="n">HTTP_400_BAD_REQUEST</span><span class="p">,</span>
+            <span class="n">detail</span><span class="o">=</span><span class="s2">"Provide at least one row to predict on."</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="n">new_data</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">request</span><span class="o">.</span><span class="n">rows</span><span class="p">)</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">run_in_threadpool</span><span class="p">(</span>
+            <span class="n">workspace_svc</span><span class="o">.</span><span class="n">predict</span><span class="p">,</span> <span class="n">workspace_id</span><span class="p">,</span> <span class="n">new_data</span><span class="p">,</span> <span class="n">request</span><span class="o">.</span><span class="n">model_key</span><span class="p">,</span> <span class="n">current_user</span><span class="o">.</span><span class="n">id</span>
+        <span class="p">)</span>
+    <span class="k">except</span> <span class="ne">RuntimeError</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+        <span class="c1"># No saved pipeline / model yet, or an unresolvable model_key — all</span>
+        <span class="c1"># "you haven't built (this model) yet" conditions, so 409 rather</span>
+        <span class="c1"># than 500.</span>
+        <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span><span class="n">status_code</span><span class="o">=</span><span class="n">status</span><span class="o">.</span><span class="n">HTTP_409_CONFLICT</span><span class="p">,</span> <span class="n">detail</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">exc</span><span class="p">))</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">exception</span><span class="p">(</span><span class="s2">"Prediction failed for workspace=</span><span class="si">{}</span><span class="s2">"</span><span class="p">,</span> <span class="n">workspace_id</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span>
+            <span class="n">status_code</span><span class="o">=</span><span class="n">status</span><span class="o">.</span><span class="n">HTTP_500_INTERNAL_SERVER_ERROR</span><span class="p">,</span>
+            <span class="n">detail</span><span class="o">=</span><span class="sa">f</span><span class="s2">"Prediction failed: </span><span class="si">{</span><span class="n">exc</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">PredictResponse</span><span class="p">(</span><span class="n">workspace_id</span><span class="o">=</span><span class="n">workspace_id</span><span class="p">,</span> <span class="o">**</span><span class="n">result</span><span class="p">)</span></div>
+
+
+
+<span class="c1"># ——————————————————————————————————————————————————————————————</span>
+<span class="c1"># Endpoints — download output artifacts (models, processed CSVs)</span>
+
+
+<div class="viewcode-block" id="download_output_file">
+<a class="viewcode-back" href="../../../../generated/api_reference.html#squirrel.api.routes.workspace.download_output_file">[docs]</a>
+<span class="nd">@router</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+    <span class="s2">"/</span><span class="si">{workspace_id}</span><span class="s2">/download"</span><span class="p">,</span>
+    <span class="n">summary</span><span class="o">=</span><span class="s2">"Download an output artifact (e.g. a fitted model) for a workspace"</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">download_output_file</span><span class="p">(</span>
+    <span class="n">workspace_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">file_url</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">current_user</span><span class="p">:</span> <span class="n">AuthUserRead</span> <span class="o">=</span> <span class="n">Depends</span><span class="p">(</span><span class="n">get_current_user</span><span class="p">),</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Response</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Stream a previously produced output artifact back to the caller.</span>
+
+<span class="sd">    ``file_url`` must be one of the ``output_file_urls`` recorded against</span>
+<span class="sd">    this workspace's runs (preprocessing or model-building) — this keeps</span>
+<span class="sd">    the endpoint from being used to fetch arbitrary S3 objects belonging to</span>
+<span class="sd">    other workspaces.</span>
+<span class="sd">    """</span>
+    <span class="n">workspace_svc</span> <span class="o">=</span> <span class="n">_workspace_service</span><span class="p">()</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">await</span> <span class="n">run_in_threadpool</span><span class="p">(</span><span class="n">workspace_svc</span><span class="o">.</span><span class="n">get_workspace</span><span class="p">,</span> <span class="n">workspace_id</span><span class="p">,</span> <span class="n">current_user</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
+    <span class="k">except</span> <span class="n">WorkspaceNotFoundError</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">_not_found</span><span class="p">(</span><span class="n">workspace_id</span><span class="p">)</span>
+
+    <span class="n">records</span> <span class="o">=</span> <span class="k">await</span> <span class="n">run_in_threadpool</span><span class="p">(</span>
+        <span class="n">workspace_svc</span><span class="o">.</span><span class="n">get_records_by_workspace_id</span><span class="p">,</span> <span class="n">workspace_id</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="mi">100</span><span class="p">,</span> <span class="n">current_user</span><span class="o">.</span><span class="n">id</span>
+    <span class="p">)</span>
+    <span class="n">allowed_urls</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="n">url</span> <span class="k">for</span> <span class="n">record</span> <span class="ow">in</span> <span class="n">records</span> <span class="k">for</span> <span class="n">url</span> <span class="ow">in</span> <span class="p">(</span><span class="n">record</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"output_file_urls"</span><span class="p">)</span> <span class="ow">or</span> <span class="p">[])</span>
+    <span class="p">}</span>
+    <span class="k">if</span> <span class="n">file_url</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">allowed_urls</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span>
+            <span class="n">status_code</span><span class="o">=</span><span class="n">status</span><span class="o">.</span><span class="n">HTTP_404_NOT_FOUND</span><span class="p">,</span>
+            <span class="n">detail</span><span class="o">=</span><span class="s2">"File not found for this workspace."</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="n">data</span> <span class="o">=</span> <span class="k">await</span> <span class="n">run_in_threadpool</span><span class="p">(</span><span class="n">workspace_svc</span><span class="o">.</span><span class="n">download_output_file</span><span class="p">,</span> <span class="n">file_url</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">data</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span>
+            <span class="n">status_code</span><span class="o">=</span><span class="n">status</span><span class="o">.</span><span class="n">HTTP_500_INTERNAL_SERVER_ERROR</span><span class="p">,</span>
+            <span class="n">detail</span><span class="o">=</span><span class="s2">"Failed to download file from storage."</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="n">filename</span> <span class="o">=</span> <span class="n">file_url</span><span class="o">.</span><span class="n">rsplit</span><span class="p">(</span><span class="s2">"/"</span><span class="p">,</span> <span class="mi">1</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">Response</span><span class="p">(</span>
+        <span class="n">content</span><span class="o">=</span><span class="n">data</span><span class="p">,</span>
+        <span class="n">media_type</span><span class="o">=</span><span class="s2">"application/octet-stream"</span><span class="p">,</span>
+        <span class="n">headers</span><span class="o">=</span><span class="p">{</span><span class="s2">"Content-Disposition"</span><span class="p">:</span> <span class="sa">f</span><span class="s1">'attachment; filename="</span><span class="si">{</span><span class="n">filename</span><span class="si">}</span><span class="s1">"'</span><span class="p">},</span>
+    <span class="p">)</span></div>
+
+
+
+<span class="nd">@router</span><span class="o">.</span><span class="n">post</span><span class="p">(</span>
+    <span class="s2">"/</span><span class="si">{workspace_id}</span><span class="s2">/sources/connector"</span><span class="p">,</span>
+    <span class="n">summary</span><span class="o">=</span><span class="s2">"Attach one or more tables (optionally column-restricted) from a connector to a workspace"</span><span class="p">,</span>
+    <span class="n">response_model</span><span class="o">=</span><span class="n">List</span><span class="p">[</span><span class="n">DataSource</span><span class="p">],</span>
+<span class="p">)</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">add_connector_sources</span><span class="p">(</span>
+    <span class="n">workspace_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">request</span><span class="p">:</span> <span class="n">ConnectorSourcesRequest</span> <span class="o">=</span> <span class="n">Body</span><span class="p">(</span><span class="o">...</span><span class="p">),</span>
+    <span class="n">current_user</span><span class="p">:</span> <span class="n">AuthUserRead</span> <span class="o">=</span> <span class="n">Depends</span><span class="p">(</span><span class="n">get_current_user</span><span class="p">),</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">DataSource</span><span class="p">]:</span>
+    <span class="n">workspace_svc</span> <span class="o">=</span> <span class="n">_workspace_service</span><span class="p">()</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">await</span> <span class="n">run_in_threadpool</span><span class="p">(</span><span class="n">workspace_svc</span><span class="o">.</span><span class="n">get_workspace</span><span class="p">,</span> <span class="n">workspace_id</span><span class="p">,</span> <span class="n">current_user</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
+    <span class="k">except</span> <span class="n">WorkspaceNotFoundError</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">_not_found</span><span class="p">(</span><span class="n">workspace_id</span><span class="p">)</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">await</span> <span class="n">run_in_threadpool</span><span class="p">(</span>
+            <span class="n">workspace_svc</span><span class="o">.</span><span class="n">add_connector_sources</span><span class="p">,</span>
+            <span class="n">workspace_id</span><span class="p">,</span>
+            <span class="n">request</span><span class="o">.</span><span class="n">connector_id</span><span class="p">,</span>
+            <span class="p">[</span><span class="n">t</span><span class="o">.</span><span class="n">model_dump</span><span class="p">()</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">request</span><span class="o">.</span><span class="n">tables</span><span class="p">],</span>
+            <span class="n">current_user</span><span class="o">.</span><span class="n">id</span><span class="p">,</span>
+        <span class="p">)</span>
+    <span class="k">except</span> <span class="n">ConnectorNotFoundError</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span><span class="n">status</span><span class="o">.</span><span class="n">HTTP_404_NOT_FOUND</span><span class="p">,</span> <span class="sa">f</span><span class="s2">"Connector '</span><span class="si">{</span><span class="n">request</span><span class="o">.</span><span class="n">connector_id</span><span class="si">}</span><span class="s2">' not found."</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">ValueError</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span><span class="n">status</span><span class="o">.</span><span class="n">HTTP_400_BAD_REQUEST</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">exc</span><span class="p">))</span>
+
+    <span class="n">refreshed</span> <span class="o">=</span> <span class="k">await</span> <span class="n">run_in_threadpool</span><span class="p">(</span><span class="n">workspace_svc</span><span class="o">.</span><span class="n">get_workspace</span><span class="p">,</span> <span class="n">workspace_id</span><span class="p">,</span> <span class="n">current_user</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
+    <span class="k">return</span> <span class="p">[</span><span class="n">DataSource</span><span class="p">(</span><span class="o">**</span><span class="n">s</span><span class="p">)</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="p">(</span><span class="n">refreshed</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"input_sources"</span><span class="p">)</span> <span class="ow">or</span> <span class="p">[])]</span>
+
+
+<span class="nd">@router</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+    <span class="s2">"/</span><span class="si">{workspace_id}</span><span class="s2">/sources/</span><span class="si">{source_id}</span><span class="s2">/preview"</span><span class="p">,</span>
+    <span class="n">summary</span><span class="o">=</span><span class="s2">"Re-preview an uploaded source's columns and sample rows"</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">preview_source</span><span class="p">(</span>
+    <span class="n">workspace_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">source_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">current_user</span><span class="p">:</span> <span class="n">AuthUserRead</span> <span class="o">=</span> <span class="n">Depends</span><span class="p">(</span><span class="n">get_current_user</span><span class="p">),</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+    <span class="n">workspace_svc</span> <span class="o">=</span> <span class="n">_workspace_service</span><span class="p">()</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">await</span> <span class="n">run_in_threadpool</span><span class="p">(</span><span class="n">workspace_svc</span><span class="o">.</span><span class="n">get_workspace</span><span class="p">,</span> <span class="n">workspace_id</span><span class="p">,</span> <span class="n">current_user</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
+    <span class="k">except</span> <span class="n">WorkspaceNotFoundError</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">_not_found</span><span class="p">(</span><span class="n">workspace_id</span><span class="p">)</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">return</span> <span class="k">await</span> <span class="n">run_in_threadpool</span><span class="p">(</span>
+            <span class="n">workspace_svc</span><span class="o">.</span><span class="n">preview_upload_source</span><span class="p">,</span> <span class="n">workspace_id</span><span class="p">,</span> <span class="n">source_id</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="n">current_user</span><span class="o">.</span><span class="n">id</span>
+        <span class="p">)</span>
+    <span class="k">except</span> <span class="n">SourceNotFoundError</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span>
+            <span class="n">status</span><span class="o">.</span><span class="n">HTTP_404_NOT_FOUND</span><span class="p">,</span> <span class="sa">f</span><span class="s2">"Source '</span><span class="si">{</span><span class="n">source_id</span><span class="si">}</span><span class="s2">' not found on this workspace."</span>
+        <span class="p">)</span>
+    <span class="k">except</span> <span class="ne">ValueError</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span><span class="n">status</span><span class="o">.</span><span class="n">HTTP_400_BAD_REQUEST</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">exc</span><span class="p">))</span>
+    <span class="k">except</span> <span class="ne">NotImplementedError</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span><span class="n">status</span><span class="o">.</span><span class="n">HTTP_501_NOT_IMPLEMENTED</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">exc</span><span class="p">))</span>
+
+
+<span class="nd">@router</span><span class="o">.</span><span class="n">patch</span><span class="p">(</span>
+    <span class="s2">"/</span><span class="si">{workspace_id}</span><span class="s2">/sources/</span><span class="si">{source_id}</span><span class="s2">/columns"</span><span class="p">,</span>
+    <span class="n">summary</span><span class="o">=</span><span class="s2">"Narrow (or reset) which columns of an attached source are used"</span><span class="p">,</span>
+    <span class="n">response_model</span><span class="o">=</span><span class="n">List</span><span class="p">[</span><span class="n">DataSource</span><span class="p">],</span>
+<span class="p">)</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">update_source_columns</span><span class="p">(</span>
+    <span class="n">workspace_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">source_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">request</span><span class="p">:</span> <span class="n">SourceColumnsRequest</span> <span class="o">=</span> <span class="n">Body</span><span class="p">(</span><span class="o">...</span><span class="p">),</span>
+    <span class="n">current_user</span><span class="p">:</span> <span class="n">AuthUserRead</span> <span class="o">=</span> <span class="n">Depends</span><span class="p">(</span><span class="n">get_current_user</span><span class="p">),</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">DataSource</span><span class="p">]:</span>
+    <span class="n">workspace_svc</span> <span class="o">=</span> <span class="n">_workspace_service</span><span class="p">()</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">await</span> <span class="n">run_in_threadpool</span><span class="p">(</span><span class="n">workspace_svc</span><span class="o">.</span><span class="n">get_workspace</span><span class="p">,</span> <span class="n">workspace_id</span><span class="p">,</span> <span class="n">current_user</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
+    <span class="k">except</span> <span class="n">WorkspaceNotFoundError</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">_not_found</span><span class="p">(</span><span class="n">workspace_id</span><span class="p">)</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">await</span> <span class="n">run_in_threadpool</span><span class="p">(</span>
+            <span class="n">workspace_svc</span><span class="o">.</span><span class="n">update_source_columns</span><span class="p">,</span> <span class="n">workspace_id</span><span class="p">,</span> <span class="n">source_id</span><span class="p">,</span> <span class="n">request</span><span class="o">.</span><span class="n">columns</span><span class="p">,</span> <span class="n">current_user</span><span class="o">.</span><span class="n">id</span>
+        <span class="p">)</span>
+    <span class="k">except</span> <span class="n">SourceNotFoundError</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span>
+            <span class="n">status</span><span class="o">.</span><span class="n">HTTP_404_NOT_FOUND</span><span class="p">,</span> <span class="sa">f</span><span class="s2">"Source '</span><span class="si">{</span><span class="n">source_id</span><span class="si">}</span><span class="s2">' not found on this workspace."</span>
+        <span class="p">)</span>
+    <span class="k">except</span> <span class="ne">ValueError</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span><span class="n">status</span><span class="o">.</span><span class="n">HTTP_400_BAD_REQUEST</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">exc</span><span class="p">))</span>
+
+    <span class="n">refreshed</span> <span class="o">=</span> <span class="k">await</span> <span class="n">run_in_threadpool</span><span class="p">(</span><span class="n">workspace_svc</span><span class="o">.</span><span class="n">get_workspace</span><span class="p">,</span> <span class="n">workspace_id</span><span class="p">,</span> <span class="n">current_user</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
+    <span class="k">return</span> <span class="p">[</span><span class="n">DataSource</span><span class="p">(</span><span class="o">**</span><span class="n">s</span><span class="p">)</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="p">(</span><span class="n">refreshed</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"input_sources"</span><span class="p">)</span> <span class="ow">or</span> <span class="p">[])]</span>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, Mazen Soliman.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+  
+  <span class="version">Squirrel version 0.1.0</span>
+
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

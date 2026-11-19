@@ -1,6 +1,7 @@
 import { useNavigate, useLocation } from "react-router-dom";
 import { ArrowLeft, Settings, Moon, Sun } from "lucide-react";
 import { useTheme } from "@/contexts/ThemeContext";
+import { NotificationPanel } from "./NotificationPanel";
 
 interface TopNavBarProps {
   isAuth?: boolean;
@@ -55,15 +56,18 @@ export const TopNavBar = ({ isAuth = false }: TopNavBarProps) => {
           )}
         </button>
 
-        {/* Settings - hidden during auth */}
+        {/* Notifications + Settings - only for signed-in users */}
         {isAuth && (
-          <button
-            onClick={handleSettingsClick}
-            className="flex h-10 w-10 items-center justify-center rounded-lg text-foreground/60 transition-colors hover:bg-foreground/5 hover:text-foreground"
-            aria-label="Settings"
-          >
-            <Settings className="h-5 w-5" />
-          </button>
+          <>
+            <NotificationPanel />
+            <button
+              onClick={handleSettingsClick}
+              className="flex h-10 w-10 items-center justify-center rounded-lg text-foreground/60 transition-colors hover:bg-foreground/5 hover:text-foreground"
+              aria-label="Settings"
+            >
+              <Settings className="h-5 w-5" />
+            </button>
+          </>
         )}
       </div>
     </nav>

@@ -5,17 +5,17 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>squirrel.modules.providers.abstract.IProvider &mdash; squirrel  documentation</title>
+  <title>squirrel.modules.providers.abstract.IProvider &mdash; SQRL Documentation</title>
       <link rel="stylesheet" type="text/css" href="../../../../../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../../../../../_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="../../../../../_static/copybutton.css?v=76b2166b" />
-      <link rel="stylesheet" type="text/css" href="../../../../../_static/css/custom.css?v=adc7883a" />
+      <link rel="stylesheet" type="text/css" href="../../../../../_static/css/custom.css?v=35931533" />
 
   
     <link rel="shortcut icon" href="../../../../../_static/sqrl.png"/>
       <script src="../../../../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../../../../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../../../../../_static/documentation_options.js?v=01f34227"></script>
       <script src="../../../../../_static/doctools.js?v=9bcbadda"></script>
       <script src="../../../../../_static/sphinx_highlight.js?v=dc90522c"></script>
       <script src="../../../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -33,8 +33,8 @@
 
           
           
-          <a href="../../../../../index.html" class="icon icon-home">
-            squirrel
+          <a href="../../../../../index.html">
+            
               <img src="../../../../../_static/sqrl.png" class="logo" alt="Logo"/>
           </a>
 <div role="search">
@@ -45,9 +45,29 @@
   </form>
 </div>
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
-              <p class="caption" role="heading"><span class="caption-text">Python API Reference:</span></p>
+              <p class="caption" role="heading"><span class="caption-text">Learn and build</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="../../../../../api.html">Python API Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../getting-started.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../workflow.html">Product workflow</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../architecture.html">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../deployment.html">Deployment and operations</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../api.html">Backend API Reference</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../generated/api_reference.html">HTTP API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../generated/schemas_reference.html">Data Schemas</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../generated/services_reference.html">Services</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../generated/agents_reference.html">Agents</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../generated/prompts_reference.html">Prompt Components</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../generated/providers_reference.html">Model Providers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../generated/inspectors_reference.html">Data Inspectors</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../generated/preprocessors_reference.html">Preprocessors</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../generated/core_reference.html">Core Infrastructure</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../generated/models_reference.html">Machine Learning Models</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../generated/constants_reference.html">Constants</a></li>
+</ul>
+</li>
 </ul>
 
         </div>
@@ -124,7 +144,7 @@
 <span class="c1"># ——————————————————————————————————————————————————————————————</span>
 <span class="c1"># Available Providers</span>
 <div class="viewcode-block" id="Provider">
-<a class="viewcode-back" href="../../../../../generated/squirrel_modules_providers_abstract_IProvider.html#squirrel.modules.providers.abstract.IProvider.Provider">[docs]</a>
+<a class="viewcode-back" href="../../../../../generated/providers_reference.html#squirrel.modules.providers.abstract.IProvider.Provider">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">Provider</span><span class="p">(</span><span class="n">Enum</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">"""</span>
 <span class="sd">    Provider Enum</span>
@@ -153,7 +173,7 @@
 <span class="c1"># ——————————————————————————————————————————————————————————————</span>
 <span class="c1"># Abstract Provider Class</span>
 <div class="viewcode-block" id="IProvider">
-<a class="viewcode-back" href="../../../../../generated/squirrel_modules_providers_abstract_IProvider.html#squirrel.modules.providers.abstract.IProvider.IProvider">[docs]</a>
+<a class="viewcode-back" href="../../../../../generated/providers_reference.html#squirrel.modules.providers.abstract.IProvider.IProvider">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">IProvider</span><span class="p">(</span><span class="n">ABC</span><span class="p">,</span> <span class="n">Loggable</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">"""</span>
 <span class="sd">    Abstract Provider Class</span>
@@ -471,7 +491,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">_last_request_tokens</span> <span class="o">=</span> <span class="n">value</span>
 
 <div class="viewcode-block" id="IProvider.get_total_usage">
-<a class="viewcode-back" href="../../../../../generated/squirrel_modules_providers_abstract_IProvider.html#squirrel.modules.providers.abstract.IProvider.IProvider.get_total_usage">[docs]</a>
+<a class="viewcode-back" href="../../../../../generated/providers_reference.html#squirrel.modules.providers.abstract.IProvider.IProvider.get_total_usage">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">get_total_usage</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">"""</span>
 <span class="sd">        Get the total usage statistics for all API calls made through this provider instance.</span>
@@ -520,7 +540,7 @@
 
         
 <div class="viewcode-block" id="IProvider.previous_usage">
-<a class="viewcode-back" href="../../../../../generated/squirrel_modules_providers_abstract_IProvider.html#squirrel.modules.providers.abstract.IProvider.IProvider.previous_usage">[docs]</a>
+<a class="viewcode-back" href="../../../../../generated/providers_reference.html#squirrel.modules.providers.abstract.IProvider.IProvider.previous_usage">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">previous_usage</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">"""</span>
 <span class="sd">        Get the usage statistics for the last API call made through this provider instance.</span>
@@ -546,7 +566,7 @@
 
     
 <div class="viewcode-block" id="IProvider.reset_usage">
-<a class="viewcode-back" href="../../../../../generated/squirrel_modules_providers_abstract_IProvider.html#squirrel.modules.providers.abstract.IProvider.IProvider.reset_usage">[docs]</a>
+<a class="viewcode-back" href="../../../../../generated/providers_reference.html#squirrel.modules.providers.abstract.IProvider.IProvider.reset_usage">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">reset_usage</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">"""</span>
 <span class="sd">        Reset all usage statistics.</span>
@@ -610,7 +630,7 @@
         <span class="k">pass</span>
 
 <div class="viewcode-block" id="IProvider.generate_response">
-<a class="viewcode-back" href="../../../../../generated/squirrel_modules_providers_abstract_IProvider.html#squirrel.modules.providers.abstract.IProvider.IProvider.generate_response">[docs]</a>
+<a class="viewcode-back" href="../../../../../generated/providers_reference.html#squirrel.modules.providers.abstract.IProvider.IProvider.generate_response">[docs]</a>
     <span class="nd">@abstractmethod</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">generate_response</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
@@ -634,7 +654,7 @@
 
 
 <div class="viewcode-block" id="IProvider.generate_structured_response">
-<a class="viewcode-back" href="../../../../../generated/squirrel_modules_providers_abstract_IProvider.html#squirrel.modules.providers.abstract.IProvider.IProvider.generate_structured_response">[docs]</a>
+<a class="viewcode-back" href="../../../../../generated/providers_reference.html#squirrel.modules.providers.abstract.IProvider.IProvider.generate_structured_response">[docs]</a>
     <span class="nd">@abstractmethod</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">generate_structured_response</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
@@ -658,7 +678,7 @@
 
 
 <div class="viewcode-block" id="IProvider.generate_json">
-<a class="viewcode-back" href="../../../../../generated/squirrel_modules_providers_abstract_IProvider.html#squirrel.modules.providers.abstract.IProvider.IProvider.generate_json">[docs]</a>
+<a class="viewcode-back" href="../../../../../generated/providers_reference.html#squirrel.modules.providers.abstract.IProvider.IProvider.generate_json">[docs]</a>
     <span class="nd">@abstractmethod</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">generate_json</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
@@ -682,7 +702,7 @@
 
 
 <div class="viewcode-block" id="IProvider.available_model_names">
-<a class="viewcode-back" href="../../../../../generated/squirrel_modules_providers_abstract_IProvider.html#squirrel.modules.providers.abstract.IProvider.IProvider.available_model_names">[docs]</a>
+<a class="viewcode-back" href="../../../../../generated/providers_reference.html#squirrel.modules.providers.abstract.IProvider.IProvider.available_model_names">[docs]</a>
     <span class="nd">@abstractmethod</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">available_model_names</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">"""</span>
@@ -714,7 +734,9 @@
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   
+  
+  <span class="version">Squirrel version 0.1.0</span>
+
 
 </footer>
         </div>

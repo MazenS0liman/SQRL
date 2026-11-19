@@ -52,6 +52,22 @@ class FileType(str, Enum):
     TXT = "txt"
     #: Zip archive, e.g. a bundle of files (.zip)
     ZIP = "zip"
+    #: Microsoft Word document (.doc/.docx)
+    DOCX = "docx"
+    #: JavaScript Object Notation (.json)
+    JSON = "json"
+    #: Markdown document (.md)
+    MD = "md"
+    #: HyperText Markup Language (.html/.htm)
+    HTML = "html"
+    #: Portable Network Graphics image (.png)
+    PNG = "png"
+    #: JPEG image (.jpg/.jpeg)
+    JPG = "jpg"
+    #: Graphics Interchange Format image (.gif)
+    GIF = "gif"
+    #: Extension the schema layer does not recognise
+    UNKNOWN = "unknown"
 
 
 # ——————————————————————————————————————————————————————————————

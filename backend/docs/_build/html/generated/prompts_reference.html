@@ -1,0 +1,648 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Prompt Components &mdash; SQRL Documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/custom.css?v=35931533" />
+
+  
+    <link rel="shortcut icon" href="../_static/sqrl.png"/>
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=01f34227"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="../_static/copybutton.js?v=a46eff05"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Model Providers" href="providers_reference.html" />
+    <link rel="prev" title="Agents" href="agents_reference.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html">
+            
+              <img src="../_static/sqrl.png" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Learn and build</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../getting-started.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../workflow.html">Product workflow</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../architecture.html">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../deployment.html">Deployment and operations</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Reference</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="../api.html">Backend API Reference</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="api_reference.html">HTTP API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="schemas_reference.html">Data Schemas</a></li>
+<li class="toctree-l2"><a class="reference internal" href="services_reference.html">Services</a></li>
+<li class="toctree-l2"><a class="reference internal" href="agents_reference.html">Agents</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Prompt Components</a></li>
+<li class="toctree-l2"><a class="reference internal" href="providers_reference.html">Model Providers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="inspectors_reference.html">Data Inspectors</a></li>
+<li class="toctree-l2"><a class="reference internal" href="preprocessors_reference.html">Preprocessors</a></li>
+<li class="toctree-l2"><a class="reference internal" href="core_reference.html">Core Infrastructure</a></li>
+<li class="toctree-l2"><a class="reference internal" href="models_reference.html">Machine Learning Models</a></li>
+<li class="toctree-l2"><a class="reference internal" href="constants_reference.html">Constants</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">squirrel</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../api.html">Backend API Reference</a></li>
+      <li class="breadcrumb-item active">Prompt Components</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/generated/prompts_reference.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="prompt-components">
+<h1>Prompt Components<a class="headerlink" href="#prompt-components" title="Link to this heading"></a></h1>
+<p>Reference documentation for SQRL prompt components.</p>
+<section id="abstract">
+<h2>Abstract<a class="headerlink" href="#abstract" title="Link to this heading"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="squirrel.modules.prompts.abstract.IPromptGenerator.IPromptGenerator">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">IPromptGenerator</span></span><a class="reference internal" href="../_modules/squirrel/modules/prompts/abstract/IPromptGenerator.html#IPromptGenerator"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.modules.prompts.abstract.IPromptGenerator.IPromptGenerator" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">ABC</span></code>, <a class="reference internal" href="core_reference.html#squirrel.core.logging.Loggable" title="squirrel.core.logging.Loggable"><code class="xref py py-class docutils literal notranslate"><span class="pre">Loggable</span></code></a></p>
+<p>Abstract base class for prompt generators in the SQRL system.</p>
+<p>This class defines the interface for generating system and user prompts that guide
+the behavior of language models used by various agents. Concrete implementations
+must provide methods to generate these prompts according to specific requirements.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Inherits<span class="colon">:</span></dt>
+<dd class="field-odd"><p>ABC, Loggable</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>NotImplementedError</strong> – If the abstract methods are not implemented in subclasses.</p>
+</dd>
+</dl>
+<p class="rubric">Example</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">class</span><span class="w"> </span><span class="nc">MyPromptGenerator</span><span class="p">(</span><span class="n">IPromptGenerator</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">generate_system_prompt</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">return</span> <span class="s2">"System prompt content"</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">generate_user_prompt</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">return</span> <span class="s2">"User prompt content"</span>
+</pre></div>
+</div>
+<dl class="py method">
+<dt class="sig sig-object py" id="squirrel.modules.prompts.abstract.IPromptGenerator.IPromptGenerator.generate_system_prompt">
+<em class="property"><span class="pre">abstract</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">generate_system_prompt</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">prompt_type</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/modules/prompts/abstract/IPromptGenerator.html#IPromptGenerator.generate_system_prompt"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.modules.prompts.abstract.IPromptGenerator.IPromptGenerator.generate_system_prompt" title="Link to this definition"></a></dt>
+<dd><p>Generate the system prompt that defines the overall behavior and guidelines for the language model.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>prompt_type</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code></span>)</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A string representing the system prompt.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="squirrel.modules.prompts.abstract.IPromptGenerator.IPromptGenerator.generate_user_prompt">
+<em class="property"><span class="pre">abstract</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">generate_user_prompt</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">prompt_type</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/modules/prompts/abstract/IPromptGenerator.html#IPromptGenerator.generate_user_prompt"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.modules.prompts.abstract.IPromptGenerator.IPromptGenerator.generate_user_prompt" title="Link to this definition"></a></dt>
+<dd><p>Generate the user prompt that provides specific instructions or context for individual tasks or interactions.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>prompt_type</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code></span>)</p></li>
+<li><p><strong>kwargs</strong> – Additional keyword arguments for customizing the user prompt.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A string representing the user prompt.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="builder">
+<h2>Builder<a class="headerlink" href="#builder" title="Link to this heading"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="squirrel.modules.prompts.builder.TabularDataPromptGenerator.ModelBuilderPromptType">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">ModelBuilderPromptType</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/modules/prompts/builder/TabularDataPromptGenerator.html#ModelBuilderPromptType"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.modules.prompts.builder.TabularDataPromptGenerator.ModelBuilderPromptType" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Enum</span></code></p>
+<p>Discriminator for the two prompt stages in the model builder pipeline.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="squirrel.modules.prompts.builder.TabularDataPromptGenerator.ModelBuilderPromptGenerator">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">ModelBuilderPromptGenerator</span></span><a class="reference internal" href="../_modules/squirrel/modules/prompts/builder/TabularDataPromptGenerator.html#ModelBuilderPromptGenerator"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.modules.prompts.builder.TabularDataPromptGenerator.ModelBuilderPromptGenerator" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#squirrel.modules.prompts.abstract.IPromptGenerator.IPromptGenerator" title="squirrel.modules.prompts.abstract.IPromptGenerator.IPromptGenerator"><code class="xref py py-class docutils literal notranslate"><span class="pre">IPromptGenerator</span></code></a></p>
+<p>Prompt generator for the tabular data model builder agent.</p>
+<p>Produces stage-specific system instructions and grounded user prompts
+for plan generation and single-step regeneration.</p>
+<dl class="field-list simple">
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="squirrel.modules.prompts.builder.TabularDataPromptGenerator.ModelBuilderPromptGenerator.generate_system_prompt">
+<span class="sig-name descname"><span class="pre">generate_system_prompt</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">prompt_type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/modules/prompts/builder/TabularDataPromptGenerator.html#ModelBuilderPromptGenerator.generate_system_prompt"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.modules.prompts.builder.TabularDataPromptGenerator.ModelBuilderPromptGenerator.generate_system_prompt" title="Link to this definition"></a></dt>
+<dd><p>Generate stage-specific system-level instructions.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>prompt_type</strong> (<a class="reference internal" href="#squirrel.modules.prompts.builder.TabularDataPromptGenerator.ModelBuilderPromptType" title="squirrel.modules.prompts.builder.TabularDataPromptGenerator.ModelBuilderPromptType"><em>ModelBuilderPromptType</em></a>) – Which pipeline stage to generate instructions for.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>System prompt string.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>ValueError</strong> – If <code class="docutils literal notranslate"><span class="pre">prompt_type</span></code> is not a recognised ModelBuilderPromptType.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="squirrel.modules.prompts.builder.TabularDataPromptGenerator.ModelBuilderPromptGenerator.generate_user_prompt">
+<span class="sig-name descname"><span class="pre">generate_user_prompt</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">prompt_type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/modules/prompts/builder/TabularDataPromptGenerator.html#ModelBuilderPromptGenerator.generate_user_prompt"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.modules.prompts.builder.TabularDataPromptGenerator.ModelBuilderPromptGenerator.generate_user_prompt" title="Link to this definition"></a></dt>
+<dd><p>Dispatch to the correct user prompt builder based on <code class="docutils literal notranslate"><span class="pre">prompt_type</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>prompt_type</strong> (<a class="reference internal" href="#squirrel.modules.prompts.builder.TabularDataPromptGenerator.ModelBuilderPromptType" title="squirrel.modules.prompts.builder.TabularDataPromptGenerator.ModelBuilderPromptType"><em>ModelBuilderPromptType</em></a>) – Which pipeline stage to build a user prompt for.</p></li>
+<li><p><strong>kwargs</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code></span>) – Stage-dependent context — see each builder’s docstring.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>User prompt string ready to send to the LLM.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>ValueError</strong> – If <code class="docutils literal notranslate"><span class="pre">prompt_type</span></code> is missing or unrecognised.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="exploratory">
+<h2>Exploratory<a class="headerlink" href="#exploratory" title="Link to this heading"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="squirrel.modules.prompts.exploratory.ExploratoryPromptGenerator.ExplorePromptType">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">ExplorePromptType</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/modules/prompts/exploratory/ExploratoryPromptGenerator.html#ExplorePromptType"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.modules.prompts.exploratory.ExploratoryPromptGenerator.ExplorePromptType" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Enum</span></code></p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="squirrel.modules.prompts.exploratory.ExploratoryPromptGenerator.ExploratoryPromptGenerator">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">ExploratoryPromptGenerator</span></span><a class="reference internal" href="../_modules/squirrel/modules/prompts/exploratory/ExploratoryPromptGenerator.html#ExploratoryPromptGenerator"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.modules.prompts.exploratory.ExploratoryPromptGenerator.ExploratoryPromptGenerator" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#squirrel.modules.prompts.abstract.IPromptGenerator.IPromptGenerator" title="squirrel.modules.prompts.abstract.IPromptGenerator.IPromptGenerator"><code class="xref py py-class docutils literal notranslate"><span class="pre">IPromptGenerator</span></code></a></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="squirrel.modules.prompts.exploratory.ExploratoryPromptGenerator.ExploratoryPromptGenerator.generate_system_prompt">
+<span class="sig-name descname"><span class="pre">generate_system_prompt</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">prompt_type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/modules/prompts/exploratory/ExploratoryPromptGenerator.html#ExploratoryPromptGenerator.generate_system_prompt"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.modules.prompts.exploratory.ExploratoryPromptGenerator.ExploratoryPromptGenerator.generate_system_prompt" title="Link to this definition"></a></dt>
+<dd><p>Generate stage-specific system-level instructions.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>prompt_type</strong> (<a class="reference internal" href="#squirrel.modules.prompts.exploratory.ExploratoryPromptGenerator.ExplorePromptType" title="squirrel.modules.prompts.exploratory.ExploratoryPromptGenerator.ExplorePromptType"><em>ExplorePromptType</em></a>) – type of prompt to generate.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>System prompt string.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="squirrel.modules.prompts.exploratory.ExploratoryPromptGenerator.ExploratoryPromptGenerator.generate_user_prompt">
+<span class="sig-name descname"><span class="pre">generate_user_prompt</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">prompt_type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/modules/prompts/exploratory/ExploratoryPromptGenerator.html#ExploratoryPromptGenerator.generate_user_prompt"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.modules.prompts.exploratory.ExploratoryPromptGenerator.ExploratoryPromptGenerator.generate_user_prompt" title="Link to this definition"></a></dt>
+<dd><p>Dispatch to the correct user prompt builder based on <code class="docutils literal notranslate"><span class="pre">prompt_type</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>kwargs</strong> – Must include <code class="docutils literal notranslate"><span class="pre">prompt_type</span></code> (InspectPromptType).
+Additional keys depend on the stage — see each builder’s docstring.</p></li>
+<li><p><strong>prompt_type</strong> (<a class="reference internal" href="#squirrel.modules.prompts.exploratory.ExploratoryPromptGenerator.ExplorePromptType" title="squirrel.modules.prompts.exploratory.ExploratoryPromptGenerator.ExplorePromptType"><em>ExplorePromptType</em></a><em> | </em><em>None</em>)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>User prompt string ready to send to the LLM.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>ValueError</strong> – If <code class="docutils literal notranslate"><span class="pre">prompt_type</span></code> is missing or unrecognised.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="inspect">
+<h2>Inspect<a class="headerlink" href="#inspect" title="Link to this heading"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="squirrel.modules.prompts.inspect.InspectPromptGenerator.InspectPromptType">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">InspectPromptType</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/modules/prompts/inspect/InspectPromptGenerator.html#InspectPromptType"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.modules.prompts.inspect.InspectPromptGenerator.InspectPromptType" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Enum</span></code></p>
+<p>Discriminator for the three prompt stages in the Inspect pipeline.</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">GENERATE_PLAN</span></code>: Given a dataset profile and inspection catalog,
+produce an ordered EDA execution plan (no data is read yet).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">GENERATE_SUMMARY</span></code>: Given a completed execution report, interpret
+results into findings, anomalies, and recommended next steps.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">EXTRACT_KEY_INSIGHTS</span></code>: Given findings and anomalies, surface the
+most actionable patterns and produce a narrative for stakeholders.</p></li>
+</ul>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="squirrel.modules.prompts.inspect.InspectPromptGenerator.InspectPromptGenerator">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">InspectPromptGenerator</span></span><a class="reference internal" href="../_modules/squirrel/modules/prompts/inspect/InspectPromptGenerator.html#InspectPromptGenerator"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.modules.prompts.inspect.InspectPromptGenerator.InspectPromptGenerator" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#squirrel.modules.prompts.abstract.IPromptGenerator.IPromptGenerator" title="squirrel.modules.prompts.abstract.IPromptGenerator.IPromptGenerator"><code class="xref py py-class docutils literal notranslate"><span class="pre">IPromptGenerator</span></code></a></p>
+<p>Prompt generator for data inspection agents.</p>
+<p>Each prompt type has a dedicated system prompt (role + constraints) and
+a dedicated user prompt (task-specific context injection). The two halves
+are kept separate so callers can pass the system prompt to the provider
+once at session start and regenerate only the user prompt per call.</p>
+<dl class="simple">
+<dt><strong>Methods:</strong></dt><dd><ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">generate_system_prompt(prompt_type)</span></code> — role + rules for this stage.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">generate_user_prompt(**kwargs)</span></code>       — context-injected task prompt.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="squirrel.modules.prompts.inspect.InspectPromptGenerator.InspectPromptGenerator.generate_system_prompt">
+<span class="sig-name descname"><span class="pre">generate_system_prompt</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">prompt_type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/modules/prompts/inspect/InspectPromptGenerator.html#InspectPromptGenerator.generate_system_prompt"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.modules.prompts.inspect.InspectPromptGenerator.InspectPromptGenerator.generate_system_prompt" title="Link to this definition"></a></dt>
+<dd><p>Generate stage-specific system-level instructions.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>prompt_type</strong> (<a class="reference internal" href="#squirrel.modules.prompts.inspect.InspectPromptGenerator.InspectPromptType" title="squirrel.modules.prompts.inspect.InspectPromptGenerator.InspectPromptType"><em>InspectPromptType</em></a>) – Which pipeline stage to generate instructions for.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>System prompt string.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="squirrel.modules.prompts.inspect.InspectPromptGenerator.InspectPromptGenerator.generate_user_prompt">
+<span class="sig-name descname"><span class="pre">generate_user_prompt</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">prompt_type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/modules/prompts/inspect/InspectPromptGenerator.html#InspectPromptGenerator.generate_user_prompt"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.modules.prompts.inspect.InspectPromptGenerator.InspectPromptGenerator.generate_user_prompt" title="Link to this definition"></a></dt>
+<dd><p>Dispatch to the correct user prompt builder based on <code class="docutils literal notranslate"><span class="pre">prompt_type</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>kwargs</strong> – Must include <code class="docutils literal notranslate"><span class="pre">prompt_type</span></code> (InspectPromptType).
+Additional keys depend on the stage — see each builder’s docstring.</p></li>
+<li><p><strong>prompt_type</strong> (<a class="reference internal" href="#squirrel.modules.prompts.inspect.InspectPromptGenerator.InspectPromptType" title="squirrel.modules.prompts.inspect.InspectPromptGenerator.InspectPromptType"><em>InspectPromptType</em></a><em> | </em><em>None</em>)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>User prompt string ready to send to the LLM.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>ValueError</strong> – If <code class="docutils literal notranslate"><span class="pre">prompt_type</span></code> is missing or unrecognised.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="orchestrator">
+<h2>Orchestrator<a class="headerlink" href="#orchestrator" title="Link to this heading"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="squirrel.modules.prompts.orchestrator.OrchestratorPromptGenerator.OrchestratorPromptType">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">OrchestratorPromptType</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/modules/prompts/orchestrator/OrchestratorPromptGenerator.html#OrchestratorPromptType"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.modules.prompts.orchestrator.OrchestratorPromptGenerator.OrchestratorPromptType" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Enum</span></code></p>
+<section id="orchestrator-prompt-type-enum">
+<h3>Orchestrator Prompt Type Enum<a class="headerlink" href="#orchestrator-prompt-type-enum" title="Link to this heading"></a></h3>
+<p><strong>Description:</strong></p>
+<blockquote>
+<div><p>Defines the types of prompts that <a class="reference internal" href="#squirrel.modules.prompts.orchestrator.OrchestratorPromptGenerator.OrchestratorPromptGenerator" title="squirrel.modules.prompts.orchestrator.OrchestratorPromptGenerator.OrchestratorPromptGenerator"><code class="xref py py-class docutils literal notranslate"><span class="pre">OrchestratorPromptGenerator</span></code></a>
+can create. Each type corresponds to a specific orchestration task.</p>
+</div></blockquote>
+<p><strong>Enum Values:</strong></p>
+<blockquote>
+<div><ul class="simple">
+<li><p><strong>CLASSIFY_ROUTE:</strong> Classify a chat request as <code class="docutils literal notranslate"><span class="pre">chat</span></code>, <code class="docutils literal notranslate"><span class="pre">explore</span></code>,
+or <code class="docutils literal notranslate"><span class="pre">build</span></code>.</p></li>
+</ul>
+</div></blockquote>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="squirrel.modules.prompts.orchestrator.OrchestratorPromptGenerator.OrchestratorPromptType.CLASSIFY_ROUTE">
+<span class="sig-name descname"><span class="pre">CLASSIFY_ROUTE</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'classify_route'</span></em><a class="headerlink" href="#squirrel.modules.prompts.orchestrator.OrchestratorPromptGenerator.OrchestratorPromptType.CLASSIFY_ROUTE" title="Link to this definition"></a></dt>
+<dd><p>Classify a chat request as ‘chat’, ‘explore’, or ‘build’.</p>
+</dd></dl>
+
+</section>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="squirrel.modules.prompts.orchestrator.OrchestratorPromptGenerator.OrchestratorPromptGenerator">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">OrchestratorPromptGenerator</span></span><a class="reference internal" href="../_modules/squirrel/modules/prompts/orchestrator/OrchestratorPromptGenerator.html#OrchestratorPromptGenerator"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.modules.prompts.orchestrator.OrchestratorPromptGenerator.OrchestratorPromptGenerator" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#squirrel.modules.prompts.abstract.IPromptGenerator.IPromptGenerator" title="squirrel.modules.prompts.abstract.IPromptGenerator.IPromptGenerator"><code class="xref py py-class docutils literal notranslate"><span class="pre">IPromptGenerator</span></code></a></p>
+<section id="orchestrator-prompt-generator-class">
+<h3>Orchestrator Prompt Generator Class<a class="headerlink" href="#orchestrator-prompt-generator-class" title="Link to this heading"></a></h3>
+<p><strong>Description:</strong></p>
+<blockquote>
+<div><p>Implements the <code class="xref py py-class docutils literal notranslate"><span class="pre">IPromptGenerator</span></code> interface and provides methods
+to generate system and user prompts for the orchestrator’s single LLM
+routing call.</p>
+</div></blockquote>
+<p><strong>Methods:</strong></p>
+<blockquote>
+<div><ul class="simple">
+<li><dl class="simple">
+<dt><a class="reference internal" href="#squirrel.modules.prompts.orchestrator.OrchestratorPromptGenerator.OrchestratorPromptGenerator.generate_system_prompt" title="squirrel.modules.prompts.orchestrator.OrchestratorPromptGenerator.OrchestratorPromptGenerator.generate_system_prompt"><code class="xref py py-meth docutils literal notranslate"><span class="pre">generate_system_prompt()</span></code></a></dt><dd><p>Create the system-level prompt that defines the classifier’s role,
+the two routes, and the response contract.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt><a class="reference internal" href="#squirrel.modules.prompts.orchestrator.OrchestratorPromptGenerator.OrchestratorPromptGenerator.generate_user_prompt" title="squirrel.modules.prompts.orchestrator.OrchestratorPromptGenerator.OrchestratorPromptGenerator.generate_user_prompt"><code class="xref py py-meth docutils literal notranslate"><span class="pre">generate_user_prompt()</span></code></a></dt><dd><p>Dispatch to the appropriate prompt builder based on <code class="docutils literal notranslate"><span class="pre">prompt_type</span></code>.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt><a class="reference internal" href="#squirrel.modules.prompts.orchestrator.OrchestratorPromptGenerator.OrchestratorPromptGenerator.classify_route_prompt" title="squirrel.modules.prompts.orchestrator.OrchestratorPromptGenerator.OrchestratorPromptGenerator.classify_route_prompt"><code class="xref py py-meth docutils literal notranslate"><span class="pre">classify_route_prompt()</span></code></a></dt><dd><p>Build the user-facing prompt containing the request to classify.</p>
+</dd>
+</dl>
+</li>
+</ul>
+</div></blockquote>
+<dl class="py method">
+<dt class="sig sig-object py" id="squirrel.modules.prompts.orchestrator.OrchestratorPromptGenerator.OrchestratorPromptGenerator.generate_system_prompt">
+<span class="sig-name descname"><span class="pre">generate_system_prompt</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">prompt_type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/modules/prompts/orchestrator/OrchestratorPromptGenerator.html#OrchestratorPromptGenerator.generate_system_prompt"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.modules.prompts.orchestrator.OrchestratorPromptGenerator.OrchestratorPromptGenerator.generate_system_prompt" title="Link to this definition"></a></dt>
+<dd><p>Generate a system-level prompt.</p>
+<p><strong>Description:</strong></p>
+<blockquote>
+<div><p>Creates the system prompt that defines the classifier’s role, the
+three available routes (<code class="docutils literal notranslate"><span class="pre">chat</span></code> / <code class="docutils literal notranslate"><span class="pre">explore</span></code> / <code class="docutils literal notranslate"><span class="pre">build</span></code>), and
+the rules for extracting a target column when the route is
+<code class="docutils literal notranslate"><span class="pre">build</span></code>.</p>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>prompt_type</strong> (<em>Optional</em><em>[</em><a class="reference internal" href="#squirrel.modules.prompts.orchestrator.OrchestratorPromptGenerator.OrchestratorPromptType" title="squirrel.modules.prompts.orchestrator.OrchestratorPromptGenerator.OrchestratorPromptType"><em>OrchestratorPromptType</em></a><em>]</em>) – The type of system prompt to generate. Currently
+only <a class="reference internal" href="#squirrel.modules.prompts.orchestrator.OrchestratorPromptGenerator.OrchestratorPromptType.CLASSIFY_ROUTE" title="squirrel.modules.prompts.orchestrator.OrchestratorPromptGenerator.OrchestratorPromptType.CLASSIFY_ROUTE"><code class="xref py py-attr docutils literal notranslate"><span class="pre">OrchestratorPromptType.CLASSIFY_ROUTE</span></code></a> is supported;
+other values fall back to the same prompt since the orchestrator
+has a single responsibility.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A system prompt string that describes the model’s role,
+the routing rules, and the response contract.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="squirrel.modules.prompts.orchestrator.OrchestratorPromptGenerator.OrchestratorPromptGenerator.generate_user_prompt">
+<span class="sig-name descname"><span class="pre">generate_user_prompt</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">prompt_type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/modules/prompts/orchestrator/OrchestratorPromptGenerator.html#OrchestratorPromptGenerator.generate_user_prompt"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.modules.prompts.orchestrator.OrchestratorPromptGenerator.OrchestratorPromptGenerator.generate_user_prompt" title="Link to this definition"></a></dt>
+<dd><p>Generates a user prompt based on the specified type.</p>
+<p><strong>Description:</strong></p>
+<blockquote>
+<div><p>Routes prompt generation to the appropriate specialised builder
+based on the <code class="docutils literal notranslate"><span class="pre">prompt_type</span></code> parameter.</p>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>prompt_type</strong> (<em>Optional</em><em>[</em><a class="reference internal" href="#squirrel.modules.prompts.orchestrator.OrchestratorPromptGenerator.OrchestratorPromptType" title="squirrel.modules.prompts.orchestrator.OrchestratorPromptGenerator.OrchestratorPromptType"><em>OrchestratorPromptType</em></a><em>]</em>) – The type of user prompt to generate.</p></li>
+<li><p><strong>kwargs</strong> (<em>dict</em>) – Additional parameters forwarded to the builder. Expected
+keys for <a class="reference internal" href="#squirrel.modules.prompts.orchestrator.OrchestratorPromptGenerator.OrchestratorPromptType.CLASSIFY_ROUTE" title="squirrel.modules.prompts.orchestrator.OrchestratorPromptGenerator.OrchestratorPromptType.CLASSIFY_ROUTE"><code class="xref py py-attr docutils literal notranslate"><span class="pre">OrchestratorPromptType.CLASSIFY_ROUTE</span></code></a>: <code class="docutils literal notranslate"><span class="pre">query</span></code>,
+<code class="docutils literal notranslate"><span class="pre">body</span></code>, <code class="docutils literal notranslate"><span class="pre">file_urls</span></code>, <code class="docutils literal notranslate"><span class="pre">metadata</span></code>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Generated user prompt string.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>ValueError</strong> – If an invalid or missing prompt type is specified.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="squirrel.modules.prompts.orchestrator.OrchestratorPromptGenerator.OrchestratorPromptGenerator.classify_route_prompt">
+<span class="sig-name descname"><span class="pre">classify_route_prompt</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">input</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/modules/prompts/orchestrator/OrchestratorPromptGenerator.html#OrchestratorPromptGenerator.classify_route_prompt"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.modules.prompts.orchestrator.OrchestratorPromptGenerator.OrchestratorPromptGenerator.classify_route_prompt" title="Link to this definition"></a></dt>
+<dd><p>Build the user-facing prompt for the <code class="docutils literal notranslate"><span class="pre">explore</span></code> vs <code class="docutils literal notranslate"><span class="pre">build</span></code> classification.</p>
+<p><strong>Description:</strong></p>
+<blockquote>
+<div><p>Renders the user’s query alongside attached files and any structured
+request body / metadata so the LLM has full context for the routing
+decision.</p>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>input</strong> (<em>Dict</em><em>[</em><em>str</em><em>, </em><em>Any</em><em>]</em>) – <p>Dictionary with the following expected keys:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">query</span></code> (str): The user’s natural-language instruction.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">body</span></code> (dict, optional): Structured request payload (may already
+contain <code class="docutils literal notranslate"><span class="pre">targetColumn</span></code> / <code class="docutils literal notranslate"><span class="pre">target_column</span></code>).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">file_urls</span></code> (list, optional): Attached <code class="docutils literal notranslate"><span class="pre">s3://</span></code> or HTTP URLs.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">metadata</span></code> (dict, optional): Ambient metadata from the chat layer.</p></li>
+</ul>
+</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Prompt to feed to the orchestrator’s classification call.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
+<p><strong>Example:</strong></p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">squirrel.modules.prompts.orchestrator</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">OrchestratorPromptGenerator</span><span class="p">,</span>
+    <span class="n">OrchestratorPromptType</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">generator</span> <span class="o">=</span> <span class="n">OrchestratorPromptGenerator</span><span class="p">()</span>
+
+<span class="n">user_prompt</span> <span class="o">=</span> <span class="n">generator</span><span class="o">.</span><span class="n">generate_user_prompt</span><span class="p">(</span>
+    <span class="n">prompt_type</span><span class="o">=</span><span class="n">OrchestratorPromptType</span><span class="o">.</span><span class="n">CLASSIFY_ROUTE</span><span class="p">,</span>
+    <span class="n">query</span><span class="o">=</span><span class="s2">"Predict whether a customer will churn next month."</span><span class="p">,</span>
+    <span class="n">body</span><span class="o">=</span><span class="p">{},</span>
+    <span class="n">file_urls</span><span class="o">=</span><span class="p">[</span><span class="s2">"s3://bucket/customers.csv"</span><span class="p">],</span>
+    <span class="n">metadata</span><span class="o">=</span><span class="p">{},</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+</section>
+</dd></dl>
+
+</section>
+<section id="preprocess">
+<h2>Preprocess<a class="headerlink" href="#preprocess" title="Link to this heading"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="squirrel.modules.prompts.preprocess.PreprocessPromptGenerator.PreprocessPromptType">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">PreprocessPromptType</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/modules/prompts/preprocess/PreprocessPromptGenerator.html#PreprocessPromptType"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.modules.prompts.preprocess.PreprocessPromptGenerator.PreprocessPromptType" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Enum</span></code></p>
+<p>Discriminator for the two prompt stages in the preprocessing pipeline.</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">GENERATE_PLAN</span></code>: Given a dataset profile, an EDA summary, and the full
+cleaning + transformation catalogs, produce an ordered preprocessing plan.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">GENERATE_STEP</span></code>: Given a single invalid step and the relevant strategy
+spec, regenerate that step with corrected arguments or strategy name.</p></li>
+</ul>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="squirrel.modules.prompts.preprocess.PreprocessPromptGenerator.PreprocessPromptGenerator">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">PreprocessPromptGenerator</span></span><a class="reference internal" href="../_modules/squirrel/modules/prompts/preprocess/PreprocessPromptGenerator.html#PreprocessPromptGenerator"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.modules.prompts.preprocess.PreprocessPromptGenerator.PreprocessPromptGenerator" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#squirrel.modules.prompts.abstract.IPromptGenerator.IPromptGenerator" title="squirrel.modules.prompts.abstract.IPromptGenerator.IPromptGenerator"><code class="xref py py-class docutils literal notranslate"><span class="pre">IPromptGenerator</span></code></a></p>
+<p>Prompt generator for the tabular data preprocessing (clean + transform) agent.</p>
+<p>Description:</p>
+<p>Each prompt type has a dedicated system prompt (role + constraints) and a
+dedicated user prompt (task-specific context injection). The two halves are
+kept separate so callers can pass the system prompt to the provider once at
+session start and regenerate only the user prompt per call.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">generate_system_prompt</span></code> and <code class="docutils literal notranslate"><span class="pre">generate_user_prompt</span></code> methods provide
+the stage-specific rules and context-injected task respectively.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="squirrel.modules.prompts.preprocess.PreprocessPromptGenerator.PreprocessPromptGenerator.generate_system_prompt">
+<span class="sig-name descname"><span class="pre">generate_system_prompt</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">prompt_type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/modules/prompts/preprocess/PreprocessPromptGenerator.html#PreprocessPromptGenerator.generate_system_prompt"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.modules.prompts.preprocess.PreprocessPromptGenerator.PreprocessPromptGenerator.generate_system_prompt" title="Link to this definition"></a></dt>
+<dd><p>Generate stage-specific system-level instructions.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>prompt_type</strong> (<a class="reference internal" href="#squirrel.modules.prompts.exploratory.ExploratoryPromptGenerator.ExplorePromptType" title="squirrel.modules.prompts.exploratory.ExploratoryPromptGenerator.ExplorePromptType"><em>ExplorePromptType</em></a>) – Which pipeline stage to generate instructions for.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>System prompt string.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>ValueError</strong> – If <code class="docutils literal notranslate"><span class="pre">prompt_type</span></code> is not a recognised ExplorePromptType.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="squirrel.modules.prompts.preprocess.PreprocessPromptGenerator.PreprocessPromptGenerator.generate_user_prompt">
+<span class="sig-name descname"><span class="pre">generate_user_prompt</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">prompt_type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/squirrel/modules/prompts/preprocess/PreprocessPromptGenerator.html#PreprocessPromptGenerator.generate_user_prompt"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#squirrel.modules.prompts.preprocess.PreprocessPromptGenerator.PreprocessPromptGenerator.generate_user_prompt" title="Link to this definition"></a></dt>
+<dd><p>Dispatch to the correct user prompt builder based on <code class="docutils literal notranslate"><span class="pre">prompt_type</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>prompt_type</strong> (<a class="reference internal" href="#squirrel.modules.prompts.exploratory.ExploratoryPromptGenerator.ExplorePromptType" title="squirrel.modules.prompts.exploratory.ExploratoryPromptGenerator.ExplorePromptType"><em>ExplorePromptType</em></a>) – Which pipeline stage to build a user prompt for.</p></li>
+<li><p><strong>kwargs</strong> – Stage-dependent context — see each builder’s docstring.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>User prompt string ready to send to the LLM.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>ValueError</strong> – If <code class="docutils literal notranslate"><span class="pre">prompt_type</span></code> is missing or unrecognised.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="agents_reference.html" class="btn btn-neutral float-left" title="Agents" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="providers_reference.html" class="btn btn-neutral float-right" title="Model Providers" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, Mazen Soliman.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+  
+  <span class="version">Squirrel version 0.1.0</span>
+
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

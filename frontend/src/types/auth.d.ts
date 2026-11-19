@@ -14,6 +14,8 @@ interface AuthContextValue {
   isAuthenticated: boolean;
   login: (input: { username: string; password: string }) => Promise<UserProfile>;
   signup: (input: { username: string; password: string; name: string; email: string }) => Promise<UserProfile>;
+  updateProfile: (input: { name?: string; email?: string }) => Promise<UserProfile>;
+  changePassword: (input: { currentPassword: string; newPassword: string }) => Promise<void>;
   logout: () => Promise<void>;
 }
 

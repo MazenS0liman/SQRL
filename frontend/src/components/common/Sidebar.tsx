@@ -6,16 +6,18 @@ import {
   Library,
   Cpu,
   Database,
+  Workflow,
   NotebookText,
   Files,
   CircleUserRound,
   LogOut,
+  Gauge,
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 
 interface SidebarProps {
-  activeTab: 'home' | 'workspace' | 'notebooks' | 'files' | 'models' | 'data connectors';
-  onTabChange: (tab: 'home' | 'workspace' | 'notebooks' | 'files' | 'models' | 'data connectors') => void;
+  activeTab: 'home' | 'workspace' | 'notebooks' | 'files' | 'models' | 'data connectors' | 'pipelines' | 'usage';
+  onTabChange: (tab: 'home' | 'workspace' | 'notebooks' | 'files' | 'models' | 'data connectors' | 'pipelines' | 'usage') => void;
 }
 
 // Nav item height (h-10) + the gap `space-y-1` inserts between siblings —
@@ -39,6 +41,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, onTabChange }) => {
     { id: 'notebooks' as const, icon: NotebookText, label: 'Notebooks' },
     { id: 'files' as const, icon: Files, label: 'Files' },
     { id: 'models' as const, icon: Cpu, label: 'Models' },
+    { id: 'pipelines' as const, icon: Workflow, label: 'Pipelines' },
+    { id: 'usage' as const, icon: Gauge, label: 'Usage' },
     { id: 'data connectors' as const, icon: Database, label: 'Data Connectors' },
   ];
 

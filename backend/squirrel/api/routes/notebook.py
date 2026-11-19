@@ -85,6 +85,10 @@ from squirrel.schemas.error import (
     DataSourceNotFoundError
 )
 
+# Notifications
+from squirrel.constants.jobs import NotificationType
+from squirrel.services.notifications.NotificationService import NotificationService
+
 # Logging
 from loguru import logger
 
@@ -95,6 +99,27 @@ router = APIRouter()
 
 def _svc() -> NotebookService:
     return NotebookService()
+
+
+def _notify_task(
+    user_id: str,
+    *,
+    notification_type: str,
+    title: str,
+    body: str,
+    link: str,
+) -> None:
+    """Emit a task notification without letting it mask the real response."""
+    try:
+        NotificationService().emit(
+            user_id,
+            title,
+            notification_type=notification_type,
+            body=body,
+            link=link,
+        )
+    except Exception:  # noqa: BLE001 - notifications are best-effort
+        logger.exception("Failed to emit notebook notification for {}", link)
 
 
 def _not_found(notebook_id: str) -> HTTPException:
@@ -428,8 +453,38 @@ async def run_cell(
     current_user: AuthUserRead = Depends(get_current_user),
 ) -> NotebookCell:
     svc = _svc()
+
+    async def notebook_label() -> str:
+        try:
+            notebook = await run_in_threadpool(
+                svc.get_notebook, notebook_id, current_user.id
+            )
+            if isinstance(notebook, dict):
+                return notebook.get("name") or "Notebook"
+            return getattr(notebook, "name", None) or "Notebook"
+        except Exception:  # noqa: BLE001 - the label is cosmetic
+            return "Notebook"
+
+    def notify(label: str, succeeded: bool, error: Optional[str] = None) -> None:
+        if succeeded:
+            _notify_task(
+                current_user.id,
+                notification_type=NotificationType.NOTEBOOK_RUN,
+                title=f"{label} run finished",
+                body=f"The {body.type} cell completed successfully.",
+                link=f"/notebooks/{notebook_id}",
+            )
+        else:
+            _notify_task(
+                current_user.id,
+                notification_type=NotificationType.JOB_FAILED,
+                title=f"{label} run failed",
+                body=(error or "The cell did not finish.")[:500],
+                link=f"/notebooks/{notebook_id}",
+            )
+
     try:
-        return await run_in_threadpool(
+        cell = await run_in_threadpool(
             svc.run_cell,
             notebook_id=notebook_id,
             cell_type=body.type,
@@ -445,7 +500,11 @@ async def run_cell(
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))
     except Exception as exc:
         logger.exception("Cell run failed notebook={}", notebook_id)
+        await run_in_threadpool(notify, await notebook_label(), False, str(exc))
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(exc))
+
+    await run_in_threadpool(notify, await notebook_label(), True)
+    return cell
 
 
 @router.put(

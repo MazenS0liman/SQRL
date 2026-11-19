@@ -276,7 +276,7 @@ class BiLSTMPredictor(TimeSeriesPredictor):
         :return: None
         :rtype: None
         """
-        self.model.fit(
+        self.history = self.model.fit(
             X_train, y_train,
             epochs=epochs,
             batch_size=batch_size,
@@ -596,7 +596,7 @@ class LSTMAttentionPredictor(TimeSeriesPredictor):
         batch_size: int = 32,
         verbose: int = 1
     ) -> None:
-        self.model.fit(
+        self.history = self.model.fit(
             X_train,
             y_train,
             epochs=epochs,

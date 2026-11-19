@@ -5,17 +5,17 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>squirrel.modules.agents.preprocessor.TabularDataProcessorAgent &mdash; squirrel  documentation</title>
+  <title>squirrel.modules.agents.preprocessor.TabularDataProcessorAgent &mdash; SQRL Documentation</title>
       <link rel="stylesheet" type="text/css" href="../../../../../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../../../../../_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="../../../../../_static/copybutton.css?v=76b2166b" />
-      <link rel="stylesheet" type="text/css" href="../../../../../_static/css/custom.css?v=adc7883a" />
+      <link rel="stylesheet" type="text/css" href="../../../../../_static/css/custom.css?v=35931533" />
 
   
     <link rel="shortcut icon" href="../../../../../_static/sqrl.png"/>
       <script src="../../../../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../../../../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../../../../../_static/documentation_options.js?v=01f34227"></script>
       <script src="../../../../../_static/doctools.js?v=9bcbadda"></script>
       <script src="../../../../../_static/sphinx_highlight.js?v=dc90522c"></script>
       <script src="../../../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -33,8 +33,8 @@
 
           
           
-          <a href="../../../../../index.html" class="icon icon-home">
-            squirrel
+          <a href="../../../../../index.html">
+            
               <img src="../../../../../_static/sqrl.png" class="logo" alt="Logo"/>
           </a>
 <div role="search">
@@ -45,9 +45,29 @@
   </form>
 </div>
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
-              <p class="caption" role="heading"><span class="caption-text">Python API Reference:</span></p>
+              <p class="caption" role="heading"><span class="caption-text">Learn and build</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="../../../../../api.html">Python API Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../getting-started.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../workflow.html">Product workflow</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../architecture.html">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../deployment.html">Deployment and operations</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../api.html">Backend API Reference</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../generated/api_reference.html">HTTP API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../generated/schemas_reference.html">Data Schemas</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../generated/services_reference.html">Services</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../generated/agents_reference.html">Agents</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../generated/prompts_reference.html">Prompt Components</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../generated/providers_reference.html">Model Providers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../generated/inspectors_reference.html">Data Inspectors</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../generated/preprocessors_reference.html">Preprocessors</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../generated/core_reference.html">Core Infrastructure</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../generated/models_reference.html">Machine Learning Models</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../generated/constants_reference.html">Constants</a></li>
+</ul>
+</li>
 </ul>
 
         </div>
@@ -198,6 +218,7 @@
 
 <span class="c1"># Logging</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">loguru</span><span class="w"> </span><span class="kn">import</span> <span class="n">logger</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">squirrel.core.logging</span><span class="w"> </span><span class="kn">import</span> <span class="n">log_stage</span>
 
 
 <span class="c1"># ——————————————————————————————————————————————————————————————</span>
@@ -243,7 +264,7 @@
 <span class="c1"># Agent</span>
 
 <div class="viewcode-block" id="TabularDataProcessorAgent">
-<a class="viewcode-back" href="../../../../../generated/squirrel_modules_agents_preprocessor_TabularDataProcessorAgent.html#squirrel.modules.agents.preprocessor.TabularDataProcessorAgent.TabularDataProcessorAgent">[docs]</a>
+<a class="viewcode-back" href="../../../../../generated/agents_reference.html#squirrel.modules.agents.preprocessor.TabularDataProcessorAgent.TabularDataProcessorAgent">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">TabularDataProcessorAgent</span><span class="p">(</span><span class="n">IAgent</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">"""</span>
 <span class="sd">    Agent for cleaning and transforming tabular datasets.</span>
@@ -333,7 +354,7 @@
     <span class="c1"># source, several identical-schema sources, or an LLM-inferred join.</span>
 
 <div class="viewcode-block" id="TabularDataProcessorAgent.detect_column_conflicts">
-<a class="viewcode-back" href="../../../../../generated/squirrel_modules_agents_preprocessor_TabularDataProcessorAgent.html#squirrel.modules.agents.preprocessor.TabularDataProcessorAgent.TabularDataProcessorAgent.detect_column_conflicts">[docs]</a>
+<a class="viewcode-back" href="../../../../../generated/agents_reference.html#squirrel.modules.agents.preprocessor.TabularDataProcessorAgent.TabularDataProcessorAgent.detect_column_conflicts">[docs]</a>
     <span class="nd">@staticmethod</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">detect_column_conflicts</span><span class="p">(</span>
         <span class="n">dataframes</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">],</span>
@@ -367,7 +388,7 @@
 
 
 <div class="viewcode-block" id="TabularDataProcessorAgent.merge_sources">
-<a class="viewcode-back" href="../../../../../generated/squirrel_modules_agents_preprocessor_TabularDataProcessorAgent.html#squirrel.modules.agents.preprocessor.TabularDataProcessorAgent.TabularDataProcessorAgent.merge_sources">[docs]</a>
+<a class="viewcode-back" href="../../../../../generated/agents_reference.html#squirrel.modules.agents.preprocessor.TabularDataProcessorAgent.TabularDataProcessorAgent.merge_sources">[docs]</a>
     <span class="nd">@classmethod</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">merge_sources</span><span class="p">(</span>
         <span class="bp">cls</span><span class="p">,</span>
@@ -442,7 +463,7 @@
             <span class="n">strategy</span> <span class="o">=</span> <span class="n">merge_recommendation</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"strategy"</span><span class="p">)</span>
             <span class="n">rationale</span> <span class="o">=</span> <span class="n">merge_recommendation</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"rationale"</span><span class="p">,</span> <span class="s2">""</span><span class="p">)</span>
             <span class="k">if</span> <span class="n">strategy</span> <span class="o">==</span> <span class="s2">"union"</span><span class="p">:</span>
-                <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">"Merging via Inspector recommendation: union. </span><span class="si">%s</span><span class="s2">"</span><span class="p">,</span> <span class="n">rationale</span><span class="p">)</span>
+                <span class="n">log_stage</span><span class="p">(</span><span class="s2">"PREPROCESS"</span><span class="p">,</span> <span class="s2">"Merging via Inspector recommendation: union. </span><span class="si">{}</span><span class="s2">"</span><span class="p">,</span> <span class="n">rationale</span><span class="p">)</span>
                 <span class="k">return</span> <span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">dataframes</span><span class="o">.</span><span class="n">values</span><span class="p">()),</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">ignore_index</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
             <span class="k">if</span> <span class="n">strategy</span> <span class="o">==</span> <span class="s2">"join"</span><span class="p">:</span>
                 <span class="k">try</span><span class="p">:</span>
@@ -471,7 +492,7 @@
 
 
 <div class="viewcode-block" id="TabularDataProcessorAgent.run_multi">
-<a class="viewcode-back" href="../../../../../generated/squirrel_modules_agents_preprocessor_TabularDataProcessorAgent.html#squirrel.modules.agents.preprocessor.TabularDataProcessorAgent.TabularDataProcessorAgent.run_multi">[docs]</a>
+<a class="viewcode-back" href="../../../../../generated/agents_reference.html#squirrel.modules.agents.preprocessor.TabularDataProcessorAgent.TabularDataProcessorAgent.run_multi">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">run_multi</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">dataframes</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">],</span>
@@ -577,6 +598,7 @@
                 <span class="s2">"system_prompt"</span><span class="p">:</span> <span class="n">system_prompt</span><span class="p">,</span>
                 <span class="s2">"user_prompt"</span><span class="p">:</span> <span class="n">user_prompt</span><span class="p">,</span>
                 <span class="s2">"schema"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_merge_plan_schema</span><span class="p">(),</span>
+                <span class="s2">"max_tokens"</span><span class="p">:</span> <span class="mi">2048</span><span class="p">,</span>
             <span class="p">},</span>
             <span class="n">strict</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
             <span class="n">provider_order</span><span class="o">=</span><span class="p">[</span><span class="n">Provider</span><span class="o">.</span><span class="n">GROQ</span><span class="p">,</span> <span class="n">Provider</span><span class="o">.</span><span class="n">GEMINI</span><span class="p">],</span>
@@ -659,7 +681,8 @@
                 <span class="n">suffixes</span><span class="o">=</span><span class="p">(</span><span class="s2">""</span><span class="p">,</span> <span class="sa">f</span><span class="s2">"_</span><span class="si">{</span><span class="n">source_id</span><span class="si">}</span><span class="s2">"</span><span class="p">),</span>
             <span class="p">)</span>
 
-        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+        <span class="n">log_stage</span><span class="p">(</span>
+            <span class="s2">"PREPROCESS"</span><span class="p">,</span>
             <span class="s2">"Merged </span><span class="si">%d</span><span class="s2"> sources via LLM-inferred join on </span><span class="si">%s</span><span class="s2"> (how=</span><span class="si">%s</span><span class="s2">): </span><span class="si">%s</span><span class="s2">"</span><span class="p">,</span>
             <span class="nb">len</span><span class="p">(</span><span class="n">dataframes</span><span class="p">),</span> <span class="n">join_keys</span><span class="p">,</span> <span class="n">join_type</span><span class="p">,</span> <span class="n">plan</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"rationale"</span><span class="p">,</span> <span class="s2">""</span><span class="p">),</span>
         <span class="p">)</span>
@@ -685,7 +708,7 @@
     <span class="c1"># ── Public API ────────────────────────────────────────────────────────────</span>
 
 <div class="viewcode-block" id="TabularDataProcessorAgent.run">
-<a class="viewcode-back" href="../../../../../generated/squirrel_modules_agents_preprocessor_TabularDataProcessorAgent.html#squirrel.modules.agents.preprocessor.TabularDataProcessorAgent.TabularDataProcessorAgent.run">[docs]</a>
+<a class="viewcode-back" href="../../../../../generated/agents_reference.html#squirrel.modules.agents.preprocessor.TabularDataProcessorAgent.TabularDataProcessorAgent.run">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">data</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span>
@@ -710,6 +733,13 @@
 <span class="sd">            able to replay this exact preprocessing against new data later</span>
 <span class="sd">            via :meth:`apply_fitted_pipeline`.</span>
 <span class="sd">        """</span>
+        <span class="n">log_stage</span><span class="p">(</span>
+            <span class="s2">"PREPROCESS"</span><span class="p">,</span>
+            <span class="s2">"Preprocessing started: rows=</span><span class="si">{}</span><span class="s2">, columns=</span><span class="si">{}</span><span class="s2">, target=</span><span class="si">{!r}</span><span class="s2">"</span><span class="p">,</span>
+            <span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">),</span>
+            <span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">columns</span><span class="p">),</span>
+            <span class="n">target_column</span><span class="p">,</span>
+        <span class="p">)</span>
         <span class="n">plan</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">plan</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">eda_summary</span><span class="o">=</span><span class="n">eda_summary</span> <span class="ow">or</span> <span class="p">{},</span> <span class="n">objective</span><span class="o">=</span><span class="n">objective</span><span class="p">,</span> <span class="n">target_column</span><span class="o">=</span><span class="n">target_column</span><span class="p">)</span>
         <span class="n">processed_df</span><span class="p">,</span> <span class="n">execution</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">plan</span><span class="p">,</span> <span class="n">target_column</span><span class="o">=</span><span class="n">target_column</span><span class="p">)</span>
         <span class="n">summary_dict</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_parse_summary</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">summarize</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">processed_df</span><span class="p">,</span> <span class="n">execution</span><span class="p">))</span>
@@ -719,7 +749,7 @@
         <span class="k">while</span> <span class="n">attempt</span> <span class="o">&lt;</span> <span class="n">max_refinements</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_needs_refinement</span><span class="p">(</span><span class="n">best_summary</span><span class="p">):</span>
             <span class="n">attempt</span> <span class="o">+=</span> <span class="mi">1</span>
             <span class="n">feedback</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_refinement_feedback</span><span class="p">(</span><span class="n">best_summary</span><span class="p">)</span>
-            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">"Preprocessing refinement attempt </span><span class="si">%s</span><span class="s2">: </span><span class="si">%s</span><span class="s2">"</span><span class="p">,</span> <span class="n">attempt</span><span class="p">,</span> <span class="n">feedback</span><span class="p">)</span>
+            <span class="n">log_stage</span><span class="p">(</span><span class="s2">"PREPROCESS"</span><span class="p">,</span> <span class="s2">"Refinement attempt </span><span class="si">{}</span><span class="s2">: </span><span class="si">{}</span><span class="s2">"</span><span class="p">,</span> <span class="n">attempt</span><span class="p">,</span> <span class="n">feedback</span><span class="p">)</span>
 
             <span class="n">plan</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">plan</span><span class="p">(</span>
                 <span class="n">data</span><span class="p">,</span> <span class="n">eda_summary</span><span class="o">=</span><span class="n">eda_summary</span> <span class="ow">or</span> <span class="p">{},</span>
@@ -747,7 +777,7 @@
 
 
 <div class="viewcode-block" id="TabularDataProcessorAgent.plan">
-<a class="viewcode-back" href="../../../../../generated/squirrel_modules_agents_preprocessor_TabularDataProcessorAgent.html#squirrel.modules.agents.preprocessor.TabularDataProcessorAgent.TabularDataProcessorAgent.plan">[docs]</a>
+<a class="viewcode-back" href="../../../../../generated/agents_reference.html#squirrel.modules.agents.preprocessor.TabularDataProcessorAgent.TabularDataProcessorAgent.plan">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">plan</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">data</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span>
@@ -767,6 +797,12 @@
 <span class="sd">            columns (e.g. a feature highly correlated with the target itself).</span>
 <span class="sd">        :return: JSON plan string.</span>
 <span class="sd">        """</span>
+        <span class="n">log_stage</span><span class="p">(</span>
+            <span class="s2">"PREPROCESS"</span><span class="p">,</span>
+            <span class="s2">"Generating preprocessing plan for </span><span class="si">{}</span><span class="s2"> rows and </span><span class="si">{}</span><span class="s2"> columns"</span><span class="p">,</span>
+            <span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">),</span>
+            <span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">columns</span><span class="p">),</span>
+        <span class="p">)</span>
         <span class="n">dataset_profile</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_dataset_profile</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
 
         <span class="n">system_prompt</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">prompt_generator</span><span class="o">.</span><span class="n">generate_system_prompt</span><span class="p">(</span>
@@ -790,6 +826,7 @@
                 <span class="s2">"system_prompt"</span><span class="p">:</span> <span class="n">system_prompt</span><span class="p">,</span>
                 <span class="s2">"user_prompt"</span><span class="p">:</span> <span class="n">user_prompt</span><span class="p">,</span>
                 <span class="s2">"schema"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_plan_schema</span><span class="p">(),</span>
+                <span class="s2">"max_tokens"</span><span class="p">:</span> <span class="mi">2048</span><span class="p">,</span>
             <span class="p">},</span>
             <span class="n">strict</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
             <span class="n">provider_order</span><span class="o">=</span><span class="p">[</span><span class="n">Provider</span><span class="o">.</span><span class="n">GEMINI</span><span class="p">,</span> <span class="n">Provider</span><span class="o">.</span><span class="n">GROQ</span><span class="p">],</span>
@@ -815,7 +852,7 @@
 
 
 <div class="viewcode-block" id="TabularDataProcessorAgent.execute">
-<a class="viewcode-back" href="../../../../../generated/squirrel_modules_agents_preprocessor_TabularDataProcessorAgent.html#squirrel.modules.agents.preprocessor.TabularDataProcessorAgent.TabularDataProcessorAgent.execute">[docs]</a>
+<a class="viewcode-back" href="../../../../../generated/agents_reference.html#squirrel.modules.agents.preprocessor.TabularDataProcessorAgent.TabularDataProcessorAgent.execute">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">execute</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">data</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span>
@@ -857,6 +894,7 @@
 <span class="sd">            plan says.</span>
 <span class="sd">        :return: ``(processed_df, json_execution_report_string)``</span>
 <span class="sd">        """</span>
+        <span class="n">log_stage</span><span class="p">(</span><span class="s2">"PREPROCESS"</span><span class="p">,</span> <span class="s2">"Executing preprocessing plan"</span><span class="p">)</span>
         <span class="n">plan_obj</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_parse_plan</span><span class="p">(</span><span class="n">plan</span><span class="p">)</span>
         <span class="k">if</span> <span class="s2">"error"</span> <span class="ow">in</span> <span class="n">plan_obj</span><span class="p">:</span>
             <span class="k">return</span> <span class="n">data</span><span class="p">,</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span>
@@ -900,7 +938,7 @@
 
 
 <div class="viewcode-block" id="TabularDataProcessorAgent.apply_fitted_pipeline">
-<a class="viewcode-back" href="../../../../../generated/squirrel_modules_agents_preprocessor_TabularDataProcessorAgent.html#squirrel.modules.agents.preprocessor.TabularDataProcessorAgent.TabularDataProcessorAgent.apply_fitted_pipeline">[docs]</a>
+<a class="viewcode-back" href="../../../../../generated/agents_reference.html#squirrel.modules.agents.preprocessor.TabularDataProcessorAgent.TabularDataProcessorAgent.apply_fitted_pipeline">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">apply_fitted_pipeline</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">new_data</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span>
@@ -981,7 +1019,7 @@
 
 
 <div class="viewcode-block" id="TabularDataProcessorAgent.summarize">
-<a class="viewcode-back" href="../../../../../generated/squirrel_modules_agents_preprocessor_TabularDataProcessorAgent.html#squirrel.modules.agents.preprocessor.TabularDataProcessorAgent.TabularDataProcessorAgent.summarize">[docs]</a>
+<a class="viewcode-back" href="../../../../../generated/agents_reference.html#squirrel.modules.agents.preprocessor.TabularDataProcessorAgent.TabularDataProcessorAgent.summarize">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">summarize</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">original_df</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span>
@@ -997,6 +1035,7 @@
 <span class="sd">        :param execution_report: JSON execution report from ``execute()``.</span>
 <span class="sd">        :return: JSON summary string.</span>
 <span class="sd">        """</span>
+        <span class="n">log_stage</span><span class="p">(</span><span class="s2">"PREPROCESS"</span><span class="p">,</span> <span class="s2">"Summarizing preprocessing results"</span><span class="p">)</span>
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">execution_report</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
             <span class="k">try</span><span class="p">:</span>
                 <span class="n">report_obj</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">execution_report</span><span class="p">)</span>
@@ -1035,6 +1074,7 @@
                 <span class="s2">"system_prompt"</span><span class="p">:</span> <span class="n">system_prompt</span><span class="p">,</span>
                 <span class="s2">"user_prompt"</span><span class="p">:</span> <span class="n">user_prompt</span><span class="p">,</span>
                 <span class="s2">"schema"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_summary_schema</span><span class="p">(),</span>
+                <span class="s2">"max_tokens"</span><span class="p">:</span> <span class="mi">2048</span><span class="p">,</span>
             <span class="p">},</span>
             <span class="n">strict</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
             <span class="n">provider_order</span><span class="o">=</span><span class="p">[</span><span class="n">Provider</span><span class="o">.</span><span class="n">GROQ</span><span class="p">,</span> <span class="n">Provider</span><span class="o">.</span><span class="n">GEMINI</span><span class="p">],</span>
@@ -1245,6 +1285,7 @@
                 <span class="s2">"system_prompt"</span><span class="p">:</span> <span class="n">system_prompt</span><span class="p">,</span>
                 <span class="s2">"user_prompt"</span><span class="p">:</span> <span class="n">user_prompt</span><span class="p">,</span>
                 <span class="s2">"schema"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_step_schema</span><span class="p">(),</span>
+                <span class="s2">"max_tokens"</span><span class="p">:</span> <span class="mi">2048</span><span class="p">,</span>
             <span class="p">},</span>
             <span class="n">strict</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
             <span class="n">provider_order</span><span class="o">=</span><span class="p">[</span><span class="n">Provider</span><span class="o">.</span><span class="n">GROQ</span><span class="p">,</span> <span class="n">Provider</span><span class="o">.</span><span class="n">GEMINI</span><span class="p">],</span>
@@ -1524,6 +1565,10 @@
 <span class="w">        </span><span class="sd">"""</span>
 <span class="sd">        Lightweight dataset descriptor sent to the planner and summarizer.</span>
 <span class="sd">        """</span>
+        <span class="n">sample</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">head</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">notna</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">head</span><span class="p">(</span><span class="mi">5</span><span class="p">)),</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="n">sample_rows</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span>
+            <span class="n">sample</span><span class="o">.</span><span class="n">to_dict</span><span class="p">(</span><span class="n">orient</span><span class="o">=</span><span class="s2">"records"</span><span class="p">),</span> <span class="n">default</span><span class="o">=</span><span class="nb">str</span>
+        <span class="p">))</span>
         <span class="k">return</span> <span class="p">{</span>
             <span class="s2">"rows"</span><span class="p">:</span>           <span class="nb">int</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span>
             <span class="s2">"columns"</span><span class="p">:</span>        <span class="nb">int</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]),</span>
@@ -1534,6 +1579,7 @@
                 <span class="k">for</span> <span class="n">col</span><span class="p">,</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">data</span><span class="o">.</span><span class="n">isna</span><span class="p">()</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
                 <span class="k">if</span> <span class="n">n</span> <span class="o">&gt;</span> <span class="mi">0</span>
             <span class="p">},</span>
+            <span class="s2">"sample_rows"</span><span class="p">:</span> <span class="n">sample_rows</span><span class="p">,</span>
         <span class="p">}</span>
 
     <span class="c1"># ── Serialization helpers ─────────────────────────────────────────────────</span>
@@ -1756,7 +1802,7 @@
 
 
 <div class="viewcode-block" id="_AgentMergeRejected">
-<a class="viewcode-back" href="../../../../../generated/squirrel_modules_agents_preprocessor_TabularDataProcessorAgent.html#squirrel.modules.agents.preprocessor.TabularDataProcessorAgent._AgentMergeRejected">[docs]</a>
+<a class="viewcode-back" href="../../../../../generated/agents_reference.html#squirrel.modules.agents.preprocessor.TabularDataProcessorAgent._AgentMergeRejected">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">_AgentMergeRejected</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">"""</span>
 <span class="sd">    Internal signal used within :meth:`TabularDataProcessorAgent.merge_sources`</span>
@@ -1782,7 +1828,9 @@
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   
+  
+  <span class="version">Squirrel version 0.1.0</span>
+
 
 </footer>
         </div>

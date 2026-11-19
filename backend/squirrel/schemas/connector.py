@@ -68,6 +68,10 @@ class ConnectorPreviewRequest(BaseModel):
     query: str = Field(..., min_length=1)
     limit: int = Field(default=20, ge=1, le=200)
 
+class ConnectorQueryRequest(BaseModel):
+    query: str = Field(..., min_length=1)
+    limit: int = Field(default=100, ge=1, le=10_000)
+
 class ConnectorSourcesRequest(BaseModel):
     connector_id: str
     tables: List[TableSelection]
@@ -79,6 +83,11 @@ class ConnectorPreviewResponse(BaseModel):
     columns: List[str]
     row_count: int
     preview: List[Dict[str, Any]]
+
+class ConnectorQueryResponse(BaseModel):
+    columns: List[str]
+    rows: List[Dict[str, Any]]
+    row_count: int
 
 class ConnectorTablesPreviewResponse(BaseModel):
     tables: List[TablePreview]

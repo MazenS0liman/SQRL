@@ -1738,7 +1738,7 @@ class BinaryEncodeTransformStrategy(DataTransformStrategy):
             else:
                 # ── TRAINING: fit category codes from this data ──
                 categories = result[col].astype("category").cat
-                codes = categories.codes  # -1 for NaN
+                codes = np.asarray(categories.codes)  # -1 for NaN
                 n_categories = len(categories.categories)
                 n_bits = max(int(np.ceil(np.log2(n_categories + 1))), 1)
                 category_map = {cat: i for i, cat in enumerate(categories.categories)}

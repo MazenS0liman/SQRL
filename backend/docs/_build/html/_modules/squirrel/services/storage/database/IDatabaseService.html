@@ -5,17 +5,17 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>squirrel.services.storage.database.IDatabaseService &mdash; squirrel  documentation</title>
+  <title>squirrel.services.storage.database.IDatabaseService &mdash; SQRL Documentation</title>
       <link rel="stylesheet" type="text/css" href="../../../../../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../../../../../_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="../../../../../_static/copybutton.css?v=76b2166b" />
-      <link rel="stylesheet" type="text/css" href="../../../../../_static/css/custom.css?v=adc7883a" />
+      <link rel="stylesheet" type="text/css" href="../../../../../_static/css/custom.css?v=35931533" />
 
   
     <link rel="shortcut icon" href="../../../../../_static/sqrl.png"/>
       <script src="../../../../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../../../../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../../../../../_static/documentation_options.js?v=01f34227"></script>
       <script src="../../../../../_static/doctools.js?v=9bcbadda"></script>
       <script src="../../../../../_static/sphinx_highlight.js?v=dc90522c"></script>
       <script src="../../../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -33,8 +33,8 @@
 
           
           
-          <a href="../../../../../index.html" class="icon icon-home">
-            squirrel
+          <a href="../../../../../index.html">
+            
               <img src="../../../../../_static/sqrl.png" class="logo" alt="Logo"/>
           </a>
 <div role="search">
@@ -45,9 +45,29 @@
   </form>
 </div>
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
-              <p class="caption" role="heading"><span class="caption-text">Python API Reference:</span></p>
+              <p class="caption" role="heading"><span class="caption-text">Learn and build</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="../../../../../api.html">Python API Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../getting-started.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../workflow.html">Product workflow</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../architecture.html">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../deployment.html">Deployment and operations</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../api.html">Backend API Reference</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../generated/api_reference.html">HTTP API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../generated/schemas_reference.html">Data Schemas</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../generated/services_reference.html">Services</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../generated/agents_reference.html">Agents</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../generated/prompts_reference.html">Prompt Components</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../generated/providers_reference.html">Model Providers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../generated/inspectors_reference.html">Data Inspectors</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../generated/preprocessors_reference.html">Preprocessors</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../generated/core_reference.html">Core Infrastructure</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../generated/models_reference.html">Machine Learning Models</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../generated/constants_reference.html">Constants</a></li>
+</ul>
+</li>
 </ul>
 
         </div>
@@ -88,7 +108,7 @@
 <span class="c1"># ——————————————————————————————————————————————————————————————</span>
 <span class="c1"># Database Service Interface</span>
 <div class="viewcode-block" id="IDatabaseService">
-<a class="viewcode-back" href="../../../../../generated/squirrel_services_storage_database_IDatabaseService.html#squirrel.services.storage.database.IDatabaseService.IDatabaseService">[docs]</a>
+<a class="viewcode-back" href="../../../../../generated/services_reference.html#squirrel.services.storage.database.IDatabaseService.IDatabaseService">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">IDatabaseService</span><span class="p">(</span><span class="n">ABC</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">"""</span>
 <span class="sd">    Abstract base class for database service implementations.</span>
@@ -110,7 +130,7 @@
     <span class="c1"># Lifecycle</span>
 
 <div class="viewcode-block" id="IDatabaseService.connect">
-<a class="viewcode-back" href="../../../../../generated/squirrel_services_storage_database_IDatabaseService.html#squirrel.services.storage.database.IDatabaseService.IDatabaseService.connect">[docs]</a>
+<a class="viewcode-back" href="../../../../../generated/services_reference.html#squirrel.services.storage.database.IDatabaseService.IDatabaseService.connect">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">connect</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">"""Establish a connection to the database.</span>
 
@@ -123,7 +143,7 @@
 
 
 <div class="viewcode-block" id="IDatabaseService.disconnect">
-<a class="viewcode-back" href="../../../../../generated/squirrel_services_storage_database_IDatabaseService.html#squirrel.services.storage.database.IDatabaseService.IDatabaseService.disconnect">[docs]</a>
+<a class="viewcode-back" href="../../../../../generated/services_reference.html#squirrel.services.storage.database.IDatabaseService.IDatabaseService.disconnect">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">disconnect</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">"""Close the database connection.</span>
 
@@ -149,7 +169,7 @@
     <span class="c1"># Core CRUD</span>
 
 <div class="viewcode-block" id="IDatabaseService.query">
-<a class="viewcode-back" href="../../../../../generated/squirrel_services_storage_database_IDatabaseService.html#squirrel.services.storage.database.IDatabaseService.IDatabaseService.query">[docs]</a>
+<a class="viewcode-back" href="../../../../../generated/services_reference.html#squirrel.services.storage.database.IDatabaseService.IDatabaseService.query">[docs]</a>
     <span class="nd">@abstractmethod</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">query</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">query</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">dict</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">"""Execute a read query and return all matching rows.</span>
@@ -163,7 +183,7 @@
 
 
 <div class="viewcode-block" id="IDatabaseService.insert">
-<a class="viewcode-back" href="../../../../../generated/squirrel_services_storage_database_IDatabaseService.html#squirrel.services.storage.database.IDatabaseService.IDatabaseService.insert">[docs]</a>
+<a class="viewcode-back" href="../../../../../generated/services_reference.html#squirrel.services.storage.database.IDatabaseService.IDatabaseService.insert">[docs]</a>
     <span class="nd">@abstractmethod</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">insert</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">"""Insert one row into the database.</span>
@@ -177,7 +197,7 @@
 
 
 <div class="viewcode-block" id="IDatabaseService.update">
-<a class="viewcode-back" href="../../../../../generated/squirrel_services_storage_database_IDatabaseService.html#squirrel.services.storage.database.IDatabaseService.IDatabaseService.update">[docs]</a>
+<a class="viewcode-back" href="../../../../../generated/services_reference.html#squirrel.services.storage.database.IDatabaseService.IDatabaseService.update">[docs]</a>
     <span class="nd">@abstractmethod</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">update</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">query</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">"""Update rows identified by *query* with the values in *data*.</span>
@@ -193,7 +213,7 @@
 
 
 <div class="viewcode-block" id="IDatabaseService.delete">
-<a class="viewcode-back" href="../../../../../generated/squirrel_services_storage_database_IDatabaseService.html#squirrel.services.storage.database.IDatabaseService.IDatabaseService.delete">[docs]</a>
+<a class="viewcode-back" href="../../../../../generated/services_reference.html#squirrel.services.storage.database.IDatabaseService.IDatabaseService.delete">[docs]</a>
     <span class="nd">@abstractmethod</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">delete</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">query</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">"""Delete rows matching *query*.</span>
@@ -207,7 +227,7 @@
 
 
 <div class="viewcode-block" id="IDatabaseService.retrieve">
-<a class="viewcode-back" href="../../../../../generated/squirrel_services_storage_database_IDatabaseService.html#squirrel.services.storage.database.IDatabaseService.IDatabaseService.retrieve">[docs]</a>
+<a class="viewcode-back" href="../../../../../generated/services_reference.html#squirrel.services.storage.database.IDatabaseService.IDatabaseService.retrieve">[docs]</a>
     <span class="nd">@abstractmethod</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">retrieve</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">table</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">filters</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">dict</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">dict</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">"""Fetch rows from *table*, optionally filtered by *filters*.</span>
@@ -223,7 +243,7 @@
 
 
 <div class="viewcode-block" id="IDatabaseService.execute_many">
-<a class="viewcode-back" href="../../../../../generated/squirrel_services_storage_database_IDatabaseService.html#squirrel.services.storage.database.IDatabaseService.IDatabaseService.execute_many">[docs]</a>
+<a class="viewcode-back" href="../../../../../generated/services_reference.html#squirrel.services.storage.database.IDatabaseService.IDatabaseService.execute_many">[docs]</a>
     <span class="nd">@abstractmethod</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">execute_many</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">statement</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">params_seq</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">"""Execute *statement* once for each parameter mapping in *params_seq*.</span>
@@ -255,7 +275,9 @@
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   
+  
+  <span class="version">Squirrel version 0.1.0</span>
+
 
 </footer>
         </div>

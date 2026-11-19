@@ -15,7 +15,21 @@ This module configures and registers all API routes for the SQRL FastAPI applica
 from fastapi import APIRouter
 
 # Route Modules
-from squirrel.api.routes import health, files, chat, workspace, connector, notebook, auth, logs, token
+from squirrel.api.routes import (
+    health,
+    files,
+    chat,
+    workspace,
+    connector,
+    notebook,
+    auth,
+    logs,
+    token,
+    jobs,
+    notifications,
+    pipelines,
+    usage,
+)
 
 api_router = APIRouter()
 
@@ -45,3 +59,17 @@ api_router.include_router(files.router, prefix="/file", tags=["file"])
 
 # Add token route
 api_router.include_router(token.router, prefix="/token", tags=["token"])
+
+# Add background-job route
+api_router.include_router(jobs.router, prefix="/jobs", tags=["jobs"])
+
+# Add notification route
+api_router.include_router(
+    notifications.router, prefix="/notifications", tags=["notifications"]
+)
+
+# Add ETL pipeline route
+api_router.include_router(pipelines.router, prefix="/pipelines", tags=["pipelines"])
+
+# Add LLM usage monitoring route
+api_router.include_router(usage.router, prefix="/usage", tags=["usage"])

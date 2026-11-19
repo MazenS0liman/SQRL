@@ -27,6 +27,9 @@ import NotebooksPage from '@/pages/notebooks/NotebooksPage';
 import NotebookDetailPage from '@/pages/notebooks/NotebookDetailPage';
 import FilesPage from '@/pages/files/FilesPage';
 import UserProfilePage from '@/pages/user/UserProfilePage';
+import PipelinesPage from '@/pages/pipelines/PipelinesPage';
+import PipelineDetailPage from '@/pages/pipelines/PipelineDetailPage';
+import UsagePage from '@/pages/usage/UsagePage';
 
 const queryClient = new QueryClient();
 
@@ -177,6 +180,30 @@ const App = () => (
                 element={
                   <ProtectedLayout>
                     <UserProfilePage />
+                  </ProtectedLayout>
+                }
+              />
+              <Route
+                path="/pipelines"
+                element={
+                  <ProtectedLayout>
+                    <PipelinesPage />
+                  </ProtectedLayout>
+                }
+              />
+              <Route
+                path="/pipelines/:pipelineId"
+                element={
+                  <ProtectedLayout>
+                    <PipelineDetailPage />
+                  </ProtectedLayout>
+                }
+              />
+              <Route
+                path="/usage"
+                element={
+                  <ProtectedLayout>
+                    <UsagePage />
                   </ProtectedLayout>
                 }
               />

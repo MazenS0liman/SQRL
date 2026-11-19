@@ -5,17 +5,17 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>squirrel.models.time_series &mdash; squirrel  documentation</title>
+  <title>squirrel.models.time_series &mdash; SQRL Documentation</title>
       <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="../../../_static/copybutton.css?v=76b2166b" />
-      <link rel="stylesheet" type="text/css" href="../../../_static/css/custom.css?v=adc7883a" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/custom.css?v=35931533" />
 
   
     <link rel="shortcut icon" href="../../../_static/sqrl.png"/>
       <script src="../../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../../../_static/documentation_options.js?v=01f34227"></script>
       <script src="../../../_static/doctools.js?v=9bcbadda"></script>
       <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
       <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -33,8 +33,8 @@
 
           
           
-          <a href="../../../index.html" class="icon icon-home">
-            squirrel
+          <a href="../../../index.html">
+            
               <img src="../../../_static/sqrl.png" class="logo" alt="Logo"/>
           </a>
 <div role="search">
@@ -45,9 +45,29 @@
   </form>
 </div>
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
-              <p class="caption" role="heading"><span class="caption-text">Python API Reference:</span></p>
+              <p class="caption" role="heading"><span class="caption-text">Learn and build</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="../../../api.html">Python API Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../getting-started.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../workflow.html">Product workflow</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../architecture.html">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../deployment.html">Deployment and operations</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../api.html">Backend API Reference</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../generated/api_reference.html">HTTP API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../generated/schemas_reference.html">Data Schemas</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../generated/services_reference.html">Services</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../generated/agents_reference.html">Agents</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../generated/prompts_reference.html">Prompt Components</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../generated/providers_reference.html">Model Providers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../generated/inspectors_reference.html">Data Inspectors</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../generated/preprocessors_reference.html">Preprocessors</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../generated/core_reference.html">Core Infrastructure</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../generated/models_reference.html">Machine Learning Models</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../generated/constants_reference.html">Constants</a></li>
+</ul>
+</li>
 </ul>
 
         </div>
@@ -91,7 +111,7 @@
 <span class="c1"># ——————————————————————————————————————————————————————————————</span>
 <span class="c1"># Time Series Predictor Base class</span>
 <div class="viewcode-block" id="TimeSeriesPredictor">
-<a class="viewcode-back" href="../../../generated/squirrel_models_time_series.html#squirrel.models.time_series.TimeSeriesPredictor">[docs]</a>
+<a class="viewcode-back" href="../../../generated/models_reference.html#squirrel.models.time_series.TimeSeriesPredictor">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">TimeSeriesPredictor</span><span class="p">(</span><span class="n">ABC</span><span class="p">):</span>
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">pass</span>
@@ -101,7 +121,7 @@
         <span class="k">pass</span>
 
 <div class="viewcode-block" id="TimeSeriesPredictor.load_data">
-<a class="viewcode-back" href="../../../generated/squirrel_models_time_series.html#squirrel.models.time_series.TimeSeriesPredictor.load_data">[docs]</a>
+<a class="viewcode-back" href="../../../generated/models_reference.html#squirrel.models.time_series.TimeSeriesPredictor.load_data">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">load_data</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">data_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
@@ -149,7 +169,7 @@
 <span class="c1"># ——————————————————————————————————————————————————————————————</span>
 <span class="c1"># BiLSTM Predictor for Time Series</span>
 <div class="viewcode-block" id="BiLSTMPredictor">
-<a class="viewcode-back" href="../../../generated/squirrel_models_time_series.html#squirrel.models.time_series.BiLSTMPredictor">[docs]</a>
+<a class="viewcode-back" href="../../../generated/models_reference.html#squirrel.models.time_series.BiLSTMPredictor">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">BiLSTMPredictor</span><span class="p">(</span><span class="n">TimeSeriesPredictor</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">"""</span>
 <span class="sd">    A BiLSTM-based predictor for time series data that incorporates differencing to handle non-stationarity. </span>
@@ -165,8 +185,8 @@
 <span class="sd">    </span>
 <span class="sd">    .. code-block:: python</span>
 <span class="sd">    </span>
-<span class="sd">        from kraken.models.time_series import BiLSTMPredictor</span>
-<span class="sd">        </span>
+<span class="sd">        from squirrel.models.time_series import BiLSTMPredictor</span>
+
 <span class="sd">        predictor = BiLSTMPredictor(</span>
 <span class="sd">            window_size=24,</span>
 <span class="sd">            data_path="./notebooks/data/AAPL.csv",</span>
@@ -223,7 +243,7 @@
         <span class="k">return</span> <span class="n">current_value</span>
 
 <div class="viewcode-block" id="BiLSTMPredictor.prepare_data">
-<a class="viewcode-back" href="../../../generated/squirrel_models_time_series.html#squirrel.models.time_series.BiLSTMPredictor.prepare_data">[docs]</a>
+<a class="viewcode-back" href="../../../generated/models_reference.html#squirrel.models.time_series.BiLSTMPredictor.prepare_data">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">prepare_data</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">data</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
@@ -233,7 +253,7 @@
 <span class="sd">        Prepare the data for training the BiLSTM model by creating input sequences and corresponding target values.</span>
 <span class="sd">        This method takes the original time series data and its first difference, </span>
 <span class="sd">        and constructs input sequences of a specified window size along with their corresponding target values.</span>
-<span class="sd">        </span>
+
 <span class="sd">        **Description:**</span>
 <span class="sd">        </span>
 <span class="sd">            The `prepare_data` method iterates through the first difference of the time series data, starting from the index defined by the window size.</span>
@@ -253,7 +273,7 @@
 <span class="sd">        """</span>
         <span class="n">X_diff</span><span class="p">,</span> <span class="n">y_diff</span> <span class="o">=</span> <span class="p">[],</span> <span class="p">[]</span>
         <span class="n">base_values</span><span class="p">,</span> <span class="n">target_values</span> <span class="o">=</span> <span class="p">[],</span> <span class="p">[]</span>
-    
+
         <span class="k">for</span> <span class="n">idx</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">window_size</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">data_diff</span><span class="p">)):</span>
             <span class="n">X_diff</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">data_diff</span><span class="p">[</span><span class="n">idx</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">window_size</span><span class="p">:</span><span class="n">idx</span><span class="p">]</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">window_size</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
             <span class="n">y_diff</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">data_diff</span><span class="p">[</span><span class="n">idx</span><span class="p">])</span>
@@ -269,7 +289,7 @@
 
 
 <div class="viewcode-block" id="BiLSTMPredictor.split_data">
-<a class="viewcode-back" href="../../../generated/squirrel_models_time_series.html#squirrel.models.time_series.BiLSTMPredictor.split_data">[docs]</a>
+<a class="viewcode-back" href="../../../generated/models_reference.html#squirrel.models.time_series.BiLSTMPredictor.split_data">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">split_data</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">X_diff</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
@@ -324,7 +344,7 @@
 
 
 <div class="viewcode-block" id="BiLSTMPredictor.fit">
-<a class="viewcode-back" href="../../../generated/squirrel_models_time_series.html#squirrel.models.time_series.BiLSTMPredictor.fit">[docs]</a>
+<a class="viewcode-back" href="../../../generated/models_reference.html#squirrel.models.time_series.BiLSTMPredictor.fit">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">fit</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">X_train</span><span class="p">,</span>
@@ -382,7 +402,7 @@
 
         
 <div class="viewcode-block" id="BiLSTMPredictor.eval">
-<a class="viewcode-back" href="../../../generated/squirrel_models_time_series.html#squirrel.models.time_series.BiLSTMPredictor.eval">[docs]</a>
+<a class="viewcode-back" href="../../../generated/models_reference.html#squirrel.models.time_series.BiLSTMPredictor.eval">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">eval</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> 
         <span class="n">X_test</span><span class="p">,</span> 
@@ -457,7 +477,7 @@
         <span class="n">data</span><span class="p">,</span> <span class="n">data_diff_scaled</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">load_data</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data_path</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">target_column</span><span class="p">)</span>
         
         <span class="c1"># Prepare data</span>
-        <span class="n">X_diff</span><span class="p">,</span> <span class="n">y_diff</span><span class="p">,</span> <span class="n">base_values</span><span class="p">,</span> <span class="n">target_values</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">prepare_data</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">data_diff_scaled</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">window_size</span><span class="p">)</span>
+        <span class="n">X_diff</span><span class="p">,</span> <span class="n">y_diff</span><span class="p">,</span> <span class="n">base_values</span><span class="p">,</span> <span class="n">target_values</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">prepare_data</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">data_diff_scaled</span><span class="p">)</span>
         
         <span class="c1"># Split data</span>
         <span class="p">(</span><span class="n">X_train_diff</span><span class="p">,</span> <span class="n">y_train_diff</span><span class="p">,</span> <span class="n">base_train</span><span class="p">,</span> <span class="n">target_train</span><span class="p">),</span> <span class="p">(</span><span class="n">X_test_diff</span><span class="p">,</span> <span class="n">y_test_diff</span><span class="p">,</span> <span class="n">base_test</span><span class="p">,</span> <span class="n">target_test</span><span class="p">)</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">split_data</span><span class="p">(</span><span class="n">X_diff</span><span class="p">,</span> <span class="n">y_diff</span><span class="p">,</span> <span class="n">base_values</span><span class="p">,</span> <span class="n">target_values</span><span class="p">)</span>
@@ -469,7 +489,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">eval</span><span class="p">(</span><span class="n">X_test_diff</span><span class="p">,</span> <span class="n">y_test_diff</span><span class="p">,</span> <span class="n">base_test</span><span class="p">,</span> <span class="n">target_test</span><span class="p">)</span>
 
 <div class="viewcode-block" id="BiLSTMPredictor.predict">
-<a class="viewcode-back" href="../../../generated/squirrel_models_time_series.html#squirrel.models.time_series.BiLSTMPredictor.predict">[docs]</a>
+<a class="viewcode-back" href="../../../generated/models_reference.html#squirrel.models.time_series.BiLSTMPredictor.predict">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">predict</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> 
         <span class="n">X</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -544,7 +564,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">summary</span><span class="p">()</span>
     
 <div class="viewcode-block" id="BiLSTMPredictor.get_config">
-<a class="viewcode-back" href="../../../generated/squirrel_models_time_series.html#squirrel.models.time_series.BiLSTMPredictor.get_config">[docs]</a>
+<a class="viewcode-back" href="../../../generated/models_reference.html#squirrel.models.time_series.BiLSTMPredictor.get_config">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">get_config</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">"""</span>
 <span class="sd">        Get the current configuration of the model, including window size, difference order, data path, and target column.</span>
@@ -569,7 +589,7 @@
 
         
 <div class="viewcode-block" id="BiLSTMPredictor.set_config">
-<a class="viewcode-back" href="../../../generated/squirrel_models_time_series.html#squirrel.models.time_series.BiLSTMPredictor.set_config">[docs]</a>
+<a class="viewcode-back" href="../../../generated/models_reference.html#squirrel.models.time_series.BiLSTMPredictor.set_config">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">set_config</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">"""</span>
 <span class="sd">        Update the model configuration with the provided values.</span>
@@ -609,7 +629,7 @@
 <span class="c1"># ——————————————————————————————————————————————————————————————</span>
 <span class="c1"># LSTM with Attention Predictor for Time Series</span>
 <div class="viewcode-block" id="LSTMAttentionPredictor">
-<a class="viewcode-back" href="../../../generated/squirrel_models_time_series.html#squirrel.models.time_series.LSTMAttentionPredictor">[docs]</a>
+<a class="viewcode-back" href="../../../generated/models_reference.html#squirrel.models.time_series.LSTMAttentionPredictor">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">LSTMAttentionPredictor</span><span class="p">(</span><span class="n">TimeSeriesPredictor</span><span class="p">):</span>
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
@@ -655,7 +675,7 @@
         <span class="k">return</span> <span class="n">current_value</span>
 
 <div class="viewcode-block" id="LSTMAttentionPredictor.load_data">
-<a class="viewcode-back" href="../../../generated/squirrel_models_time_series.html#squirrel.models.time_series.LSTMAttentionPredictor.load_data">[docs]</a>
+<a class="viewcode-back" href="../../../generated/models_reference.html#squirrel.models.time_series.LSTMAttentionPredictor.load_data">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">load_data</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">data_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
@@ -801,7 +821,7 @@
 
         
 <div class="viewcode-block" id="CNNPredictor">
-<a class="viewcode-back" href="../../../generated/squirrel_models_time_series.html#squirrel.models.time_series.CNNPredictor">[docs]</a>
+<a class="viewcode-back" href="../../../generated/models_reference.html#squirrel.models.time_series.CNNPredictor">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">CNNPredictor</span><span class="p">(</span><span class="n">TimeSeriesPredictor</span><span class="p">):</span>
     <span class="k">pass</span></div>
 
@@ -820,7 +840,9 @@
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   
+  
+  <span class="version">Squirrel version 0.1.0</span>
+
 
 </footer>
         </div>

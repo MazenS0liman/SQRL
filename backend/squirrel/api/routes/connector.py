@@ -67,7 +67,9 @@ from squirrel.schemas.connector import (
     ConnectorUpdateRequest,
     DataConnectionOut,
     ConnectorTablesPreviewResponse,
-    TablePreview
+    TablePreview,
+    ConnectorQueryRequest,
+    ConnectorQueryResponse,
 )
 
 # Logging
@@ -255,6 +257,32 @@ async def test_connection(
     except ConnectorNotFoundError:
         raise _not_found(connector_id)
     return _to_out(row)
+
+
+@router.post(
+    "/{connector_id}/query",
+    summary="Run a bounded read-only query against a data warehouse",
+    response_model=ConnectorQueryResponse,
+)
+async def query_connection(
+    connector_id: str,
+    request: ConnectorQueryRequest = Body(...),
+    current_user: AuthUserRead = Depends(get_current_user),
+) -> ConnectorQueryResponse:
+    connector_svc = _connector_service()
+    try:
+        result = await run_in_threadpool(
+            connector_svc.fetch_query,
+            connector_id,
+            request.query,
+            request.limit,
+            current_user.id,
+        )
+    except ConnectorNotFoundError:
+        raise _not_found(connector_id)
+    except (ValueError, RuntimeError, NotImplementedError) as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+    return ConnectorQueryResponse(**result)
 
 
 @router.get(

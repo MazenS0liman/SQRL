@@ -1,8 +1,11 @@
+import type { UploadedFile } from './file';
+
 /**
  * Request structure
  */
 export interface ChatRequest {
     conversationId: string,
+    projectId?: string,
     query: string
 }
 
@@ -20,7 +23,11 @@ export interface ChatMessage {
     content: string;
     timestamp: Date;
     type?: MessageContentType;
-    data?: any;
+    data?: {
+        body?: import('./etl').EtlChatBody;
+        files?: UploadedFile[];
+        [key: string]: unknown;
+    } | null;
 }
 
 /**

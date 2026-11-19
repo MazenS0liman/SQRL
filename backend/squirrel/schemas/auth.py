@@ -26,6 +26,18 @@ class LoginRequest(BaseModel):
     password: str = Field(..., min_length=8, max_length=128)
 
 
+class UpdateProfileRequest(BaseModel):
+    """Partial profile update. Omitted fields are left untouched."""
+
+    full_name: Optional[str] = Field(default=None, max_length=120)
+    email: Optional[EmailStr] = None
+
+
+class ChangePasswordRequest(BaseModel):
+    current_password: str = Field(..., min_length=8, max_length=128)
+    new_password: str = Field(..., min_length=8, max_length=128)
+
+
 class AuthUserRead(BaseModel):
     id: str
     username: str

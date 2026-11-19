@@ -1607,8 +1607,8 @@ function NotebookWorkspace({
 
 // ── NotebookHeader ────────────────────────────────────────────────────────
 function NotebookHeader({
-  notebook, onBack, onViewData,
-}: { notebook: Notebook; onBack: () => void; onViewData: () => void }): JSX.Element {
+  notebook, onBack,
+}: { notebook: Notebook; onBack: () => void }): JSX.Element {
   const meta = statusMeta(notebook.status);
   return (
     <header className="flex shrink-0 items-center justify-between border-b border-border bg-card px-5 py-3">
@@ -1682,7 +1682,7 @@ export default function NotebookDetailPage(): JSX.Element {
 
   return (
     <div className="flex h-full min-h-0 flex-col bg-background text-foreground">
-      <NotebookHeader notebook={notebook} onBack={() => navigate("/notebooks")} onViewData={() => setShowDataSources(true)} />
+      <NotebookHeader notebook={notebook} onBack={() => navigate("/notebooks")} />
 
       {notebook.status === "empty" ? (
         cells.length === 0 ?

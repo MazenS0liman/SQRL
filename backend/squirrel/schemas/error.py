@@ -29,20 +29,6 @@ class DuplicateColumnError(ValueError):
         )
 
 
-class DuplicateColumnError(Exception):
-    """
-    Raised when two or more input sources share a non-target column name in
-    a way that can't be resolved into an unambiguous merge (see
-    ``TabularDataProcessorAgent.merge_sources``).
-    """
-
-    def __init__(self, columns: List[str]):
-        self.columns = columns
-        super().__init__(
-            f"Columns {columns} appear in more than one input source and "
-            "can't be merged unambiguously."
-        )
-
 # ——————————————————————————————————————————————————————————————
 # Notebook Errors
 

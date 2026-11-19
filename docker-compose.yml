@@ -1,11 +1,16 @@
 services:
-  sqrl:
+  # Shared settings for every process that runs the SQRL image. The API,
+  # Celery worker, beat scheduler, and migration job all use the same build
+  # and source mounts so local changes are picked up consistently.
+  x-app: &app
+    image: squirrel:local
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: sqrl
-    ports:
-      - "8000:8000"
+    env_file:
+      - .env
+    environment:
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
     volumes:
       # WORKDIR is /app, so relative paths used by the app (logs/, static/)
       # resolve under /app — not at the filesystem root.
@@ -13,13 +18,21 @@ services:
       - ./backend/logs:/app/logs
       - ./backend/squirrel:/app/squirrel
       - ./backend/static:/app/static
-    env_file:
-      - .env
     restart: unless-stopped
+
+  sqrl:
+    <<: *app
+    container_name: sqrl
+    ports:
+      - "8000:8000"
     depends_on:
+      migrate:
+        condition: service_completed_successfully
       postgres:
         condition: service_healthy
       minio:
+        condition: service_healthy
+      redis:
         condition: service_healthy
     healthcheck:
       test:
@@ -31,6 +44,73 @@ services:
       timeout: 5s
       retries: 3
       start_period: 30s
+
+  # One-shot schema migration. Runs before the API, worker, and beat start.
+  migrate:
+    <<: *app
+    container_name: sqrl-migrate
+    command: ["alembic", "upgrade", "head"]
+    restart: "no"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  worker:
+    <<: *app
+    container_name: sqrl-worker
+    command:
+      [
+        "celery",
+        "-A",
+        "squirrel.core.celery_app.celery_app",
+        "worker",
+        "--loglevel=INFO",
+        "--concurrency=2",
+        "-Q",
+        "default,notifications",
+      ]
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      postgres:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  beat:
+    <<: *app
+    container_name: sqrl-beat
+    command:
+      [
+        "celery",
+        "-A",
+        "squirrel.core.celery_app.celery_app",
+        "beat",
+        "--loglevel=INFO",
+        "--schedule=/tmp/celerybeat-schedule",
+      ]
+    depends_on:
+      redis:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+
+  redis:
+    image: redis:7-alpine
+    container_name: sqrl-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
 
   postgres:
     image: postgres:17
@@ -68,7 +148,7 @@ services:
         condition: service_healthy
 
   minio:
-    image: minio/minio:latest
+    image: pgsty/silo:latest
     container_name: minio
     restart: unless-stopped
     ports:
@@ -91,3 +171,4 @@ volumes:
   postgres_data:
   minio_data:
   pgadmin_data:
+  redis_data:

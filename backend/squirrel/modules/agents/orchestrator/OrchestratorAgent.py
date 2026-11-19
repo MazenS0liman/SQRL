@@ -3,7 +3,7 @@
 Orchestrator Agent Module
 =========================
 
-Classifies incoming chat requests into one of three execution routes using a
+Classifies incoming chat requests into one of four execution routes using a
 single LLM call:
 
 ``chat``
@@ -17,6 +17,10 @@ single LLM call:
 ``build``
     Full ML pipeline — the user wants to predict, classify, or forecast a
     specific target variable, i.e. they want a trained model.
+
+``etl``
+    Data movement / transformation — the user wants to clean, filter, join,
+    aggregate, or copy data into a table or file on a recurring batch basis.
 
 The classification asks the LLM to return structured JSON (route + target
 column + confidence + reasoning) rather than parsing free text, so the
@@ -52,7 +56,7 @@ class OrchestratorAgent(IAgent):
     Classify a request and return the route the service should execute.
     """
 
-    _VALID_ROUTES = {"chat", "explore", "build"}
+    _VALID_ROUTES = {"chat", "explore", "build", "etl"}
 
     def __init__(
         self,
@@ -153,7 +157,7 @@ class OrchestratorAgent(IAgent):
             "properties": {
                 "route": {
                     "type": "string",
-                    "enum": ["chat", "explore", "build"],
+                    "enum": ["chat", "explore", "build", "etl"],
                     "description": "The chosen route.",
                 },
                 "target_column": {
@@ -212,7 +216,7 @@ class OrchestratorAgent(IAgent):
         Assemble the canonical route-decision dict consumed by
         :class:`OrchestratorService`.
 
-        :param route_key:     ``'chat'``, ``'explore'``, or ``'build'``.
+        :param route_key:     ``'chat'``, ``'explore'``, ``'build'``, or ``'etl'``.
         :param target_column: Target column name, or ``None``.
         :param confidence:    Classifier confidence in [0, 1].
         :param reasoning:     Human-readable explanation.
@@ -224,6 +228,8 @@ class OrchestratorAgent(IAgent):
             if route_key == "build"
             else "TabularDataExploratoryAgent"
             if route_key == "explore"
+            else "ETLPlannerAgent"
+            if route_key == "etl"
             else "GeneralPurposeAgent"
         )
         return {

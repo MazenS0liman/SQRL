@@ -5,17 +5,17 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>squirrel.core.logging &mdash; squirrel  documentation</title>
+  <title>squirrel.core.logging &mdash; SQRL Documentation</title>
       <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="../../../_static/copybutton.css?v=76b2166b" />
-      <link rel="stylesheet" type="text/css" href="../../../_static/css/custom.css?v=adc7883a" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/custom.css?v=35931533" />
 
   
     <link rel="shortcut icon" href="../../../_static/sqrl.png"/>
       <script src="../../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../../../_static/documentation_options.js?v=01f34227"></script>
       <script src="../../../_static/doctools.js?v=9bcbadda"></script>
       <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
       <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -33,8 +33,8 @@
 
           
           
-          <a href="../../../index.html" class="icon icon-home">
-            squirrel
+          <a href="../../../index.html">
+            
               <img src="../../../_static/sqrl.png" class="logo" alt="Logo"/>
           </a>
 <div role="search">
@@ -45,9 +45,29 @@
   </form>
 </div>
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
-              <p class="caption" role="heading"><span class="caption-text">Python API Reference:</span></p>
+              <p class="caption" role="heading"><span class="caption-text">Learn and build</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="../../../api.html">Python API Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../getting-started.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../workflow.html">Product workflow</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../architecture.html">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../deployment.html">Deployment and operations</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../api.html">Backend API Reference</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../generated/api_reference.html">HTTP API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../generated/schemas_reference.html">Data Schemas</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../generated/services_reference.html">Services</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../generated/agents_reference.html">Agents</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../generated/prompts_reference.html">Prompt Components</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../generated/providers_reference.html">Model Providers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../generated/inspectors_reference.html">Data Inspectors</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../generated/preprocessors_reference.html">Preprocessors</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../generated/core_reference.html">Core Infrastructure</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../generated/models_reference.html">Machine Learning Models</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../generated/constants_reference.html">Constants</a></li>
+</ul>
+</li>
 </ul>
 
         </div>
@@ -131,8 +151,32 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">loguru</span><span class="w"> </span><span class="kn">import</span> <span class="n">logger</span> <span class="k">as</span> <span class="n">_loguru_logger</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span>
 
+<span class="n">_STAGE_COLORS</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">"INSPECT"</span><span class="p">:</span> <span class="s2">"cyan"</span><span class="p">,</span>
+    <span class="s2">"PREPROCESS"</span><span class="p">:</span> <span class="s2">"magenta"</span><span class="p">,</span>
+    <span class="s2">"MODEL"</span><span class="p">:</span> <span class="s2">"green"</span><span class="p">,</span>
+    <span class="s2">"WORKSPACE"</span><span class="p">:</span> <span class="s2">"blue"</span><span class="p">,</span>
+    <span class="s2">"STORAGE"</span><span class="p">:</span> <span class="s2">"yellow"</span><span class="p">,</span>
+<span class="p">}</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">log_stage</span><span class="p">(</span><span class="n">stage</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">message</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="n">level</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"INFO"</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Write a console-colored pipeline-stage message.</span>
+
+<span class="sd">    The markup is interpreted by Loguru's console sink and stripped from file</span>
+<span class="sd">    sinks, keeping persisted logs machine-readable.</span>
+<span class="sd">    """</span>
+    <span class="n">normalized_stage</span> <span class="o">=</span> <span class="n">stage</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span>
+    <span class="n">color</span> <span class="o">=</span> <span class="n">_STAGE_COLORS</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">normalized_stage</span><span class="p">,</span> <span class="s2">"white"</span><span class="p">)</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">opt</span><span class="p">(</span><span class="n">colors</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span><span class="o">.</span><span class="n">log</span><span class="p">(</span>
+        <span class="n">level</span><span class="p">,</span>
+        <span class="sa">f</span><span class="s2">"&lt;</span><span class="si">{</span><span class="n">color</span><span class="si">}</span><span class="s2">&gt;[</span><span class="si">{</span><span class="n">normalized_stage</span><span class="si">}</span><span class="s2">]&lt;/</span><span class="si">{</span><span class="n">color</span><span class="si">}</span><span class="s2">&gt; </span><span class="si">{</span><span class="n">message</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
+        <span class="o">*</span><span class="n">args</span><span class="p">,</span>
+    <span class="p">)</span>
+
+
 <div class="viewcode-block" id="ClassLogger">
-<a class="viewcode-back" href="../../../generated/squirrel_core_logging.html#squirrel.core.logging.ClassLogger">[docs]</a>
+<a class="viewcode-back" href="../../../generated/core_reference.html#squirrel.core.logging.ClassLogger">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">ClassLogger</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""</span>
 <span class="sd">    Descriptor that returns a loguru logger bound to the owner class name.</span>
@@ -156,7 +200,7 @@
 
 
 <div class="viewcode-block" id="Loggable">
-<a class="viewcode-back" href="../../../generated/squirrel_core_logging.html#squirrel.core.logging.Loggable">[docs]</a>
+<a class="viewcode-back" href="../../../generated/core_reference.html#squirrel.core.logging.Loggable">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">Loggable</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""</span>
 <span class="sd">    Mixin class that provides logging capabilities.</span>
@@ -181,7 +225,7 @@
 
 
 <div class="viewcode-block" id="InterceptHandler">
-<a class="viewcode-back" href="../../../generated/squirrel_core_logging.html#squirrel.core.logging.InterceptHandler">[docs]</a>
+<a class="viewcode-back" href="../../../generated/core_reference.html#squirrel.core.logging.InterceptHandler">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">InterceptHandler</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">Handler</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">"""</span>
 <span class="sd">    Custom handler for intercepting and formatting logs.</span>
@@ -201,7 +245,7 @@
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">NOTSET</span><span class="p">)</span>
         
 <div class="viewcode-block" id="InterceptHandler.emit">
-<a class="viewcode-back" href="../../../generated/squirrel_core_logging.html#squirrel.core.logging.InterceptHandler.emit">[docs]</a>
+<a class="viewcode-back" href="../../../generated/core_reference.html#squirrel.core.logging.InterceptHandler.emit">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">emit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">record</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">"""</span>
 <span class="sd">        Emit a log record.</span>
@@ -228,7 +272,7 @@
 
 
 <div class="viewcode-block" id="InterceptHandler.write">
-<a class="viewcode-back" href="../../../generated/squirrel_core_logging.html#squirrel.core.logging.InterceptHandler.write">[docs]</a>
+<a class="viewcode-back" href="../../../generated/core_reference.html#squirrel.core.logging.InterceptHandler.write">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">write</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">message</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">"""</span>
 <span class="sd">        Write a message to the logging system.</span>
@@ -248,14 +292,14 @@
 
 
 <div class="viewcode-block" id="InterceptHandler.isatty">
-<a class="viewcode-back" href="../../../generated/squirrel_core_logging.html#squirrel.core.logging.InterceptHandler.isatty">[docs]</a>
+<a class="viewcode-back" href="../../../generated/core_reference.html#squirrel.core.logging.InterceptHandler.isatty">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">isatty</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">"""Report a non-interactive stream so console formatters can configure safely."""</span>
         <span class="k">return</span> <span class="kc">False</span></div>
 
 
 <div class="viewcode-block" id="InterceptHandler.fileno">
-<a class="viewcode-back" href="../../../generated/squirrel_core_logging.html#squirrel.core.logging.InterceptHandler.fileno">[docs]</a>
+<a class="viewcode-back" href="../../../generated/core_reference.html#squirrel.core.logging.InterceptHandler.fileno">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">fileno</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">"""Provide a best-effort file descriptor for code that probes stream metadata."""</span>
         <span class="k">try</span><span class="p">:</span>
@@ -265,7 +309,7 @@
 
     
 <div class="viewcode-block" id="InterceptHandler.flush">
-<a class="viewcode-back" href="../../../generated/squirrel_core_logging.html#squirrel.core.logging.InterceptHandler.flush">[docs]</a>
+<a class="viewcode-back" href="../../../generated/core_reference.html#squirrel.core.logging.InterceptHandler.flush">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">flush</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">"""</span>
 <span class="sd">        Flush any pending log records.</span>
@@ -344,7 +388,9 @@
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   
+  
+  <span class="version">Squirrel version 0.1.0</span>
+
 
 </footer>
         </div>

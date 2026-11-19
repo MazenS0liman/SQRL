@@ -40,6 +40,17 @@
     --sidebar-accent-foreground: 24 80% 35%;
     --sidebar-border: 28 15% 86%;
     --sidebar-ring: 234 89% 63%;
+    --dependency-line: 28 80% 48%;
+    --gantt-bar: 28 99% 50%;
+    --gantt-bar-hover: 18 98% 46%;
+    --gantt-milestone: 43 96% 48%;
+    --gantt-grid: 28 15% 86%;
+    --gantt-today: 234 89% 63%;
+    --chart-1: 28 99% 50%;
+    --chart-2: 18 98% 46%;
+    --chart-3: 43 96% 56%;
+    --chart-4: 234 89% 63%;
+    --chart-5: 160 60% 42%;
 
     --neutral-white: oklch(100% 0 0);
     --neutral-50: oklch(98.5% 0 0);
@@ -113,6 +124,32 @@
     --sidebar-accent-foreground: 24 80% 35%;
     --sidebar-border: 28 15% 86%;
     --sidebar-ring: 234 89% 63%;
+    --dependency-line: 28 80% 48%;
+    --gantt-bar: 28 99% 50%;
+    --gantt-bar-hover: 18 98% 46%;
+    --gantt-milestone: 43 96% 48%;
+    --gantt-grid: 28 15% 86%;
+    --gantt-today: 234 89% 63%;
+    --chart-1: 28 99% 50%;
+    --chart-2: 18 98% 46%;
+    --chart-3: 43 96% 56%;
+    --chart-4: 234 89% 63%;
+    --chart-5: 160 60% 42%;
+    --surface-1: oklch(100% 0 0);
+    --surface-2: oklch(98.5% 0 0);
+    --surface-3: oklch(96.9% 0 0);
+    --surface-4: oklch(92.2% 0 0);
+    --surface-cell: var(--surface-1);
+    --background-base: var(--surface-2);
+    --background-main: var(--surface-1);
+    --label-primary: oklch(21.1% 0 0);
+    --label-secondary: oklch(44.6% 0 0);
+    --label-tertiary: oklch(55.6% 0 0);
+    --label-muted: oklch(70.9% 0 0);
+    --label-inverted: oklch(100% 0 0);
+    --border-subtle: oklch(0% 0 0 / 6%);
+    --border-default: oklch(0% 0 0 / 12%);
+    --border-strong: oklch(0% 0 0 / 26%);
   }
 
   .dark {
@@ -123,11 +160,11 @@
     --primary-2: 18 98% 30%;
     --primary-foreground: 0 0% 100%;
     --primary-gradient: linear-gradient(90deg,#FE7701 0%,#E84702 100%);
-    --foreground: 249 7% 61%;
-    --foreground-hover: 162 100% 98%;
+    --foreground: 220 14% 96%;
+    --foreground-hover: 0 0% 100%;
 
     --card: 0 0% 12%;
-    --card-foreground: 249 7% 61%;
+    --card-foreground: 220 14% 96%;
     --popover: 222 47% 11%;
     --popover-foreground: 220 14% 96%;
     --secondary: 222 47% 15%;
@@ -142,13 +179,24 @@
     --input: 222 47% 18%;
     --ring: 234 89% 67%;
     --sidebar-background: color-mix(in oklch, var(--neutral-850), var(--neutral-900));
-    --sidebar-foreground: 220 9% 60%;
+    --sidebar-foreground: 220 14% 82%;
     --sidebar-primary: 234 89% 67%;
     --sidebar-primary-foreground: 222 47% 11%;
     --sidebar-accent: 234 30% 20%;
     --sidebar-accent-foreground: 234 89% 67%;
-    --sidebar-border: linear-gradient(90deg,#FE7701 0%,#E84702 100%);
+    --sidebar-border: 222 47% 18%;
     --sidebar-ring: 234 89% 67%;
+    --dependency-line: 43 96% 56%;
+    --gantt-bar: 28 99% 42%;
+    --gantt-bar-hover: 18 98% 38%;
+    --gantt-milestone: 43 96% 56%;
+    --gantt-grid: 222 47% 18%;
+    --gantt-today: 234 89% 67%;
+    --chart-1: 28 99% 52%;
+    --chart-2: 18 98% 52%;
+    --chart-3: 43 96% 62%;
+    --chart-4: 234 89% 72%;
+    --chart-5: 160 60% 55%;
   }
 }
 
@@ -160,6 +208,16 @@
   body {
     @apply bg-background text-foreground font-sans antialiased;
     font-family: 'Inter', sans-serif;
+    min-width: 320px;
+    min-height: 100vh;
+  }
+
+  html {
+    color-scheme: light;
+  }
+
+  html.dark {
+    color-scheme: dark;
   }
 }
 
