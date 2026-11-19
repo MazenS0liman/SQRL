@@ -1,7 +1,7 @@
 <div align="center">
   <img src="./imgs/logo.png" alt="SQRL Logo" width="200"/>
 
-  **An end-to-end workspace for data analysis, machine learning, ETL pipelines, and LLM usage monitoring.**
+  **An end-to-end workspace for analysing data, building machine learning models and ETL pipelines.**
 
   [![License: GPL v2](https://img.shields.io/badge/License-GPL_v2-2e7d32.svg?style=for-the-badge)](LICENSE)
   [![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-3776ab.svg?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/downloads/)
