@@ -7,8 +7,13 @@ import pandas as pd
 import pytest
 from sklearn.linear_model import LogisticRegression
 
+from squirrel.models.hyperparameters import (
+    build_model_catalog,
+    normalize_hyperparameters,
+)
 from squirrel.modules.agents.builder.TabularDataModelBuilderAgent import (
     TabularDataModelBuilderAgent,
+    _MODEL_REGISTRY,
 )
 from squirrel.modules.agents.etl.ETLModelTrainingAgent import ETLModelTrainingAgent
 from squirrel.schemas.etl import MLSpec
@@ -142,6 +147,75 @@ def test_with_model_details_survives_malformed_execution() -> None:
 
 def test_with_model_details_passes_through_non_dict_summary() -> None:
     assert _builder()._with_model_details("nope", "{}", {}) == "nope"
+
+
+# ——————————————————————————————————————————————————————————————
+# User-facing hyperparameter catalog
+
+
+def test_catalog_exposes_typed_hyperparameters_per_model() -> None:
+    catalog = {entry["model_key"]: entry for entry in build_model_catalog(_MODEL_REGISTRY)}
+
+    rf = catalog["random_forest_classifier"]
+    params = {spec["name"]: spec for spec in rf["hyperparameters"]}
+    assert params["n_estimators"]["type"] == "int"
+    assert params["n_estimators"]["default"] == 50
+    assert params["max_depth"]["nullable"] is True
+    assert "n_jobs" not in params  # internal defaults stay hidden
+
+    bilstm = catalog["bilstm"]
+    assert bilstm["supports_epochs"] is True
+    assert {spec["name"] for spec in bilstm["hyperparameters"] if spec["fit_param"]} == {
+        "epochs", "batch_size"
+    }
+
+
+def test_normalize_hyperparameters_coerces_and_validates() -> None:
+    values = normalize_hyperparameters(
+        "gradient_boosting_classifier",
+        {"n_estimators": "120", "learning_rate": "0.02", "max_depth": 5},
+    )
+
+    assert values == {"n_estimators": 120, "learning_rate": 0.02, "max_depth": 5}
+
+
+def test_normalize_hyperparameters_rejects_unknown_and_out_of_range() -> None:
+    with pytest.raises(ValueError, match="Unsupported hyperparameter"):
+        normalize_hyperparameters("ridge", {"alphaa": 1.0})
+
+    with pytest.raises(ValueError, match="at most"):
+        normalize_hyperparameters("logistic_regression", {"C": 999999.0})
+
+    with pytest.raises(ValueError, match="cannot be empty"):
+        normalize_hyperparameters("random_forest_classifier", {"max_depth": ""})
+
+
+def test_run_selected_uses_a_single_step_plan_and_fit_params() -> None:
+    frame = pd.DataFrame({"a": [index % 5 for index in range(40)], "target": [index % 2 for index in range(40)]})
+    builder = _builder()
+
+    fitted, summary = builder.run_selected(
+        frame,
+        "random_forest_classifier",
+        hyperparameters={"n_estimators": 10},
+        preprocessing_summary={},
+    )
+
+    assert list(fitted) == ["random_forest_classifier"]
+    assert summary["best_model"] == "random_forest_classifier"
+    assert summary["models_trained"] == ["random_forest_classifier"]
+    assert summary["hyperparameters_by_model"]["random_forest_classifier"]["n_estimators"] == 10
+    assert any(
+        entry["model_key"] == "random_forest_classifier"
+        for entry in summary["model_comparison"]
+    )
+
+
+def test_run_selected_rejects_wrong_task_model() -> None:
+    frame = pd.DataFrame({"a": [1.0, 2.0], "target": [1.5, 2.5]})
+
+    with pytest.raises(ValueError, match="classification"):
+        _builder().run_selected(frame, "logistic_regression")
 
 
 def test_training_history_uses_keras_validation_history() -> None:

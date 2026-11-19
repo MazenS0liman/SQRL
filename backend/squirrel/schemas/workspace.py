@@ -154,6 +154,66 @@ class BuildRequest(BaseModel):
             "infer a relationship between them."
         ),
     )
+    model_key: Optional[str] = Field(
+        default=None,
+        description=(
+            "Train this specific model instead of letting the system choose. "
+            "Omit (or pass null) for the automatic model-selection flow."
+        ),
+    )
+    hyperparameters: Dict[str, Any] = Field(
+        default_factory=dict,
+        description="Hyperparameter overrides for the selected model.",
+    )
+    epochs: Optional[int] = Field(
+        default=None,
+        ge=1,
+        le=1000,
+        description="Training epochs for neural models (bilstm / lstm_attention).",
+    )
+
+
+class HyperparameterSpec(BaseModel):
+    """One tunable value exposed to the training UI."""
+
+    name: str
+    label: str
+    type: str
+    default: Any = None
+    min: Optional[float] = None
+    max: Optional[float] = None
+    step: Optional[float] = None
+    choices: Optional[List[Any]] = None
+    nullable: bool = False
+    fit_param: bool = False
+    description: str = ""
+
+
+class ModelCatalogEntry(BaseModel):
+    """A model the user may select manually, with its tunables."""
+
+    model_key: str
+    label: str
+    task: str
+    description: str = ""
+    sequential: bool = False
+    supports_epochs: bool = False
+    hyperparameters: List[HyperparameterSpec] = Field(default_factory=list)
+
+
+class ModelCatalogResponse(BaseModel):
+    models: List[ModelCatalogEntry] = Field(default_factory=list)
+
+
+class RetrainModelRequest(BaseModel):
+    """Body for ``POST /workspace/{workspace_id}/models/{model_key}/retrain``."""
+
+    hyperparameters: Dict[str, Any] = Field(default_factory=dict)
+    epochs: Optional[int] = Field(default=None, ge=1, le=1000)
+    target_column: Optional[str] = Field(
+        default=None,
+        description="Defaults to the workspace's saved target column.",
+    )
 
 
 class ModelMetric(BaseModel):
@@ -161,6 +221,8 @@ class ModelMetric(BaseModel):
     metric_name: str
     mean: float
     std: Optional[float] = None
+    details: Optional[Dict[str, Any]] = None
+    hyperparameters: Optional[Dict[str, Any]] = None
 
 
 class ModelFileOut(BaseModel):
@@ -191,6 +253,7 @@ class ModelsResponse(BaseModel):
     model_details: Optional[Dict[str, Any]] = None
     output_file_urls: List[str] = []
     model_files: List[ModelFileOut] = []
+    retrained_model_key: Optional[str] = None
 
 
 class PreprocessedDataResponse(BaseModel):

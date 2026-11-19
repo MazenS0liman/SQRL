@@ -1640,6 +1640,135 @@ def test_build_requires_input_sources(client: TestClient, monkeypatch) -> None:
     assert "data source" in response.json()["detail"].lower()
 
 
+def test_model_catalog_lists_selectable_models(client: TestClient) -> None:
+    response = client.get("/api/workspace/models/catalog")
+
+    assert response.status_code == 200
+    models = {entry["model_key"]: entry for entry in response.json()["models"]}
+    assert "random_forest_classifier" in models
+    params = {
+        spec["name"]: spec
+        for spec in models["random_forest_classifier"]["hyperparameters"]
+    }
+    assert params["n_estimators"]["type"] == "int"
+    assert models["bilstm"]["supports_epochs"] is True
+
+
+def _install_retrain_service(monkeypatch, *, with_preprocessing: bool = True) -> dict:
+    """Service double for the retrain route; returns captured calls."""
+    captured: dict = {}
+    csv_bytes = pd.DataFrame({"age": [20, 30, 40], "y": [0, 1, 0]}).to_csv(index=False).encode()
+    model_urls = [
+        "s3://sqrl/models/logistic_regression_20260101T120000.joblib",
+        "s3://sqrl/models/random_forest_classifier_20260101T120000.joblib",
+    ]
+    preprocessing = {
+        "agent_summary": {"quality_improvements": ["Filled missing values"]},
+        "output_file_urls": ["s3://sqrl/preprocessed/processed_20260101T120000.csv"],
+    }
+    previous = {
+        "agent_summary": {
+            "best_model": "logistic_regression",
+            "model_comparison": [{
+                "model_key": "logistic_regression", "metric_name": "accuracy", "mean": 0.8,
+            }],
+            "model_details": {"algorithm": "logistic_regression"},
+        },
+        "output_file_urls": model_urls,
+    }
+
+    def records(workspace_id, agent_type, limit, user_id):
+        if agent_type == "preprocessing":
+            return [preprocessing] if with_preprocessing else []
+        if agent_type == "model_building":
+            return [previous]
+        return []
+
+    def save_run(*args, **kwargs):
+        captured["save_run"] = args
+        retained = args[12]
+        return {
+            "output_file_urls": [
+                "s3://sqrl/models/random_forest_classifier_20260102T120000.joblib",
+                *retained,
+            ]
+        }
+
+    service = _fake(
+        get_workspace=lambda *a, **k: _workspace_row(
+            status="completed", target_column="y"
+        ),
+        get_records_by_workspace_id=records,
+        download_output_file=lambda url: csv_bytes,
+        save_run=save_run,
+    )
+    monkeypatch.setattr(workspace_route, "_workspace_service", lambda: service)
+
+    def fake_run_selected(
+        self, frame, model_key, hyperparameters, epochs, preprocessing_summary, *, refit=False
+    ):
+        captured["run_selected"] = {
+            "model_key": model_key,
+            "hyperparameters": hyperparameters,
+            "epochs": epochs,
+            "refit": refit,
+        }
+        return {model_key: object()}, {
+            "task_type": "classification",
+            "overall_assessment": "Retrained",
+            "models_trained": [model_key],
+            "models_failed": [],
+            "best_model": model_key,
+            "best_model_rationale": "Custom settings",
+            "model_comparison": [{
+                "model_key": model_key, "metric_name": "accuracy", "mean": 0.95,
+            }],
+            "model_details": {"algorithm": model_key},
+            "hyperparameters_by_model": {model_key: hyperparameters or {}},
+        }
+
+    monkeypatch.setattr(
+        workspace_route.TabularDataModelBuilderAgent, "run_selected", fake_run_selected
+    )
+    return captured
+
+
+def test_retrain_replaces_one_model_and_keeps_the_rest(
+    client: TestClient, monkeypatch, notification_calls
+) -> None:
+    captured = _install_retrain_service(monkeypatch)
+
+    response = client.post(
+        "/api/workspace/ws_1/models/random_forest_classifier/retrain",
+        json={"hyperparameters": {"n_estimators": 120}, "epochs": 7},
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["retrained_model_key"] == "random_forest_classifier"
+    assert body["best_model"] == "random_forest_classifier"
+    keys = [entry["model_key"] for entry in body["model_files"]]
+    assert keys == ["random_forest_classifier", "logistic_regression"]
+    assert captured["run_selected"]["hyperparameters"] == {"n_estimators": 120}
+    assert captured["run_selected"]["epochs"] == 7
+    assert captured["run_selected"]["refit"] is True
+    assert captured["save_run"][12] == [
+        "s3://sqrl/models/logistic_regression_20260101T120000.joblib"
+    ]
+    assert any(call["notification_type"] == "retrain" for call in notification_calls)
+
+
+def test_retrain_requires_a_preprocessing_run(client: TestClient, monkeypatch) -> None:
+    _install_retrain_service(monkeypatch, with_preprocessing=False)
+
+    response = client.post(
+        "/api/workspace/ws_1/models/random_forest_classifier/retrain", json={}
+    )
+
+    assert response.status_code == 409
+    assert "build the workspace first" in response.json()["detail"].lower()
+
+
 def test_get_models_without_runs(client: TestClient, monkeypatch) -> None:
     service = _fake(
         get_workspace=lambda *a, **k: _workspace_row(),

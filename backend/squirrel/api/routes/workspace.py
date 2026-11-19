@@ -113,6 +113,9 @@ from squirrel.modules.agents import (
     TabularDataProcessorAgent,
     TabularDataModelBuilderAgent
 )
+from squirrel.modules.agents.builder.TabularDataModelBuilderAgent import (
+    build_model_catalog,
+)
 
 # Schema
 from squirrel.schemas.workspace import (
@@ -128,7 +131,9 @@ from squirrel.schemas.workspace import (
     ModelMetric,
     ModelFileOut,
     PredictRequest,
-    PredictResponse
+    PredictResponse,
+    ModelCatalogResponse,
+    RetrainModelRequest,
 )
 from squirrel.schemas.file import UploadedSourceOut
 
@@ -232,20 +237,100 @@ def _agent_token_usage(agent: Any) -> tuple[int, int, int]:
 
 def _extract_model_comparison(model_summary: Dict[str, Any]) -> List[ModelMetric]:
     raw = model_summary.get("model_comparison") or []
+    details_by_model = model_summary.get("model_details_by_model") or {}
+    hyper_by_model = model_summary.get("hyperparameters_by_model") or {}
     metrics: List[ModelMetric] = []
     for entry in raw:
         try:
+            key = str(entry.get("model_key", ""))
             metrics.append(
                 ModelMetric(
-                    model_key=str(entry.get("model_key", "")),
+                    model_key=key,
                     metric_name=str(entry.get("metric_name", "")),
                     mean=float(entry.get("mean", 0.0)),
                     std=float(entry["std"]) if entry.get("std") is not None else None,
+                    details=details_by_model.get(key),
+                    hyperparameters=hyper_by_model.get(key),
                 )
             )
         except (TypeError, ValueError):
             logger.warning("Skipping malformed model_comparison entry: {}", entry)
     return metrics
+
+
+def _primary_score(
+    entries: List[Dict[str, Any]], model_key: str, task_type: str | None
+) -> float | None:
+    """Best primary metric for one model, used when deciding the new best."""
+    preferred = (
+        {"roc_auc", "accuracy", "f1_weighted"}
+        if task_type == "classification"
+        else {"r2", "neg_mean_squared_error", "neg_mean_absolute_error"}
+    )
+    scores = [
+        float(entry["mean"])
+        for entry in entries
+        if entry.get("model_key") == model_key
+        and entry.get("metric_name") in preferred
+        and isinstance(entry.get("mean"), (int, float))
+    ]
+    return max(scores) if scores else None
+
+
+def _merge_retrain_summary(
+    previous: Dict[str, Any],
+    fresh: Dict[str, Any],
+    model_key: str,
+) -> Dict[str, Any]:
+    """Fold a retrained model into the previous build's comparison."""
+    prior_metrics = [
+        entry for entry in (previous.get("model_comparison") or [])
+        if entry.get("model_key") != model_key
+    ]
+    fresh_metrics = list(fresh.get("model_comparison") or [])
+    all_metrics = prior_metrics + fresh_metrics
+    task_type = fresh.get("task_type") or previous.get("task_type")
+
+    best = previous.get("best_model")
+    previous_score = _primary_score(all_metrics, best, task_type) if best else None
+    fresh_score = _primary_score(all_metrics, model_key, task_type)
+    if fresh_score is not None and (
+        previous_score is None or fresh_score > previous_score
+    ):
+        best = model_key
+    if not best:
+        best = model_key
+
+    details_by_model = dict(previous.get("model_details_by_model") or {})
+    if fresh.get("model_details"):
+        details_by_model[model_key] = fresh["model_details"]
+    hyper_by_model = dict(previous.get("hyperparameters_by_model") or {})
+    hyper_by_model.update(fresh.get("hyperparameters_by_model") or {})
+
+    merged = dict(previous)
+    merged.update({
+        "task_type": task_type,
+        "overall_assessment": fresh.get("overall_assessment"),
+        "models_trained": sorted(
+            set(previous.get("models_trained") or []) | {model_key}
+        ),
+        "models_failed": [
+            key for key in (previous.get("models_failed") or []) if key != model_key
+        ],
+        "best_model": best,
+        "best_model_rationale": (
+            fresh.get("best_model_rationale")
+            if best == model_key else previous.get("best_model_rationale")
+        ),
+        "model_comparison": all_metrics,
+        "warnings": list(dict.fromkeys(
+            list(previous.get("warnings") or []) + list(fresh.get("warnings") or [])
+        )),
+        "model_details_by_model": details_by_model,
+        "hyperparameters_by_model": hyper_by_model,
+        "model_details": details_by_model.get(best) or fresh.get("model_details"),
+    })
+    return merged
 
 
 def _model_key_from_url(file_url: str) -> str:
@@ -712,8 +797,32 @@ async def build_structured_models(
 
     try:
         builder = TabularDataModelBuilderAgent(target_column=request.target_column)
-        fitted_models, model_summary = await run_in_threadpool(
-            builder.run, processed_df, preprocessing_summary, request.query or ""
+        if request.model_key:
+            # The user picked a model (and possibly its hyperparameters) up
+            # front — skip LLM planning and train exactly that configuration.
+            fitted_models, model_summary = await run_in_threadpool(
+                builder.run_selected,
+                processed_df,
+                request.model_key,
+                request.hyperparameters,
+                request.epochs,
+                preprocessing_summary,
+            )
+        else:
+            fitted_models, model_summary = await run_in_threadpool(
+                builder.run, processed_df, preprocessing_summary, request.query or ""
+            )
+    except ValueError as exc:
+        # A validation error (unknown model, incompatible target, invalid
+        # hyperparameters) must not leave the workspace stuck in "modeling".
+        await run_in_threadpool(
+            workspace_svc.set_status, workspace_id, WorkspaceStatus.FAILED,
+            request.target_column, str(exc), current_user.id
+        )
+        await run_in_threadpool(notify_build, False, str(exc))
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=str(exc),
         )
     except Exception as exc:
         logger.exception("Model building failed for workspace={}", workspace_id)
@@ -828,6 +937,200 @@ async def get_models(
             ModelFileOut(model_key=_model_key_from_url(url), file_url=url)
             for url in model_output_urls
         ]
+    )
+
+
+@router.get(
+    "/models/catalog",
+    summary="List selectable models with their tunable hyperparameters",
+    response_model=ModelCatalogResponse,
+)
+async def get_model_catalog() -> ModelCatalogResponse:
+    """Describe every model the user can pick at build time or retrain."""
+    return ModelCatalogResponse(models=build_model_catalog(include_hyperparameters=True))
+
+
+@router.post(
+    "/{workspace_id}/models/{model_key}/retrain",
+    summary="Retrain one fitted model with custom hyperparameters",
+    response_model=ModelsResponse,
+)
+async def retrain_model(
+    workspace_id: str,
+    model_key: str,
+    request: RetrainModelRequest = Body(...),
+    current_user: AuthUserRead = Depends(get_current_user),
+) -> ModelsResponse:
+    """
+    Refit a single model from this workspace's most recent using the
+    user-supplied hyperparameters (and epochs for neural models).
+
+    The workspace's preprocessed CSV is reused, so retraining never repeats
+    the sourcing/preprocessing stage. All other models from the last build
+    stay in the returned comparison and download list.
+    """
+    workspace_svc = _workspace_service()
+    try:
+        workspace = await run_in_threadpool(
+            workspace_svc.get_workspace, workspace_id, current_user.id
+        )
+    except WorkspaceNotFoundError:
+        raise _not_found(workspace_id)
+
+    if workspace.get("data_type") != DataType.STRUCTURED:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Model retraining is only available for structured workspaces.",
+        )
+
+    target_column = request.target_column or workspace.get("target_column")
+    if not target_column:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="This workspace has no target column; run a build first.",
+        )
+
+    workspace_name = workspace.get("name") or "Workspace"
+    workspace_link = f"/workspace/{workspace_id}"
+
+    def notify(succeeded: bool, error: str | None = None) -> None:
+        if succeeded:
+            _notify_task(
+                current_user.id,
+                notification_type=NotificationType.RETRAIN,
+                title=f"{model_key} retrained in {workspace_name}",
+                body="The model finished training with your updated settings.",
+                link=workspace_link,
+            )
+        else:
+            _notify_task(
+                current_user.id,
+                notification_type=NotificationType.JOB_FAILED,
+                title=f"{model_key} retraining failed",
+                body=error or "The model could not be retrained.",
+                link=workspace_link,
+            )
+
+    # Reuse the exact preprocessed frame produced by the last build so the
+    # retrained model sees the same features/encoding as the original.
+    preprocess_records = await run_in_threadpool(
+        workspace_svc.get_records_by_workspace_id,
+        workspace_id, "preprocessing", 1, current_user.id,
+    )
+    if not preprocess_records:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="No preprocessing run found. Build the workspace first.",
+        )
+    preprocess_record = preprocess_records[0]
+    csv_url = next(
+        (
+            url for url in (preprocess_record.get("output_file_urls") or [])
+            if str(url).lower().endswith(".csv")
+        ),
+        None,
+    )
+    if not csv_url:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="No preprocessed data artifact found. Build the workspace first.",
+        )
+
+    raw = await run_in_threadpool(workspace_svc.download_output_file, csv_url)
+    if raw is None:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail="Could not retrieve the preprocessed data for this workspace.",
+        )
+    try:
+        frame = pd.read_csv(io.BytesIO(raw))
+    except Exception as exc:
+        logger.exception("Could not parse preprocessed artifact for workspace={}", workspace_id)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Could not parse the preprocessed data.",
+        ) from exc
+
+    if target_column not in frame.columns:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=f"Target column '{target_column}' is not in the preprocessed data.",
+        )
+
+    previous_records = await run_in_threadpool(
+        workspace_svc.get_records_by_workspace_id,
+        workspace_id, "model_building", 1, current_user.id,
+    )
+    previous = previous_records[0] if previous_records else None
+    previous_summary = dict((previous or {}).get("agent_summary") or {})
+    # The artifact being replaced is dropped; every other model is carried
+    # forward into the new run so the UI keeps a complete, current list.
+    retained_urls = [
+        url for url in ((previous or {}).get("output_file_urls") or [])
+        if _model_key_from_url(str(url)) != model_key
+    ]
+    preprocessing_summary = (
+        (preprocess_record.get("agent_summary") or {})
+        if preprocess_record else None
+    )
+
+    builder = TabularDataModelBuilderAgent(target_column=target_column)
+    try:
+        fitted_models, fresh_summary = await run_in_threadpool(
+            builder.run_selected,
+            frame,
+            model_key,
+            request.hyperparameters,
+            request.epochs,
+            preprocessing_summary,
+            refit=True,
+        )
+    except ValueError as exc:
+        await run_in_threadpool(notify, False, str(exc))
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=str(exc),
+        )
+    except Exception as exc:
+        logger.exception("Retraining {} failed for workspace={}", model_key, workspace_id)
+        await run_in_threadpool(notify, False, str(exc))
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Retraining failed: {exc}",
+        )
+
+    merged_summary = _merge_retrain_summary(previous_summary, fresh_summary, model_key)
+    model_save = await run_in_threadpool(
+        workspace_svc.save_run,
+        workspace_id,
+        "model_building",
+        [],
+        fitted_models,
+        merged_summary,
+        0, 0, 0, 0,
+        current_user.id,
+        None,
+        None,
+        retained_urls,
+    )
+    output_urls = list(model_save.get("output_file_urls") or [])
+    await run_in_threadpool(notify, True)
+
+    return ModelsResponse(
+        workspace_id=workspace_id,
+        status=workspace.get("status") or "completed",
+        target_column=target_column,
+        preprocessing_summary=preprocessing_summary,
+        model_summary=merged_summary,
+        model_comparison=_extract_model_comparison(merged_summary),
+        best_model=merged_summary.get("best_model"),
+        model_details=merged_summary.get("model_details"),
+        output_file_urls=output_urls,
+        model_files=[
+            ModelFileOut(model_key=_model_key_from_url(url), file_url=url)
+            for url in output_urls
+        ],
+        retrained_model_key=model_key,
     )
 
 

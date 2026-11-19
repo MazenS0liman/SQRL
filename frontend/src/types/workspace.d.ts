@@ -55,6 +55,8 @@ export interface ModelMetric {
   metric_name: string;
   mean: number;
   std?: number | null;
+  details?: ModelDetails | null;
+  hyperparameters?: Record<string, unknown> | null;
 }
 
 /** One feature column a trained model expects at inference time. */
@@ -106,11 +108,55 @@ export interface ModelSummary {
   recommendations?: string[];
   warnings?: string[];
   model_details?: ModelDetails | null;
+  model_details_by_model?: Record<string, ModelDetails>;
+  hyperparameters_by_model?: Record<string, Record<string, unknown>>;
 }
 
 export interface ModelFile {
   model_key: string;
   file_url: string;
+}
+
+export interface HyperparameterSpec {
+  name: string;
+  label: string;
+  type: "int" | "float" | "bool" | "enum";
+  default?: unknown;
+  min?: number | null;
+  max?: number | null;
+  step?: number | null;
+  choices?: unknown[] | null;
+  nullable?: boolean;
+  fit_param?: boolean;
+  description?: string;
+}
+
+export interface ModelCatalogEntry {
+  model_key: string;
+  label: string;
+  task: string;
+  description?: string;
+  sequential?: boolean;
+  supports_epochs?: boolean;
+  hyperparameters: HyperparameterSpec[];
+}
+
+export interface ModelCatalogResponse {
+  models: ModelCatalogEntry[];
+}
+
+export interface BuildRequest {
+  target_column: string;
+  query?: string;
+  model_key?: string | null;
+  hyperparameters?: Record<string, unknown>;
+  epochs?: number | null;
+}
+
+export interface RetrainModelRequest {
+  hyperparameters?: Record<string, unknown>;
+  epochs?: number | null;
+  target_column?: string;
 }
 
 export interface BuildResponse {
@@ -136,6 +182,7 @@ export interface ModelsResponse {
   model_details?: ModelDetails | null;
   output_file_urls: string[];
   model_files: ModelFile[];
+  retrained_model_key?: string | null;
 }
 
 export interface PreprocessedDataResponse {

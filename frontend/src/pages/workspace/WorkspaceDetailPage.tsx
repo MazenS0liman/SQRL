@@ -21,9 +21,16 @@ import {
   Upload,
   Copy,
   Activity,
+  RefreshCw,
+  SlidersHorizontal,
+  Cpu,
 } from "lucide-react";
+import { toast } from "sonner";
 import type {
+  BuildRequest,
   BuildResponse,
+  ModelCatalogEntry,
+  ModelCatalogResponse,
   ModelDetails,
   ModelFile,
   ModelMetric,
@@ -35,7 +42,8 @@ import type {
   PreprocessedDataResponse,
   WorkspaceStatus,
   TablePreviewEntry,
-  PredictResponse
+  PredictResponse,
+  RetrainModelRequest,
 } from "@/types";
 import {
   DATA_TYPE_OPTIONS,
@@ -47,6 +55,24 @@ import {
 } from "./shared";
 import { ModelDetailsDialog } from "@/components/models/ModelDetailsDialog";
 import { TrainingLossChart } from "@/components/models/TrainingLossChart";
+import {
+  defaultHyperparameterValues,
+  ModelTrainingFields,
+  toApiHyperparameters,
+  toRawHyperparameterValues,
+  validateHyperparameterValues,
+  type HyperparameterValues,
+} from "@/components/models/ModelTrainingFields";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 import {
   API_BASE,
   apiFetch,
@@ -204,6 +230,21 @@ export default function WorkspaceDetailPage(): JSX.Element {
   const [buildError, setBuildError] = useState<string | null>(null);
   const [conflictColumns, setConflictColumns] = useState<string[] | null>(null);
 
+  // Model choice: "" means the system's automatic selection. A specific key
+  // unlocks the hyperparameter form for that model only.
+  const [modelCatalog, setModelCatalog] = useState<ModelCatalogEntry[]>([]);
+  const [buildModelKey, setBuildModelKey] = useState("");
+  const [buildEpochs, setBuildEpochs] = useState("");
+  const [buildHyperparameters, setBuildHyperparameters] = useState<HyperparameterValues>({});
+
+  const [retrainTarget, setRetrainTarget] = useState<ModelCatalogEntry | null>(null);
+  const [retrainEpochs, setRetrainEpochs] = useState("");
+  const [retrainHyperparameters, setRetrainHyperparameters] = useState<HyperparameterValues>({});
+  const [retraining, setRetraining] = useState(false);
+  const [retrainError, setRetrainError] = useState<string | null>(null);
+
+  const [detailsModelKey, setDetailsModelKey] = useState<string | null>(null);
+
   const [preprocessingSummary, setPreprocessingSummary] = useState<Record<string, unknown> | null>(null);
   const [modelSummary, setModelSummary] = useState<ModelSummary | null>(null);
   const [modelComparison, setModelComparison] = useState<ModelMetric[]>([]);
@@ -252,6 +293,33 @@ export default function WorkspaceDetailPage(): JSX.Element {
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // ---- Model data -------------------------------------------------------
+
+  const applyModelsResponse = useCallback((data: ModelsResponse) => {
+    setPreprocessingSummary(data.preprocessing_summary ?? null);
+    setModelSummary(data.model_summary ?? null);
+    setModelComparison(data.model_comparison ?? []);
+    setBestModel(data.best_model ?? null);
+    setModelDetails(data.model_details ?? data.model_summary?.model_details ?? null);
+    setModelFiles(data.model_files ?? []);
+    setDetailsModelKey(null);
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    apiFetch<ModelCatalogResponse>("/workspace/models/catalog")
+      .then((data) => {
+        if (!cancelled) setModelCatalog(data.models ?? []);
+      })
+      .catch(() => {
+        // The catalog only powers manual selection/retraining. Auto builds
+        // keep working if it is temporarily unavailable.
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   // ---- Load ------------------------------------------------------------
 
   const loadWorkspace = async () => {
@@ -272,13 +340,7 @@ export default function WorkspaceDetailPage(): JSX.Element {
       setTargetColumn(ws.target_column ?? "");
       setSources(ws.input_sources ?? []);
       if (ws.status === "completed") {
-        const data = await apiFetch<ModelsResponse>(`/workspace/${workspaceId}/models`);
-        setPreprocessingSummary(data.preprocessing_summary ?? null);
-        setModelSummary(data.model_summary ?? null);
-        setModelComparison(data.model_comparison);
-        setBestModel(data.best_model ?? null);
-        setModelDetails(data.model_details ?? data.model_summary?.model_details ?? null);
-        setModelFiles(data.model_files);
+        applyModelsResponse(await apiFetch<ModelsResponse>(`/workspace/${workspaceId}/models`));
       }
     } catch (err) {
       setLoadError(err instanceof Error ? err.message : "Failed to load workspace.");
@@ -301,19 +363,13 @@ export default function WorkspaceDetailPage(): JSX.Element {
       const ws = await apiFetch<Workspace>(`/workspace/${workspaceId}`);
       setWorkspace((prev) => (prev ? { ...prev, status: ws.status, error: ws.error } : ws));
       if (ws.status === "completed") {
-        const data = await apiFetch<ModelsResponse>(`/workspace/${workspaceId}/models`);
-        setPreprocessingSummary(data.preprocessing_summary ?? null);
-        setModelSummary(data.model_summary ?? null);
-        setModelComparison(data.model_comparison);
-        setBestModel(data.best_model ?? null);
-        setModelDetails(data.model_details ?? data.model_summary?.model_details ?? null);
-        setModelFiles(data.model_files);
+        applyModelsResponse(await apiFetch<ModelsResponse>(`/workspace/${workspaceId}/models`));
       }
     } catch {
       // Silent — a transient poll failure shouldn't disrupt the page, the
       // next tick (or the build request's own resolution) will catch up.
     }
-  }, [workspaceId]);
+  }, [workspaceId, applyModelsResponse]);
 
   useEffect(() => {
     const shouldPoll = building || (workspace ? BUSY_STATUSES.has(workspace.status) : false);
@@ -759,28 +815,63 @@ export default function WorkspaceDetailPage(): JSX.Element {
 
   // ---- Build ---------------------------------------------------------------
 
+  const handleBuildModelChange = (key: string) => {
+    setBuildModelKey(key);
+    const entry = modelCatalog.find((model) => model.model_key === key);
+    setBuildHyperparameters(defaultHyperparameterValues(entry?.hyperparameters ?? []));
+    const epochDefault = entry?.hyperparameters.find((spec) => spec.name === "epochs")?.default;
+    setBuildEpochs(epochDefault == null ? "" : String(epochDefault));
+    setBuildError(null);
+  };
+
   const handleBuild = async () => {
     if (!targetColumn || !workspace) return;
     if (clientSideConflicts.length > 0) {
       setConflictColumns(clientSideConflicts);
       return;
     }
+
+    const body: BuildRequest = {
+      target_column: targetColumn,
+      query: buildQuery.trim() || undefined,
+    };
+
+    if (selectedBuildModel) {
+      const problem = validateHyperparameterValues(
+        selectedBuildModel.hyperparameters,
+        buildHyperparameters,
+      );
+      if (problem) {
+        setBuildError(problem);
+        toast.error(problem);
+        return;
+      }
+      body.model_key = selectedBuildModel.model_key;
+      body.hyperparameters = toApiHyperparameters(
+        selectedBuildModel.hyperparameters,
+        buildHyperparameters,
+      );
+      if (selectedBuildModel.supports_epochs) {
+        const epochs = Number(buildEpochs);
+        if (!Number.isInteger(epochs) || epochs < 1 || epochs > 1000) {
+          const message = "Epochs must be a whole number between 1 and 1000.";
+          setBuildError(message);
+          toast.error(message);
+          return;
+        }
+        body.epochs = epochs;
+      }
+    }
+
     setBuilding(true);
     setBuildError(null);
     setConflictColumns(null);
     try {
       const data = await apiFetch<BuildResponse>(`/workspace/${workspace.workspace_id}/build/structured`, {
         method: "POST",
-        body: JSON.stringify({
-          target_column: targetColumn,
-          query: buildQuery.trim() || undefined,
-        }),
+        body: JSON.stringify(body),
       });
-      setPreprocessingSummary(data.preprocessing_summary);
-      setModelSummary(data.model_summary);
-      setModelComparison(data.model_comparison);
-      setBestModel(data.best_model);
-      setModelFiles(data.model_files);
+      applyModelsResponse(data);
       setWorkspace((prev) => (prev ? { ...prev, status: data.status, target_column: targetColumn } : prev));
       // A fresh build invalidates any prior prediction run — the fitted
       // pipeline/model it was based on no longer exists server-side.
@@ -788,16 +879,100 @@ export default function WorkspaceDetailPage(): JSX.Element {
       setPredictError(null);
       setPreprocessedData(null);
       setPreprocessedError(null);
+      toast.success(
+        selectedBuildModel
+          ? `${selectedBuildModel.label} trained with your settings.`
+          : "Models built successfully.",
+      );
     } catch (err) {
       const conflictCols = (err as { conflicting_columns?: string[] })?.conflicting_columns;
       if (conflictCols && conflictCols.length > 0) {
         setConflictColumns(conflictCols);
       } else {
-        setBuildError(err instanceof Error ? err.message : "Model building failed.");
+        const message = err instanceof Error ? err.message : "Model building failed.";
+        setBuildError(message);
+        toast.error(message);
       }
       setWorkspace((prev) => (prev ? { ...prev, status: "failed" } : prev));
     } finally {
       setBuilding(false);
+    }
+  };
+
+  // ---- Retrain -------------------------------------------------------------
+
+  const openRetrainDialog = (modelKey: string) => {
+    const entry = modelCatalog.find((model) => model.model_key === modelKey);
+    if (!entry) {
+      toast.error("Model settings are still loading. Try again in a moment.");
+      return;
+    }
+    const existing = modelComparison.find((metric) => metric.model_key === modelKey);
+    setRetrainHyperparameters(
+      toRawHyperparameterValues(entry.hyperparameters, existing?.hyperparameters),
+    );
+    const epochSpec = entry.hyperparameters.find((spec) => spec.name === "epochs");
+    const existingEpochs = existing?.hyperparameters?.epochs;
+    setRetrainEpochs(
+      String(existingEpochs ?? epochSpec?.default ?? 50),
+    );
+    setRetrainError(null);
+    setRetrainTarget(entry);
+  };
+
+  const handleRetrain = async () => {
+    if (!workspace || !retrainTarget) return;
+
+    const problem = validateHyperparameterValues(
+      retrainTarget.hyperparameters,
+      retrainHyperparameters,
+    );
+    if (problem) {
+      setRetrainError(problem);
+      toast.error(problem);
+      return;
+    }
+
+    const body: RetrainModelRequest = {
+      hyperparameters: toApiHyperparameters(
+        retrainTarget.hyperparameters,
+        retrainHyperparameters,
+      ),
+    };
+    if (retrainTarget.supports_epochs) {
+      const epochs = Number(retrainEpochs);
+      if (!Number.isInteger(epochs) || epochs < 1 || epochs > 1000) {
+        const message = "Epochs must be a whole number between 1 and 1000.";
+        setRetrainError(message);
+        toast.error(message);
+        return;
+      }
+      body.epochs = epochs;
+    }
+
+    setRetraining(true);
+    setRetrainError(null);
+    try {
+      const data = await apiFetch<ModelsResponse>(
+        `/workspace/${workspace.workspace_id}/models/${retrainTarget.model_key}/retrain`,
+        { method: "POST", body: JSON.stringify(body) },
+      );
+      applyModelsResponse(data);
+      setWorkspace((prev) =>
+        prev ? { ...prev, status: data.status, target_column: data.target_column ?? prev.target_column } : prev,
+      );
+      setPredictResult(null);
+      setPredictError(null);
+      setPreprocessedData(null);
+      setPreprocessedError(null);
+      toast.success(`${retrainTarget.label} retrained successfully.`);
+      setRetrainTarget(null);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Retraining failed.";
+      setRetrainError(message);
+      toast.error(message);
+    } finally {
+      setRetraining(false);
     }
   };
 
@@ -987,6 +1162,20 @@ export default function WorkspaceDetailPage(): JSX.Element {
   const dataTypeLabel = DATA_TYPE_OPTIONS.find((o) => o.value === workspace.data_type)?.label ?? workspace.data_type;
   const canPredict = workspace.status === "completed" && isStructured;
   const canRunPrediction = canPredict && predictRows.length > 0 && !predicting && !predictParseError;
+  const selectedBuildModel = buildModelKey
+    ? modelCatalog.find((model) => model.model_key === buildModelKey) ?? null
+    : null;
+  const retrainEpochSpec = retrainTarget?.hyperparameters.find(
+    (spec) => spec.name === "epochs",
+  );
+  const detailsModelKeyEffective = detailsModelKey ?? bestModel;
+  const detailsMetric = modelComparison.find(
+    (metric) => metric.model_key === detailsModelKeyEffective,
+  );
+  const dialogDetails =
+    detailsMetric?.details ??
+    (detailsModelKey === null || detailsModelKey === bestModel ? modelDetails : null);
+
   const displayedPredictions = predictResult
     ? predictResult.predictions.slice(0, PREDICTION_DISPLAY_LIMIT)
     : [];
@@ -1260,6 +1449,7 @@ export default function WorkspaceDetailPage(): JSX.Element {
                       onChange={(e) => setTargetColumn(e.target.value)}
                       className="w-full rounded-md border border-input bg-secondary px-3 py-1.5 text-sm text-foreground outline-none focus:ring-2 focus:ring-ring"
                     >
+                      <option value="">Select a column to predict…</option>
                       {allColumns.map((col) => (
                         <option key={col} value={col}>
                           {col}
@@ -1270,6 +1460,76 @@ export default function WorkspaceDetailPage(): JSX.Element {
                     <span className="text-sm text-muted-foreground">
                       {workspace.target_column || "Add a data source to choose a column."}
                     </span>
+                  )}
+                </div>
+
+                <div className="rounded-lg border border-border/70 bg-background/50 p-3">
+                  <div className="mb-2 flex items-center justify-between gap-2">
+                    <label
+                      htmlFor="build-model"
+                      className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-muted-foreground"
+                    >
+                      <SlidersHorizontal className="h-3.5 w-3.5 text-primary" />
+                      Model selection
+                    </label>
+                    {selectedBuildModel && (
+                      <span className="rounded bg-primary-gradient px-1.5 py-0.5 font-mono text-[10px] font-semibold uppercase tracking-wide text-primary-foreground">
+                        Manual
+                      </span>
+                    )}
+                  </div>
+                  <select
+                    id="build-model"
+                    value={buildModelKey}
+                    onChange={(event) => handleBuildModelChange(event.target.value)}
+                    className="w-full rounded-md border border-input bg-secondary px-3 py-1.5 text-sm text-foreground outline-none focus:ring-2 focus:ring-ring"
+                  >
+                    <option value="">Auto — let the system choose</option>
+                    {modelCatalog.map((entry) => (
+                      <option key={entry.model_key} value={entry.model_key}>
+                        {entry.label} · {entry.task}
+                        {entry.sequential ? " · time series" : ""}
+                      </option>
+                    ))}
+                  </select>
+                  <p className="mt-1 text-[11px] leading-snug text-muted-foreground">
+                    Leave this on Auto to keep LLM-guided selection, or pick a model to tune it yourself.
+                  </p>
+
+                  {selectedBuildModel && (
+                    <div className="mt-3 space-y-3 border-t border-border/70 pt-3">
+                      {selectedBuildModel.supports_epochs && (
+                        <div className="space-y-1.5">
+                          <label
+                            htmlFor="build-epochs"
+                            className="block text-[11px] font-medium uppercase tracking-wide text-muted-foreground"
+                          >
+                            Training epochs
+                          </label>
+                          <Input
+                            id="build-epochs"
+                            type="number"
+                            min={1}
+                            max={1000}
+                            step={1}
+                            value={buildEpochs}
+                            disabled={isBusy}
+                            onChange={(event) => setBuildEpochs(event.target.value)}
+                            className="h-8 px-2 py-1 text-xs"
+                          />
+                        </div>
+                      )}
+                      <ModelTrainingFields
+                        specs={selectedBuildModel.hyperparameters}
+                        values={buildHyperparameters}
+                        onChange={(name, value) =>
+                          setBuildHyperparameters((prev) => ({ ...prev, [name]: value }))
+                        }
+                        disabled={isBusy}
+                        compact
+                        idPrefix="build-param"
+                      />
+                    </div>
                   )}
                 </div>
 
@@ -1580,7 +1840,10 @@ export default function WorkspaceDetailPage(): JSX.Element {
                 <StepLabel n="04">Available models</StepLabel>
                 {modelDetails && (
                   <button
-                    onClick={() => setDetailsOpen(true)}
+                    onClick={() => {
+                      setDetailsModelKey(null);
+                      setDetailsOpen(true);
+                    }}
                     className="inline-flex items-center gap-1.5 rounded-md border border-border px-2.5 py-1 text-xs font-medium text-foreground transition-colors hover:bg-secondary"
                   >
                     <Activity className="h-3.5 w-3.5 text-primary" />
@@ -1613,11 +1876,18 @@ export default function WorkspaceDetailPage(): JSX.Element {
                         <th className="px-3 py-2 font-medium">Metric</th>
                         <th className="px-3 py-2 text-right font-medium">Score</th>
                         <th className="px-3 py-2 text-right font-medium">Card</th>
+                        <th className="px-3 py-2 text-right font-medium">Retrain</th>
                       </tr>
                     </thead>
                     <tbody>
                       {modelComparison.map((m, i) => {
                         const isBest = m.model_key === bestModel;
+                        const catalogEntry = modelCatalog.find(
+                          (model) => model.model_key === m.model_key,
+                        );
+                        const isFirstMetricForModel =
+                          modelComparison.findIndex((entry) => entry.model_key === m.model_key) === i;
+                        const hasCard = Boolean(m.details || (isBest && modelDetails));
                         return (
                           <tr
                             key={`${m.model_key}-${m.metric_name}-${i}`}
@@ -1645,14 +1915,33 @@ export default function WorkspaceDetailPage(): JSX.Element {
                               {m.std != null && <span className="text-muted-foreground"> ± {formatPercent(m.std)}</span>}
                             </td>
                             <td className="px-3 py-2 text-right">
-                              {isBest && modelDetails ? (
+                              {hasCard ? (
                                 <button
-                                  onClick={() => setDetailsOpen(true)}
+                                  onClick={() => {
+                                    setDetailsModelKey(m.model_key);
+                                    setDetailsOpen(true);
+                                  }}
                                   className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs font-medium text-foreground transition-colors hover:bg-secondary"
                                 >
                                   <Activity className="h-3 w-3" />
                                   Details
                                 </button>
+                              ) : (
+                                <span className="text-xs text-muted-foreground">—</span>
+                              )}
+                            </td>
+                            <td className="px-3 py-2 text-right">
+                              {catalogEntry && isFirstMetricForModel ? (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => openRetrainDialog(m.model_key)}
+                                  disabled={isBusy || retraining}
+                                  className="h-7 px-2 text-xs"
+                                >
+                                  <RefreshCw className="h-3 w-3" />
+                                  Retrain
+                                </Button>
                               ) : (
                                 <span className="text-xs text-muted-foreground">—</span>
                               )}
@@ -1695,6 +1984,12 @@ export default function WorkspaceDetailPage(): JSX.Element {
                   <ul className="space-y-1.5">
                     {modelFiles.map((mf) => {
                       const isBest = mf.model_key === bestModel;
+                      const metric = modelComparison.find(
+                        (entry) => entry.model_key === mf.model_key,
+                      );
+                      const catalogEntry = modelCatalog.find(
+                        (model) => model.model_key === mf.model_key,
+                      );
                       return (
                         <li
                           key={mf.file_url}
@@ -1711,13 +2006,26 @@ export default function WorkspaceDetailPage(): JSX.Element {
                             )}
                           </span>
                           <span className="flex items-center gap-2">
-                            {isBest && modelDetails && (
+                            {(metric?.details || (isBest && modelDetails)) && (
                               <button
-                                onClick={() => setDetailsOpen(true)}
+                                onClick={() => {
+                                  setDetailsModelKey(mf.model_key);
+                                  setDetailsOpen(true);
+                                }}
                                 className="inline-flex items-center gap-1 rounded-md border border-border px-2.5 py-1 text-xs font-medium text-foreground transition-colors hover:bg-secondary"
                               >
                                 <Activity className="h-3 w-3" />
                                 Details
+                              </button>
+                            )}
+                            {catalogEntry && (
+                              <button
+                                onClick={() => openRetrainDialog(mf.model_key)}
+                                disabled={isBusy || retraining}
+                                className="inline-flex items-center gap-1 rounded-md border border-border px-2.5 py-1 text-xs font-medium text-foreground transition-colors hover:bg-secondary disabled:opacity-40"
+                              >
+                                <RefreshCw className="h-3 w-3" />
+                                Retrain
                               </button>
                             )}
                             <button
@@ -1962,20 +2270,114 @@ export default function WorkspaceDetailPage(): JSX.Element {
       <ModelDetailsDialog
         open={detailsOpen}
         onOpenChange={setDetailsOpen}
-        title={bestModel ?? workspace?.name ?? "Model"}
+        title={detailsModelKeyEffective ?? workspace?.name ?? "Model"}
         subtitle={
           workspace
             ? `${workspace.name}${workspace.target_column ? ` · target ${workspace.target_column}` : ""}`
             : undefined
         }
-        details={modelDetails}
+        details={dialogDetails}
         metrics={modelComparison
-          .filter((m) => m.model_key === bestModel)
+          .filter((m) => m.model_key === detailsModelKeyEffective)
           .map((m) => ({
             label: m.metric_name,
             value: `${formatPercent(m.mean)}${m.std != null ? ` ± ${formatPercent(m.std)}` : ""}`,
           }))}
       />
+
+      <Dialog
+        open={Boolean(retrainTarget)}
+        onOpenChange={(open) => {
+          if (!open && !retraining) setRetrainTarget(null);
+        }}
+      >
+        <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-xl">
+          <DialogHeader>
+            <DialogTitle className="bg-primary-gradient bg-clip-text text-transparent">
+              Retrain {retrainTarget?.label ?? "model"}
+            </DialogTitle>
+            <DialogDescription>
+              Reuses this workspace's preprocessed data and replaces only {retrainTarget?.label ?? "this model"}.
+              Other trained models and their artifacts are kept.
+            </DialogDescription>
+          </DialogHeader>
+
+          {retrainTarget && (
+            <div className="space-y-4">
+              {retrainTarget.supports_epochs && (
+                <div className="space-y-1.5">
+                  <label
+                    htmlFor="retrain-epochs"
+                    className="block text-xs font-medium uppercase tracking-wide text-muted-foreground"
+                  >
+                    Training epochs
+                  </label>
+                  <Input
+                    id="retrain-epochs"
+                    type="number"
+                    min={1}
+                    max={1000}
+                    step={1}
+                    value={retrainEpochs}
+                    disabled={retraining}
+                    onChange={(event) => setRetrainEpochs(event.target.value)}
+                  />
+                  {retrainEpochSpec?.description && (
+                    <p className="text-[11px] text-muted-foreground">{retrainEpochSpec.description}</p>
+                  )}
+                </div>
+              )}
+
+              <div className="rounded-lg border border-border bg-secondary/20 p-3">
+                <div className="mb-3 flex items-center gap-1.5">
+                  <Cpu className="h-3.5 w-3.5 text-primary" />
+                  <span className="text-[11px] font-medium uppercase tracking-[0.14em] text-muted-foreground">
+                    Hyperparameters
+                  </span>
+                </div>
+                <ModelTrainingFields
+                  specs={retrainTarget.hyperparameters}
+                  values={retrainHyperparameters}
+                  onChange={(name, value) =>
+                    setRetrainHyperparameters((prev) => ({ ...prev, [name]: value }))
+                  }
+                  disabled={retraining}
+                  idPrefix="retrain-param"
+                />
+              </div>
+
+              {retrainError && <p className="text-sm text-destructive">{retrainError}</p>}
+            </div>
+          )}
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setRetrainTarget(null)}
+              disabled={retraining}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleRetrain}
+              disabled={retraining || !retrainTarget}
+              className="bg-primary-gradient text-primary-foreground hover:opacity-90"
+            >
+              {retraining ? (
+                <>
+                  <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-primary-foreground/40 border-t-primary-foreground" />
+                  Retraining…
+                </>
+              ) : (
+                <>
+                  <RefreshCw className="h-3.5 w-3.5" />
+                  Retrain model
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
