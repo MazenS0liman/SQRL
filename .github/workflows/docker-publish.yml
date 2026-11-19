@@ -14,7 +14,7 @@ permissions:
   contents: read
 
 env:
-  IMAGE_NAME: mazens0liman/sqrl
+  IMAGE_NAME: mazensoliman/sqrl
 
 jobs:
   build-and-push:

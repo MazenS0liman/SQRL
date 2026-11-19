@@ -148,7 +148,7 @@ services:
         condition: service_healthy
 
   minio:
-    image: minio/minio:latest
+    image: pgsty/silo:latest
     container_name: minio
     restart: unless-stopped
     ports:

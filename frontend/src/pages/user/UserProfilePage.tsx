@@ -250,12 +250,15 @@ export default function UserProfilePage(): JSX.Element {
             />
           </div>
           <div className="px-6 pb-6">
-            <div className="-mt-10 flex flex-wrap items-end justify-between gap-4">
-              <div className="flex min-w-0 items-end gap-4">
-                <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-2xl border-4 border-card bg-primary-gradient text-2xl font-semibold text-primary-foreground shadow-sm">
+            <div className="relative z-10 -mt-10 flex flex-wrap items-end justify-between gap-4">
+              <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-end sm:gap-4">
+                {/* Avatar overlaps the banner */}
+                <div className="-mt-10 flex h-20 w-20 shrink-0 items-center justify-center rounded-2xl border-4 border-card bg-primary-gradient text-2xl font-semibold text-primary-foreground shadow-sm">
                   {user.avatarSeed}
                 </div>
-                <div className="min-w-0 pb-1">
+
+                {/* Name sits fully on the card surface */}
+                <div className="min-w-0 sm:pb-1">
                   <div className="flex flex-wrap items-center gap-2">
                     <h2 className="truncate text-2xl font-semibold tracking-tight text-foreground">
                       {user.name}
@@ -270,7 +273,8 @@ export default function UserProfilePage(): JSX.Element {
                   </p>
                 </div>
               </div>
-              <Button onClick={() => setEditOpen(true)}>
+
+              <Button className="mt-3" onClick={() => setEditOpen(true)}>
                 <Pencil />
                 Edit profile
               </Button>
@@ -297,6 +301,8 @@ export default function UserProfilePage(): JSX.Element {
               />
             </div>
           </div>
+
+
         </section>
 
         <section className="mt-6 grid grid-cols-2 gap-3 lg:grid-cols-4">

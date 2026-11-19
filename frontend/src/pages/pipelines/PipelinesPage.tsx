@@ -14,6 +14,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { etlApi } from "@/api/etlApi";
+import DotField from "@/components/background/DotField";
 import type { PipelineRead } from "@/types";
 
 function statusVariant(status: string): "default" | "secondary" | "destructive" | "outline" {
@@ -109,8 +110,28 @@ export default function PipelinesPage(): JSX.Element {
   };
 
   return (
-    <main className="min-h-full bg-background px-6 py-10">
-      <div className="mx-auto max-w-6xl">
+    <main className="relative h-full min-h-0 overflow-y-auto bg-background">
+      {/* Dotted background. Lives inside the same bg-background container it
+          paints on top of, and the content column below is un-capped
+          (min-h-full, not h-full) so this stretches across the full
+          scrollable content, not just the first screen. */}
+      <div className="pointer-events-none absolute inset-0 overflow-hidden">
+        <DotField
+          dotRadius={1.5}
+          dotSpacing={14}
+          bulgeStrength={50}
+          glowRadius={0}
+          sparkle={false}
+          waveAmplitude={0}
+          cursorRadius={100}
+          cursorForce={0}
+          bulgeOnly={true}
+          gradientFrom="#592603"
+          gradientTo="#613508"
+          glowColor="#af4d08"
+        />
+      </div>
+      <div className="relative mx-auto min-h-full max-w-6xl px-6 py-10">
         <header className="mb-8 flex flex-wrap items-end justify-between gap-4 border-b border-border pb-6">
           <div>
             <h1 className="bg-primary-gradient bg-clip-text text-3xl font-semibold text-transparent">
