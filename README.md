@@ -6,8 +6,8 @@
   [![License: GPL v2](https://img.shields.io/badge/License-GPL_v2-2e7d32.svg?style=for-the-badge)](LICENSE)
   [![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-3776ab.svg?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/downloads/)
   [![Testing: Pytest](https://img.shields.io/badge/Testing-Pytest-ad1457.svg?style=for-the-badge)](https://github.com/pytest-dev/pytest)
-  [![CI](https://github.com/MazenS0liman/SQRL/actions/workflows/ci.yml/badge.svg?branch=dev)](https://github.com/MazenS0liman/SQRL/actions/workflows/ci.yml)
-  [![Coverage](https://codecov.io/gh/MazenS0liman/SQRL/graph/badge.svg)](https://codecov.io/gh/MazenS0liman/SQRL)
+  [![CI](https://img.shields.io/github/actions/workflow/status/MazenS0liman/SQRL/ci.yml?branch=dev&style=for-the-badge&logo=githubactions&logoColor=white&label=CI)](https://github.com/MazenS0liman/SQRL/actions/workflows/ci.yml)
+  [![Coverage](https://img.shields.io/codecov/c/github/MazenS0liman/SQRL?style=for-the-badge&logo=codecov&logoColor=white)](https://codecov.io/gh/MazenS0liman/SQRL)
   [![Docker Image Version](https://img.shields.io/docker/v/mazensoliman/sqrl?style=for-the-badge&logo=docker&logoColor=white&label=docker)](https://hub.docker.com/r/mazensoliman/sqrl)
   [![Docker Pulls](https://img.shields.io/docker/pulls/mazensoliman/sqrl?style=for-the-badge&logo=docker&logoColor=white)](https://hub.docker.com/r/mazensoliman/sqrl)
 
@@ -91,7 +91,7 @@ Describe the transformation you want in natural language, and the chat assistant
 - Insert transformation stages on any edge
 - Open a property sheet for every source, stage, and sink
 
-![Pipeline editor](./imgs/pipeline_editor.jpg)
+![Pipeline editor](./imgs/pipeline_page.png)
 
 ## Architecture
 
